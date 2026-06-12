@@ -1,0 +1,415 @@
+import type { CSSProperties, ReactNode } from "react";
+import { TKIcon, type TKIconName } from "./icons";
+import { TKCounter } from "./display";
+import { tkOptionItem, type TKOption } from "./options";
+import { useSafeArea } from "./telegram";
+import { useControllable } from "./internal/useControllable";
+
+/* ---------------- Header / nav bar ---------------- */
+
+export interface TKHeaderProps {
+  title?: ReactNode;
+  subtitle?: ReactNode;
+  large?: boolean;
+  back?: boolean;
+  onBack?: () => void;
+  actions?: ReactNode;
+}
+
+export function TKHeader({ title, subtitle, large, back = true, onBack, actions }: TKHeaderProps) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 2,
+        padding: large ? "14px 16px 12px" : "0 16px",
+        height: large ? undefined : 52,
+        justifyContent: "center",
+        background: "var(--tk-glass)",
+        backdropFilter: "blur(14px)",
+        WebkitBackdropFilter: "blur(14px)",
+        borderBottom: "0.5px solid var(--tk-sep)",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        {back ? (
+          <button
+            type="button"
+            className="tk-press"
+            aria-label="Back"
+            onClick={onBack}
+            style={{
+              display: "inline-flex",
+              border: "none",
+              background: "transparent",
+              padding: 0,
+              color: "var(--tk-accent)",
+              marginLeft: -6,
+            }}
+          >
+            <TKIcon name="chevronLeft" size={24} strokeWidth={2.3} />
+          </button>
+        ) : null}
+        {!large ? (
+          <div style={{ flex: 1, textAlign: "center", marginRight: back ? 18 : 0 }}>
+            <div style={{ fontSize: "var(--tk-fz-body)", fontWeight: 600 }}>{title}</div>
+            {subtitle ? (
+              <div style={{ fontSize: "var(--tk-fz-caption)", color: "var(--tk-text-2)" }}>{subtitle}</div>
+            ) : null}
+          </div>
+        ) : (
+          <div style={{ flex: 1 }} />
+        )}
+        {actions ? <div style={{ display: "flex", gap: 6 }}>{actions}</div> : null}
+      </div>
+      {large ? (
+        <div>
+          <div style={{ fontSize: "var(--tk-fz-title1)", fontWeight: 700, letterSpacing: "-.02em" }}>{title}</div>
+          {subtitle ? (
+            <div style={{ fontSize: "var(--tk-fz-sub)", color: "var(--tk-text-2)" }}>{subtitle}</div>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/* ---------------- Tab bar ---------------- */
+
+export interface TKTabItem {
+  icon: TKIconName;
+  label: string;
+  count?: number;
+}
+
+export interface TKTabbarProps {
+  tabs: TKTabItem[];
+  value?: number;
+  defaultValue?: number;
+  onChange?: (index: number) => void;
+  /** Extend the bar below the home indicator (`env(safe-area-inset-bottom)`). */
+  safeArea?: boolean;
+}
+
+export function TKTabbar({ tabs, value, defaultValue = 0, onChange, safeArea }: TKTabbarProps) {
+  const [active, setActive] = useControllable(value, defaultValue, onChange);
+  const { inset, contentInset } = useSafeArea();
+  const safeBottom = inset.bottom + contentInset.bottom;
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: `repeat(${tabs.length}, 1fr)`,
+        background: "var(--tk-glass)",
+        backdropFilter: "blur(14px)",
+        WebkitBackdropFilter: "blur(14px)",
+        borderTop: "0.5px solid var(--tk-sep)",
+        padding: "8px 0 10px",
+        paddingBottom: safeArea ? `calc(max(var(--tk-safe-bottom), ${safeBottom}px) + 10px)` : 10,
+      }}
+    >
+      {tabs.map((t, i) => {
+        const on = i === active;
+        return (
+          <button
+            type="button"
+            key={t.label}
+            onClick={() => setActive(i)}
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 3,
+              border: "none",
+              background: "transparent",
+              fontFamily: "inherit",
+              cursor: "pointer",
+              color: on ? "var(--tk-accent)" : "var(--tk-text-2)",
+              transition: "color var(--tk-t2) var(--tk-ease)",
+              padding: 0,
+            }}
+          >
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 46,
+                height: 30,
+                borderRadius: "var(--tk-r-pill)",
+                background: on ? "var(--tk-accent-12)" : "transparent",
+                transform: on ? "translateY(-1px)" : "none",
+                transition: "background var(--tk-t2) var(--tk-ease), transform var(--tk-t2) var(--tk-spring)",
+                position: "relative",
+              }}
+            >
+              <TKIcon name={t.icon} size={22} strokeWidth={on ? 2.2 : 2} />
+              {t.count ? (
+                <span style={{ position: "absolute", top: -3, right: 2 }}>
+                  <TKCounter value={t.count} />
+                </span>
+              ) : null}
+            </span>
+            <span style={{ fontSize: "var(--tk-fz-caption2)", fontWeight: on ? 600 : 500 }}>{t.label}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ---------------- Segmented control ---------------- */
+
+export interface TKSegmentedProps {
+  options: TKOption[];
+  value?: string;
+  defaultValue?: string;
+  onChange?: (value: string) => void;
+  full?: boolean;
+}
+
+export function TKSegmented({ options, value, defaultValue, onChange, full }: TKSegmentedProps) {
+  const items = options.map(tkOptionItem);
+  const firstEnabled = items.find((item) => !item.disabled);
+  const [val, setVal] = useControllable(value, defaultValue ?? firstEnabled?.value ?? "", onChange);
+  const idx = Math.max(0, items.findIndex((item) => item.value === val));
+  const n = items.length;
+  return (
+    <div
+      style={{
+        position: "relative",
+        display: full ? "grid" : "inline-grid",
+        gridTemplateColumns: `repeat(${n}, 1fr)`,
+        width: full ? "100%" : undefined,
+        padding: 3,
+        borderRadius: "var(--tk-r-sm)",
+        background: "var(--tk-surface-3)",
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          top: 3,
+          bottom: 3,
+          left: 3,
+          width: `calc((100% - 6px) / ${n})`,
+          transform: `translateX(${idx * 100}%)`,
+          transition: "transform var(--tk-t2) var(--tk-spring)",
+          background: "var(--tk-surface)",
+          borderRadius: "calc(var(--tk-r-sm) - 3px)",
+          boxShadow: "var(--tk-shadow-sm)",
+        }}
+      />
+      {items.map((item) => (
+        <button
+          type="button"
+          key={item.value}
+          disabled={item.disabled}
+          aria-pressed={item.value === val}
+          onClick={() => setVal(item.value)}
+          style={{
+            position: "relative",
+            zIndex: 1,
+            border: "none",
+            background: "transparent",
+            padding: "7px 16px",
+            fontSize: "var(--tk-fz-sub)",
+            fontWeight: item.value === val ? 600 : 500,
+            fontFamily: "inherit",
+            color: item.value === val ? "var(--tk-text)" : "var(--tk-text-2)",
+            cursor: item.disabled ? "default" : "pointer",
+            opacity: item.disabled ? 0.45 : 1,
+            transition: "color var(--tk-t2) var(--tk-ease)",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {item.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/* ---------------- Category tabs (scrollable underline) ---------------- */
+
+export interface TKCategoryTabsProps {
+  tabs: TKOption[];
+  value?: number;
+  defaultValue?: number;
+  onChange?: (index: number) => void;
+  style?: CSSProperties;
+}
+
+export function TKCategoryTabs({ tabs, value, defaultValue = 0, onChange, style }: TKCategoryTabsProps) {
+  const [active, setActive] = useControllable(value, defaultValue, onChange);
+  return (
+    <div style={{ display: "flex", gap: 4, overflowX: "auto", scrollbarWidth: "none", padding: "0 12px", ...style }}>
+      {tabs.map(tkOptionItem).map((item, i) => {
+        const on = i === active;
+        return (
+          <button
+            type="button"
+            key={item.value}
+            disabled={item.disabled}
+            onClick={() => setActive(i)}
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 4,
+              padding: "8px 10px 6px",
+              border: "none",
+              background: "transparent",
+              fontSize: "var(--tk-fz-sub)",
+              fontWeight: on ? 700 : 500,
+              fontFamily: "inherit",
+              color: on ? "var(--tk-text)" : "var(--tk-text-2)",
+              cursor: item.disabled ? "default" : "pointer",
+              opacity: item.disabled ? 0.45 : 1,
+              whiteSpace: "nowrap",
+              transition: "color var(--tk-t2) var(--tk-ease)",
+            }}
+          >
+            {item.label}
+            <span
+              style={{
+                width: 18,
+                height: 3,
+                borderRadius: 2,
+                background: "var(--tk-accent)",
+                transform: on ? "scaleX(1)" : "scaleX(0)",
+                transition: "transform var(--tk-t2) var(--tk-spring)",
+              }}
+            />
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ---------------- Progress steps ---------------- */
+
+export interface TKStepsProps {
+  steps: string[];
+  current: number;
+  /** Makes step circles clickable (e.g. to navigate back). */
+  onStepClick?: (index: number) => void;
+}
+
+export function TKSteps({ steps, current, onStepClick }: TKStepsProps) {
+  return (
+    <div style={{ display: "flex", alignItems: "flex-start" }}>
+      {steps.map((s, i) => {
+        const done = i < current;
+        const active = i === current;
+        return (
+          <span key={s} style={{ display: "contents" }}>
+            {i > 0 ? (
+              <div
+                style={{
+                  flex: 1,
+                  height: 3,
+                  borderRadius: 2,
+                  margin: "13px 6px 0",
+                  background: "var(--tk-surface-3)",
+                  overflow: "hidden",
+                }}
+              >
+                <div
+                  style={{
+                    height: "100%",
+                    borderRadius: 2,
+                    background: "var(--tk-accent)",
+                    width: i <= current ? "100%" : "0%",
+                    transition: "width var(--tk-t3) var(--tk-ease)",
+                  }}
+                />
+              </div>
+            ) : null}
+            <button
+              type="button"
+              onClick={onStepClick ? () => onStepClick(i) : undefined}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 6,
+                border: "none",
+                background: "transparent",
+                padding: 0,
+                cursor: onStepClick ? "pointer" : "default",
+                fontFamily: "inherit",
+              }}
+            >
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 28,
+                  height: 28,
+                  borderRadius: "50%",
+                  fontSize: "var(--tk-fz-caption)",
+                  fontWeight: 700,
+                  background: done || active ? "var(--tk-accent)" : "var(--tk-surface-3)",
+                  color: done || active ? "var(--tk-on-accent)" : "var(--tk-text-2)",
+                  boxShadow: active ? "var(--tk-ring)" : "none",
+                  transition: "background var(--tk-t2) var(--tk-ease), box-shadow var(--tk-t2) var(--tk-ease)",
+                }}
+              >
+                {done ? <TKIcon name="check" size={14} strokeWidth={3} /> : i + 1}
+              </span>
+              <span
+                style={{
+                  fontSize: "var(--tk-fz-caption)",
+                  fontWeight: active ? 600 : 500,
+                  color: active ? "var(--tk-text)" : "var(--tk-text-2)",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {s}
+              </span>
+            </button>
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ---------------- Page dots ---------------- */
+
+export interface TKPageDotsProps {
+  count: number;
+  page?: number;
+  defaultPage?: number;
+  onChange?: (page: number) => void;
+}
+
+export function TKPageDots({ count, page, defaultPage = 0, onChange }: TKPageDotsProps) {
+  const [cur, setCur] = useControllable(page, defaultPage, onChange);
+  return (
+    <div style={{ display: "flex", gap: 7 }}>
+      {Array.from({ length: count }).map((_, i) => (
+        <button
+          type="button"
+          key={i}
+          onClick={() => setCur(i)}
+          aria-label={`Page ${i + 1}`}
+          style={{
+            width: i === cur ? 24 : 8,
+            height: 8,
+            borderRadius: 4,
+            border: "none",
+            padding: 0,
+            cursor: "pointer",
+            background: i === cur ? "var(--tk-accent)" : "var(--tk-text-3)",
+            transition: "width var(--tk-t2) var(--tk-spring), background var(--tk-t2) var(--tk-ease)",
+          }}
+        />
+      ))}
+    </div>
+  );
+}

@@ -1,0 +1,13 @@
+{
+  "name": "tg-mini-app-uikit-workspace",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "examples/*"
+  ],
+  "scripts": {
+    "build": "npm run build -w tg-mini-app-uikit && npm run build -w tg-mini-app-uikit-demo",
+    "dev": "npm run dev -w tg-mini-app-uikit-demo",
+    "typecheck": "npm run typecheck -w tg-mini-app-uikit && npm run typecheck -w tg-mini-app-uikit-demo"
+  }
+}

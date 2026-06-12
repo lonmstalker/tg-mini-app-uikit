@@ -1,0 +1,257 @@
+/* ============================================================
+   Telegram Mini App UIKit — design tokens
+   iOS-flavored, soft, springy. Themed via [data-theme].
+   Knobs (--tk-accent, --tk-rx, --tk-ms, --tk-fz, --tk-spring)
+   are overridden by the Tweaks panel.
+   ============================================================ */
+
+.tk, .tk *, .tk *::before, .tk *::after { box-sizing: border-box; }
+
+.tk {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-wrap: pretty;
+
+  /* ---- knobs (Tweaks) ---- */
+  --tk-accent: #3390ec;
+  --tk-rx: 1;            /* radius scale */
+  --tk-ms: 1;            /* motion speed multiplier */
+  --tk-fz: 16px;         /* base font size */
+  --tk-spring: cubic-bezier(.34, 1.45, .58, 1);
+  --tk-ease: cubic-bezier(.22, .61, .36, 1);
+
+  /* ---- radii ---- */
+  --tk-r-xs: calc(7px  * var(--tk-rx));
+  --tk-r-sm: calc(10px * var(--tk-rx));
+  --tk-r-md: calc(14px * var(--tk-rx));
+  --tk-r-lg: calc(18px * var(--tk-rx));
+  --tk-r-xl: calc(24px * var(--tk-rx));
+  --tk-r-pill: 999px;
+
+  /* ---- motion ---- */
+  --tk-t1: calc(140ms / var(--tk-ms));
+  --tk-t2: calc(260ms / var(--tk-ms));
+  --tk-t3: calc(440ms / var(--tk-ms));
+
+  /* ---- safe area (device cutouts; combine with useSafeArea for Telegram chrome) ---- */
+  --tk-safe-top: env(safe-area-inset-top, 0px);
+  --tk-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --tk-safe-left: env(safe-area-inset-left, 0px);
+  --tk-safe-right: env(safe-area-inset-right, 0px);
+
+  /* ---- type scale ---- */
+  --tk-fz-caption2: calc(var(--tk-fz) * .69);
+  --tk-fz-caption:  calc(var(--tk-fz) * .76);
+  --tk-fz-footnote: calc(var(--tk-fz) * .82);
+  --tk-fz-sub:      calc(var(--tk-fz) * .88);
+  --tk-fz-body:     var(--tk-fz);
+  --tk-fz-title3:   calc(var(--tk-fz) * 1.18);
+  --tk-fz-title2:   calc(var(--tk-fz) * 1.38);
+  --tk-fz-title1:   calc(var(--tk-fz) * 1.65);
+  --tk-fz-large:    calc(var(--tk-fz) * 2.05);
+
+  /* ---- accent derivatives ---- */
+  --tk-accent-06: color-mix(in srgb, var(--tk-accent) 6%, transparent);
+  --tk-accent-12: color-mix(in srgb, var(--tk-accent) 12%, transparent);
+  --tk-accent-20: color-mix(in srgb, var(--tk-accent) 20%, transparent);
+  --tk-accent-35: color-mix(in srgb, var(--tk-accent) 35%, transparent);
+  --tk-accent-grad: linear-gradient(180deg,
+      color-mix(in srgb, var(--tk-accent) 88%, #ffffff) 0%,
+      var(--tk-accent) 100%);
+  --tk-ring: 0 0 0 3.5px var(--tk-accent-20);
+
+  font-size: var(--tk-fz-body);
+  line-height: 1.45;
+  color: var(--tk-text);
+  background: var(--tk-bg);
+}
+
+/* ---- light ---- */
+.tk[data-theme="light"] {
+  color-scheme: light;
+  --tk-bg: #eef1f6;
+  --tk-surface: #ffffff;
+  --tk-surface-2: #f2f4f8;
+  --tk-surface-3: #e8ebf1;
+  --tk-text: #131c26;
+  --tk-text-2: #7b8794;
+  --tk-text-3: #a8b2bd;
+  --tk-sep: rgba(19, 28, 38, .08);
+  --tk-on-accent: #ffffff;
+  --tk-green: #2fae5d;
+  --tk-red: #e5484d;
+  --tk-orange: #e89623;
+  --tk-green-12: rgba(47, 174, 93, .12);
+  --tk-red-12: rgba(229, 72, 77, .12);
+  --tk-orange-12: rgba(232, 150, 35, .14);
+  --tk-shadow-sm: 0 1px 2px rgba(16, 24, 40, .05), 0 4px 14px rgba(16, 24, 40, .05);
+  --tk-shadow-md: 0 2px 4px rgba(16, 24, 40, .05), 0 12px 32px rgba(16, 24, 40, .10);
+  --tk-shadow-lg: 0 6px 16px rgba(16, 24, 40, .08), 0 24px 60px rgba(16, 24, 40, .16);
+  --tk-glass: rgba(255, 255, 255, .72);
+  --tk-scrim: rgba(13, 19, 26, .42);
+}
+
+/* ---- dark ---- */
+.tk[data-theme="dark"] {
+  color-scheme: dark;
+  --tk-bg: #0e1621;
+  --tk-surface: #17212b;
+  --tk-surface-2: #202c39;
+  --tk-surface-3: #283645;
+  --tk-text: #f3f6f9;
+  --tk-text-2: #8a99a8;
+  --tk-text-3: #5d6c7b;
+  --tk-sep: rgba(243, 246, 249, .08);
+  --tk-on-accent: #ffffff;
+  --tk-green: #4cc26a;
+  --tk-red: #ff6166;
+  --tk-orange: #ffb224;
+  --tk-green-12: rgba(76, 194, 106, .14);
+  --tk-red-12: rgba(255, 97, 102, .14);
+  --tk-orange-12: rgba(255, 178, 36, .14);
+  --tk-shadow-sm: 0 1px 2px rgba(0, 0, 0, .25), 0 4px 14px rgba(0, 0, 0, .25);
+  --tk-shadow-md: 0 2px 4px rgba(0, 0, 0, .3), 0 12px 32px rgba(0, 0, 0, .4);
+  --tk-shadow-lg: 0 6px 16px rgba(0, 0, 0, .35), 0 24px 60px rgba(0, 0, 0, .55);
+  --tk-glass: rgba(23, 33, 43, .72);
+  --tk-scrim: rgba(0, 0, 0, .55);
+}
+
+/* ---- Telegram WebApp integration ----
+   Add class "tk-tg" alongside "tk" and the kit inherits the user's
+   live Telegram theme via --tg-theme-* variables (with safe fallbacks). */
+.tk.tk-tg {
+  --tk-accent: var(--tg-theme-button-color, #3390ec);
+  --tk-on-accent: var(--tg-theme-button-text-color, #ffffff);
+  --tk-bg: var(--tg-theme-secondary-bg-color, #eef1f6);
+  --tk-surface: var(--tg-theme-section-bg-color, #ffffff);
+  --tk-text: var(--tg-theme-text-color, #131c26);
+  --tk-text-2: var(--tg-theme-subtitle-text-color, #7b8794);
+  --tk-text-3: var(--tg-theme-hint-color, #a8b2bd);
+  --tk-sep: var(--tg-theme-section-separator-color, rgba(19, 28, 38, .08));
+  --tk-red: var(--tg-theme-destructive-text-color, #e5484d);
+}
+
+/* ============ shared micro-interaction utilities ============ */
+
+.tk-press {
+  transition: transform var(--tk-t2) var(--tk-spring),
+              filter var(--tk-t1) var(--tk-ease),
+              opacity var(--tk-t1) var(--tk-ease);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.tk-press:active { transform: scale(.96); transition-duration: var(--tk-t1); }
+.tk-press-soft:active { transform: scale(.985); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .tk-pop    { animation: tk-pop var(--tk-t2) var(--tk-spring) both; }
+  .tk-pop-lg { animation: tk-pop var(--tk-t3) var(--tk-spring) both; }
+  .tk-rise   { animation: tk-rise var(--tk-t3) var(--tk-ease) both; }
+}
+
+@keyframes tk-pop {
+  0%   { transform: scale(.4); opacity: 0; }
+  100% { transform: scale(1);  opacity: 1; }
+}
+@keyframes tk-rise {
+  0%   { transform: translateY(10px); opacity: 0; }
+  100% { transform: translateY(0);    opacity: 1; }
+}
+@keyframes tk-spin { to { transform: rotate(360deg); } }
+/* compositor-only: the gradient pseudo slides, nothing repaints */
+@keyframes tk-shimmer {
+  0%   { transform: translateX(-90%); }
+  100% { transform: translateX(30%); }
+}
+/* compositor-only: the ring pseudo scales out and fades */
+@keyframes tk-pulse {
+  0%        { transform: scale(1); opacity: 1; }
+  70%, 100% { transform: scale(var(--tk-pulse-scale, 1.75)); opacity: 0; }
+}
+@keyframes tk-sheet-up {
+  from { transform: translateY(104%); }
+  to   { transform: translateY(0); }
+}
+@keyframes tk-sheet-down {
+  from { transform: translateY(0); }
+  to   { transform: translateY(104%); }
+}
+@keyframes tk-fade-in  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes tk-fade-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes tk-modal-in {
+  0%   { transform: scale(.86); opacity: 0; }
+  100% { transform: scale(1);   opacity: 1; }
+}
+@keyframes tk-toast-in {
+  from { transform: translateY(16px) scale(.95); opacity: 0; }
+  to   { transform: translateY(0) scale(1);      opacity: 1; }
+}
+@keyframes tk-toast-out {
+  from { transform: translateY(0) scale(1);       opacity: 1; }
+  to   { transform: translateY(10px) scale(.95);  opacity: 0; }
+}
+
+/* skeleton shimmer surface */
+.tk-skel {
+  position: relative;
+  overflow: hidden;
+  background: var(--tk-surface-2);
+  border-radius: var(--tk-r-sm);
+}
+.tk-skel::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 250%;
+  background: linear-gradient(100deg,
+    transparent 30%,
+    color-mix(in srgb, var(--tk-text) 5%, transparent) 50%,
+    transparent 70%);
+  animation: tk-shimmer calc(1300ms / var(--tk-ms)) linear infinite;
+}
+
+/* expanding pulse ring (TKDot pulse, TKTimeline active node) */
+.tk-pulse { position: relative; }
+.tk-pulse::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border: 2px solid var(--tk-pulse-ring, var(--tk-accent-35));
+  border-radius: inherit;
+  pointer-events: none;
+  animation: tk-pulse calc(1800ms / var(--tk-ms)) var(--tk-ease) infinite;
+}
+
+/* striped image placeholder */
+.tk-img-ph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--tk-surface-2) 0 10px,
+    color-mix(in srgb, var(--tk-text) 4%, var(--tk-surface-2)) 10px 20px);
+  color: var(--tk-text-3);
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: var(--tk-fz-caption);
+  letter-spacing: .02em;
+}
+
+/* generic focus ring */
+.tk :focus-visible { outline: none; box-shadow: var(--tk-ring); }
+
+/* reduced motion: collapse transitions, keep purely-informational spinners */
+@media (prefers-reduced-motion: reduce) {
+  .tk {
+    --tk-spring: linear;
+    --tk-ease: linear;
+    --tk-t1: 1ms;
+    --tk-t2: 1ms;
+    --tk-t3: 1ms;
+  }
+  .tk .tk-skel::after { animation: none; }
+  .tk .tk-pulse::after { animation: none; opacity: 0; }
+}
