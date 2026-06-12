@@ -19,4 +19,4 @@ docker run --rm --init \
   -w /work \
   -e CI=1 \
   "$IMAGE" \
-  bash -c "npm ci --no-audit --no-fund && npx playwright test --update-snapshots ${*:-}"
+  bash -c 'npm ci --no-audit --no-fund && npx playwright test "$@" --update-snapshots' bash "$@"

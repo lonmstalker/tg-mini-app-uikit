@@ -208,7 +208,9 @@ function HookStatus({
 
 export function PlatformApp({ shell }: { shell: ShellApi }) {
   const mockRef = useRef<MockTelegram | null>(null);
-  if (!mockRef.current) mockRef.current = createMockTelegram();
+  // Launch with the page theme, like the real client: a light mock under a
+  // dark shell would make the mount-time sync effects fight forever.
+  if (!mockRef.current) mockRef.current = createMockTelegram({ colorScheme: shell.dark ? "dark" : "light" });
   const mock = mockRef.current;
   const state = useSyncExternalStore(mock.subscribe, mock.getState);
   const [highlight, setHighlight] = useState(false);

@@ -3,9 +3,8 @@ import { GALLERY_SECTIONS, fillCart, gallerySection, gotoApp, paintGallery } fro
 
 /**
  * ДИЗАЙН — visual regression of every gallery section (light + dark) and the
- * key app screens. Pixel comparison runs against darwin baselines and is
- * skipped on CI (`ignoreSnapshots`), where these tests still execute every
- * flow as a smoke pass.
+ * key app screens. Pixel comparison runs against per-platform baselines:
+ * darwin locally, linux on CI (regenerate with `npm run test:e2e:update:linux`).
  */
 
 for (const theme of ["light", "dark"] as const) {
@@ -49,6 +48,11 @@ for (const theme of ["light", "dark"] as const) {
     test("game home", async ({ page }) => {
       const root = await gotoApp(page, "game", { dark });
       await expect(root).toHaveScreenshot(`game-home-${theme}.png`);
+    });
+
+    test("platform lab", async ({ page }) => {
+      const root = await gotoApp(page, "platform", { dark });
+      await expect(root).toHaveScreenshot(`platform-home-${theme}.png`);
     });
   });
 

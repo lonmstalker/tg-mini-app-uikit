@@ -28,6 +28,11 @@ test.describe("app screens read correctly", () => {
     const root = await gotoApp(page, "game");
     await expect(root).toMatchAriaSnapshot({ name: "game.aria.yml" });
   });
+
+  test("platform lab", async ({ page }) => {
+    const root = await gotoApp(page, "platform");
+    await expect(root).toMatchAriaSnapshot({ name: "platform.aria.yml" });
+  });
 });
 
 test.describe("gallery sections read correctly", () => {
