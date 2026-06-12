@@ -179,12 +179,13 @@ export function resolveMockColors(
   };
 }
 
-export function createMockTelegram(): MockTelegram {
+export function createMockTelegram(init?: { colorScheme?: "light" | "dark" }): MockTelegram {
   const collapsedOf = (max: number) => Math.round(max * 0.62);
+  const scheme = init?.colorScheme ?? "light";
 
   let state: MockTelegramState = {
-    colorScheme: "light",
-    themeParams: THEMES.light,
+    colorScheme: scheme,
+    themeParams: THEMES[scheme],
     headerColor: null,
     backgroundColor: null,
     bottomBarColor: null,

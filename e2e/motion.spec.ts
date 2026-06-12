@@ -103,6 +103,17 @@ test("skeleton shimmer runs on the ::after pseudo-element", async ({ page }) => 
   expect(await computedStyle(skel, "animation-duration", "::after")).toBe("1.3s");
 });
 
+test("badge pulse ring loops tk-pulse on the ::after pseudo-element", async ({ page }) => {
+  // Counterpart of the reduced-motion "pulse is disabled" check: the ring
+  // must actually run when motion is allowed.
+  await gotoApp(page, "gallery");
+  const section = await gallerySection(page, "chips");
+  const pulse = section.locator(".tk-pulse").first();
+  expect(await computedStyle(pulse, "animation-name", "::after")).toBe("tk-pulse");
+  expect(await computedStyle(pulse, "animation-duration", "::after")).toBe("1.8s"); // 1800ms / --tk-ms
+  expect(await computedStyle(pulse, "animation-iteration-count", "::after")).toBe("infinite");
+});
+
 test("segmented control thumb slides to the active option", async ({ page }) => {
   await gotoApp(page, "gallery");
   const section = await gallerySection(page, "navigation");

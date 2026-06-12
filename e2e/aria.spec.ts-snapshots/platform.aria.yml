@@ -1,0 +1,92 @@
+- text: Platform Lab mini app
+- button "Menu": ⋯
+- button "Close mini app": ✕
+- text: chat with @uikit_demo_bot
+- button "Expand the mini app": drag up to expand
+- text: /Compact launch height Mini apps open half-screen — drag the grabber up or call expand\(\) Init data · user AK Anna Karlova Premium @annak · id \d+ start_param platform_lab platform \/ version ios · 9\.6 Theme · themeChanged/
+- button "Light" [pressed]
+- button "Dark"
+- text: "bg secondary_bg button text hint destructive_text Appearance · setHeaderColor headerColor #ffffff backgroundColor #ffffff bottomBarColor #f2f4f8"
+- button "Accent header"
+- button "Reset header"
+- button "Tint background"
+- button "Accent bottom bar"
+- text: /Viewport · expand\(\) viewportHeight \d+ px viewportStableHeight \d+ px isExpanded false/
+- button "Expand"
+- button "Collapse" [disabled]
+- text: Safe area · TKPage insets
+- switch "Device cutouts (notch, home bar)"
+- switch "Telegram chrome (fullscreen)"
+- switch "Highlight zones"
+- text: safeAreaInset 0 / 0 contentSafeAreaInset 0 / 0 Fullscreen · activity isActive true isFullscreen false
+- button "Fullscreen"
+- button "Exit" [disabled]
+- switch "Vertical swipes to close" [checked]
+- switch "Lock orientation"
+- text: Main button · useMainButton Text
+- textbox "Text": CONTINUE
+- switch "Visible" [checked]
+- switch "Loading (showProgress)"
+- switch "Disabled"
+- text: Other native buttons
+- switch "Secondary button"
+- switch "Back button (in the header)"
+- switch "Settings button (⚙ in the header)"
+- text: Haptics · useHaptics
+- button "impact light"
+- button "medium"
+- button "heavy"
+- button "selection"
+- button "success"
+- button "error"
+- text: no haptic feedback yet Popups · useTelegramPopup
+- button "Alert"
+- button "Confirm"
+- button "3-button popup"
+- text: Client APIs · links, invoice, share
+- button "Open link"
+- button "Telegram link"
+- button "Invoice"
+- button "Share"
+- button "sendData"
+- button "Inline query"
+- button "Bottom color"
+- button "Hide keyboard"
+- text: Permissions · QR, clipboard, access
+- button "Contact"
+- button "Write access"
+- button "QR scan"
+- button "Clipboard"
+- button "Home status"
+- button "Add home"
+- button "Emoji status"
+- button "Download"
+- button "Request chat"
+- button "Location"
+- button "Biometrics"
+- button "Sensor"
+- text: share supported idle contact supported idle write access supported idle qr supported idle clipboard supported idle emoji supported idle download supported idle chat supported idle location supported idle biometrics supported idle accelerometer supported idle Sensors · useMotionSensors Accelerometer not started
+- button "Start"
+- text: Device orientation not started
+- button "Start"
+- text: Gyroscope not started
+- button "Start"
+- switch "Absolute orientation (need_absolute)"
+- text: Cloud storage · restore on launch Note
+- textbox "Note":
+  - /placeholder: Anything to remember
+- button "Save"
+- button "Load"
+- button "Clear"
+- text: stored value — backend Telegram CloudStorage Device & secure storage
+- button "Device set"
+- button "Secure set"
+- text: device value — secure value — Closing · confirmation
+- switch "Ask before closing"
+- text: isClosingConfirmationEnabled false
+- button "Close mini app"
+- text: Event log
+- log "Event log": ready() CloudStorage.getItem("note") SettingsButton.hide() BackButton.hide() SecondaryButton.hideProgress() SecondaryButton.setParams(…) MainButton.hideProgress() MainButton.setParams(…) SettingsButton.hide() BackButton.hide() SecondaryButton.hide() SecondaryButton.hideProgress() MainButton.hide() MainButton.hideProgress() event · gyroscopeStopped Gyroscope.stop() event · deviceOrientationStopped DeviceOrientation.stop() event · accelerometerStopped Accelerometer.stop() event · scanQrPopupClosed closeScanQrPopup() ready() event · viewportChanged CloudStorage.getItem("note") SettingsButton.hide() BackButton.hide() SecondaryButton.hideProgress() SecondaryButton.setParams(…) MainButton.hideProgress()
+- text: Every WebApp call and event the mock receives, newest first.
+- status
+- button "CONTINUE"
