@@ -51,6 +51,7 @@ export interface TKProviderProps extends TKThemeKnobs {
   className?: string;
   style?: CSSProperties;
   children?: ReactNode;
+  testId?: string;
 }
 
 /**
@@ -69,6 +70,7 @@ export function TKProvider({
   className,
   style,
   children,
+  testId,
 }: TKProviderProps) {
   const vars = tkThemeVars({ accent, roundness, motionSpeed, motion, fontSize });
   return (
@@ -76,6 +78,7 @@ export function TKProvider({
       <div
         className={["tk", telegram ? "tk-tg" : "", className ?? ""].filter(Boolean).join(" ")}
         data-theme={theme}
+        data-testid={testId}
         style={{ position: "relative", ...vars, ...style }}
       >
         {children}

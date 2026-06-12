@@ -1,12 +1,18 @@
 import {
+  forwardRef,
   useEffect,
   useRef,
   useState,
   type CSSProperties,
+  type ElementType,
+  type ForwardedRef,
   type MouseEvent,
+  type ReactElement,
   type ReactNode,
 } from "react";
 import { TKIcon, type TKIconName } from "./icons";
+import { tkDomProps, type TKDomProps } from "./internal/dom";
+import type { TKPolymorphicProps } from "./internal/polymorphic";
 
 export type TKButtonVariant = "filled" | "tonal" | "plain" | "outline" | "destructive" | "surface";
 export type TKButtonSize = "sm" | "md" | "lg";
@@ -34,7 +40,7 @@ export function tkButtonVariantStyle(variant: TKButtonVariant): CSSProperties {
   }
 }
 
-export interface TKButtonProps {
+export interface TKButtonOwnProps {
   children?: ReactNode;
   variant?: TKButtonVariant;
   size?: TKButtonSize;
@@ -42,33 +48,47 @@ export interface TKButtonProps {
   full?: boolean;
   icon?: TKIconName;
   disabled?: boolean;
-  onClick?: (e: MouseEvent<HTMLButtonElement>) => void;
+  /** Shows a spinner, sets `aria-busy` and blocks clicks; the width stays stable. */
+  loading?: boolean;
+  /** Rendered as `data-testid`. */
+  testId?: string;
   style?: CSSProperties;
   className?: string;
-  type?: "button" | "submit" | "reset";
 }
 
-export function TKButton({
-  children,
-  variant = "filled",
-  size = "md",
-  pill,
-  full,
-  icon,
-  disabled,
-  onClick,
-  style,
-  className,
-  type = "button",
-}: TKButtonProps) {
+export type TKButtonProps<T extends ElementType = "button"> = TKPolymorphicProps<T, TKButtonOwnProps>;
+
+function TKButtonImpl(
+  {
+    as,
+    children,
+    variant = "filled",
+    size = "md",
+    pill,
+    full,
+    icon,
+    disabled,
+    loading,
+    testId,
+    style,
+    className,
+    ...rest
+  }: TKButtonOwnProps & { as?: ElementType } & Record<string, unknown>,
+  ref: ForwardedRef<HTMLElement>,
+) {
+  const Tag = as ?? "button";
   const s = BTN_SIZES[size] ?? BTN_SIZES.md;
+  const blocked = disabled || loading;
   return (
-    <button
-      type={type}
+    <Tag
+      {...(Tag === "button" ? { type: "button", disabled: blocked } : { "aria-disabled": blocked || undefined })}
+      {...rest}
+      ref={ref as never}
+      data-testid={testId}
       className={["tk-press", className ?? ""].filter(Boolean).join(" ")}
-      disabled={disabled}
-      onClick={onClick}
+      aria-busy={loading || undefined}
       style={{
+        position: loading ? "relative" : undefined,
         display: full ? "flex" : "inline-flex",
         width: full ? "100%" : undefined,
         alignItems: "center",
@@ -82,22 +102,69 @@ export function TKButton({
         fontWeight: 600,
         fontFamily: "inherit",
         letterSpacing: ".01em",
+        textDecoration: "none",
         opacity: disabled ? 0.45 : 1,
-        pointerEvents: disabled ? "none" : undefined,
+        pointerEvents: blocked ? "none" : undefined,
+        cursor: blocked ? "default" : "pointer",
         ...tkButtonVariantStyle(variant),
         ...style,
       }}
     >
-      {icon ? <TKIcon name={icon} size={Math.round(s.h * 0.42)} /> : null}
-      {children}
-    </button>
+      {loading ? (
+        // a hidden copy of the content keeps the width stable while loading
+        <>
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              visibility: "hidden",
+            }}
+          >
+            {icon ? <TKIcon name={icon} size={Math.round(s.h * 0.42)} /> : null}
+            {children}
+          </span>
+          <span
+            style={{
+              position: "absolute",
+              inset: 0,
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <TKSpinner color="currentColor" size={Math.round(s.h * 0.4)} />
+          </span>
+        </>
+      ) : (
+        <>
+          {icon ? <TKIcon name={icon} size={Math.round(s.h * 0.42)} /> : null}
+          {children}
+        </>
+      )}
+    </Tag>
   );
 }
 
-export interface TKIconButtonProps {
+/** Polymorphic action button: `<TKButton as="a" href="…">` renders a styled link. */
+export const TKButton = /* @__PURE__ */ forwardRef(TKButtonImpl) as <T extends ElementType = "button">(
+  props: TKButtonProps<T> & { ref?: ForwardedRef<HTMLElement> },
+) => ReactElement;
+
+export type TKIconButtonSize = "sm" | "md" | "lg";
+
+const ICON_BTN_SIZES: Record<TKIconButtonSize, number> = { sm: 32, md: 40, lg: 48 };
+
+export interface TKIconButtonProps extends TKDomProps<HTMLButtonElement> {
   icon: TKIconName;
   variant?: TKButtonVariant;
-  size?: number;
+  /**
+   * Visual size. Prefer the `"sm" | "md" | "lg"` variants;
+   * a raw pixel number is supported for backwards compatibility.
+   * @deprecated numbers — use the size variants instead.
+   */
+  size?: TKIconButtonSize | number;
   onClick?: (e: MouseEvent<HTMLButtonElement>) => void;
   style?: CSSProperties;
   active?: boolean;
@@ -106,20 +173,26 @@ export interface TKIconButtonProps {
   label?: string;
 }
 
-export function TKIconButton({ icon, variant = "tonal", size = 40, onClick, style, active, disabled, label }: TKIconButtonProps) {
+export const TKIconButton = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKIconButtonProps>(function TKIconButton(
+  { icon, variant = "tonal", size = "md", onClick, style, active, disabled, label, ...dom },
+  ref,
+) {
+  const px = typeof size === "number" ? size : (ICON_BTN_SIZES[size] ?? ICON_BTN_SIZES.md);
   return (
     <button
       type="button"
+      ref={ref}
       className="tk-press"
       onClick={onClick}
       disabled={disabled}
-      aria-label={label}
+      {...tkDomProps(dom)}
+      aria-label={dom["aria-label"] ?? label}
       style={{
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
-        width: size,
-        height: size,
+        width: px,
+        height: px,
         border: "none",
         borderRadius: "var(--tk-r-pill)",
         opacity: disabled ? 0.45 : 1,
@@ -129,10 +202,10 @@ export function TKIconButton({ icon, variant = "tonal", size = 40, onClick, styl
         ...style,
       }}
     >
-      <TKIcon name={icon} size={Math.round(size * 0.52)} />
+      <TKIcon name={icon} size={Math.round(px * 0.52)} />
     </button>
   );
-}
+});
 
 /* ---------------- Inline button group ---------------- */
 
@@ -153,6 +226,7 @@ export interface TKInlineButtonsProps {
   onChange?: (id: string) => void;
   equal?: boolean;
   size?: "sm" | "md";
+  testId?: string;
   style?: CSSProperties;
 }
 
@@ -163,6 +237,7 @@ export function TKInlineButtons({
   onChange,
   equal = true,
   size = "md",
+  testId,
   style,
 }: TKInlineButtonsProps) {
   const [inner, setInner] = useState(defaultValue);
@@ -173,6 +248,7 @@ export function TKInlineButtons({
   return (
     <div
       role="group"
+      data-testid={testId}
       style={{
         display: "flex",
         gap: 6,
@@ -237,11 +313,13 @@ export function TKInlineButtons({
 export interface TKSpinnerProps {
   color?: string;
   size?: number;
+  testId?: string;
 }
 
-export function TKSpinner({ color = "var(--tk-accent)", size = 20 }: TKSpinnerProps) {
+export function TKSpinner({ color = "var(--tk-accent)", size = 20, testId }: TKSpinnerProps) {
   return (
     <span
+      data-testid={testId}
       style={{
         width: size,
         height: size,
@@ -266,19 +344,15 @@ export interface TKMainButtonProps {
   /** How long the success state is shown in auto mode, ms. */
   successDuration?: number;
   disabled?: boolean;
+  testId?: string;
   style?: CSSProperties;
 }
 
 /** Telegram-style bottom action button with a built-in state machine. */
-export function TKMainButton({
-  label,
-  successLabel = "Done",
-  status,
-  onClick,
-  successDuration = 1600,
-  disabled,
-  style,
-}: TKMainButtonProps) {
+export const TKMainButton = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKMainButtonProps>(function TKMainButton(
+  { label, successLabel = "Done", status, onClick, successDuration = 1600, disabled, testId, style },
+  ref,
+) {
   const [auto, setAuto] = useState<TKMainButtonStatus>("idle");
   const timer = useRef<number | undefined>(undefined);
   const mounted = useRef(true);
@@ -313,9 +387,11 @@ export function TKMainButton({
   return (
     <button
       type="button"
+      ref={ref}
       className="tk-press-soft tk-press"
       onClick={run}
       disabled={disabled}
+      data-testid={testId}
       aria-busy={state === "loading" || undefined}
       // keep an accessible name while the visible label is replaced by the spinner
       aria-label={state === "loading" && typeof label === "string" ? label : undefined}
@@ -353,4 +429,4 @@ export function TKMainButton({
       )}
     </button>
   );
-}
+});

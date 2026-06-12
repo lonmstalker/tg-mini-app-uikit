@@ -1,15 +1,18 @@
 import {
+  forwardRef,
   useEffect,
   useId,
   useRef,
   useState,
   type CSSProperties,
+  type FocusEvent,
   type KeyboardEvent,
   type ReactNode,
 } from "react";
 import { TKIcon, type TKIconName } from "./icons";
 import { tkOptionItem, type TKOption } from "./options";
 import { useControllable } from "./internal/useControllable";
+import { mergeRefs, tkZ } from "./internal/dom";
 
 /* ---------------- Text input ---------------- */
 
@@ -27,28 +30,40 @@ export interface TKInputProps {
   disabled?: boolean;
   name?: string;
   autoFocus?: boolean;
+  /** Forwarded to the `<input>` element. */
+  id?: string;
+  onFocus?: (e: FocusEvent<HTMLInputElement>) => void;
+  onBlur?: (e: FocusEvent<HTMLInputElement>) => void;
+  testId?: string;
 }
 
-export function TKInput({
-  label,
-  placeholder,
-  type = "text",
-  icon,
-  value,
-  defaultValue = "",
-  onChange,
-  hint,
-  error,
-  clearable = true,
-  disabled,
-  name,
-  autoFocus,
-}: TKInputProps) {
+export const TKInput = /* @__PURE__ */ forwardRef<HTMLInputElement, TKInputProps>(function TKInput(
+  {
+    label,
+    placeholder,
+    type = "text",
+    icon,
+    value,
+    defaultValue = "",
+    onChange,
+    hint,
+    error,
+    clearable = true,
+    disabled,
+    name,
+    autoFocus,
+    id,
+    onFocus,
+    onBlur,
+    testId,
+  },
+  ref,
+) {
   const [val, setVal] = useControllable(value, defaultValue, onChange);
   const [focus, setFocus] = useState(false);
   const borderColor = error ? "var(--tk-red)" : focus ? "var(--tk-accent)" : "transparent";
   return (
-    <label style={{ display: "block", opacity: disabled ? 0.55 : 1 }}>
+    <label data-testid={testId} style={{ display: "block", opacity: disabled ? 0.55 : 1 }}>
       {label ? (
         <div
           style={{
@@ -89,6 +104,8 @@ export function TKInput({
           </span>
         ) : null}
         <input
+          ref={ref}
+          id={id}
           type={type}
           name={name}
           value={val}
@@ -96,8 +113,14 @@ export function TKInput({
           disabled={disabled}
           autoFocus={autoFocus}
           onChange={(e) => setVal(e.target.value)}
-          onFocus={() => setFocus(true)}
-          onBlur={() => setFocus(false)}
+          onFocus={(e) => {
+            setFocus(true);
+            onFocus?.(e);
+          }}
+          onBlur={(e) => {
+            setFocus(false);
+            onBlur?.(e);
+          }}
           style={{
             flex: 1,
             border: "none",
@@ -149,7 +172,7 @@ export function TKInput({
       ) : null}
     </label>
   );
-}
+});
 
 /* ---------------- Form field wrapper ---------------- */
 
@@ -162,12 +185,13 @@ export interface TKFormFieldProps {
   required?: boolean;
   disabled?: boolean;
   children?: ReactNode;
+  testId?: string;
   style?: CSSProperties;
 }
 
-export function TKFormField({ label, hint, error, htmlFor, describedBy, required, disabled, children, style }: TKFormFieldProps) {
+export function TKFormField({ label, hint, error, htmlFor, describedBy, required, disabled, children, testId, style }: TKFormFieldProps) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 6, opacity: disabled ? 0.55 : 1, ...style }}>
+    <div data-testid={testId} style={{ display: "flex", flexDirection: "column", gap: 6, opacity: disabled ? 0.55 : 1, ...style }}>
       {label ? (
         <label
           htmlFor={htmlFor}
@@ -203,9 +227,9 @@ export function TKFormField({ label, hint, error, htmlFor, describedBy, required
 
 export type TKFormInputProps = TKInputProps;
 
-export function TKFormInput(props: TKFormInputProps) {
-  return <TKInput {...props} />;
-}
+export const TKFormInput = /* @__PURE__ */ forwardRef<HTMLInputElement, TKFormInputProps>(function TKFormInput(props, ref) {
+  return <TKInput {...props} ref={ref} />;
+});
 
 /* ---------------- Textarea ---------------- */
 
@@ -224,24 +248,29 @@ export interface TKTextareaProps {
   maxLength?: number;
   autoFocus?: boolean;
   resize?: CSSProperties["resize"];
+  testId?: string;
 }
 
-export function TKTextarea({
-  id,
-  label,
-  placeholder,
-  value,
-  defaultValue = "",
-  onChange,
-  hint,
-  error,
-  disabled,
-  name,
-  rows = 4,
-  maxLength,
-  autoFocus,
-  resize = "vertical",
-}: TKTextareaProps) {
+export const TKTextarea = /* @__PURE__ */ forwardRef<HTMLTextAreaElement, TKTextareaProps>(function TKTextarea(
+  {
+    id,
+    label,
+    placeholder,
+    value,
+    defaultValue = "",
+    onChange,
+    hint,
+    error,
+    disabled,
+    name,
+    rows = 4,
+    maxLength,
+    autoFocus,
+    resize = "vertical",
+    testId,
+  },
+  ref,
+) {
   const [val, setVal] = useControllable(value, defaultValue, onChange);
   const [focus, setFocus] = useState(false);
   const autoId = useId();
@@ -249,7 +278,7 @@ export function TKTextarea({
   const describedBy = hint || error ? `${inputId}-description` : undefined;
   const borderColor = error ? "var(--tk-red)" : focus ? "var(--tk-accent)" : "transparent";
   return (
-    <TKFormField label={label} hint={hint} error={error} htmlFor={inputId} describedBy={describedBy} disabled={disabled}>
+    <TKFormField label={label} hint={hint} error={error} htmlFor={inputId} describedBy={describedBy} disabled={disabled} testId={testId}>
       <div
         style={{
           background: "var(--tk-surface)",
@@ -260,6 +289,7 @@ export function TKTextarea({
         }}
       >
         <textarea
+          ref={ref}
           id={inputId}
           name={name}
           value={val}
@@ -295,7 +325,7 @@ export function TKTextarea({
       </div>
     </TKFormField>
   );
-}
+});
 
 /* ---------------- Selectable row ---------------- */
 
@@ -311,21 +341,26 @@ export interface TKSelectableProps {
   after?: ReactNode;
   name?: string;
   value?: string;
+  testId?: string;
 }
 
-export function TKSelectable({
-  label,
-  subtitle,
-  checked,
-  defaultChecked = false,
-  onChange,
-  disabled,
-  type = "checkbox",
-  icon,
-  after,
-  name,
-  value,
-}: TKSelectableProps) {
+export const TKSelectable = /* @__PURE__ */ forwardRef<HTMLInputElement, TKSelectableProps>(function TKSelectable(
+  {
+    label,
+    subtitle,
+    checked,
+    defaultChecked = false,
+    onChange,
+    disabled,
+    type = "checkbox",
+    icon,
+    after,
+    name,
+    value,
+    testId,
+  },
+  ref,
+) {
   const [isChecked, setChecked] = useControllable(checked, defaultChecked, onChange);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -343,6 +378,7 @@ export function TKSelectable({
 
   return (
     <label
+      data-testid={testId}
       className="tk-press tk-press-soft"
       style={{
         display: "flex",
@@ -356,7 +392,7 @@ export function TKSelectable({
       }}
     >
       <input
-        ref={inputRef}
+        ref={mergeRefs(inputRef, ref)}
         type={type}
         name={name}
         value={value}
@@ -396,7 +432,7 @@ export function TKSelectable({
       {after}
     </label>
   );
-}
+});
 
 /* ---------------- Multiselect ---------------- */
 
@@ -410,19 +446,24 @@ export interface TKMultiselectProps {
   disabled?: boolean;
   hint?: ReactNode;
   error?: ReactNode;
+  testId?: string;
 }
 
-export function TKMultiselect({
-  label,
-  options,
-  value,
-  defaultValue = [],
-  onChange,
-  placeholder = "Select options",
-  disabled,
-  hint,
-  error,
-}: TKMultiselectProps) {
+export const TKMultiselect = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKMultiselectProps>(function TKMultiselect(
+  {
+    label,
+    options,
+    value,
+    defaultValue = [],
+    onChange,
+    placeholder = "Select options",
+    disabled,
+    hint,
+    error,
+    testId,
+  },
+  forwardedRef,
+) {
   const items = options.map(tkOptionItem);
   const [selected, setSelected] = useControllable(value, defaultValue, onChange);
   const [open, setOpen] = useState(false);
@@ -445,9 +486,10 @@ export function TKMultiselect({
   };
 
   return (
-    <TKFormField label={label} hint={hint} error={error} disabled={disabled}>
+    <TKFormField label={label} hint={hint} error={error} disabled={disabled} testId={testId}>
       <div ref={ref} style={{ position: "relative" }}>
         <button
+          ref={forwardedRef}
           type="button"
           role="combobox"
           aria-expanded={open}
@@ -530,7 +572,7 @@ export function TKMultiselect({
             left: 0,
             right: 0,
             top: "calc(100% + 6px)",
-            zIndex: 30,
+            zIndex: tkZ.dropdown,
             background: "var(--tk-surface)",
             borderRadius: "var(--tk-r-md)",
             boxShadow: "var(--tk-shadow-md)",
@@ -599,7 +641,7 @@ export function TKMultiselect({
       </div>
     </TKFormField>
   );
-}
+});
 
 /* ---------------- File input ---------------- */
 
@@ -613,19 +655,24 @@ export interface TKFileInputProps {
   buttonLabel?: ReactNode;
   emptyLabel?: ReactNode;
   onFilesChange?: (files: File[]) => void;
+  testId?: string;
 }
 
-export function TKFileInput({
-  label,
-  hint,
-  error,
-  disabled,
-  accept,
-  multiple,
-  buttonLabel = "Choose file",
-  emptyLabel = "No file selected",
-  onFilesChange,
-}: TKFileInputProps) {
+export const TKFileInput = /* @__PURE__ */ forwardRef<HTMLInputElement, TKFileInputProps>(function TKFileInput(
+  {
+    label,
+    hint,
+    error,
+    disabled,
+    accept,
+    multiple,
+    buttonLabel = "Choose file",
+    emptyLabel = "No file selected",
+    onFilesChange,
+    testId,
+  },
+  forwardedRef,
+) {
   const ref = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<File[]>([]);
   const commit = (next: File[]) => {
@@ -633,7 +680,7 @@ export function TKFileInput({
     onFilesChange?.(next);
   };
   return (
-    <TKFormField label={label} hint={hint} error={error} disabled={disabled}>
+    <TKFormField label={label} hint={hint} error={error} disabled={disabled} testId={testId}>
       <div
         role="button"
         tabIndex={disabled ? -1 : 0}
@@ -660,7 +707,7 @@ export function TKFileInput({
         }}
       >
         <input
-          ref={ref}
+          ref={mergeRefs(ref, forwardedRef)}
           type="file"
           accept={accept}
           multiple={multiple}
@@ -706,7 +753,7 @@ export function TKFileInput({
       </div>
     </TKFormField>
   );
-}
+});
 
 /* ---------------- Search ---------------- */
 
@@ -717,20 +764,17 @@ export interface TKSearchProps {
   onChange?: (value: string) => void;
   onCancel?: () => void;
   cancelLabel?: string;
+  testId?: string;
 }
 
-export function TKSearch({
-  placeholder = "Search",
-  value,
-  defaultValue = "",
-  onChange,
-  onCancel,
-  cancelLabel = "Cancel",
-}: TKSearchProps) {
+export const TKSearch = /* @__PURE__ */ forwardRef<HTMLInputElement, TKSearchProps>(function TKSearch(
+  { placeholder = "Search", value, defaultValue = "", onChange, onCancel, cancelLabel = "Cancel", testId },
+  ref,
+) {
   const [val, setVal] = useControllable(value, defaultValue, onChange);
   const [focus, setFocus] = useState(false);
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+    <div data-testid={testId} style={{ display: "flex", alignItems: "center", gap: 10 }}>
       <div
         style={{
           display: "flex",
@@ -749,6 +793,7 @@ export function TKSearch({
           <TKIcon name="search" size={17} />
         </span>
         <input
+          ref={ref}
           value={val}
           placeholder={placeholder}
           onChange={(e) => setVal(e.target.value)}
@@ -793,7 +838,7 @@ export function TKSearch({
       </button>
     </div>
   );
-}
+});
 
 /* ---------------- Select (custom dropdown) ---------------- */
 
@@ -805,9 +850,13 @@ export interface TKSelectProps {
   onChange?: (value: string) => void;
   placeholder?: ReactNode;
   disabled?: boolean;
+  testId?: string;
 }
 
-export function TKSelect({ label, options, value, defaultValue, onChange, placeholder, disabled }: TKSelectProps) {
+export const TKSelect = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKSelectProps>(function TKSelect(
+  { label, options, value, defaultValue, onChange, placeholder, disabled, testId },
+  forwardedRef,
+) {
   const items = options.map(tkOptionItem);
   const firstEnabled = items.find((item) => !item.disabled);
   const [val, setVal] = useControllable(value, defaultValue ?? firstEnabled?.value ?? "", onChange);
@@ -877,7 +926,7 @@ export function TKSelect({ label, options, value, defaultValue, onChange, placeh
   };
 
   return (
-    <div ref={ref} style={{ position: "relative", opacity: disabled ? 0.55 : 1 }}>
+    <div ref={ref} data-testid={testId} style={{ position: "relative", opacity: disabled ? 0.55 : 1 }}>
       {label ? (
         <div
           id={labelId}
@@ -894,6 +943,7 @@ export function TKSelect({ label, options, value, defaultValue, onChange, placeh
         </div>
       ) : null}
       <button
+        ref={forwardedRef}
         type="button"
         role="combobox"
         aria-expanded={open}
@@ -949,7 +999,7 @@ export function TKSelect({ label, options, value, defaultValue, onChange, placeh
           left: 0,
           right: 0,
           top: "calc(100% + 6px)",
-          zIndex: 30,
+          zIndex: tkZ.dropdown,
           background: "var(--tk-surface)",
           borderRadius: "var(--tk-r-md)",
           boxShadow: "var(--tk-shadow-md)",
@@ -1004,7 +1054,7 @@ export function TKSelect({ label, options, value, defaultValue, onChange, placeh
       </div>
     </div>
   );
-}
+});
 
 /* ---------------- OTP input ---------------- */
 
@@ -1019,21 +1069,26 @@ export interface TKOTPProps {
   successText?: ReactNode;
   resendPrompt?: ReactNode;
   resendLabel?: ReactNode;
+  testId?: string;
   style?: CSSProperties;
 }
 
-export function TKOTP({
-  length = 5,
-  value,
-  defaultValue = "",
-  onChange,
-  onComplete,
-  onResend,
-  successText = "Code verified",
-  resendPrompt = "Didn't get the code?",
-  resendLabel = "Resend",
-  style,
-}: TKOTPProps) {
+export const TKOTP = /* @__PURE__ */ forwardRef<HTMLInputElement, TKOTPProps>(function TKOTP(
+  {
+    length = 5,
+    value,
+    defaultValue = "",
+    onChange,
+    onComplete,
+    onResend,
+    successText = "Code verified",
+    resendPrompt = "Didn't get the code?",
+    resendLabel = "Resend",
+    testId,
+    style,
+  },
+  forwardedRef,
+) {
   const [v, setV] = useControllable(value, defaultValue, onChange);
   const [focus, setFocus] = useState(false);
   const ref = useRef<HTMLInputElement>(null);
@@ -1047,9 +1102,9 @@ export function TKOTP({
   }, [done]);
 
   return (
-    <div onClick={() => ref.current?.focus()} style={{ cursor: "text", position: "relative", ...style }}>
+    <div data-testid={testId} onClick={() => ref.current?.focus()} style={{ cursor: "text", position: "relative", ...style }}>
       <input
-        ref={ref}
+        ref={mergeRefs(ref, forwardedRef)}
         value={v}
         onChange={(e) => setV(e.target.value.replace(/\D/g, "").slice(0, length))}
         onFocus={() => setFocus(true)}
@@ -1135,4 +1190,4 @@ export function TKOTP({
       </div>
     </div>
   );
-}
+});

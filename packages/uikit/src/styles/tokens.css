@@ -3,7 +3,10 @@
    iOS-flavored, soft, springy. Themed via [data-theme].
    Knobs (--tk-accent, --tk-rx, --tk-ms, --tk-fz, --tk-spring)
    are overridden by the Tweaks panel.
+   The whole sheet lives in the `tk` cascade layer so unlayered
+   user styles always win specificity conflicts.
    ============================================================ */
+@layer tk {
 
 .tk, .tk *, .tk *::before, .tk *::after { box-sizing: border-box; }
 
@@ -32,6 +35,28 @@
   --tk-t1: calc(140ms / var(--tk-ms));
   --tk-t2: calc(260ms / var(--tk-ms));
   --tk-t3: calc(440ms / var(--tk-ms));
+
+  /* ---- spacing scale ---- */
+  --tk-sp-1: 4px;
+  --tk-sp-2: 8px;
+  --tk-sp-3: 12px;
+  --tk-sp-4: 16px;
+  --tk-sp-5: 20px;
+  --tk-sp-6: 24px;
+  --tk-sp-7: 32px;
+  --tk-sp-8: 40px;
+
+  /* ---- z-index scale (values match the historical hardcodes) ---- */
+  --tk-z-base: 0;
+  --tk-z-sticky: 1;
+  --tk-z-header: 2;
+  --tk-z-overlay: 10;   /* scrim */
+  --tk-z-sheet: 11;     /* sheet / action sheet panel */
+  --tk-z-dialog: 11;    /* dialog panel */
+  --tk-z-toast: 12;
+  --tk-z-tooltip: 20;
+  --tk-z-dropdown: 30;  /* select / multiselect lists */
+  --tk-z-popper: 40;
 
   /* ---- safe area (device cutouts; combine with useSafeArea for Telegram chrome) ---- */
   --tk-safe-top: env(safe-area-inset-top, 0px);
@@ -256,3 +281,5 @@
   .tk .tk-skel::after { animation: none; }
   .tk .tk-pulse::after { animation: none; opacity: 0; }
 }
+
+} /* @layer tk */

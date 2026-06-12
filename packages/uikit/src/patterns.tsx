@@ -22,6 +22,7 @@ export interface TKSlotPickerProps {
   defaultSlot?: string;
   onSlotChange?: (slot: string) => void;
   columns?: number;
+  testId?: string;
 }
 
 export function TKSlotPicker({
@@ -35,11 +36,12 @@ export function TKSlotPicker({
   defaultSlot,
   onSlotChange,
   columns = 3,
+  testId,
 }: TKSlotPickerProps) {
   const [dayIdx, setDayIdx] = useControllable(day, defaultDay, onDayChange);
   const [slotVal, setSlotVal] = useControllable(slot, defaultSlot ?? "", onSlotChange);
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+    <div data-testid={testId} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <div style={{ display: "flex", gap: 7 }}>
         {days.map((d, i) => {
           const on = i === dayIdx;
@@ -133,11 +135,13 @@ export interface TKSummaryRow {
 export interface TKPaymentSummaryProps {
   rows: TKSummaryRow[];
   children?: ReactNode;
+  testId?: string;
 }
 
-export function TKPaymentSummary({ rows, children }: TKPaymentSummaryProps) {
+export function TKPaymentSummary({ rows, children, testId }: TKPaymentSummaryProps) {
   return (
     <div
+      data-testid={testId}
       style={{
         background: "var(--tk-surface)",
         borderRadius: "var(--tk-r-lg)",
@@ -189,11 +193,13 @@ export interface TKXPHeaderProps {
   xp?: number;
   /** Caption under the bar; pass `null` to hide. */
   hint?: ReactNode;
+  testId?: string;
 }
 
-export function TKXPHeader({ name, initials = "", level, xp = 0, hint }: TKXPHeaderProps) {
+export function TKXPHeader({ name, initials = "", level, xp = 0, hint, testId }: TKXPHeaderProps) {
   return (
     <div
+      data-testid={testId}
       style={{
         position: "relative",
         overflow: "hidden",
@@ -272,11 +278,13 @@ export interface TKLeaderboardRow {
 export interface TKLeaderboardProps {
   rows: TKLeaderboardRow[];
   youLabel?: ReactNode;
+  testId?: string;
 }
 
-export function TKLeaderboard({ rows, youLabel = "You" }: TKLeaderboardProps) {
+export function TKLeaderboard({ rows, youLabel = "You", testId }: TKLeaderboardProps) {
   return (
     <div
+      data-testid={testId}
       style={{
         background: "var(--tk-surface)",
         borderRadius: "var(--tk-r-lg)",
@@ -348,6 +356,7 @@ export interface TKWalletConnectButtonProps {
   walletName?: ReactNode;
   loading?: boolean;
   onClick?: () => void;
+  testId?: string;
 }
 
 export function TKWalletConnectButton({
@@ -358,10 +367,12 @@ export function TKWalletConnectButton({
   walletName,
   loading,
   onClick,
+  testId,
 }: TKWalletConnectButtonProps) {
   return (
     <button
       type="button"
+      data-testid={testId}
       className="tk-press"
       onClick={onClick}
       disabled={loading}
@@ -429,6 +440,7 @@ export interface TKWalletStatusCellProps {
   status?: ReactNode;
   connected?: boolean;
   onClick?: () => void;
+  testId?: string;
 }
 
 export function TKWalletStatusCell({
@@ -437,10 +449,12 @@ export function TKWalletStatusCell({
   status,
   connected,
   onClick,
+  testId,
 }: TKWalletStatusCellProps) {
   return (
     <button
       type="button"
+      data-testid={testId}
       onClick={onClick}
       className="tk-press tk-press-soft"
       style={{

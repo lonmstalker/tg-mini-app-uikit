@@ -47,11 +47,14 @@ export interface TKIconProps {
   style?: CSSProperties;
   className?: string;
   filled?: boolean;
+  /** Rendered as `data-testid`. */
+  testId?: string;
 }
 
-export function TKIcon({ name, size = 22, strokeWidth = 2, style, className, filled }: TKIconProps) {
+export function TKIcon({ name, size = 22, strokeWidth = 2, style, className, filled, testId }: TKIconProps) {
   return (
     <svg
+      data-testid={testId}
       className={className}
       style={style}
       width={size}

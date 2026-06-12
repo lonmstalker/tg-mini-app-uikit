@@ -1,5 +1,6 @@
 import {
   createContext,
+  forwardRef,
   useCallback,
   useContext,
   useEffect,
@@ -13,6 +14,7 @@ import {
 } from "react";
 import { TKIcon, type TKIconName } from "./icons";
 import { TKIconButton } from "./buttons";
+import { mergeRefs, tkZ } from "./internal/dom";
 
 /*
  * Overlays position themselves against the nearest positioned ancestor —
@@ -25,12 +27,14 @@ import { TKIconButton } from "./buttons";
 export interface TKFrameProps {
   children?: ReactNode;
   height?: number | string;
+  testId?: string;
   style?: CSSProperties;
 }
 
-export function TKFrame({ children, height = 520, style }: TKFrameProps) {
+export function TKFrame({ children, height = 520, testId, style }: TKFrameProps) {
   return (
     <div
+      data-testid={testId}
       style={{
         position: "relative",
         overflow: "hidden",
@@ -73,9 +77,16 @@ const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select
  * Modal keyboard behavior: moves focus into the overlay, traps Tab inside,
  * closes on Escape and returns focus to the previously focused element.
  */
-function useOverlayA11y(active: boolean, ref: RefObject<HTMLDivElement | null>, onClose?: () => void) {
+function useOverlayA11y(
+  active: boolean,
+  ref: RefObject<HTMLDivElement | null>,
+  onClose?: () => void,
+  onConfirm?: () => void,
+) {
   const closeRef = useRef(onClose);
   closeRef.current = onClose;
+  const confirmRef = useRef(onConfirm);
+  confirmRef.current = onConfirm;
   useEffect(() => {
     if (!active) return;
     const node = ref.current;
@@ -88,6 +99,16 @@ function useOverlayA11y(active: boolean, ref: RefObject<HTMLDivElement | null>, 
         e.stopPropagation();
         closeRef.current?.();
         return;
+      }
+      if (e.key === "Enter" && confirmRef.current) {
+        // Enter confirms the single primary action — unless the user is
+        // interacting with a control that consumes Enter itself.
+        const tag = (e.target as HTMLElement | null)?.tagName;
+        if (tag !== "TEXTAREA" && tag !== "INPUT" && tag !== "SELECT" && tag !== "A" && tag !== "BUTTON") {
+          e.preventDefault();
+          confirmRef.current();
+          return;
+        }
       }
       if (e.key !== "Tab" || !node) return;
       const focusables = Array.from(node.querySelectorAll<HTMLElement>(FOCUSABLE));
@@ -122,7 +143,7 @@ function Scrim({ closing, onClick }: { closing: boolean; onClick?: () => void })
         position: "absolute",
         inset: 0,
         background: "var(--tk-scrim)",
-        zIndex: 10,
+        zIndex: tkZ.overlay,
         animation: `${closing ? "tk-fade-out" : "tk-fade-in"} var(--tk-t2) var(--tk-ease) both`,
       }}
     />
@@ -138,9 +159,13 @@ export interface TKSheetProps {
   children?: ReactNode;
   /** Hide the grabber handle. */
   noGrabber?: boolean;
+  testId?: string;
 }
 
-export function TKSheet({ open, onClose, title, children, noGrabber }: TKSheetProps) {
+export const TKSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSheetProps>(function TKSheet(
+  { open, onClose, title, children, noGrabber, testId },
+  forwardedRef,
+) {
   const { mounted, closing } = useMountTransition(open, 380);
   const ref = useRef<HTMLDivElement>(null);
   const titleId = useId();
@@ -150,7 +175,8 @@ export function TKSheet({ open, onClose, title, children, noGrabber }: TKSheetPr
     <>
       <Scrim closing={closing} onClick={onClose} />
       <div
-        ref={ref}
+        ref={mergeRefs(ref, forwardedRef)}
+        data-testid={testId}
         role="dialog"
         aria-modal="true"
         aria-labelledby={title ? titleId : undefined}
@@ -161,7 +187,7 @@ export function TKSheet({ open, onClose, title, children, noGrabber }: TKSheetPr
           left: 0,
           right: 0,
           bottom: 0,
-          zIndex: 11,
+          zIndex: tkZ.sheet,
           background: "var(--tk-surface)",
           borderRadius: "var(--tk-r-xl) var(--tk-r-xl) 0 0",
           boxShadow: "var(--tk-shadow-lg)",
@@ -199,7 +225,7 @@ export function TKSheet({ open, onClose, title, children, noGrabber }: TKSheetPr
       </div>
     </>
   );
-}
+});
 
 /* ---------------- Dialog ---------------- */
 
@@ -215,6 +241,8 @@ const DIALOG_TONES: Record<TKDialogTone, [color: string, bg: string]> = {
 export interface TKDialogProps {
   open: boolean;
   onClose?: () => void;
+  /** Fires on Enter — wire it to the single primary action of the dialog. */
+  onConfirm?: () => void;
   icon?: TKIconName;
   tone?: TKDialogTone;
   title?: ReactNode;
@@ -222,23 +250,28 @@ export interface TKDialogProps {
   children?: ReactNode;
   /** Action buttons, laid out in equal columns. */
   actions?: ReactNode;
+  testId?: string;
 }
 
-export function TKDialog({ open, onClose, icon, tone = "accent", title, text, children, actions }: TKDialogProps) {
+export const TKDialog = /* @__PURE__ */ forwardRef<HTMLDivElement, TKDialogProps>(function TKDialog(
+  { open, onClose, onConfirm, icon, tone = "accent", title, text, children, actions, testId },
+  forwardedRef,
+) {
   const { mounted, closing } = useMountTransition(open, 260);
   const ref = useRef<HTMLDivElement>(null);
   const titleId = useId();
-  useOverlayA11y(mounted && !closing, ref, onClose);
+  useOverlayA11y(mounted && !closing, ref, onClose, onConfirm);
   if (!mounted) return null;
   const [color, bg] = DIALOG_TONES[tone] ?? DIALOG_TONES.accent;
   return (
     <>
       <Scrim closing={closing} onClick={onClose} />
       <div
-        style={{ position: "absolute", left: 24, right: 24, top: "50%", zIndex: 11, transform: "translateY(-50%)" }}
+        style={{ position: "absolute", left: 24, right: 24, top: "50%", zIndex: tkZ.dialog, transform: "translateY(-50%)" }}
       >
         <div
-          ref={ref}
+          ref={mergeRefs(ref, forwardedRef)}
+          data-testid={testId}
           role="alertdialog"
           aria-modal="true"
           aria-labelledby={title ? titleId : undefined}
@@ -284,7 +317,7 @@ export function TKDialog({ open, onClose, icon, tone = "accent", title, text, ch
       </div>
     </>
   );
-}
+});
 
 /* ---------------- Action sheet ---------------- */
 
@@ -300,9 +333,13 @@ export interface TKActionSheetProps {
   onClose?: () => void;
   items: TKActionItem[];
   cancelLabel?: ReactNode;
+  testId?: string;
 }
 
-export function TKActionSheet({ open, onClose, items, cancelLabel = "Cancel" }: TKActionSheetProps) {
+export const TKActionSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKActionSheetProps>(function TKActionSheet(
+  { open, onClose, items, cancelLabel = "Cancel", testId },
+  forwardedRef,
+) {
   const { mounted, closing } = useMountTransition(open, 360);
   const ref = useRef<HTMLDivElement>(null);
   useOverlayA11y(mounted && !closing, ref, onClose);
@@ -311,7 +348,8 @@ export function TKActionSheet({ open, onClose, items, cancelLabel = "Cancel" }: 
     <>
       <Scrim closing={closing} onClick={onClose} />
       <div
-        ref={ref}
+        ref={mergeRefs(ref, forwardedRef)}
+        data-testid={testId}
         role="dialog"
         aria-modal="true"
         tabIndex={-1}
@@ -321,7 +359,7 @@ export function TKActionSheet({ open, onClose, items, cancelLabel = "Cancel" }: 
           left: 10,
           right: 10,
           bottom: 10,
-          zIndex: 11,
+          zIndex: tkZ.sheet,
           display: "flex",
           flexDirection: "column",
           gap: 8,
@@ -389,7 +427,7 @@ export function TKActionSheet({ open, onClose, items, cancelLabel = "Cancel" }: 
       </div>
     </>
   );
-}
+});
 
 /* ---------------- Anchored popper / tooltip ---------------- */
 
@@ -402,10 +440,11 @@ export interface TKPopperProps {
   placement?: TKPopperPlacement;
   offset?: number;
   onClose?: () => void;
+  testId?: string;
   style?: CSSProperties;
 }
 
-export function TKPopper({ open, anchorRef, children, placement = "bottom", offset = 8, onClose, style }: TKPopperProps) {
+export function TKPopper({ open, anchorRef, children, placement = "bottom", offset = 8, onClose, testId, style }: TKPopperProps) {
   const [rect, setRect] = useState<DOMRect | null>(null);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -429,6 +468,14 @@ export function TKPopper({ open, anchorRef, children, placement = "bottom", offs
     document.addEventListener("pointerdown", close);
     return () => document.removeEventListener("pointerdown", close);
   }, [anchorRef, onClose, open]);
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      if (e.key === "Escape") onClose?.();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose, open]);
   if (!open || !rect) return null;
   const x = placement === "left" ? rect.left : placement === "right" ? rect.right : rect.left + rect.width / 2;
   const y = placement === "top" ? rect.top : placement === "bottom" ? rect.bottom : rect.top + rect.height / 2;
@@ -443,6 +490,7 @@ export function TKPopper({ open, anchorRef, children, placement = "bottom", offs
   return (
     <div
       ref={ref}
+      data-testid={testId}
       role="dialog"
       style={
         {
@@ -450,7 +498,7 @@ export function TKPopper({ open, anchorRef, children, placement = "bottom", offs
           position: "fixed",
           left: x,
           top: y,
-          zIndex: 40,
+          zIndex: tkZ.popper,
           maxWidth: "min(320px, calc(100vw - 28px))",
           transform,
           background: "var(--tk-surface)",
@@ -473,13 +521,15 @@ export interface TKTooltipProps {
   content: ReactNode;
   placement?: "top" | "bottom";
   disabled?: boolean;
+  testId?: string;
   style?: CSSProperties;
 }
 
-export function TKTooltip({ children, content, placement = "top", disabled, style }: TKTooltipProps) {
+export function TKTooltip({ children, content, placement = "top", disabled, testId, style }: TKTooltipProps) {
   const [open, setOpen] = useState(false);
   return (
     <span
+      data-testid={testId}
       onMouseEnter={() => !disabled && setOpen(true)}
       onMouseLeave={() => setOpen(false)}
       onFocus={() => !disabled && setOpen(true)}
@@ -494,7 +544,7 @@ export function TKTooltip({ children, content, placement = "top", disabled, styl
           left: "50%",
           top: placement === "bottom" ? "calc(100% + 7px)" : undefined,
           bottom: placement === "top" ? "calc(100% + 7px)" : undefined,
-          zIndex: 20,
+          zIndex: tkZ.tooltip,
           transform: open ? "translateX(-50%) scale(1)" : "translateX(-50%) scale(.96)",
           transformOrigin: placement === "top" ? "bottom center" : "top center",
           minWidth: "max-content",
@@ -596,7 +646,7 @@ export function TKToastProvider({ children, offset = 14, duration = 2400, max = 
           display: "flex",
           flexDirection: "column",
           gap: 8,
-          zIndex: 12,
+          zIndex: tkZ.toast,
           pointerEvents: "none",
         }}
       >

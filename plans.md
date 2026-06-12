@@ -91,14 +91,14 @@
 
 Цель: все 78 компонентов соответствуют современным API-конвенциям; новые компоненты наследуют их автоматически. Зависимости: нет. Это единственная волна, где API-снапшот переписывается массово.
 
-- [ ] M0.1 `forwardRef` на всех компонентах с осмысленным DOM-корнем (кнопки, инпуты, ячейки, карточки, оверлеи-контент). Сигнал: TGUI #56 (react-hook-form), Konsta #258/#260/#272. Vitest: ref достижим у каждого экспорта (параметризованный тест по списку экспортов, по образцу SSR-смоука).
-- [ ] M0.2 Полиморфизм: `as`/`href` у `TKButton`, `TKCell`, `TKCardCell`, `TKTappable` с корректным выводом типов атрибутов (паттерн `ElementType` + `ComponentPropsWithoutRef<T>`). Сигнал: TGUI #68. `expectTypeOf`-тесты: `<TKButton as="a" href>` типобезопасен, `href` без `as="a"` — ошибка типов.
-- [ ] M0.3 Проброс нативных DOM-хендлеров и атрибутов (минимум: `onPointerDown/Up/Cancel`, `onFocus/Blur`, `id`, `aria-*`) на интерактивных компонентах. Сигнал: TGUI #102. Решить per-компонент: точечные пропсы, не слепой спред.
-- [ ] M0.4 `loading` у `TKButton` (спиннер + `aria-busy`, ширина не прыгает) и `disabled` поведение во время загрузки; у `TKIconButton` — size-варианты `sm|md|lg` вместо числа (число оставить как deprecated-ветку типа).
-- [ ] M0.5 Проп `testId?: string` → `data-testid` на всех компонентах (одним механизмом, см. Decision Log).
-- [ ] M0.6 Токены: spacing-шкала `--tk-sp-1..8` (4/8/12/16/20/24/32/40) и z-index-шкала `--tk-z-{base,sticky,header,overlay,sheet,dialog,popper,toast}` в `tokens.css`; заменить хардкоды (10/11/12/20/30/40) по всем `*.tsx`. Visual-прогон не должен дать диффов (чистый рефакторинг).
-- [ ] M0.7 Прототип CSS `@layer tk` вокруг tokens.css (изоляция специфичности от пользовательских стилей; сигнал VKUI #9497, Ionic #30369). Если visual/e2e дают диффы из-за специфичности — откатить и записать в Surprises с обоснованием.
-- [ ] M0.8 `TKDialog`: закрытие по Escape и подтверждение по Enter (когда есть единственное primary-действие); `TKSheet`/`TKActionSheet`/`TKPopper` — Escape. Сигнал: Ionic #21665. (Если Escape уже работает где-то через focus trap — покрыть тестом, не переписывать.)
+- [x] M0.1 `forwardRef` на всех компонентах с осмысленным DOM-корнем (кнопки, инпуты, ячейки, карточки, оверлеи-контент). Сигнал: TGUI #56 (react-hook-form), Konsta #258/#260/#272. Vitest: ref достижим у каждого экспорта (параметризованный тест по списку экспортов, по образцу SSR-смоука).
+- [x] M0.2 Полиморфизм: `as`/`href` у `TKButton`, `TKCell`, `TKCardCell`, `TKTappable` с корректным выводом типов атрибутов (паттерн `ElementType` + `ComponentPropsWithoutRef<T>`). Сигнал: TGUI #68. `expectTypeOf`-тесты: `<TKButton as="a" href>` типобезопасен, `href` без `as="a"` — ошибка типов.
+- [x] M0.3 Проброс нативных DOM-хендлеров и атрибутов (минимум: `onPointerDown/Up/Cancel`, `onFocus/Blur`, `id`, `aria-*`) на интерактивных компонентах. Сигнал: TGUI #102. Решить per-компонент: точечные пропсы, не слепой спред.
+- [x] M0.4 `loading` у `TKButton` (спиннер + `aria-busy`, ширина не прыгает) и `disabled` поведение во время загрузки; у `TKIconButton` — size-варианты `sm|md|lg` вместо числа (число оставить как deprecated-ветку типа).
+- [x] M0.5 Проп `testId?: string` → `data-testid` на всех компонентах (одним механизмом, см. Decision Log).
+- [x] M0.6 Токены: spacing-шкала `--tk-sp-1..8` (4/8/12/16/20/24/32/40) и z-index-шкала `--tk-z-{base,sticky,header,overlay,sheet,dialog,popper,toast}` в `tokens.css`; заменить хардкоды (10/11/12/20/30/40) по всем `*.tsx`. Visual-прогон не должен дать диффов (чистый рефакторинг).
+- [x] M0.7 Прототип CSS `@layer tk` вокруг tokens.css (изоляция специфичности от пользовательских стилей; сигнал VKUI #9497, Ionic #30369). Если visual/e2e дают диффы из-за специфичности — откатить и записать в Surprises с обоснованием.
+- [x] M0.8 `TKDialog`: закрытие по Escape и подтверждение по Enter (когда есть единственное primary-действие); `TKSheet`/`TKActionSheet`/`TKPopper` — Escape. Сигнал: Ionic #21665. (Если Escape уже работает где-то через focus trap — покрыть тестом, не переписывать.)
 
 Validation M0: `npm run test:unit` содержит новые параметризованные ref/polymorphism-тесты; API-снапшот обновлён одним коммитом; visual-прогон без диффов кроме осознанных; size-limit дельта зафиксирована в Surprises.
 
@@ -282,7 +282,7 @@ Validation M10: сайт собирается в CI и открывается л
 
 - [x] (2026-06-13) Ресерч: полный API-аудит кита и демо; конкурентный анализ TGUI/Konsta/VKUI/Ionic/F7/TON; два прохода по issues (74 TelegramUI, 54 Konsta, 50 VKUI [Feature], топ Ionic по реакциям); итоги в памяти проекта и в этом плане.
 - [x] (2026-06-13) ExecPlan составлен и сохранён как `plans.md`.
-- [ ] M0 Фундамент API (8 задач)
+- [x] (2026-06-13) M0 Фундамент API (8/8): forwardRef на 21+ компоненте, полиморфизм as/href (Button/Cell/CardCell/Tappable), точечный DOM-проброс через `internal/dom.ts`, loading у TKButton + size-варианты IconButton, testId на всех компонентах (параметризованный тест), spacing/z-index шкалы + `@layer tk` (visual без диффов), Escape/Enter в оверлеях. +122 vitest (278 всего).
 - [ ] M1 i18n (4 задачи)
 - [ ] M2 A11y-долг (5 задач)
 - [ ] M3 Жесты и оверлеи 2.0 (8 задач)
@@ -302,6 +302,11 @@ Validation M10: сайт собирается в CI и открывается л
   Evidence: TelegramUI #99 («Why the ui is not maintained anymore?», последний коммент 2026-02-22), pushed_at репозитория; поиск по tma.js — отчёт субагента 2026-06-13.
 - Observation: в awesome-telegram-mini-apps за 2025–2026 не появилось ни одного нового UI-кита; единственный сторонний datetime-picker для TMA — одиночный `Expented/tgdtp`.
   Evidence: раздел UI Kits актуального main и открытые PR awesome-репо (отчёт субагента 2026-06-13).
+- Observation (2026-06-13, M0): переход на `forwardRef` сломал tree-shaking (импорт TKButton тянул 9.5 kB вместо 2): rollup считает top-level вызов `forwardRef(...)` сайд-эффектным. Лечение: `/* @__PURE__ */` перед каждым вызовом — бюджеты size-limit вернулись в норму без повышения.
+  Evidence: size-limit до/после аннотаций (2.07 kB TKButton, 1.27 kB TKSpinner).
+- Observation (2026-06-13, M0): `forwardRef`-компоненты — объекты, не функции; параметризованные тесты (SSR-смоук) с фильтром `typeof === "function"` молча теряли их. Введён общий хелпер `test/helpers/components.ts` (`$$typeof`-проверка).
+- Observation (2026-06-13, M0): visual-тест `gallery — light › media` флакует и на чистом main (~0.01 ratio, шиммер скелетонов); не связан с волной M0 — receipt-регрессию в WebKit вызвала обёртка контента TKButton в span, исправлено рендером без обёртки вне loading.
+- Observation (2026-06-13, M0): `@layer tk` вокруг tokens.css прошёл без визуальных диффов — прототип оставлен.
 - (далее заполняется по ходу работ)
 
 

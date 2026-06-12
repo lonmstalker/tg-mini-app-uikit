@@ -37,10 +37,18 @@ export interface TKSafeAreaProps {
   children?: ReactNode;
   style?: CSSProperties;
   className?: string;
+  testId?: string;
 }
 
 /** Pads its children away from device cutouts and the Telegram chrome. */
-export function TKSafeArea({ edges = ["top", "bottom"], content = true, children, style, className }: TKSafeAreaProps) {
+export function TKSafeArea({
+  edges = ["top", "bottom"],
+  content = true,
+  children,
+  style,
+  className,
+  testId,
+}: TKSafeAreaProps) {
   const { inset, contentInset } = useSafeArea();
   const pads: CSSProperties = {};
   for (const edge of edges) {
@@ -48,7 +56,7 @@ export function TKSafeArea({ edges = ["top", "bottom"], content = true, children
     pads[EDGE_PADDING[edge]] = safePad(edge, device) as never;
   }
   return (
-    <div className={className} style={{ ...pads, ...style }}>
+    <div className={className} data-testid={testId} style={{ ...pads, ...style }}>
       {children}
     </div>
   );
@@ -70,6 +78,7 @@ export interface TKPageProps {
   safeBottom?: boolean;
   style?: CSSProperties;
   className?: string;
+  testId?: string;
 }
 
 /**
@@ -86,6 +95,7 @@ export function TKPage({
   safeBottom = true,
   style,
   className,
+  testId,
 }: TKPageProps) {
   const { inset, contentInset } = useSafeArea();
   const top = inset.top + contentInset.top;
@@ -93,6 +103,7 @@ export function TKPage({
   return (
     <div
       className={className}
+      data-testid={testId}
       style={{
         height: "100%",
         display: "flex",
@@ -137,6 +148,7 @@ export interface TKBottomBarProps {
   paddingBottom?: number;
   style?: CSSProperties;
   className?: string;
+  testId?: string;
 }
 
 /** Pinned bottom action bar (main buttons, totals) that clears the home indicator. */
@@ -149,12 +161,14 @@ export function TKBottomBar({
   paddingBottom = 10,
   style,
   className,
+  testId,
 }: TKBottomBarProps) {
   const { inset, contentInset } = useSafeArea();
   const bottom = inset.bottom + contentInset.bottom;
   return (
     <div
       className={className}
+      data-testid={testId}
       style={{
         background: blur ? "var(--tk-glass)" : "var(--tk-bg)",
         backdropFilter: blur ? "blur(14px)" : undefined,

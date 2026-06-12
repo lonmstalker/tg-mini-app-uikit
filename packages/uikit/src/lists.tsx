@@ -1,8 +1,17 @@
-import { Children, useState, type ReactNode } from "react";
+import {
+  Children,
+  forwardRef,
+  useState,
+  type ElementType,
+  type ForwardedRef,
+  type ReactElement,
+  type ReactNode,
+} from "react";
 import { TKIcon, type TKIconName } from "./icons";
 import { TKBadge } from "./display";
 import { TKSwitch } from "./controls";
 import { useControllable } from "./internal/useControllable";
+import type { TKPolymorphicProps } from "./internal/polymorphic";
 
 /* ---------------- List group ---------------- */
 
@@ -11,11 +20,12 @@ export interface TKListGroupProps {
   title?: ReactNode;
   footer?: ReactNode;
   inset?: boolean;
+  testId?: string;
 }
 
-export function TKListGroup({ children, title, footer, inset = true }: TKListGroupProps) {
+export function TKListGroup({ children, title, footer, inset = true, testId }: TKListGroupProps) {
   return (
-    <div>
+    <div data-testid={testId}>
       {title ? (
         <div
           style={{
@@ -56,7 +66,7 @@ export function TKListGroup({ children, title, footer, inset = true }: TKListGro
 
 /* ---------------- Cell ---------------- */
 
-export interface TKCellProps {
+export interface TKCellOwnProps {
   icon?: TKIconName;
   iconBg?: string;
   title: ReactNode;
@@ -72,27 +82,40 @@ export interface TKCellProps {
   onToggle?: (on: boolean) => void;
   /** Free-form trailing content (steppers, custom icons, …). */
   after?: ReactNode;
+  testId?: string;
 }
 
-export function TKCell({
-  icon,
-  iconBg = "var(--tk-accent)",
-  title,
-  subtitle,
-  value,
-  chevron,
-  badge,
-  danger,
-  onClick,
-  toggle,
-  defaultToggle,
-  onToggle,
-  after,
-}: TKCellProps) {
+export type TKCellProps<T extends ElementType = "div"> = TKPolymorphicProps<T, TKCellOwnProps>;
+
+function TKCellImpl(
+  {
+    as,
+    icon,
+    iconBg = "var(--tk-accent)",
+    title,
+    subtitle,
+    value,
+    chevron,
+    badge,
+    danger,
+    onClick,
+    toggle,
+    defaultToggle,
+    onToggle,
+    after,
+    testId,
+    ...rest
+  }: TKCellOwnProps & { as?: ElementType } & Record<string, unknown>,
+  ref: ForwardedRef<HTMLElement>,
+) {
+  const Tag = as ?? "div";
   const [hover, setHover] = useState(false);
   const hasToggle = toggle !== undefined || defaultToggle !== undefined;
   return (
-    <div
+    <Tag
+      {...rest}
+      ref={ref as never}
+      data-testid={testId}
       onClick={onClick}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
@@ -101,7 +124,9 @@ export function TKCell({
         alignItems: "center",
         gap: 12,
         padding: "11px 14px",
-        cursor: onClick ? "pointer" : "default",
+        cursor: onClick || Tag === "a" ? "pointer" : "default",
+        color: "inherit",
+        textDecoration: "none",
         background: hover && (onClick || chevron) ? "var(--tk-surface-2)" : "transparent",
         transition: "background var(--tk-t1) var(--tk-ease)",
       }}
@@ -176,9 +201,16 @@ export function TKCell({
           <TKIcon name="chevronRight" size={16} strokeWidth={2.4} />
         </span>
       ) : null}
-    </div>
+    </Tag>
   );
 }
+
+/** Settings-style row; `<TKCell as="a" href="…">` renders a link row. */
+// the cast below defines the public generic signature; forwardRef's own
+// inference chokes on the required `title` + rest-record combination
+export const TKCell = /* @__PURE__ */ forwardRef(TKCellImpl as never) as unknown as <T extends ElementType = "div">(
+  props: TKCellProps<T> & { ref?: ForwardedRef<HTMLElement> },
+) => ReactElement;
 
 /* ---------------- Accordion ---------------- */
 
@@ -201,6 +233,7 @@ export interface TKAccordionProps {
   title?: ReactNode;
   footer?: ReactNode;
   inset?: boolean;
+  testId?: string;
 }
 
 export function TKAccordion({
@@ -212,6 +245,7 @@ export function TKAccordion({
   title,
   footer,
   inset = true,
+  testId,
 }: TKAccordionProps) {
   const [open, setOpen] = useControllable(value, defaultValue, onChange);
 
@@ -226,7 +260,7 @@ export function TKAccordion({
   };
 
   return (
-    <TKListGroup title={title} footer={footer} inset={inset}>
+    <TKListGroup title={title} footer={footer} inset={inset} testId={testId}>
       {items.map((item) => {
         const isOpen = open.includes(item.id);
         return (

@@ -14,11 +14,13 @@ export interface TKHeaderProps {
   back?: boolean;
   onBack?: () => void;
   actions?: ReactNode;
+  testId?: string;
 }
 
-export function TKHeader({ title, subtitle, large, back = true, onBack, actions }: TKHeaderProps) {
+export function TKHeader({ title, subtitle, large, back = true, onBack, actions, testId }: TKHeaderProps) {
   return (
     <div
+      data-testid={testId}
       style={{
         display: "flex",
         flexDirection: "column",
@@ -90,14 +92,16 @@ export interface TKTabbarProps {
   onChange?: (index: number) => void;
   /** Extend the bar below the home indicator (`env(safe-area-inset-bottom)`). */
   safeArea?: boolean;
+  testId?: string;
 }
 
-export function TKTabbar({ tabs, value, defaultValue = 0, onChange, safeArea }: TKTabbarProps) {
+export function TKTabbar({ tabs, value, defaultValue = 0, onChange, safeArea, testId }: TKTabbarProps) {
   const [active, setActive] = useControllable(value, defaultValue, onChange);
   const { inset, contentInset } = useSafeArea();
   const safeBottom = inset.bottom + contentInset.bottom;
   return (
     <div
+      data-testid={testId}
       style={{
         display: "grid",
         gridTemplateColumns: `repeat(${tabs.length}, 1fr)`,
@@ -167,9 +171,10 @@ export interface TKSegmentedProps {
   defaultValue?: string;
   onChange?: (value: string) => void;
   full?: boolean;
+  testId?: string;
 }
 
-export function TKSegmented({ options, value, defaultValue, onChange, full }: TKSegmentedProps) {
+export function TKSegmented({ options, value, defaultValue, onChange, full, testId }: TKSegmentedProps) {
   const items = options.map(tkOptionItem);
   const firstEnabled = items.find((item) => !item.disabled);
   const [val, setVal] = useControllable(value, defaultValue ?? firstEnabled?.value ?? "", onChange);
@@ -177,6 +182,7 @@ export function TKSegmented({ options, value, defaultValue, onChange, full }: TK
   const n = items.length;
   return (
     <div
+      data-testid={testId}
       style={{
         position: "relative",
         display: full ? "grid" : "inline-grid",
@@ -239,12 +245,16 @@ export interface TKCategoryTabsProps {
   defaultValue?: number;
   onChange?: (index: number) => void;
   style?: CSSProperties;
+  testId?: string;
 }
 
-export function TKCategoryTabs({ tabs, value, defaultValue = 0, onChange, style }: TKCategoryTabsProps) {
+export function TKCategoryTabs({ tabs, value, defaultValue = 0, onChange, style, testId }: TKCategoryTabsProps) {
   const [active, setActive] = useControllable(value, defaultValue, onChange);
   return (
-    <div style={{ display: "flex", gap: 4, overflowX: "auto", scrollbarWidth: "none", padding: "0 12px", ...style }}>
+    <div
+      data-testid={testId}
+      style={{ display: "flex", gap: 4, overflowX: "auto", scrollbarWidth: "none", padding: "0 12px", ...style }}
+    >
       {tabs.map(tkOptionItem).map((item, i) => {
         const on = i === active;
         return (
@@ -296,11 +306,12 @@ export interface TKStepsProps {
   current: number;
   /** Makes step circles clickable (e.g. to navigate back). */
   onStepClick?: (index: number) => void;
+  testId?: string;
 }
 
-export function TKSteps({ steps, current, onStepClick }: TKStepsProps) {
+export function TKSteps({ steps, current, onStepClick, testId }: TKStepsProps) {
   return (
-    <div style={{ display: "flex", alignItems: "flex-start" }}>
+    <div data-testid={testId} style={{ display: "flex", alignItems: "flex-start" }}>
       {steps.map((s, i) => {
         const done = i < current;
         const active = i === current;
@@ -386,12 +397,13 @@ export interface TKPageDotsProps {
   page?: number;
   defaultPage?: number;
   onChange?: (page: number) => void;
+  testId?: string;
 }
 
-export function TKPageDots({ count, page, defaultPage = 0, onChange }: TKPageDotsProps) {
+export function TKPageDots({ count, page, defaultPage = 0, onChange, testId }: TKPageDotsProps) {
   const [cur, setCur] = useControllable(page, defaultPage, onChange);
   return (
-    <div style={{ display: "flex", gap: 7 }}>
+    <div data-testid={testId} style={{ display: "flex", gap: 7 }}>
       {Array.from({ length: count }).map((_, i) => (
         <button
           type="button"

@@ -1,4 +1,5 @@
 import {
+  forwardRef,
   useRef,
   useState,
   type CSSProperties,
@@ -10,10 +11,11 @@ import {
 import { TKIcon, type TKIconName } from "./icons";
 import { tkOptionItem, type TKOption } from "./options";
 import { useControllable } from "./internal/useControllable";
+import { tkDomProps, type TKDomProps } from "./internal/dom";
 
 /* ---------------- Chips ---------------- */
 
-export interface TKChipProps {
+export interface TKChipProps extends TKDomProps<HTMLButtonElement> {
   children?: ReactNode;
   selected?: boolean;
   onClick?: (e: MouseEvent<HTMLButtonElement>) => void;
@@ -24,13 +26,18 @@ export interface TKChipProps {
   style?: CSSProperties;
 }
 
-export function TKChip({ children, selected, onClick, icon, removable, onRemove, disabled, style }: TKChipProps) {
+export const TKChip = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKChipProps>(function TKChip(
+  { children, selected, onClick, icon, removable, onRemove, disabled, style, ...dom },
+  ref,
+) {
   return (
     <button
       type="button"
+      ref={ref}
       className="tk-press"
       onClick={onClick}
       disabled={disabled}
+      {...tkDomProps(dom)}
       style={{
         opacity: disabled ? 0.45 : 1,
         pointerEvents: disabled ? "none" : undefined,
@@ -73,7 +80,7 @@ export function TKChip({ children, selected, onClick, icon, removable, onRemove,
       ) : null}
     </button>
   );
-}
+});
 
 export interface TKChipGroupProps {
   items: TKOption[];
@@ -82,9 +89,10 @@ export interface TKChipGroupProps {
   value?: string | string[];
   defaultValue?: string | string[];
   onChange?: (value: string | string[]) => void;
+  testId?: string;
 }
 
-export function TKChipGroup({ items, multi, value, defaultValue, onChange }: TKChipGroupProps) {
+export function TKChipGroup({ items, multi, value, defaultValue, onChange, testId }: TKChipGroupProps) {
   const [sel, setSel] = useControllable<string | string[]>(
     value,
     defaultValue ?? (multi ? [] : ""),
@@ -97,7 +105,7 @@ export function TKChipGroup({ items, multi, value, defaultValue, onChange }: TKC
     setSel(list.includes(item) ? list.filter((x) => x !== item) : [...list, item]);
   };
   return (
-    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+    <div data-testid={testId} style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
       {items.map(tkOptionItem).map((item) => (
         <TKChip
           key={item.value}
@@ -115,7 +123,7 @@ export function TKChipGroup({ items, multi, value, defaultValue, onChange }: TKC
 
 /* ---------------- Checkbox / Radio / Switch ---------------- */
 
-export interface TKCheckboxProps {
+export interface TKCheckboxProps extends TKDomProps<HTMLButtonElement> {
   label?: ReactNode;
   checked?: boolean;
   defaultChecked?: boolean;
@@ -123,15 +131,20 @@ export interface TKCheckboxProps {
   disabled?: boolean;
 }
 
-export function TKCheckbox({ label, checked, defaultChecked, onChange, disabled }: TKCheckboxProps) {
+export const TKCheckbox = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKCheckboxProps>(function TKCheckbox(
+  { label, checked, defaultChecked, onChange, disabled, ...dom },
+  ref,
+) {
   const [on, setOn] = useControllable(checked, !!defaultChecked, onChange);
   return (
     <button
       type="button"
+      ref={ref}
       role="checkbox"
       aria-checked={on}
       disabled={disabled}
       onClick={() => setOn(!on)}
+      {...tkDomProps(dom)}
       style={{
         display: "inline-flex",
         alignItems: "center",
@@ -171,7 +184,7 @@ export function TKCheckbox({ label, checked, defaultChecked, onChange, disabled 
       {label}
     </button>
   );
-}
+});
 
 export interface TKRadioGroupProps {
   options: TKOption[];
@@ -179,14 +192,15 @@ export interface TKRadioGroupProps {
   defaultValue?: string;
   onChange?: (value: string) => void;
   disabled?: boolean;
+  testId?: string;
 }
 
-export function TKRadioGroup({ options, value, defaultValue, onChange, disabled }: TKRadioGroupProps) {
+export function TKRadioGroup({ options, value, defaultValue, onChange, disabled, testId }: TKRadioGroupProps) {
   const items = options.map(tkOptionItem);
   const firstEnabled = items.find((item) => !item.disabled);
   const [val, setVal] = useControllable(value, defaultValue ?? firstEnabled?.value ?? "", onChange);
   return (
-    <div role="radiogroup" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+    <div role="radiogroup" data-testid={testId} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       {items.map((item) => {
         const on = item.value === val;
         const off = disabled || item.disabled;
@@ -245,7 +259,7 @@ export function TKRadioGroup({ options, value, defaultValue, onChange, disabled 
   );
 }
 
-export interface TKSwitchProps {
+export interface TKSwitchProps extends TKDomProps<HTMLButtonElement> {
   label?: ReactNode;
   /** Accessible name for the label-less (standalone) variant. */
   ariaLabel?: string;
@@ -256,7 +270,10 @@ export interface TKSwitchProps {
   disabled?: boolean;
 }
 
-export function TKSwitch({ label, ariaLabel, checked, defaultChecked, onChange, small, disabled }: TKSwitchProps) {
+export const TKSwitch = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKSwitchProps>(function TKSwitch(
+  { label, ariaLabel, checked, defaultChecked, onChange, small, disabled, ...dom },
+  ref,
+) {
   const [on, setOn] = useControllable(checked, !!defaultChecked, onChange);
   const W = small ? 42 : 51;
   const H = small ? 26 : 31;
@@ -294,11 +311,13 @@ export function TKSwitch({ label, ariaLabel, checked, defaultChecked, onChange, 
     return (
       <button
         type="button"
+        ref={ref}
         role="switch"
         aria-checked={on}
-        aria-label={ariaLabel}
         disabled={disabled}
         onClick={() => setOn(!on)}
+        {...tkDomProps(dom)}
+        aria-label={dom["aria-label"] ?? ariaLabel}
         style={{
           display: "inline-flex",
           padding: 0,
@@ -313,10 +332,12 @@ export function TKSwitch({ label, ariaLabel, checked, defaultChecked, onChange, 
   return (
     <button
       type="button"
+      ref={ref}
       role="switch"
       aria-checked={on}
       disabled={disabled}
       onClick={() => setOn(!on)}
+      {...tkDomProps(dom)}
       style={{
         display: "flex",
         alignItems: "center",
@@ -338,7 +359,7 @@ export function TKSwitch({ label, ariaLabel, checked, defaultChecked, onChange, 
       {node}
     </button>
   );
-}
+});
 
 /* ---------------- Slider ---------------- */
 
@@ -353,9 +374,10 @@ export interface TKSliderProps {
   disabled?: boolean;
   /** Accessible name of the slider. */
   label?: string;
+  testId?: string;
 }
 
-export function TKSlider({ min = 0, max = 100, step = 1, value, defaultValue, onChange, suffix = "", disabled, label }: TKSliderProps) {
+export function TKSlider({ min = 0, max = 100, step = 1, value, defaultValue, onChange, suffix = "", disabled, label, testId }: TKSliderProps) {
   const [val, setVal] = useControllable(value, defaultValue ?? min, onChange);
   const [drag, setDrag] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -387,7 +409,7 @@ export function TKSlider({ min = 0, max = 100, step = 1, value, defaultValue, on
   };
 
   return (
-    <div style={{ padding: "6px 0", opacity: disabled ? 0.45 : 1 }}>
+    <div data-testid={testId} style={{ padding: "6px 0", opacity: disabled ? 0.45 : 1 }}>
       <div
         ref={ref}
         role="slider"
@@ -480,9 +502,10 @@ export interface TKStepperProps {
   min?: number;
   max?: number;
   onChange?: (value: number) => void;
+  testId?: string;
 }
 
-export function TKStepper({ value, defaultValue = 1, min = 0, max = 99, onChange }: TKStepperProps) {
+export function TKStepper({ value, defaultValue = 1, min = 0, max = 99, onChange, testId }: TKStepperProps) {
   const [v, setV] = useControllable(value, defaultValue, onChange);
   const btn = (icon: TKIconName, name: string, fn: () => void, disabled: boolean) => (
     <button
@@ -509,6 +532,7 @@ export function TKStepper({ value, defaultValue = 1, min = 0, max = 99, onChange
   );
   return (
     <div
+      data-testid={testId}
       style={{
         display: "inline-flex",
         alignItems: "center",
@@ -538,13 +562,14 @@ export interface TKRatingProps {
   value?: number;
   defaultValue?: number;
   onChange?: (value: number) => void;
+  testId?: string;
 }
 
-export function TKRating({ max = 5, value, defaultValue = 0, onChange }: TKRatingProps) {
+export function TKRating({ max = 5, value, defaultValue = 0, onChange, testId }: TKRatingProps) {
   const [v, setV] = useControllable(value, defaultValue, onChange);
   const [hov, setHov] = useState(0);
   return (
-    <div role="group" aria-label="Rating" style={{ display: "flex", gap: 4 }}>
+    <div role="group" aria-label="Rating" data-testid={testId} style={{ display: "flex", gap: 4 }}>
       {Array.from({ length: max }).map((_, i) => {
         const on = i < (hov || v);
         return (

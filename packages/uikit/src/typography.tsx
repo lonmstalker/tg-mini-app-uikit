@@ -23,6 +23,8 @@ export interface TKTextProps {
   truncate?: boolean;
   className?: string;
   style?: CSSProperties;
+  /** Rendered as `data-testid`. */
+  testId?: string;
 }
 
 export function TKText({
@@ -35,9 +37,11 @@ export function TKText({
   truncate,
   className,
   style,
+  testId,
 }: TKTextProps) {
   return (
     <Tag
+      data-testid={testId}
       className={className}
       style={{
         display: Tag === "span" ? "inline" : "block",
@@ -67,6 +71,7 @@ export interface TKTitleProps {
   truncate?: boolean;
   className?: string;
   style?: CSSProperties;
+  testId?: string;
 }
 
 export function TKTitle({
@@ -78,11 +83,13 @@ export function TKTitle({
   truncate,
   className,
   style,
+  testId,
 }: TKTitleProps) {
   const Tag = as ?? (level === 1 || level === "large" ? "h1" : level === 2 ? "h2" : "h3");
   const size = level === "large" ? "large" : level === 1 ? "title1" : level === 2 ? "title2" : "title3";
   return (
     <Tag
+      data-testid={testId}
       className={className}
       style={{
         margin: 0,
@@ -109,6 +116,7 @@ export interface TKCaptionProps {
   weight?: TKTextWeight;
   className?: string;
   style?: CSSProperties;
+  testId?: string;
 }
 
 export function TKCaption({
@@ -118,9 +126,11 @@ export function TKCaption({
   weight = 600,
   className,
   style,
+  testId,
 }: TKCaptionProps) {
   return (
     <span
+      data-testid={testId}
       className={className}
       style={{
         color: toneColor[tone],

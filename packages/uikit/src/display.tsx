@@ -17,12 +17,15 @@ export interface TKBadgeProps {
   tone?: TKTone;
   soft?: boolean;
   style?: CSSProperties;
+  /** Rendered as `data-testid`. */
+  testId?: string;
 }
 
-export function TKBadge({ children, tone = "accent", soft, style }: TKBadgeProps) {
+export function TKBadge({ children, tone = "accent", soft, style, testId }: TKBadgeProps) {
   const [solid, softBg] = BADGE_TONES[tone] ?? BADGE_TONES.accent;
   return (
     <span
+      data-testid={testId}
       style={{
         display: "inline-flex",
         alignItems: "center",
@@ -45,9 +48,10 @@ export function TKBadge({ children, tone = "accent", soft, style }: TKBadgeProps
 export interface TKDotProps {
   tone?: TKTone;
   pulse?: boolean;
+  testId?: string;
 }
 
-export function TKDot({ tone = "green", pulse }: TKDotProps) {
+export function TKDot({ tone = "green", pulse, testId }: TKDotProps) {
   const map: Record<TKTone, string> = {
     green: "var(--tk-green)",
     red: "var(--tk-red)",
@@ -57,6 +61,7 @@ export function TKDot({ tone = "green", pulse }: TKDotProps) {
   };
   return (
     <span
+      data-testid={testId}
       className={pulse ? "tk-pulse" : undefined}
       style={{
         width: 9,
@@ -72,13 +77,15 @@ export function TKDot({ tone = "green", pulse }: TKDotProps) {
 export interface TKCounterProps {
   value: ReactNode;
   tone?: "red" | "accent" | "gray";
+  testId?: string;
 }
 
-export function TKCounter({ value, tone = "red" }: TKCounterProps) {
+export function TKCounter({ value, tone = "red", testId }: TKCounterProps) {
   const map = { red: "var(--tk-red)", accent: "var(--tk-accent)", gray: "var(--tk-text-3)" };
   return (
     <span
       key={String(value)}
+      data-testid={testId}
       className="tk-pop"
       style={{
         display: "inline-flex",
@@ -109,13 +116,15 @@ export interface TKAvatarProps {
   /** Photo URL; falls back to the initials while loading or on error. */
   src?: string;
   alt?: string;
+  testId?: string;
 }
 
-export function TKAvatar({ initials = "", size = 40, tone, src, alt = "" }: TKAvatarProps) {
+export function TKAvatar({ initials = "", size = 40, tone, src, alt = "", testId }: TKAvatarProps) {
   const [failed, setFailed] = useState(false);
   useEffect(() => setFailed(false), [src]);
   return (
     <span
+      data-testid={testId}
       style={{
         position: "relative",
         display: "inline-flex",
@@ -154,12 +163,13 @@ export interface TKImgProps {
   ratio?: string;
   radius?: string;
   style?: CSSProperties;
+  testId?: string;
 }
 
 /** Striped wireframe placeholder. For real photos use `TKImage`. */
-export function TKImg({ label = "image", ratio = "1 / 1", radius = "var(--tk-r-md)", style }: TKImgProps) {
+export function TKImg({ label = "image", ratio = "1 / 1", radius = "var(--tk-r-md)", style, testId }: TKImgProps) {
   return (
-    <div className="tk-img-ph" style={{ aspectRatio: ratio, borderRadius: radius, width: "100%", ...style }}>
+    <div className="tk-img-ph" data-testid={testId} style={{ aspectRatio: ratio, borderRadius: radius, width: "100%", ...style }}>
       {label}
     </div>
   );
@@ -181,6 +191,7 @@ export interface TKImageProps {
   onError?: () => void;
   style?: CSSProperties;
   className?: string;
+  testId?: string;
 }
 
 /**
@@ -199,6 +210,7 @@ export function TKImage({
   onError,
   style,
   className,
+  testId,
 }: TKImageProps) {
   const [state, setState] = useState<"loading" | "ready" | "error">(src ? "loading" : "error");
   useEffect(() => setState(src ? "loading" : "error"), [src]);
@@ -207,6 +219,7 @@ export function TKImage({
     return (
       <div
         className={["tk-img-ph", className ?? ""].filter(Boolean).join(" ")}
+        data-testid={testId}
         role={alt ? "img" : undefined}
         aria-label={alt || undefined}
         style={{ aspectRatio: ratio, borderRadius: radius, width: "100%", ...style }}
@@ -218,6 +231,7 @@ export function TKImage({
   return (
     <div
       className={className}
+      data-testid={testId}
       style={{
         position: "relative",
         aspectRatio: ratio,

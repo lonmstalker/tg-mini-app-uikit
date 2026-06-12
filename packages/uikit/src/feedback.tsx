@@ -9,15 +9,21 @@ export interface TKSkeletonProps {
   height?: number | string;
   radius?: number | string;
   style?: CSSProperties;
+  testId?: string;
 }
 
-export function TKSkeleton({ width, height = 13, radius, style }: TKSkeletonProps) {
-  return <div className="tk-skel" style={{ width, height, borderRadius: radius, ...style }} />;
+export function TKSkeleton({ width, height = 13, radius, style, testId }: TKSkeletonProps) {
+  return <div className="tk-skel" data-testid={testId} style={{ width, height, borderRadius: radius, ...style }} />;
 }
 
-export function TKSkeletonCard() {
+export interface TKSkeletonCardProps {
+  testId?: string;
+}
+
+export function TKSkeletonCard({ testId }: TKSkeletonCardProps = {}) {
   return (
     <div
+      data-testid={testId}
       style={{
         background: "var(--tk-surface)",
         borderRadius: "var(--tk-r-lg)",
@@ -35,9 +41,10 @@ export function TKSkeletonCard() {
   );
 }
 
-export function TKSkeletonList({ rows = 3 }: { rows?: number }) {
+export function TKSkeletonList({ rows = 3, testId }: { rows?: number; testId?: string }) {
   return (
     <div
+      data-testid={testId}
       style={{
         background: "var(--tk-surface)",
         borderRadius: "var(--tk-r-md)",
@@ -75,11 +82,13 @@ export interface TKProgressProps {
   /** Accessible name of the progress bar. */
   label?: string;
   style?: CSSProperties;
+  testId?: string;
 }
 
-export function TKProgress({ value, label = "Progress", style }: TKProgressProps) {
+export function TKProgress({ value, label = "Progress", style, testId }: TKProgressProps) {
   return (
     <div
+      data-testid={testId}
       role="progressbar"
       aria-label={label}
       aria-valuenow={value}
@@ -108,14 +117,15 @@ export interface TKRingProps {
   size?: number;
   /** Center content; defaults to the percentage. */
   children?: ReactNode;
+  testId?: string;
 }
 
-export function TKRing({ value, size = 92, children }: TKRingProps) {
+export function TKRing({ value, size = 92, children, testId }: TKRingProps) {
   const r = (size - 12) / 2;
   const C = 2 * Math.PI * r;
   const clamped = Math.min(1, Math.max(0, value));
   return (
-    <div style={{ position: "relative", width: size, height: size }}>
+    <div data-testid={testId} style={{ position: "relative", width: size, height: size }}>
       <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
         <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--tk-surface-3)" strokeWidth="9" />
         <circle
@@ -156,13 +166,14 @@ export interface TKBarsProps {
   labels?: string[];
   height?: number;
   onBarClick?: (index: number) => void;
+  testId?: string;
 }
 
-export function TKBars({ data, labels, height = 110, onBarClick }: TKBarsProps) {
+export function TKBars({ data, labels, height = 110, onBarClick, testId }: TKBarsProps) {
   const [hover, setHover] = useState(-1);
   const max = Math.max(...data, 1);
   return (
-    <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height }}>
+    <div data-testid={testId} style={{ display: "flex", alignItems: "flex-end", gap: 8, height }}>
       {data.map((b, i) => (
         <div
           key={i}
@@ -215,13 +226,15 @@ export interface TKEmptyStateProps {
   cta?: ReactNode;
   onCta?: () => void;
   tone?: "accent" | "red";
+  testId?: string;
 }
 
-export function TKEmptyState({ icon = "cart", title, text, cta, onCta, tone = "accent" }: TKEmptyStateProps) {
+export function TKEmptyState({ icon = "cart", title, text, cta, onCta, tone = "accent", testId }: TKEmptyStateProps) {
   const color = tone === "red" ? "var(--tk-red)" : "var(--tk-accent)";
   const bg = tone === "red" ? "var(--tk-red-12)" : "var(--tk-accent-12)";
   return (
     <div
+      data-testid={testId}
       style={{
         display: "flex",
         flexDirection: "column",
@@ -273,11 +286,12 @@ export interface TKTimelineStep {
 
 export interface TKTimelineProps {
   steps: TKTimelineStep[];
+  testId?: string;
 }
 
-export function TKTimeline({ steps }: TKTimelineProps) {
+export function TKTimeline({ steps, testId }: TKTimelineProps) {
   return (
-    <div style={{ display: "flex", flexDirection: "column" }}>
+    <div data-testid={testId} style={{ display: "flex", flexDirection: "column" }}>
       {steps.map((step, i) => (
         <div key={i} style={{ display: "flex", gap: 12 }}>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 22 }}>
