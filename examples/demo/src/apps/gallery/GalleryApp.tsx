@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type CSSProperties, type ReactNode } from "react";
 import {
   TKActionSheet,
   TKAccordion,
@@ -7,6 +7,7 @@ import {
   TKBannerCard,
   TKBars,
   TKBookingCard,
+  TKBottomBar,
   TKButton,
   TKCaption,
   TKCategoryTabs,
@@ -24,28 +25,35 @@ import {
   TKFileInput,
   TKFormField,
   TKFormInput,
+  TKFrame,
   TKHeader,
   TKIconButton,
   TKImage,
+  TKImg,
   TKInlineButtons,
   TKInput,
   TKListGroup,
   TKMainButton,
   TKMultiselect,
   TKOTP,
+  TKPage,
   TKPageDots,
   TKPaymentSummary,
+  TKPopper,
   TKProductCardA,
   TKProductCardB,
   TKProgress,
+  TKProvider,
   TKRadioGroup,
   TKRating,
   TKRing,
+  TKSafeArea,
   TKSearch,
   TKSegmented,
   TKSelectable,
   TKSelect,
   TKSheet,
+  TKSkeleton,
   TKSkeletonCard,
   TKSkeletonList,
   TKSlider,
@@ -67,8 +75,11 @@ import {
   TKWalletConnectButton,
   TKWalletStatusCell,
   TKXPHeader,
+  useTKTheme,
   useTKToast,
+  type TKThemeKnobs,
 } from "tg-mini-app-uikit";
+import { ACCENTS } from "../../shell/types";
 import { productPhoto } from "../shop/data";
 
 /* Components — a live gallery of everything the kit exports. */
@@ -124,6 +135,111 @@ function Section({
   );
 }
 
+/* ---- theme matrix: representative components under nested TKProvider knobs ---- */
+
+const MATRIX_VARIANTS: { label: string; knobs: TKThemeKnobs }[] = [
+  ...ACCENTS.map((accent) => ({ label: `accent ${accent}`, knobs: { accent } })),
+  { label: "round 0.4", knobs: { roundness: 0.4 } },
+  { label: "round 1", knobs: { roundness: 1 } },
+  { label: "round 1.6", knobs: { roundness: 1.6 } },
+  { label: "font 14", knobs: { fontSize: 14 } },
+  { label: "font 19", knobs: { fontSize: 19 } },
+];
+
+function MatrixRow({ label, knobs }: { label: string; knobs: TKThemeKnobs }) {
+  // Nested providers default to light — inherit the shell's current scheme.
+  const { theme } = useTKTheme();
+  return (
+    <div data-demo-matrix-row={label}>
+      <TKProvider theme={theme} {...knobs} style={{ background: "transparent" }}>
+        <TKCard padding={10} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span
+            style={{
+              width: 92,
+              flexShrink: 0,
+              fontSize: "var(--tk-fz-caption2)",
+              fontWeight: 600,
+              color: "var(--tk-text-3)",
+              fontVariantNumeric: "tabular-nums",
+            }}
+          >
+            {label}
+          </span>
+          <TKButton size="sm">Pay</TKButton>
+          <TKButton size="sm" variant="tonal">Edit</TKButton>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <TKInput placeholder="Promo" />
+          </div>
+          <TKSwitch defaultChecked ariaLabel={`Switch · ${label}`} />
+        </TKCard>
+      </TKProvider>
+    </div>
+  );
+}
+
+/* ---- Telegram theme mode: `.tk-tg` resolves tokens from --tg-theme-* ---- */
+
+const TG_PALETTES: Record<"light" | "dark", Record<string, string>> = {
+  // Mirrors the demo Telegram mock (examples/demo/src/telegram/mock.ts).
+  light: {
+    bg_color: "#ffffff",
+    secondary_bg_color: "#eef1f6",
+    section_bg_color: "#ffffff",
+    section_separator_color: "#e3e7ee",
+    text_color: "#131c26",
+    subtitle_text_color: "#7b8794",
+    hint_color: "#a8b2bd",
+    link_color: "#3390ec",
+    button_color: "#3390ec",
+    button_text_color: "#ffffff",
+    destructive_text_color: "#e5484d",
+  },
+  dark: {
+    bg_color: "#17212b",
+    secondary_bg_color: "#0e1621",
+    section_bg_color: "#17212b",
+    section_separator_color: "#202c39",
+    text_color: "#f3f6f9",
+    subtitle_text_color: "#8a99a8",
+    hint_color: "#5d6c7b",
+    link_color: "#3390ec",
+    button_color: "#3390ec",
+    button_text_color: "#ffffff",
+    destructive_text_color: "#ff6166",
+  },
+};
+
+/** `bg_color` → `--tg-theme-bg-color`, exactly how the Telegram client injects them. */
+function tgVars(palette: Record<string, string>): CSSProperties {
+  return Object.fromEntries(
+    Object.entries(palette).map(([key, value]) => [`--tg-theme-${key.replace(/_/g, "-")}`, value]),
+  ) as CSSProperties;
+}
+
+function TgThemeBlock({ scheme }: { scheme: "light" | "dark" }) {
+  return (
+    <div data-demo-tg-scheme={scheme} style={{ ...tgVars(TG_PALETTES[scheme]), borderRadius: "var(--tk-r-lg)", overflow: "hidden" }}>
+      <TKProvider theme={scheme} telegram style={{ padding: 14, display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: "var(--tk-fz-sub)", fontWeight: 700, flex: 1 }}>
+            Telegram {scheme} palette
+          </span>
+          <TKBadge soft>tk-tg</TKBadge>
+        </div>
+        <TKListGroup>
+          <TKCell icon="user" title="Anna Karlova" subtitle="@annak · Premium" chevron onClick={() => {}} />
+          <TKCell icon="bell" title="Notifications" defaultToggle />
+        </TKListGroup>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <TKButton size="sm">button_color</TKButton>
+          <TKButton size="sm" variant="destructive">destructive</TKButton>
+          <span style={{ fontSize: "var(--tk-fz-caption)", color: "var(--tk-text-3)" }}>hint_color</span>
+        </div>
+      </TKProvider>
+    </div>
+  );
+}
+
 export function GalleryApp() {
   return (
     <TKToastProvider offset={20}>
@@ -144,6 +260,8 @@ function GalleryInner() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [actionsOpen, setActionsOpen] = useState(false);
+  const [popperOpen, setPopperOpen] = useState(false);
+  const popperAnchor = useRef<HTMLSpanElement>(null);
 
   return (
     <div data-demo-app="gallery" style={{ height: "100%", display: "flex", flexDirection: "column" }}>
@@ -453,6 +571,38 @@ function GalleryInner() {
           </div>
         </Section>
 
+        <Section title="Media · wireframes & bare skeletons">
+          <TKImg label="hero banner" ratio="21 / 9" radius="var(--tk-r-lg)" />
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+            <TKImg label="cover" />
+            <TKImg label="poster" ratio="3 / 4" />
+            <TKImg label="round" radius="50%" />
+          </div>
+          <div
+            style={{
+              background: "var(--tk-surface)",
+              borderRadius: "var(--tk-r-md)",
+              boxShadow: "var(--tk-shadow-sm)",
+              padding: 14,
+              display: "flex",
+              flexDirection: "column",
+              gap: 9,
+            }}
+          >
+            <TKSkeleton width="58%" height={16} />
+            <TKSkeleton width="94%" />
+            <TKSkeleton width="83%" />
+            <TKSkeleton width={130} height={32} radius="var(--tk-r-pill)" style={{ marginTop: 5 }} />
+          </div>
+          {/* e2e holds this request to pin TKImage in its skeleton phase */}
+          <div data-demo-slow-image>
+            <TKImage src="/demo-slow-photo.png" alt="Slow photo" ratio="2.4 / 1" fallbackLabel="slow" />
+          </div>
+          <div style={{ fontSize: "var(--tk-fz-caption)", color: "var(--tk-text-2)" }}>
+            `TKImg` is the striped wireframe placeholder; bare `TKSkeleton` composes custom loading layouts.
+          </div>
+        </Section>
+
         <Section title="Feedback · loading">
           <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
             <TKSpinner size={18} />
@@ -501,12 +651,71 @@ function GalleryInner() {
           </div>
         </Section>
 
+        <Section title="Popper · anchored positioning" lazy={false}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span ref={popperAnchor} style={{ display: "inline-flex" }}>
+              <TKButton variant="tonal" onClick={() => setPopperOpen((open) => !open)}>
+                {popperOpen ? "Close popper" : "Open popper"}
+              </TKButton>
+            </span>
+            <span style={{ fontSize: "var(--tk-fz-caption)", color: "var(--tk-text-2)" }}>
+              `TKPopper` used directly — same primitive that powers `TKTooltip`.
+            </span>
+          </div>
+          <TKPopper open={popperOpen} anchorRef={popperAnchor} placement="bottom" onClose={() => setPopperOpen(false)}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 200 }}>
+              <TKCardCell compact title="Reorder" subtitle="Same items, same address" before={<TKAvatar initials="🛒" size={28} tone="var(--tk-accent-12)" />} />
+              <TKCardCell compact title="Share receipt" subtitle="PDF · 84 KB" before={<TKAvatar initials="📄" size={28} tone="var(--tk-accent-12)" />} />
+            </div>
+          </TKPopper>
+        </Section>
+
         <Section title="Stress · long content">
           <TKListGroup footer="Cells truncate gracefully; counters and badges stay readable.">
             <TKCell icon="cart" title={LONG_TITLE} subtitle="An equally long subtitle that has no business fitting on one line either" chevron badge="999+" onClick={() => {}} />
           </TKListGroup>
           <TKProductCardA title={LONG_TITLE} price="$1,248.50" src={productPhoto("🏺", "#fbc2eb", "#a18cd1")} onAdd={() => toast.success("Added")} />
           <TKButton full>Continue to the next step of the extremely long checkout flow</TKButton>
+        </Section>
+
+        <Section title="Stress locales · RTL, CJK, long words">
+          <div dir="rtl" lang="ar" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <TKButton>إرسال الطلب</TKButton>
+              <TKButton variant="tonal">إلغاء</TKButton>
+              <TKChip selected>توصيل سريع</TKChip>
+            </div>
+            <TKInput label="الاسم الكامل" placeholder="أدخل اسمك الكامل" icon="user" />
+            <TKListGroup>
+              <TKCell icon="user" title="הגדרות חשבון" subtitle="עברית · מימין לשמאל" chevron onClick={() => {}} />
+            </TKListGroup>
+          </div>
+          <div lang="ja" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <TKListGroup>
+              <TKCell icon="cart" title="配送状況を確認する" subtitle="注文番号 1042 · 約25分で到着" badge="2" chevron onClick={() => {}} />
+            </TKListGroup>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <TKButton>立即购买</TKButton>
+              <TKChip selected>新着商品</TKChip>
+              <TKChip>限定セール</TKChip>
+            </div>
+          </div>
+          <div lang="de" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <TKButton full>Donaudampfschifffahrtsgesellschaftskapitän kontaktieren</TKButton>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <TKChip>Kraftfahrzeug-Haftpflichtversicherung</TKChip>
+              <TKChip selected removable>Grundstücksverkehrsgenehmigung</TKChip>
+            </div>
+            <TKListGroup footer="Long compound words must wrap or truncate without breaking the cell layout.">
+              <TKCell
+                icon="card"
+                title="Rindfleischetikettierungsüberwachungsaufgabenübertragungsgesetz"
+                subtitle="Grundstücksverkehrsgenehmigungszuständigkeitsübertragungsverordnung"
+                chevron
+                onClick={() => {}}
+              />
+            </TKListGroup>
+          </div>
         </Section>
 
         <Section title="Patterns">
@@ -542,6 +751,75 @@ function GalleryInner() {
               { label: "Delivered", time: "~12:45", status: "pending" },
             ]}
           />
+        </Section>
+
+        <Section title="Layout · page, safe area, bottom bar">
+          <TKFrame height={360}>
+            <TKPage
+              header={<TKHeader title="Order #1042" subtitle="arrives in ~25 min" back={false} />}
+              footer={
+                <TKBottomBar>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: "var(--tk-fz-caption)", color: "var(--tk-text-2)" }}>Total</div>
+                      <div style={{ fontSize: "var(--tk-fz-title3)", fontWeight: 700 }}>$40.30</div>
+                    </div>
+                    <TKButton pill icon="card">Checkout</TKButton>
+                  </div>
+                </TKBottomBar>
+              }
+            >
+              <TKCard>
+                <TKTitle level={3}>TKPage inside TKFrame</TKTitle>
+                <TKText style={{ marginTop: 6 }}>
+                  Pinned header, scrollable content and a pinned `TKBottomBar` — the full mini-app skeleton in one compact preview.
+                </TKText>
+              </TKCard>
+              <TKListGroup>
+                <TKCell icon="cart" title="Flat white × 2" value="$9.00" />
+                <TKCell icon="gift" iconBg="var(--tk-orange)" title="Cinnamon bun" value="$4.50" />
+              </TKListGroup>
+              <TKCaption>Scroll me — header and bottom bar stay pinned.</TKCaption>
+            </TKPage>
+          </TKFrame>
+          <TKFrame height={170}>
+            <TKSafeArea edges={["top", "bottom"]} style={{ height: "100%", padding: "0 12px" }}>
+              <div
+                style={{
+                  height: "100%",
+                  borderRadius: "var(--tk-r-md)",
+                  background: "var(--tk-accent-06)",
+                  border: "1.5px dashed var(--tk-accent-35)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  textAlign: "center",
+                  padding: 12,
+                }}
+              >
+                <TKCaption>
+                  `TKSafeArea` content area — pads away from cutouts and Telegram chrome (zero in a plain browser; boot with `?insets=1` to see it).
+                </TKCaption>
+              </div>
+            </TKSafeArea>
+          </TKFrame>
+        </Section>
+
+        <Section title="Theme matrix · accents, roundness, type">
+          {MATRIX_VARIANTS.map((variant) => (
+            <MatrixRow key={variant.label} label={variant.label} knobs={variant.knobs} />
+          ))}
+          <div style={{ fontSize: "var(--tk-fz-caption)", color: "var(--tk-text-2)" }}>
+            Each row is a nested `TKProvider` overriding a single knob — accent, `roundness` or `fontSize`.
+          </div>
+        </Section>
+
+        <Section title="Tg theme · Telegram palette inheritance">
+          <TgThemeBlock scheme="light" />
+          <TgThemeBlock scheme="dark" />
+          <div style={{ fontSize: "var(--tk-fz-caption)", color: "var(--tk-text-2)" }}>
+            `TKProvider telegram` adds the `.tk-tg` class, so tokens resolve from the host's `--tg-theme-*` variables (set inline here, exactly like the Telegram client does).
+          </div>
         </Section>
         </div>
       </div>

@@ -1,0 +1,16 @@
+- text: /Cart 3 items Ceramic mug \$\d+/
+- button "Decrease"
+- text: "2"
+- button "Increase"
+- text: /Soy candle \$\d+/
+- button "Decrease"
+- text: "1"
+- button "Increase"
+- text: /Subtotal \$\d+ Delivery \$\d+\.\d+ Promo SPRING24 −\$6 Total \$\d+\.\d+ Visa ·· \d+ Default payment method Simulate decline Next payment will fail/
+- switch "Simulate decline"
+- text: The decline switch makes the next payment fail — for testing the error path.
+- button /Pay \$\d+\.\d+/
+- button "Home"
+- button "Catalog"
+- button "3 Cart"
+- button "Profile"

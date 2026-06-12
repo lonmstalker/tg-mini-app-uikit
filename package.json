@@ -10,16 +10,23 @@
     "dev": "npm run dev -w tg-mini-app-uikit-demo",
     "record:demo": "node scripts/record-demo.mjs",
     "test:e2e": "playwright test",
+    "test:unit": "npm run test -w tg-mini-app-uikit",
     "test:e2e:ui": "playwright test --ui",
-    "test:e2e:visual": "playwright test --project=visual",
-    "test:e2e:update": "playwright test --project=visual --update-snapshots",
+    "test:e2e:visual": "playwright test --project=visual --project=visual-webkit --project=narrow-320 --project=visual-dpr2 --project=visual-dpr3",
+    "test:e2e:update": "playwright test --update-snapshots",
+    "test:e2e:update:linux": "scripts/update-linux-snapshots.sh",
+    "check:package": "node scripts/check-package.mjs",
     "typecheck": "npm run typecheck -w tg-mini-app-uikit && npm run typecheck -w tg-mini-app-uikit-demo"
   },
   "devDependencies": {
+    "@arethetypeswrong/cli": "^0.18.3",
     "@axe-core/playwright": "^4.10.2",
     "@playwright/test": "1.60.0",
+    "@size-limit/preset-small-lib": "^12.1.0",
     "gifenc": "^1.0.3",
     "playwright": "1.60.0",
-    "pngjs": "^7.0.0"
+    "pngjs": "^7.0.0",
+    "publint": "^0.3.21",
+    "size-limit": "^12.1.0"
   }
 }

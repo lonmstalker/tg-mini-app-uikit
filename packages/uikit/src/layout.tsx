@@ -102,7 +102,10 @@ export function TKPage({
       }}
     >
       {header ? <div style={{ flexShrink: 0 }}>{header}</div> : null}
-      <div style={{ flex: 1, minHeight: 0, overflowY: "auto", WebkitOverflowScrolling: "touch" }}>
+      {/* tabIndex keeps the scroll region keyboard-reachable even when the
+          page content has no focusable children (WCAG 2.1.1 / axe
+          scrollable-region-focusable). */}
+      <div tabIndex={0} style={{ flex: 1, minHeight: 0, overflowY: "auto", WebkitOverflowScrolling: "touch" }}>
         <div
           style={{
             display: "flex",

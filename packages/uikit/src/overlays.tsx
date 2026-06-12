@@ -586,6 +586,8 @@ export function TKToastProvider({ children, offset = 14, duration = 2400, max = 
     <TKToastContext.Provider value={api}>
       {children}
       <div
+        role="status"
+        aria-live="polite"
         style={{
           position: "absolute",
           left: 14,

@@ -1,0 +1,4 @@
+- alertdialog "Delete account?":
+  - text: Delete account? This will erase your data and order history. This action can't be undone.
+  - button "Cancel"
+  - button "Delete"

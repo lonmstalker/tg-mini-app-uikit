@@ -11,7 +11,10 @@
     "resolveJsonModule": true,
     "noUnusedLocals": true,
     "noFallthroughCasesInSwitch": true,
-    "noEmit": true
+    "noEmit": true,
+    "paths": {
+      "tg-mini-app-uikit": ["./src/index.ts"]
+    }
   },
-  "include": ["src"]
+  "include": ["src", "test", "vitest.config.ts"]
 }

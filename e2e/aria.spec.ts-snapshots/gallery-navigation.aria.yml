@@ -1,0 +1,16 @@
+- text: Navigation
+- button "Back"
+- text: Checkout step 2 of 3
+- button "Close"
+- button "Delivery" [pressed]
+- button "Pickup"
+- button "For you"
+- button "Popular"
+- button "Coffee"
+- button "Tea"
+- button "Desserts"
+- button "Merch"
+- button "Home"
+- button "Catalog"
+- button "2 Cart"
+- button "Profile"

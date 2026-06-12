@@ -316,6 +316,9 @@ export function TKMainButton({
       className="tk-press-soft tk-press"
       onClick={run}
       disabled={disabled}
+      aria-busy={state === "loading" || undefined}
+      // keep an accessible name while the visible label is replaced by the spinner
+      aria-label={state === "loading" && typeof label === "string" ? label : undefined}
       style={{
         display: "flex",
         alignItems: "center",

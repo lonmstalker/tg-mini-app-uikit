@@ -18,19 +18,32 @@ export const GALLERY_SECTIONS = [
   "lists-cells",
   "cards",
   "images",
+  "media",
   "feedback",
   "data",
   "empty-states",
   "overlays",
+  "popper",
   "stress",
+  "stress-locales",
   "patterns",
+  "layout",
+  "theme-matrix",
+  "tg-theme",
 ] as const;
 
 export type GallerySlug = (typeof GALLERY_SECTIONS)[number];
 
 /** Deep-link into a demo app (narrow mode renders it full-viewport). */
-export async function gotoApp(page: Page, app: DemoApp, opts: { dark?: boolean } = {}): Promise<Locator> {
-  await page.goto(`/?app=${app}${opts.dark ? "&dark=1" : ""}`);
+export async function gotoApp(
+  page: Page,
+  app: DemoApp,
+  opts: { dark?: boolean; params?: Record<string, string> } = {},
+): Promise<Locator> {
+  const extra = opts.params
+    ? "&" + new URLSearchParams(opts.params).toString()
+    : "";
+  await page.goto(`/?app=${app}${opts.dark ? "&dark=1" : ""}${extra}`);
   const root = page.locator(`[data-demo-app="${app}"]`);
   await expect(root).toBeVisible();
   await page.evaluate(() => document.fonts.ready);
@@ -45,6 +58,16 @@ export async function gallerySection(page: Page, slug: GallerySlug): Promise<Loc
   await section.evaluate((el) => new Promise(requestAnimationFrame));
   await expect(section).toBeVisible();
   return section;
+}
+
+/**
+ * Forces layout/paint of every lazy (content-visibility: auto) gallery
+ * section. Full-page screenshots taken at a scrolled position need this:
+ * unpainted sections above the target keep their estimated height, so the
+ * scroll offset would differ run to run.
+ */
+export async function paintGallery(page: Page) {
+  for (const slug of GALLERY_SECTIONS) await gallerySection(page, slug);
 }
 
 /** Computed style of an element (or its pseudo-element). */
@@ -81,8 +104,8 @@ export async function openGalleryOverlay(
 }
 
 /** Adds the mug to the shop cart and opens the Cart tab. */
-export async function fillCart(page: Page) {
-  await gotoApp(page, "shop");
+export async function fillCart(page: Page, opts: { dark?: boolean } = {}) {
+  await gotoApp(page, "shop", opts);
   await page.locator('[data-demo-product="mug"]').click();
   await page.locator("[data-demo-product-sheet]").getByRole("button", { name: /Add / }).click();
   await page.locator("[data-demo-shop-tabbar]").getByRole("button", { name: "Cart" }).click();

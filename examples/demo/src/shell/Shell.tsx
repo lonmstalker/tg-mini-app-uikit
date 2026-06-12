@@ -1,5 +1,6 @@
 import { useState, type CSSProperties } from "react";
-import { TKProvider } from "tg-mini-app-uikit";
+import { TKProvider, type TelegramWebApp } from "tg-mini-app-uikit";
+import { createMockTelegram } from "../telegram/mock";
 import { DeviceFrame, FRAME_HEIGHT, FRAME_WIDTH } from "./DeviceFrame";
 import { TweaksPanel } from "./TweaksPanel";
 import { useFrameScale, useMediaQuery } from "./hooks";
@@ -66,19 +67,68 @@ function NavPill({ active, onSelect }: { active: AppKey; onSelect: (key: AppKey)
   );
 }
 
-/** Boot state from the URL (`?app=gallery&dark=1`) so demos and e2e tests can deep-link. */
-function bootParams(): { app: AppKey; dark: boolean } {
+/**
+ * Boot state from the URL so demos and e2e tests can deep-link:
+ * `?app=gallery&dark=1&accent=e5484d&roundness=1.6&fontSize=19&rtl=1&insets=1`.
+ * `accent` accepts a hex with or without `#` (`%23` decodes to `#`).
+ */
+function bootParams(): {
+  app: AppKey;
+  dark: boolean;
+  rtl: boolean;
+  insets: boolean;
+  accent?: string;
+  roundness?: number;
+  fontSize?: number;
+} {
   const params = new URLSearchParams(window.location.search);
   const app = params.get("app") as AppKey | null;
+  const num = (key: string): number | undefined => {
+    const v = Number.parseFloat(params.get(key) ?? "");
+    return Number.isFinite(v) ? v : undefined;
+  };
+  const accentRaw = params.get("accent");
+  const accent = accentRaw ? (accentRaw.startsWith("#") ? accentRaw : `#${accentRaw}`) : undefined;
   return {
     app: app && NAV.some((n) => n.key === app) ? app : "shop",
     dark: params.get("dark") === "1",
+    rtl: params.get("rtl") === "1",
+    insets: params.get("insets") === "1",
+    accent,
+    roundness: num("roundness"),
+    fontSize: num("fontSize"),
   };
+}
+
+/* Boot side effects, applied once before the first render. */
+{
+  const boot = bootParams();
+  const host = window as unknown as { Telegram?: { WebApp?: TelegramWebApp } };
+  if (boot.rtl) document.documentElement.dir = "rtl";
+  if (boot.insets && !host.Telegram?.WebApp) {
+    // Install the demo mock as the global WebApp with "real device" insets
+    // (notch/home-bar cutouts + fullscreen Telegram chrome), so TKSafeArea /
+    // TKPage / TKBottomBar — which fall back to window.Telegram.WebApp — see
+    // non-zero safeAreaInset (59/34) and contentSafeAreaInset (46/0).
+    const mock = createMockTelegram();
+    mock.setDeviceCutouts(true);
+    mock.setChromeInset(true);
+    host.Telegram = { WebApp: mock.webApp };
+  }
 }
 
 export function Shell() {
   const [app, setApp] = useState<AppKey>(() => bootParams().app);
-  const [tweaks, setTweaks] = useState<Tweaks>(() => ({ ...DEFAULT_TWEAKS, dark: bootParams().dark }));
+  const [tweaks, setTweaks] = useState<Tweaks>(() => {
+    const boot = bootParams();
+    return {
+      ...DEFAULT_TWEAKS,
+      dark: boot.dark,
+      ...(boot.accent != null ? { accent: boot.accent } : null),
+      ...(boot.roundness != null ? { roundness: boot.roundness } : null),
+      ...(boot.fontSize != null ? { fontSize: boot.fontSize } : null),
+    };
+  });
   const patch = (p: Partial<Tweaks>) => setTweaks((t) => ({ ...t, ...p }));
   const narrow = useMediaQuery("(max-width: 920px)");
   const scale = useFrameScale(FRAME_WIDTH, FRAME_HEIGHT);
@@ -109,8 +159,22 @@ export function Shell() {
     return (
       <div data-demo-shell style={{ height: "100dvh", position: "relative", ...font }}>
         {screen}
-        <div style={{ position: "fixed", top: 10, left: "50%", transform: "translateX(-50%)", zIndex: 3000 }}>
-          <NavPill active={app} onSelect={setApp} />
+        <div
+          style={{
+            position: "fixed",
+            top: 10,
+            left: 0,
+            right: 0,
+            display: "flex",
+            justifyContent: "center",
+            zIndex: 3000,
+            pointerEvents: "none",
+          }}
+        >
+          {/* On phones narrower than the pill (320px-class) it scrolls instead of overflowing. */}
+          <div style={{ maxWidth: "calc(100vw - 12px)", overflowX: "auto", pointerEvents: "auto", borderRadius: 999 }}>
+            <NavPill active={app} onSelect={setApp} />
+          </div>
         </div>
       </div>
     );

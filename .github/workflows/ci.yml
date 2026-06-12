@@ -23,8 +23,8 @@ jobs:
       - run: npm run typecheck
       - run: npm run build
 
-  e2e:
-    name: e2e (playwright)
+  unit:
+    name: unit (vitest)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -33,10 +33,39 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
-      # CI=true skips pixel comparison (darwin-only baselines); every design,
-      # motion and a11y flow still runs end to end.
+      - run: npm run test:unit
+
+  package:
+    name: packaging gates (publint, attw, size-limit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build -w tg-mini-app-uikit
+      - run: npm run check:package
+
+  e2e:
+    name: e2e (playwright)
+    runs-on: ubuntu-latest
+    # The same image scripts/update-linux-snapshots.sh uses to generate the
+    # Linux baselines — identical fonts and rasterization, so the pixel
+    # comparison is enabled on CI.
+    container:
+      image: mcr.microsoft.com/playwright:v1.60.0-noble
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
       - run: npm run test:e2e
+        env:
+          HOME: /root
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

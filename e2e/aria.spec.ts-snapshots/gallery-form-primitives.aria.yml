@@ -1,0 +1,15 @@
+- text: Form primitives Apartment
+- textbox "Apartment Shown through the form alias":
+  - /placeholder: 12B
+- text: Shown through the form alias Courier note
+- textbox "Courier note":
+  - /placeholder: Leave the order at reception
+  - text: Please call before arrival.
+- text: /\d+\/\d+ Preferences/
+- combobox "Preferences": Coffee Desserts
+- text: Multi-select keeps chips readable in narrow viewports. Delivery channel
+- checkbox "Telegram updates Fastest status notifications" [checked]
+- text: Telegram updates Fastest status notifications
+- checkbox "Email receipt Send PDF after payment"
+- text: Email receipt Send PDF after payment Selectable rows work as form rows or standalone cells. Receipt attachment
+- button "Choose file No file selected"

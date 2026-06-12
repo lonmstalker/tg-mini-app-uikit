@@ -124,11 +124,35 @@ On desktop the active app runs inside an iPhone frame next to a **Tweaks** panel
 - The Telegram layer is testable: `<TKTelegramProvider webApp={mock}>` drives native buttons, client chrome, events and fallbacks in a normal browser.
 - The README animation is regenerated from scripted browser interactions, not hand-picked screenshots.
 
+## Testing
+
+CI runs five gates on every PR; all of them run locally too:
+
+| Gate | Command | What it covers |
+| --- | --- | --- |
+| Unit (vitest + Testing Library) | `npm run test:unit` | hooks, slider/stepper/OTP logic, MainButton state machine, toast eviction, the whole Telegram layer (mapping, events, fallbacks, promisified APIs), SSR `renderToString` of every export, type-level API surface |
+| E2E + a11y (Playwright) | `npm run test:e2e` | flows for all demo apps, axe WCAG A/AA scans, keyboard nav, motion, ARIA snapshots, a contrast-debt budget |
+| Visual regression | `npm run test:e2e:visual` | every gallery section + app screens in light/dark, component states (hover/focus/open/loading), token matrix and `--tg-theme-*` mode, WebKit (iOS WKWebView rendering), 320px reflow (WCAG 1.4.10), DPR 2–3, forced-colors |
+| Packaging | `npm run check:package` | zero runtime deps, publint, arethetypeswrong, size-limit budgets incl. tree-shaking |
+| Typecheck + build | `npm run typecheck && npm run build` | strict TS across the workspace |
+
+Visual baselines exist for two platforms: `darwin` (local dev on macOS) and `linux`
+(what CI compares against). After an intentional visual change regenerate both:
+
+```bash
+npm run test:e2e:update         # darwin baselines, all snapshot projects
+npm run test:e2e:update:linux   # linux baselines inside mcr.microsoft.com/playwright:v1.60.0 (needs Docker)
+```
+
+CI executes the suite inside that same Playwright Docker image, so the pixel
+comparison is enforced on every PR regardless of the contributor's OS.
+
 ## Project structure
 
 ```
 packages/uikit     → tg-mini-app-uikit — the library (TypeScript, design tokens, components + hooks)
 examples/demo      → demo app: five example mini-apps consuming the kit
+e2e/               → Playwright suites: design, states, tokens, flows, a11y, motion, reflow, ARIA
 docs/              → README assets
 ```
 

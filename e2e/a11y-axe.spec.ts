@@ -83,10 +83,14 @@ test.describe("gallery sections", () => {
 });
 
 /**
- * Non-blocking contrast audit: keeps the excluded color-contrast debt visible
- * in the report without failing the build.
+ * Contrast burn-down: color-contrast is excluded from the blocking scan above
+ * (deliberate iOS-look debt), but this budget stops the debt from GROWING.
+ * Fixing nodes lets the budget shrink; adding new low-contrast UI fails here.
+ * When lowering the number, update CONTRAST_BUDGET to the new count.
  */
-test("contrast audit (informational)", async ({ page }, testInfo) => {
+const CONTRAST_BUDGET = 15;
+
+test("contrast burn-down — debt must not grow", async ({ page }, testInfo) => {
   await gotoApp(page, "gallery");
   for (const slug of GALLERY_SECTIONS) await gallerySection(page, slug);
   const results = await new AxeBuilder({ page })
@@ -97,8 +101,10 @@ test("contrast audit (informational)", async ({ page }, testInfo) => {
     body: JSON.stringify(results.violations, null, 2),
     contentType: "application/json",
   });
-  test.info().annotations.push({
-    type: "contrast-violations",
-    description: String(results.violations.reduce((n, v) => n + v.nodes.length, 0)),
-  });
+  const nodes = results.violations.reduce((n, v) => n + v.nodes.length, 0);
+  test.info().annotations.push({ type: "contrast-violations", description: String(nodes) });
+  expect(
+    nodes,
+    `color-contrast debt grew past the budget (${nodes} > ${CONTRAST_BUDGET}); fix the new nodes instead of raising the budget`,
+  ).toBeLessThanOrEqual(CONTRAST_BUDGET);
 });

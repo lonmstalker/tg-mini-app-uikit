@@ -1,0 +1,33 @@
+- text: Shop
+- button "Notifications"
+- textbox "Search products"
+- button "Cancel"
+- button "For you"
+- button "Mugs"
+- button "Bags"
+- button "Candles"
+- button "Paper"
+- text: /Spring sale Up to \d+% off on selected items this week/
+- button "Browse deals"
+- img "Ceramic mug"
+- text: /Ceramic mug \$\d+/
+- button "Add to cart"
+- img "Linen tote"
+- text: /Linen tote \$\d+/
+- button "Add to cart"
+- img "Soy candle"
+- text: /Soy candle \$\d+/
+- button "Add to cart"
+- img "Notebook"
+- text: /Notebook \$\d+/
+- button "Add to cart"
+- img "Stone teapot"
+- text: /Stone teapot \$\d+/
+- button "Add to cart"
+- img "Weekly planner"
+- text: /Weekly planner \$\d+/
+- button "Add to cart"
+- button "Home"
+- button "Catalog"
+- button "2 Cart"
+- button "Profile"
