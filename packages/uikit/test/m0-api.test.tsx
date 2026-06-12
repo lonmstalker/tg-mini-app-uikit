@@ -181,6 +181,7 @@ describe("M0.4 TKButton loading & TKIconButton sizes", () => {
 const NO_TESTID = new Set([
   "TKTelegramProvider", // renders no DOM of its own
   "TKToastProvider", // provider; the toast region is internal
+  "TKLocaleProvider", // renders no DOM of its own
 ]);
 
 const TESTID_PROPS: Record<string, Record<string, unknown>> = {

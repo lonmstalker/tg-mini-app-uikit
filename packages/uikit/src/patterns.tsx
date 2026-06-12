@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { TKAvatar, TKBadge } from "./display";
 import { TKIcon } from "./icons";
 import { useControllable } from "./internal/useControllable";
+import { useTKLocale } from "./i18n";
 
 /* ---------------- Slot picker (booking) ---------------- */
 
@@ -197,6 +198,7 @@ export interface TKXPHeaderProps {
 }
 
 export function TKXPHeader({ name, initials = "", level, xp = 0, hint, testId }: TKXPHeaderProps) {
+  const locale = useTKLocale();
   return (
     <div
       data-testid={testId}
@@ -239,7 +241,7 @@ export function TKXPHeader({ name, initials = "", level, xp = 0, hint, testId }:
                 background: "rgba(255,255,255,.22)",
               }}
             >
-              LVL {level}
+              {locale.lvl} {level}
             </span>
           ) : null}
         </div>
@@ -281,7 +283,8 @@ export interface TKLeaderboardProps {
   testId?: string;
 }
 
-export function TKLeaderboard({ rows, youLabel = "You", testId }: TKLeaderboardProps) {
+export function TKLeaderboard({ rows, youLabel, testId }: TKLeaderboardProps) {
+  const locale = useTKLocale();
   return (
     <div
       data-testid={testId}
@@ -328,7 +331,7 @@ export function TKLeaderboard({ rows, youLabel = "You", testId }: TKLeaderboardP
               whiteSpace: "nowrap",
             }}
           >
-            {row.name} {row.you ? <TKBadge soft>{youLabel}</TKBadge> : null}
+            {row.name} {row.you ? <TKBadge soft>{youLabel ?? locale.you}</TKBadge> : null}
           </span>
           <span
             style={{
@@ -361,14 +364,15 @@ export interface TKWalletConnectButtonProps {
 
 export function TKWalletConnectButton({
   connected,
-  label = "Connect wallet",
-  connectedLabel = "Wallet connected",
+  label,
+  connectedLabel,
   address,
   walletName,
   loading,
   onClick,
   testId,
 }: TKWalletConnectButtonProps) {
+  const locale = useTKLocale();
   return (
     <button
       type="button"
@@ -409,7 +413,7 @@ export function TKWalletConnectButton({
       </span>
       <span style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
         <span style={{ display: "block", fontSize: "var(--tk-fz-body)", fontWeight: 700 }}>
-          {connected ? connectedLabel : label}
+          {connected ? (connectedLabel ?? locale.walletConnected) : (label ?? locale.connectWallet)}
         </span>
         {connected && (address || walletName) ? (
           <span
@@ -444,13 +448,14 @@ export interface TKWalletStatusCellProps {
 }
 
 export function TKWalletStatusCell({
-  walletName = "Wallet",
+  walletName,
   address,
   status,
   connected,
   onClick,
   testId,
 }: TKWalletStatusCellProps) {
+  const locale = useTKLocale();
   return (
     <button
       type="button"
@@ -489,7 +494,7 @@ export function TKWalletStatusCell({
         <TKIcon name="wallet" size={18} />
       </span>
       <span style={{ flex: 1, minWidth: 0 }}>
-        <span style={{ display: "block", fontSize: "var(--tk-fz-body)", fontWeight: 600 }}>{walletName}</span>
+        <span style={{ display: "block", fontSize: "var(--tk-fz-body)", fontWeight: 600 }}>{walletName ?? locale.wallet}</span>
         {address ? (
           <span
             style={{
@@ -506,7 +511,7 @@ export function TKWalletStatusCell({
           </span>
         ) : null}
       </span>
-      {status ?? <TKBadge tone={connected ? "green" : "gray"} soft>{connected ? "Connected" : "Disconnected"}</TKBadge>}
+      {status ?? <TKBadge tone={connected ? "green" : "gray"} soft>{connected ? locale.connected : locale.disconnected}</TKBadge>}
     </button>
   );
 }

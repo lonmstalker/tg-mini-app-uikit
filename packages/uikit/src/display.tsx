@@ -1,4 +1,5 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { useTKLocale } from "./i18n";
 
 /* ---------------- Badges & status ---------------- */
 
@@ -167,10 +168,11 @@ export interface TKImgProps {
 }
 
 /** Striped wireframe placeholder. For real photos use `TKImage`. */
-export function TKImg({ label = "image", ratio = "1 / 1", radius = "var(--tk-r-md)", style, testId }: TKImgProps) {
+export function TKImg({ label, ratio = "1 / 1", radius = "var(--tk-r-md)", style, testId }: TKImgProps) {
+  const locale = useTKLocale();
   return (
     <div className="tk-img-ph" data-testid={testId} style={{ aspectRatio: ratio, borderRadius: radius, width: "100%", ...style }}>
-      {label}
+      {label ?? locale.image}
     </div>
   );
 }
@@ -205,13 +207,14 @@ export function TKImage({
   radius = "var(--tk-r-md)",
   fit = "cover",
   lazy = true,
-  fallbackLabel = "image",
+  fallbackLabel,
   onLoad,
   onError,
   style,
   className,
   testId,
 }: TKImageProps) {
+  const locale = useTKLocale();
   const [state, setState] = useState<"loading" | "ready" | "error">(src ? "loading" : "error");
   useEffect(() => setState(src ? "loading" : "error"), [src]);
 
@@ -224,7 +227,7 @@ export function TKImage({
         aria-label={alt || undefined}
         style={{ aspectRatio: ratio, borderRadius: radius, width: "100%", ...style }}
       >
-        {fallbackLabel}
+        {fallbackLabel ?? locale.image}
       </div>
     );
   }

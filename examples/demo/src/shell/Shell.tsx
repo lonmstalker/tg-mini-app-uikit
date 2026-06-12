@@ -1,10 +1,10 @@
-import { useState, type CSSProperties } from "react";
-import { TKProvider, type TelegramWebApp } from "tg-mini-app-uikit";
+import { useEffect, useState, type CSSProperties } from "react";
+import { TKLocaleProvider, TKProvider, ruLocale, type TKLocale, type TelegramWebApp } from "tg-mini-app-uikit";
 import { createMockTelegram } from "../telegram/mock";
 import { DeviceFrame, FRAME_HEIGHT, FRAME_WIDTH } from "./DeviceFrame";
 import { TweaksPanel } from "./TweaksPanel";
 import { useFrameScale, useMediaQuery } from "./hooks";
-import { DEFAULT_TWEAKS, type ShellApi, type Tweaks } from "./types";
+import { DEFAULT_TWEAKS, type DemoLocale, type ShellApi, type Tweaks } from "./types";
 import { ShopApp } from "../apps/shop/ShopApp";
 import { BookingApp } from "../apps/booking/BookingApp";
 import { GameApp } from "../apps/game/GameApp";
@@ -12,6 +12,29 @@ import { PlatformApp } from "../apps/platform/PlatformApp";
 import { GalleryApp } from "../apps/gallery/GalleryApp";
 
 type AppKey = "shop" | "booking" | "game" | "platform" | "gallery";
+
+/** Demo Arabic dictionary — exercises RTL + a custom partial locale. */
+const arLocale: Partial<TKLocale> = {
+  done: "تم",
+  back: "رجوع",
+  cancel: "إلغاء",
+  close: "إغلاق",
+  selectOptions: "اختر الخيارات",
+  chooseFile: "اختر ملفًا",
+  noFileSelected: "لم يتم اختيار ملف",
+  search: "بحث",
+  codeVerified: "تم التحقق من الرمز",
+  didntGetCode: "لم يصلك الرمز؟",
+  resend: "إعادة الإرسال",
+  addToCart: "أضف إلى السلة",
+  you: "أنت",
+};
+
+const SHELL_LOCALES: Record<DemoLocale, Partial<TKLocale> | undefined> = {
+  en: undefined,
+  ru: ruLocale,
+  ar: arLocale,
+};
 
 const NAV: { key: AppKey; label: string }[] = [
   { key: "shop", label: "Shop" },
@@ -69,12 +92,13 @@ function NavPill({ active, onSelect }: { active: AppKey; onSelect: (key: AppKey)
 
 /**
  * Boot state from the URL so demos and e2e tests can deep-link:
- * `?app=gallery&dark=1&accent=e5484d&roundness=1.6&fontSize=19&rtl=1&insets=1`.
+ * `?app=gallery&dark=1&accent=e5484d&roundness=1.6&fontSize=19&rtl=1&insets=1&locale=ru`.
  * `accent` accepts a hex with or without `#` (`%23` decodes to `#`).
  */
 function bootParams(): {
   app: AppKey;
   dark: boolean;
+  locale: DemoLocale;
   rtl: boolean;
   insets: boolean;
   accent?: string;
@@ -87,12 +111,15 @@ function bootParams(): {
     const v = Number.parseFloat(params.get(key) ?? "");
     return Number.isFinite(v) ? v : undefined;
   };
+  const localeRaw = params.get("locale");
   const accentRaw = params.get("accent");
   const accent = accentRaw ? (accentRaw.startsWith("#") ? accentRaw : `#${accentRaw}`) : undefined;
   return {
     app: app && NAV.some((n) => n.key === app) ? app : "shop",
     dark: params.get("dark") === "1",
-    rtl: params.get("rtl") === "1",
+    locale: localeRaw === "ru" || localeRaw === "ar" ? localeRaw : "en",
+    // `?locale=ar` is an RTL language — flips the document like `?rtl=1`
+    rtl: params.get("rtl") === "1" || localeRaw === "ar",
     insets: params.get("insets") === "1",
     accent,
     roundness: num("roundness"),
@@ -124,6 +151,7 @@ export function Shell() {
     return {
       ...DEFAULT_TWEAKS,
       dark: boot.dark,
+      locale: boot.locale,
       ...(boot.accent != null ? { accent: boot.accent } : null),
       ...(boot.roundness != null ? { roundness: boot.roundness } : null),
       ...(boot.fontSize != null ? { fontSize: boot.fontSize } : null),
@@ -135,6 +163,11 @@ export function Shell() {
 
   const shell: ShellApi = { dark: tweaks.dark, setDark: (dark) => patch({ dark }) };
 
+  // Arabic flips the document direction live (the boot `?rtl=1` flag still wins).
+  useEffect(() => {
+    document.documentElement.dir = tweaks.locale === "ar" || bootParams().rtl ? "rtl" : "ltr";
+  }, [tweaks.locale]);
+
   const screen = (
     <TKProvider
       theme={tweaks.dark ? "dark" : "light"}
@@ -145,11 +178,13 @@ export function Shell() {
       fontSize={tweaks.fontSize}
       style={{ height: "100%", overflow: "hidden" }}
     >
-      {app === "shop" ? <ShopApp shell={shell} /> : null}
-      {app === "booking" ? <BookingApp /> : null}
-      {app === "game" ? <GameApp /> : null}
-      {app === "platform" ? <PlatformApp shell={shell} /> : null}
-      {app === "gallery" ? <GalleryApp /> : null}
+      <TKLocaleProvider locale={SHELL_LOCALES[tweaks.locale]}>
+        {app === "shop" ? <ShopApp shell={shell} /> : null}
+        {app === "booking" ? <BookingApp /> : null}
+        {app === "game" ? <GameApp /> : null}
+        {app === "platform" ? <PlatformApp shell={shell} /> : null}
+        {app === "gallery" ? <GalleryApp /> : null}
+      </TKLocaleProvider>
     </TKProvider>
   );
 

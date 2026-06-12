@@ -4,6 +4,7 @@ import { TKCounter } from "./display";
 import { tkOptionItem, type TKOption } from "./options";
 import { useSafeArea } from "./telegram";
 import { useControllable } from "./internal/useControllable";
+import { tkFormat, useTKLocale } from "./i18n";
 
 /* ---------------- Header / nav bar ---------------- */
 
@@ -18,6 +19,7 @@ export interface TKHeaderProps {
 }
 
 export function TKHeader({ title, subtitle, large, back = true, onBack, actions, testId }: TKHeaderProps) {
+  const locale = useTKLocale();
   return (
     <div
       data-testid={testId}
@@ -39,7 +41,7 @@ export function TKHeader({ title, subtitle, large, back = true, onBack, actions,
           <button
             type="button"
             className="tk-press"
-            aria-label="Back"
+            aria-label={locale.back}
             onClick={onBack}
             style={{
               display: "inline-flex",
@@ -401,6 +403,7 @@ export interface TKPageDotsProps {
 }
 
 export function TKPageDots({ count, page, defaultPage = 0, onChange, testId }: TKPageDotsProps) {
+  const locale = useTKLocale();
   const [cur, setCur] = useControllable(page, defaultPage, onChange);
   return (
     <div data-testid={testId} style={{ display: "flex", gap: 7 }}>
@@ -409,7 +412,7 @@ export function TKPageDots({ count, page, defaultPage = 0, onChange, testId }: T
           type="button"
           key={i}
           onClick={() => setCur(i)}
-          aria-label={`Page ${i + 1}`}
+          aria-label={tkFormat(locale.page, { page: i + 1 })}
           style={{
             width: i === cur ? 24 : 8,
             height: 8,

@@ -11,6 +11,7 @@ import {
   type ReactNode,
 } from "react";
 import { TKIcon, type TKIconName } from "./icons";
+import { useTKLocale } from "./i18n";
 import { tkDomProps, type TKDomProps } from "./internal/dom";
 import type { TKPolymorphicProps } from "./internal/polymorphic";
 
@@ -350,9 +351,11 @@ export interface TKMainButtonProps {
 
 /** Telegram-style bottom action button with a built-in state machine. */
 export const TKMainButton = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKMainButtonProps>(function TKMainButton(
-  { label, successLabel = "Done", status, onClick, successDuration = 1600, disabled, testId, style },
+  { label, successLabel, status, onClick, successDuration = 1600, disabled, testId, style },
   ref,
 ) {
+  const locale = useTKLocale();
+  const successText = successLabel ?? locale.done;
   const [auto, setAuto] = useState<TKMainButtonStatus>("idle");
   const timer = useRef<number | undefined>(undefined);
   const mounted = useRef(true);
@@ -422,7 +425,7 @@ export const TKMainButton = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKMain
         <TKSpinner color="var(--tk-on-accent)" />
       ) : isSuccess ? (
         <span key="ok" className="tk-pop" style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-          <TKIcon name="check" size={20} strokeWidth={2.6} /> {successLabel}
+          <TKIcon name="check" size={20} strokeWidth={2.6} /> {successText}
         </span>
       ) : (
         label

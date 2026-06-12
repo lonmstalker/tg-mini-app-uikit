@@ -1,6 +1,7 @@
 import { useState, type CSSProperties, type ReactNode } from "react";
 import { TKIcon, type TKIconName } from "./icons";
 import { TKButton } from "./buttons";
+import { useTKLocale } from "./i18n";
 
 /* ---------------- Skeletons ---------------- */
 
@@ -85,12 +86,13 @@ export interface TKProgressProps {
   testId?: string;
 }
 
-export function TKProgress({ value, label = "Progress", style, testId }: TKProgressProps) {
+export function TKProgress({ value, label, style, testId }: TKProgressProps) {
+  const locale = useTKLocale();
   return (
     <div
       data-testid={testId}
       role="progressbar"
-      aria-label={label}
+      aria-label={label ?? locale.progress}
       aria-valuenow={value}
       aria-valuemin={0}
       aria-valuemax={100}

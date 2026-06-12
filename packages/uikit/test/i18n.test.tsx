@@ -28,7 +28,8 @@ describe("M1 TKLocaleProvider", () => {
         <TKSearch />
       </TKLocaleProvider>,
     );
-    expect(screen.getByText("Отмена")).toBeInTheDocument();
+    // "Отмена" renders both in the action sheet and the search cancel button
+    expect(screen.getAllByText("Отмена").length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("Выберите варианты")).toBeInTheDocument();
     expect(screen.getByPlaceholderText("Поиск")).toBeInTheDocument();
   });

@@ -76,6 +76,18 @@ export function TweaksPanel({ tweaks, onChange, style }: TweaksPanelProps) {
       <Label>Roundness · ×{tweaks.roundness.toFixed(2)}</Label>
       <TKSlider label="Roundness" min={0.4} max={1.6} step={0.05} value={tweaks.roundness} onChange={(roundness) => onChange({ roundness })} />
 
+      <Label>Language</Label>
+      <TKSegmented
+        full
+        options={[
+          { value: "en", label: "EN" },
+          { value: "ru", label: "RU" },
+          { value: "ar", label: "AR" },
+        ]}
+        value={tweaks.locale}
+        onChange={(locale) => onChange({ locale: locale as Tweaks["locale"] })}
+      />
+
       <Label>Motion</Label>
       <TKSegmented
         full

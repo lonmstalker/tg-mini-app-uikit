@@ -107,10 +107,10 @@ Validation M0: `npm run test:unit` содержит новые параметр�
 
 Цель: ни одной захардкоженной пользовательской строки; кит локализуем без форка. У TGUI i18n нет вообще — дешёвое превосходство. Зависимости: M0 (пропсы-оверрайды поверх новых конвенций).
 
-- [ ] M1.1 `TKLocaleProvider` (контекст с дефолтным словарём `en`; объект `TKLocale` экспортируется; готовый пресет `ru` в комплекте). Приоритет разрешения: проп компонента → контекст → en-дефолт. Без провайдера всё работает как сейчас.
-- [ ] M1.2 Вынести все найденные строки (полный список из аудита): `buttons.tsx:275` "Done"; `navigation.tsx:40` aria "Back"; `overlays.tsx:302` "Cancel" (ActionSheet), `overlays.tsx:192` aria "Close"; `inputs.tsx:421` "Select options", `625-626` "Choose file"/"No file selected", `723/728` "Search"/"Cancel", `1032-1034` OTP ("Code verified"/"Didn't get the code?"/"Resend"); `cards.tsx:233` "Add to cart", `544` "Metric"; `controls.tsx:521/529` aria "Decrease"/"Increase", `554` шаблон рейтинга "N of M"; `display.tsx:160` "image"; `patterns.tsx:236` "LVL", `277` "You", `355-356` wallet-строки, `435` "Wallet". Плюс прочесать `grep -nE '"[A-Z][a-z]+ ?'` по src на пропущенные.
-- [ ] M1.3 Vitest: рендер ключевых компонентов под `TKLocaleProvider locale={ru}` показывает русские строки; без провайдера — английские; точечный проп побеждает провайдер.
-- [ ] M1.4 Демо: переключатель языка en/ru/ar в TweaksPanel + URL-параметр `?locale=`; `ar` включает RTL (синергия с существующим `?rtl=1`). e2e: смоук переключения.
+- [x] M1.1 `TKLocaleProvider` (контекст с дефолтным словарём `en`; объект `TKLocale` экспортируется; готовый пресет `ru` в комплекте). Приоритет разрешения: проп компонента → контекст → en-дефолт. Без провайдера всё работает как сейчас.
+- [x] M1.2 Вынести все найденные строки (полный список из аудита): `buttons.tsx:275` "Done"; `navigation.tsx:40` aria "Back"; `overlays.tsx:302` "Cancel" (ActionSheet), `overlays.tsx:192` aria "Close"; `inputs.tsx:421` "Select options", `625-626` "Choose file"/"No file selected", `723/728` "Search"/"Cancel", `1032-1034` OTP ("Code verified"/"Didn't get the code?"/"Resend"); `cards.tsx:233` "Add to cart", `544` "Metric"; `controls.tsx:521/529` aria "Decrease"/"Increase", `554` шаблон рейтинга "N of M"; `display.tsx:160` "image"; `patterns.tsx:236` "LVL", `277` "You", `355-356` wallet-строки, `435` "Wallet". Плюс прочесать `grep -nE '"[A-Z][a-z]+ ?'` по src на пропущенные.
+- [x] M1.3 Vitest: рендер ключевых компонентов под `TKLocaleProvider locale={ru}` показывает русские строки; без провайдера — английские; точечный проп побеждает провайдер.
+- [x] M1.4 Демо: переключатель языка en/ru/ar в TweaksPanel + URL-параметр `?locale=`; `ar` включает RTL (синергия с существующим `?rtl=1`). e2e: смоук переключения.
 
 Validation M1: `grep -rnE '>(Done|Cancel|Back|Search)<'` по `packages/uikit/src` пуст; новая галерея-секция «Localization» в visual-прогоне.
 
@@ -283,7 +283,7 @@ Validation M10: сайт собирается в CI и открывается л
 - [x] (2026-06-13) Ресерч: полный API-аудит кита и демо; конкурентный анализ TGUI/Konsta/VKUI/Ionic/F7/TON; два прохода по issues (74 TelegramUI, 54 Konsta, 50 VKUI [Feature], топ Ionic по реакциям); итоги в памяти проекта и в этом плане.
 - [x] (2026-06-13) ExecPlan составлен и сохранён как `plans.md`.
 - [x] (2026-06-13) M0 Фундамент API (8/8): forwardRef на 21+ компоненте, полиморфизм as/href (Button/Cell/CardCell/Tappable), точечный DOM-проброс через `internal/dom.ts`, loading у TKButton + size-варианты IconButton, testId на всех компонентах (параметризованный тест), spacing/z-index шкалы + `@layer tk` (visual без диффов), Escape/Enter в оверлеях. +122 vitest (278 всего).
-- [ ] M1 i18n (4 задачи)
+- [x] (2026-06-13) M1 i18n (4/4): `src/i18n.tsx` (TKLocale/TKLocaleProvider/useTKLocale/tkFormat, пресеты en+ru), все строки из аудита вынесены (grep-валидация пуста), vitest-приоритет «проп → провайдер → en», демо: ?locale=en|ru|ar + сегмент Language в Tweaks + ar→RTL + секция галереи Localization (+4 visual эталона darwin+linux), e2e/i18n.spec.ts (4 смоука).
 - [ ] M2 A11y-долг (5 задач)
 - [ ] M3 Жесты и оверлеи 2.0 (8 задач)
 - [ ] M4 Формы 2.0 (10 задач)

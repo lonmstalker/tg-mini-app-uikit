@@ -33,6 +33,7 @@ import {
   TKInlineButtons,
   TKInput,
   TKListGroup,
+  TKLocaleProvider,
   TKMainButton,
   TKMultiselect,
   TKOTP,
@@ -58,6 +59,7 @@ import {
   TKSkeletonList,
   TKSlider,
   TKSlotPicker,
+  ruLocale,
   TKSpinner,
   TKStatTile,
   TKStepper,
@@ -751,6 +753,25 @@ function GalleryInner() {
               { label: "Delivered", time: "~12:45", status: "pending" },
             ]}
           />
+        </Section>
+
+        <Section title="Localization · TKLocaleProvider">
+          <TKCaption uppercase>ru preset</TKCaption>
+          <TKLocaleProvider locale={ruLocale}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <TKSearch />
+              <TKMultiselect label="Интересы" options={["дизайн", "код", "музыка"]} />
+              <TKStepper defaultValue={2} />
+              <TKMainButton label="Оплатить" status="success" />
+            </div>
+          </TKLocaleProvider>
+          <TKCaption uppercase>partial override · prop wins</TKCaption>
+          <TKLocaleProvider locale={{ search: "Find anything…" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <TKSearch />
+              <TKSearch placeholder="Prop beats provider" />
+            </div>
+          </TKLocaleProvider>
         </Section>
 
         <Section title="Layout · page, safe area, bottom bar">

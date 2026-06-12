@@ -15,6 +15,7 @@ import {
 import { TKIcon, type TKIconName } from "./icons";
 import { TKIconButton } from "./buttons";
 import { mergeRefs, tkZ } from "./internal/dom";
+import { useTKLocale } from "./i18n";
 
 /*
  * Overlays position themselves against the nearest positioned ancestor —
@@ -166,6 +167,7 @@ export const TKSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSheetProps>(
   { open, onClose, title, children, noGrabber, testId },
   forwardedRef,
 ) {
+  const locale = useTKLocale();
   const { mounted, closing } = useMountTransition(open, 380);
   const ref = useRef<HTMLDivElement>(null);
   const titleId = useId();
@@ -215,7 +217,7 @@ export const TKSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSheetProps>(
               icon="close"
               size={30}
               variant="surface"
-              label="Close"
+              label={locale.close}
               onClick={onClose}
               style={{ background: "var(--tk-surface-2)", boxShadow: "none", color: "var(--tk-text-2)" }}
             />
@@ -337,9 +339,10 @@ export interface TKActionSheetProps {
 }
 
 export const TKActionSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKActionSheetProps>(function TKActionSheet(
-  { open, onClose, items, cancelLabel = "Cancel", testId },
+  { open, onClose, items, cancelLabel, testId },
   forwardedRef,
 ) {
+  const locale = useTKLocale();
   const { mounted, closing } = useMountTransition(open, 360);
   const ref = useRef<HTMLDivElement>(null);
   useOverlayA11y(mounted && !closing, ref, onClose);
@@ -422,7 +425,7 @@ export const TKActionSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKAction
             color: "var(--tk-accent)",
           }}
         >
-          {cancelLabel}
+          {cancelLabel ?? locale.cancel}
         </button>
       </div>
     </>

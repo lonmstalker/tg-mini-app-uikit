@@ -13,6 +13,7 @@ import { TKIcon, type TKIconName } from "./icons";
 import { tkOptionItem, type TKOption } from "./options";
 import { useControllable } from "./internal/useControllable";
 import { mergeRefs, tkZ } from "./internal/dom";
+import { useTKLocale } from "./i18n";
 
 /* ---------------- Text input ---------------- */
 
@@ -456,7 +457,7 @@ export const TKMultiselect = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKMul
     value,
     defaultValue = [],
     onChange,
-    placeholder = "Select options",
+    placeholder,
     disabled,
     hint,
     error,
@@ -464,6 +465,7 @@ export const TKMultiselect = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKMul
   },
   forwardedRef,
 ) {
+  const locale = useTKLocale();
   const items = options.map(tkOptionItem);
   const [selected, setSelected] = useControllable(value, defaultValue, onChange);
   const [open, setOpen] = useState(false);
@@ -542,7 +544,7 @@ export const TKMultiselect = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKMul
                 </span>
               ))
             ) : (
-              <span>{placeholder}</span>
+              <span>{placeholder ?? locale.selectOptions}</span>
             )}
             {chosen.length > 3 ? (
               <span style={{ color: "var(--tk-text-2)", fontSize: "var(--tk-fz-caption)", alignSelf: "center" }}>
@@ -666,13 +668,14 @@ export const TKFileInput = /* @__PURE__ */ forwardRef<HTMLInputElement, TKFileIn
     disabled,
     accept,
     multiple,
-    buttonLabel = "Choose file",
-    emptyLabel = "No file selected",
+    buttonLabel,
+    emptyLabel,
     onFilesChange,
     testId,
   },
   forwardedRef,
 ) {
+  const locale = useTKLocale();
   const ref = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<File[]>([]);
   const commit = (next: File[]) => {
@@ -734,7 +737,7 @@ export const TKFileInput = /* @__PURE__ */ forwardRef<HTMLInputElement, TKFileIn
         </span>
         <span style={{ flex: 1, minWidth: 0 }}>
           <span style={{ display: "block", fontSize: "var(--tk-fz-body)", fontWeight: 600, color: "var(--tk-text)" }}>
-            {buttonLabel}
+            {buttonLabel ?? locale.chooseFile}
           </span>
           <span
             style={{
@@ -747,7 +750,7 @@ export const TKFileInput = /* @__PURE__ */ forwardRef<HTMLInputElement, TKFileIn
               textOverflow: "ellipsis",
             }}
           >
-            {files.length ? files.map((file) => file.name).join(", ") : emptyLabel}
+            {files.length ? files.map((file) => file.name).join(", ") : (emptyLabel ?? locale.noFileSelected)}
           </span>
         </span>
       </div>
@@ -768,9 +771,10 @@ export interface TKSearchProps {
 }
 
 export const TKSearch = /* @__PURE__ */ forwardRef<HTMLInputElement, TKSearchProps>(function TKSearch(
-  { placeholder = "Search", value, defaultValue = "", onChange, onCancel, cancelLabel = "Cancel", testId },
+  { placeholder, value, defaultValue = "", onChange, onCancel, cancelLabel, testId },
   ref,
 ) {
+  const locale = useTKLocale();
   const [val, setVal] = useControllable(value, defaultValue, onChange);
   const [focus, setFocus] = useState(false);
   return (
@@ -795,7 +799,7 @@ export const TKSearch = /* @__PURE__ */ forwardRef<HTMLInputElement, TKSearchPro
         <input
           ref={ref}
           value={val}
-          placeholder={placeholder}
+          placeholder={placeholder ?? locale.search}
           onChange={(e) => setVal(e.target.value)}
           onFocus={() => setFocus(true)}
           onBlur={() => setFocus(false)}
@@ -834,7 +838,7 @@ export const TKSearch = /* @__PURE__ */ forwardRef<HTMLInputElement, TKSearchPro
           whiteSpace: "nowrap",
         }}
       >
-        {cancelLabel}
+        {cancelLabel ?? locale.cancel}
       </button>
     </div>
   );
@@ -1081,14 +1085,15 @@ export const TKOTP = /* @__PURE__ */ forwardRef<HTMLInputElement, TKOTPProps>(fu
     onChange,
     onComplete,
     onResend,
-    successText = "Code verified",
-    resendPrompt = "Didn't get the code?",
-    resendLabel = "Resend",
+    successText,
+    resendPrompt,
+    resendLabel,
     testId,
     style,
   },
   forwardedRef,
 ) {
+  const locale = useTKLocale();
   const [v, setV] = useControllable(value, defaultValue, onChange);
   const [focus, setFocus] = useState(false);
   const ref = useRef<HTMLInputElement>(null);
@@ -1110,7 +1115,7 @@ export const TKOTP = /* @__PURE__ */ forwardRef<HTMLInputElement, TKOTPProps>(fu
         onFocus={() => setFocus(true)}
         onBlur={() => setFocus(false)}
         inputMode="numeric"
-        aria-label="One-time code"
+        aria-label={locale.oneTimeCode}
         style={{ position: "absolute", opacity: 0, pointerEvents: "none", width: 1, height: 1 }}
       />
       <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
@@ -1171,11 +1176,11 @@ export const TKOTP = /* @__PURE__ */ forwardRef<HTMLInputElement, TKOTPProps>(fu
       >
         {done ? (
           <span className="tk-pop" style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-            <TKIcon name="check" size={13} strokeWidth={3} /> {successText}
+            <TKIcon name="check" size={13} strokeWidth={3} /> {successText ?? locale.codeVerified}
           </span>
         ) : (
           <>
-            {resendPrompt}{" "}
+            {resendPrompt ?? locale.didntGetCode}{" "}
             <span
               onClick={(e) => {
                 e.stopPropagation();
@@ -1183,7 +1188,7 @@ export const TKOTP = /* @__PURE__ */ forwardRef<HTMLInputElement, TKOTPProps>(fu
               }}
               style={{ color: "var(--tk-accent)", fontWeight: 600, cursor: "pointer" }}
             >
-              {resendLabel}
+              {resendLabel ?? locale.resend}
             </span>
           </>
         )}

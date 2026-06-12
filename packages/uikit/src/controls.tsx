@@ -11,6 +11,7 @@ import {
 import { TKIcon, type TKIconName } from "./icons";
 import { tkOptionItem, type TKOption } from "./options";
 import { useControllable } from "./internal/useControllable";
+import { tkFormat, useTKLocale } from "./i18n";
 import { tkDomProps, type TKDomProps } from "./internal/dom";
 
 /* ---------------- Chips ---------------- */
@@ -506,6 +507,7 @@ export interface TKStepperProps {
 }
 
 export function TKStepper({ value, defaultValue = 1, min = 0, max = 99, onChange, testId }: TKStepperProps) {
+  const locale = useTKLocale();
   const [v, setV] = useControllable(value, defaultValue, onChange);
   const btn = (icon: TKIconName, name: string, fn: () => void, disabled: boolean) => (
     <button
@@ -542,7 +544,7 @@ export function TKStepper({ value, defaultValue = 1, min = 0, max = 99, onChange
         background: "var(--tk-surface-2)",
       }}
     >
-      {btn("minus", "Decrease", () => setV(Math.max(min, v - 1)), v <= min)}
+      {btn("minus", locale.decrease, () => setV(Math.max(min, v - 1)), v <= min)}
       <span
         key={v}
         className="tk-pop"
@@ -550,7 +552,7 @@ export function TKStepper({ value, defaultValue = 1, min = 0, max = 99, onChange
       >
         {v}
       </span>
-      {btn("plus", "Increase", () => setV(Math.min(max, v + 1)), v >= max)}
+      {btn("plus", locale.increase, () => setV(Math.min(max, v + 1)), v >= max)}
     </div>
   );
 }
@@ -566,17 +568,18 @@ export interface TKRatingProps {
 }
 
 export function TKRating({ max = 5, value, defaultValue = 0, onChange, testId }: TKRatingProps) {
+  const locale = useTKLocale();
   const [v, setV] = useControllable(value, defaultValue, onChange);
   const [hov, setHov] = useState(0);
   return (
-    <div role="group" aria-label="Rating" data-testid={testId} style={{ display: "flex", gap: 4 }}>
+    <div role="group" aria-label={locale.rating} data-testid={testId} style={{ display: "flex", gap: 4 }}>
       {Array.from({ length: max }).map((_, i) => {
         const on = i < (hov || v);
         return (
           <button
             type="button"
             key={i}
-            aria-label={`${i + 1} of ${max}`}
+            aria-label={tkFormat(locale.ratingValue, { value: i + 1, max })}
             aria-pressed={v === i + 1}
             onClick={() => setV(i + 1)}
             onMouseEnter={() => setHov(i + 1)}

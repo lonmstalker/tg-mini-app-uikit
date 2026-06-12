@@ -9,6 +9,7 @@ import {
 } from "react";
 import { TKIcon } from "./icons";
 import type { TKPolymorphicProps } from "./internal/polymorphic";
+import { useTKLocale } from "./i18n";
 import { TKButton, TKIconButton } from "./buttons";
 import { TKAvatar, TKBadge, TKImage, TKImg } from "./display";
 import { useControllable } from "./internal/useControllable";
@@ -209,6 +210,7 @@ export interface TKProductCardAProps {
 }
 
 export function TKProductCardA({ title = "Product", price, img = "product photo", src, onAdd, onClick, testId }: TKProductCardAProps) {
+  const locale = useTKLocale();
   return (
     <div
       data-testid={testId}
@@ -258,7 +260,7 @@ export function TKProductCardA({ title = "Product", price, img = "product photo"
             icon="plus"
             size={34}
             variant="filled"
-            label="Add to cart"
+            label={locale.addToCart}
             onClick={(e) => {
               e.stopPropagation();
               onAdd();
@@ -304,9 +306,10 @@ export function TKProductCardB({
   defaultFav = false,
   onFavChange,
   onAdd,
-  addLabel = "Add to cart",
+  addLabel,
   testId,
 }: TKProductCardBProps) {
+  const locale = useTKLocale();
   const [isFav, setFav] = useControllable(fav, defaultFav, onFavChange);
   return (
     <div
@@ -335,7 +338,7 @@ export function TKProductCardB({
         <button
           type="button"
           className="tk-press"
-          aria-label="Toggle favorite"
+          aria-label={locale.toggleFavorite}
           onClick={() => setFav(!isFav)}
           style={{
             position: "absolute",
@@ -387,7 +390,7 @@ export function TKProductCardB({
           ) : null}
         </div>
         <TKButton variant="tonal" size="sm" full icon="cart" onClick={onAdd}>
-          {addLabel}
+          {addLabel ?? locale.addToCart}
         </TKButton>
       </div>
     </div>
@@ -578,7 +581,7 @@ export interface TKStatTileProps {
 }
 
 export function TKStatTile({
-  label = "Metric",
+  label,
   value,
   delta,
   up = true,
@@ -586,6 +589,7 @@ export function TKStatTile({
   testId,
   style,
 }: TKStatTileProps) {
+  const locale = useTKLocale();
   const max = Math.max(...bars);
   return (
     <div
@@ -610,7 +614,7 @@ export function TKStatTile({
           letterSpacing: ".04em",
         }}
       >
-        {label}
+        {label ?? locale.metric}
       </div>
       <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
         <span style={{ fontSize: "var(--tk-fz-title2)", fontWeight: 700, letterSpacing: "-.02em" }}>{value}</span>

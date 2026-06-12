@@ -1,6 +1,7 @@
 import "./styles/tokens.css";
 
 export * from "./theme";
+export * from "./i18n";
 export * from "./typography";
 export * from "./telegram";
 export * from "./layout";

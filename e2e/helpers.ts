@@ -27,6 +27,7 @@ export const GALLERY_SECTIONS = [
   "stress",
   "stress-locales",
   "patterns",
+  "localization",
   "layout",
   "theme-matrix",
   "tg-theme",

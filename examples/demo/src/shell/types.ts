@@ -1,7 +1,10 @@
 import type { TKMotion } from "tg-mini-app-uikit";
 
+export type DemoLocale = "en" | "ru" | "ar";
+
 export interface Tweaks {
   dark: boolean;
+  locale: DemoLocale;
   accent: string;
   roundness: number;
   motionSpeed: number;
@@ -11,6 +14,7 @@ export interface Tweaks {
 
 export const DEFAULT_TWEAKS: Tweaks = {
   dark: false,
+  locale: "en",
   accent: "#3390ec",
   roundness: 1,
   motionSpeed: 1,
