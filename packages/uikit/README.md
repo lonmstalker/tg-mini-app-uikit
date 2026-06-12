@@ -63,6 +63,40 @@ export function App() {
 }
 ```
 
+Beyond theming, the kit ships a typed platform layer over `window.Telegram.WebApp`.
+Every hook no-ops (or falls back to a browser equivalent) outside Telegram, and all
+of them read the WebApp from `<TKTelegramProvider webApp={…}>` when present — inject
+a mock there in tests and demos:
+
+```tsx
+import { useMainButton, useBackButton, useViewport, useHaptics } from "tg-mini-app-uikit";
+
+function Checkout({ total, onPay, onBack }: Props) {
+  const haptics = useHaptics();
+  const { isExpanded, expand } = useViewport();
+
+  useBackButton(onBack);
+  useMainButton({
+    text: `Pay ${total}`,
+    onClick: () => {
+      haptics.impact("medium");
+      onPay();
+    },
+  });
+  // …
+}
+```
+
+Hooks: `useWebApp`, `useTelegramEvent`, `useTelegramTheme`, `useViewport`,
+`useSafeArea`, `useMainButton`, `useSecondaryButton`, `useBackButton`,
+`useSettingsButton`, `useHaptics`, `useTelegramPopup` (promisified popups with
+`window.alert`/`confirm` fallbacks), `useCloudStorage` (localStorage fallback),
+`useInitData`, `useClosingConfirmation`.
+
+Layout primitives — `TKPage` (pinned header/footer + scrollable content),
+`TKSafeArea` and `TKBottomBar` — combine `env(safe-area-inset-*)` with the live
+Telegram insets, so device cutouts and fullscreen chrome are handled in one place.
+
 | Token            | Telegram variable                     |
 | ---------------- | ------------------------------------- |
 | `--tk-accent`    | `--tg-theme-button-color`             |
@@ -91,18 +125,24 @@ Defined in [`src/styles/tokens.css`](src/styles/tokens.css), themed via `[data-t
 
 | Group      | Exports |
 | ---------- | ------- |
-| Theme      | `TKProvider`, `useTKTheme`, `useTelegramTheme`, `tkThemeVars` |
+| Theme      | `TKProvider`, `useTKTheme`, `tkThemeVars` |
+| Telegram   | `TKTelegramProvider`, `useWebApp`, `useTelegramTheme`, `useTelegramEvent`, `useViewport`, `useSafeArea`, `useMainButton`, `useSecondaryButton`, `useBackButton`, `useSettingsButton`, `useHaptics`, `useTelegramPopup`, `useCloudStorage`, `useInitData`, `useClosingConfirmation` |
+| Layout     | `TKPage`, `TKSafeArea`, `TKBottomBar` |
 | Icons      | `TKIcon`, `TK_ICON_NAMES`, `TK_ICON_PATHS` (30 stroke icons) |
 | Buttons    | `TKButton` (6 variants × 3 sizes, pill/full/icon), `TKIconButton`, `TKMainButton` (idle → loading → success), `TKSpinner` |
 | Controls   | `TKChip`, `TKChipGroup`, `TKCheckbox`, `TKRadioGroup`, `TKSwitch`, `TKSlider`, `TKStepper`, `TKRating` |
-| Inputs     | `TKInput`, `TKSearch`, `TKSelect`, `TKOTP` |
-| Display    | `TKBadge`, `TKDot`, `TKCounter`, `TKAvatar`, `TKImg` |
+| Inputs     | `TKInput`, `TKSearch`, `TKSelect` (accessible combobox), `TKOTP` |
+| Display    | `TKBadge`, `TKDot`, `TKCounter`, `TKAvatar`, `TKImage` (loading/error states), `TKImg` (wireframe placeholder) |
 | Navigation | `TKHeader`, `TKTabbar`, `TKSegmented`, `TKCategoryTabs`, `TKSteps`, `TKPageDots` |
 | Lists      | `TKListGroup`, `TKCell` |
 | Cards      | `TKProductCardA`, `TKProductCardB`, `TKBannerCard`, `TKBookingCard`, `TKStatTile` |
 | Overlays   | `TKSheet`, `TKDialog`, `TKActionSheet`, `TKToastProvider` + `useTKToast`, `TKFrame` |
 | Feedback   | `TKSkeleton(-Card/-List)`, `TKProgress`, `TKRing`, `TKBars`, `TKEmptyState`, `TKTimeline` |
 | Patterns   | `TKSlotPicker`, `TKPaymentSummary`, `TKXPHeader`, `TKLeaderboard` |
+
+Selection components (`TKSelect`, `TKSegmented`, `TKRadioGroup`, `TKChipGroup`,
+`TKCategoryTabs`) accept `TKOption[]` — plain strings or
+`{ value, label, disabled, icon }` items; `string[]` keeps working as-is.
 
 ### Conventions
 
@@ -114,15 +154,5 @@ Defined in [`src/styles/tokens.css`](src/styles/tokens.css), themed via `[data-t
 <TKMainButton label="Pay $24.00" successLabel="Paid" onClick={() => api.pay()} />
 ```
 
-## Migrating from the `raw/` prototype
-
-| Prototype (globals)                                    | Kit |
-| ------------------------------------------------------ | --- |
-| `<div class="tk" data-theme>` + manual CSS vars        | `<TKProvider theme accent …>` |
-| `TKSpinnerInline`                                      | `TKSpinner` |
-| `TKChipRow`                                            | `TKChipGroup` |
-| `TKQty`                                                | `TKStepper` |
-| `TKSheetDemo` / `TKModalDemo` / `TKActionSheetDemo`    | `TKSheet` / `TKDialog` / `TKActionSheet` (controlled, `open`/`onClose`) |
-| `TKToastDemo`                                          | `TKToastProvider` + `useTKToast()` |
-| `TKProgressDemo` / `TKBarsDemo`                        | `TKProgress` / `TKBars` (data via props) |
-| Hard-coded demo data (leaderboard, timeline, summary…) | Props with the same visuals |
+`TKMainButton` is the in-DOM fallback; inside Telegram prefer the native
+`useMainButton` adapter — same idea, rendered by the client itself.
