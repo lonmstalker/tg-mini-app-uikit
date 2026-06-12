@@ -8,6 +8,12 @@
   "scripts": {
     "build": "npm run build -w tg-mini-app-uikit && npm run build -w tg-mini-app-uikit-demo",
     "dev": "npm run dev -w tg-mini-app-uikit-demo",
+    "record:demo": "node scripts/record-demo.mjs",
     "typecheck": "npm run typecheck -w tg-mini-app-uikit && npm run typecheck -w tg-mini-app-uikit-demo"
+  },
+  "devDependencies": {
+    "gifenc": "^1.0.3",
+    "playwright": "^1.60.0",
+    "pngjs": "^7.0.0"
   }
 }

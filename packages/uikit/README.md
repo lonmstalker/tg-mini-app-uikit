@@ -1,6 +1,6 @@
 # tg-mini-app-uikit
 
-iOS-flavored React UI kit for **Telegram Mini Apps** — design tokens, themed components and springy motion. Everything resolves from CSS custom properties, so one `TKProvider` re-themes the whole tree (including the live Telegram theme).
+iOS-flavored React UI kit for **Telegram Mini Apps** — design tokens, themed components, app patterns and a typed Telegram WebApp platform layer. Everything resolves from CSS custom properties, so one `TKProvider` re-themes the whole tree (including the live Telegram theme).
 
 ## Install
 
@@ -10,20 +10,47 @@ npm i tg-mini-app-uikit
 
 React 18 or 19 is a peer dependency.
 
+The package has no runtime dependencies besides React/React DOM. For non-Vite consumers import the stylesheet explicitly:
+
+```tsx
+import "tg-mini-app-uikit/style.css";
+```
+
 ## Quick start
 
 ```tsx
-import { TKProvider, TKButton, TKToastProvider, useTKToast } from "tg-mini-app-uikit";
-import "tg-mini-app-uikit/style.css"; // not needed with Vite — index.js imports it
+import {
+  TKProvider,
+  TKPage,
+  TKMainButton,
+  TKToastProvider,
+  useHaptics,
+  useMainButton,
+  useTelegramTheme,
+  useTKToast,
+} from "tg-mini-app-uikit";
 
 function Screen() {
   const toast = useTKToast();
-  return <TKButton onClick={() => toast.success("Done")}>Tap me</TKButton>;
+  const haptics = useHaptics();
+  useMainButton({
+    text: "Pay $24.00",
+    onClick: () => {
+      haptics.notification("success");
+      toast.success("Paid");
+    },
+  });
+  return (
+    <TKPage>
+      <TKMainButton label="Pay $24.00" onClick={() => toast.success("Paid")} />
+    </TKPage>
+  );
 }
 
 export function App() {
+  const theme = useTelegramTheme();
   return (
-    <TKProvider theme="light" accent="#3390ec" style={{ height: "100dvh" }}>
+    <TKProvider theme={theme} telegram style={{ height: "100dvh" }}>
       <TKToastProvider>
         <Screen />
       </TKToastProvider>
@@ -87,11 +114,20 @@ function Checkout({ total, onPay, onBack }: Props) {
 }
 ```
 
-Hooks: `useWebApp`, `useTelegramEvent`, `useTelegramTheme`, `useViewport`,
-`useSafeArea`, `useMainButton`, `useSecondaryButton`, `useBackButton`,
-`useSettingsButton`, `useHaptics`, `useTelegramPopup` (promisified popups with
-`window.alert`/`confirm` fallbacks), `useCloudStorage` (localStorage fallback),
-`useInitData`, `useClosingConfirmation`.
+Core hooks: `useWebApp`, `useTelegramEvent`, `useTelegramTheme`, `useViewport`,
+`useFullscreen`, `useActivity`, `useSafeArea`, `useMainButton`,
+`useSecondaryButton`, `useBackButton`, `useSettingsButton`, `useHaptics`,
+`useTelegramPopup`, `useInitData`, `useClosingConfirmation`.
+
+Workflow hooks: `useTelegramLinks`, `useTelegramColors`, `useInvoice`,
+`useShare`, `useDataTransport`, `useContactRequest`, `useWriteAccess`,
+`useClipboard`, `useQrScanner`, `useHomeScreen`, `useEmojiStatus`,
+`useDownloadFile`, `useChatRequest`, `useHideKeyboard`.
+
+Storage/device hooks: `useCloudStorage`, `useDeviceStorage`, `useSecureStorage`,
+`useBiometrics`, `useLocation`, `useMotionSensors`, `useVerticalSwipes`,
+`useOrientationLock`. Every hook reports `isSupported` or returns a safe
+unsupported result outside Telegram.
 
 Layout primitives — `TKPage` (pinned header/footer + scrollable content),
 `TKSafeArea` and `TKBottomBar` — combine `env(safe-area-inset-*)` with the live
@@ -126,19 +162,21 @@ Defined in [`src/styles/tokens.css`](src/styles/tokens.css), themed via `[data-t
 | Group      | Exports |
 | ---------- | ------- |
 | Theme      | `TKProvider`, `useTKTheme`, `tkThemeVars` |
-| Telegram   | `TKTelegramProvider`, `useWebApp`, `useTelegramTheme`, `useTelegramEvent`, `useViewport`, `useSafeArea`, `useMainButton`, `useSecondaryButton`, `useBackButton`, `useSettingsButton`, `useHaptics`, `useTelegramPopup`, `useCloudStorage`, `useInitData`, `useClosingConfirmation` |
+| Typography | `TKText`, `TKTitle`, `TKCaption` |
+| Telegram   | `TKTelegramProvider`, `useWebApp`, `useTelegramEvent`, `useTelegramTheme`, `useViewport`, `useFullscreen`, `useActivity`, `useSafeArea`, native button hooks, haptics, popups, storage, links, invoice, share, QR, clipboard, permissions, home screen, emoji status, download, chat, keyboard, biometrics, location, motion sensors |
 | Layout     | `TKPage`, `TKSafeArea`, `TKBottomBar` |
+| Service    | `TKVisuallyHidden`, `TKTappable` |
 | Icons      | `TKIcon`, `TK_ICON_NAMES`, `TK_ICON_PATHS` (30 stroke icons) |
-| Buttons    | `TKButton` (6 variants × 3 sizes, pill/full/icon), `TKIconButton`, `TKMainButton` (idle → loading → success), `TKSpinner` |
+| Buttons    | `TKButton` (6 variants × 3 sizes, pill/full/icon), `TKIconButton`, `TKInlineButtons`, `TKMainButton` (idle → loading → success), `TKSpinner` |
 | Controls   | `TKChip`, `TKChipGroup`, `TKCheckbox`, `TKRadioGroup`, `TKSwitch`, `TKSlider`, `TKStepper`, `TKRating` |
-| Inputs     | `TKInput`, `TKSearch`, `TKSelect` (accessible combobox), `TKOTP` |
+| Inputs     | `TKFormField`, `TKFormInput`, `TKInput`, `TKTextarea`, `TKSearch`, `TKSelect`, `TKMultiselect`, `TKSelectable`, `TKFileInput`, `TKOTP` |
 | Display    | `TKBadge`, `TKDot`, `TKCounter`, `TKAvatar`, `TKImage` (loading/error states), `TKImg` (wireframe placeholder) |
 | Navigation | `TKHeader`, `TKTabbar`, `TKSegmented`, `TKCategoryTabs`, `TKSteps`, `TKPageDots` |
-| Lists      | `TKListGroup`, `TKCell` |
-| Cards      | `TKProductCardA`, `TKProductCardB`, `TKBannerCard`, `TKBookingCard`, `TKStatTile` |
-| Overlays   | `TKSheet`, `TKDialog`, `TKActionSheet`, `TKToastProvider` + `useTKToast`, `TKFrame` |
+| Lists      | `TKListGroup`, `TKCell`, `TKAccordion` |
+| Cards      | `TKCard`, `TKCardCell`, `TKCardChip`, `TKProductCardA`, `TKProductCardB`, `TKBannerCard`, `TKBookingCard`, `TKStatTile` |
+| Overlays   | `TKSheet`, `TKDialog`, `TKActionSheet`, `TKPopper`, `TKTooltip`, `TKToastProvider` + `useTKToast`, `TKFrame` |
 | Feedback   | `TKSkeleton(-Card/-List)`, `TKProgress`, `TKRing`, `TKBars`, `TKEmptyState`, `TKTimeline` |
-| Patterns   | `TKSlotPicker`, `TKPaymentSummary`, `TKXPHeader`, `TKLeaderboard` |
+| Patterns   | `TKSlotPicker`, `TKPaymentSummary`, `TKXPHeader`, `TKLeaderboard`, `TKWalletConnectButton`, `TKWalletStatusCell` |
 
 Selection components (`TKSelect`, `TKSegmented`, `TKRadioGroup`, `TKChipGroup`,
 `TKCategoryTabs`) accept `TKOption[]` — plain strings or
@@ -156,3 +194,20 @@ Selection components (`TKSelect`, `TKSegmented`, `TKRadioGroup`, `TKChipGroup`,
 
 `TKMainButton` is the in-DOM fallback; inside Telegram prefer the native
 `useMainButton` adapter — same idea, rendered by the client itself.
+
+## Capability matrix
+
+| Capability | Hooks / exports | Browser fallback |
+| ---------- | --------------- | ---------------- |
+| Theme, viewport, safe area | `useTelegramTheme`, `useViewport`, `useFullscreen`, `useSafeArea` | static state + CSS safe-area env |
+| Native buttons | `useMainButton`, `useSecondaryButton`, `useBackButton`, `useSettingsButton` | no-op; use DOM components |
+| Native UI | `useHaptics`, `useTelegramPopup`, `useHideKeyboard` | no-op or browser alert/confirm/blur |
+| Storage | `useCloudStorage`, `useDeviceStorage`, `useSecureStorage` | scoped `localStorage` |
+| Bot flows | `useInvoice`, `useShare`, `useDataTransport`, `useChatRequest` | unsupported/browser share where possible |
+| Permissions | `useContactRequest`, `useWriteAccess`, `useClipboard`, `useQrScanner` | browser clipboard or unsupported |
+| Bot API 8-9.6 extras | `useHomeScreen`, `useEmojiStatus`, `useDownloadFile` | unsupported/download anchor |
+| Device APIs | `useBiometrics`, `useLocation`, `useMotionSensors`, `useVerticalSwipes`, `useOrientationLock` | unsupported |
+
+The demo's Platform tab injects a full in-memory mock through
+`<TKTelegramProvider webApp={mock.webApp}>`, so these hooks can be developed and
+smoke-tested in a normal browser.

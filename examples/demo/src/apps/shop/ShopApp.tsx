@@ -92,7 +92,7 @@ function ShopInner({ shell }: { shell: ShellApi }) {
   };
 
   return (
-    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+    <div data-demo-app="shop" style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
         {tab === 0 ? (
           <>
@@ -121,15 +121,16 @@ function ShopInner({ shell }: { shell: ShellApi }) {
               {visible.length ? (
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                   {visible.map((p) => (
-                    <TKProductCardA
-                      key={p.id}
-                      title={p.title}
-                      price={fmt(p.price)}
-                      img={p.img}
-                      src={p.photo}
-                      onClick={() => openProduct(p)}
-                      onAdd={() => add(p)}
-                    />
+                    <div key={p.id} data-demo-product={p.id}>
+                      <TKProductCardA
+                        title={p.title}
+                        price={fmt(p.price)}
+                        img={p.img}
+                        src={p.photo}
+                        onClick={() => openProduct(p)}
+                        onAdd={() => add(p)}
+                      />
+                    </div>
                   ))}
                 </div>
               ) : (
@@ -232,16 +233,20 @@ function ShopInner({ shell }: { shell: ShellApi }) {
                   />
                   <TKListGroup footer="The decline switch makes the next payment fail — for testing the error path.">
                     <TKCell icon="card" title="Visa ·· 4242" subtitle="Default payment method" chevron />
-                    <TKCell
-                      icon="bolt"
-                      iconBg="var(--tk-orange)"
-                      title="Simulate decline"
-                      subtitle="Next payment will fail"
-                      toggle={failPayment}
-                      onToggle={setFailPayment}
-                    />
+                    <div data-demo-decline-toggle>
+                      <TKCell
+                        icon="bolt"
+                        iconBg="var(--tk-orange)"
+                        title="Simulate decline"
+                        subtitle="Next payment will fail"
+                        toggle={failPayment}
+                        onToggle={setFailPayment}
+                      />
+                    </div>
                   </TKListGroup>
-                  <TKMainButton label={`Pay ${fmt(total)}`} successLabel="Paid" onClick={pay} />
+                  <div data-demo-pay-button>
+                    <TKMainButton label={`Pay ${fmt(total)}`} successLabel="Paid" onClick={pay} />
+                  </div>
                 </>
               )}
               </div>
@@ -276,7 +281,7 @@ function ShopInner({ shell }: { shell: ShellApi }) {
         ) : null}
       </div>
 
-      <div>
+      <div data-demo-shop-tabbar>
         <TKTabbar
           value={tab}
           onChange={setTab}
@@ -293,7 +298,7 @@ function ShopInner({ shell }: { shell: ShellApi }) {
       {/* Product details — bottom sheet */}
       <TKSheet open={sheetProduct !== null} onClose={() => setSheetProduct(null)} title={sheetProduct?.title}>
         {sheetProduct ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 14, paddingBottom: 8 }}>
+          <div data-demo-product-sheet style={{ display: "flex", flexDirection: "column", gap: 14, paddingBottom: 8 }}>
             <TKImage src={sheetProduct.photo} alt={sheetProduct.title} ratio="1.6 / 1" fallbackLabel={sheetProduct.img} />
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
@@ -324,35 +329,37 @@ function ShopInner({ shell }: { shell: ShellApi }) {
       </TKSheet>
 
       {/* Payment failure — error path with a retry */}
-      <TKDialog
-        open={payErrorOpen}
-        onClose={() => setPayErrorOpen(false)}
-        icon="card"
-        tone="red"
-        title="Payment declined"
-        text="Your bank rejected the charge. No money was taken — try again or use another method."
-        actions={
-          <>
-            <TKButton variant="tonal" onClick={() => setPayErrorOpen(false)}>
-              Cancel
-            </TKButton>
-            <TKButton
-              onClick={() => {
-                setFailPayment(false);
-                setPayErrorOpen(false);
-                toast.show({ icon: "check", color: "var(--tk-green)", text: "Decline test disabled — pay again" });
-              }}
-            >
-              Try again
-            </TKButton>
-          </>
-        }
-      />
+      <div data-demo-payment-error>
+        <TKDialog
+          open={payErrorOpen}
+          onClose={() => setPayErrorOpen(false)}
+          icon="card"
+          tone="red"
+          title="Payment declined"
+          text="Your bank rejected the charge. No money was taken — try again or use another method."
+          actions={
+            <>
+              <TKButton variant="tonal" onClick={() => setPayErrorOpen(false)}>
+                Cancel
+              </TKButton>
+              <TKButton
+                onClick={() => {
+                  setFailPayment(false);
+                  setPayErrorOpen(false);
+                  toast.show({ icon: "check", color: "var(--tk-green)", text: "Decline test disabled — pay again" });
+                }}
+              >
+                Try again
+              </TKButton>
+            </>
+          }
+        />
+      </div>
 
       {/* Receipt — success path */}
       <TKSheet open={receipt !== null} onClose={() => setReceipt(null)} title="Order confirmed">
         {receipt ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 14, paddingBottom: 8 }}>
+          <div data-demo-receipt style={{ display: "flex", flexDirection: "column", gap: 14, paddingBottom: 8 }}>
             <TKPaymentSummary
               rows={[
                 { label: `Items (${receipt.items})`, value: fmt(receipt.total - 3.5) },

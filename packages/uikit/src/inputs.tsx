@@ -151,6 +151,557 @@ export function TKInput({
   );
 }
 
+/* ---------------- Form field wrapper ---------------- */
+
+export interface TKFormFieldProps {
+  label?: ReactNode;
+  hint?: ReactNode;
+  error?: ReactNode;
+  htmlFor?: string;
+  describedBy?: string;
+  required?: boolean;
+  disabled?: boolean;
+  children?: ReactNode;
+  style?: CSSProperties;
+}
+
+export function TKFormField({ label, hint, error, htmlFor, describedBy, required, disabled, children, style }: TKFormFieldProps) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6, opacity: disabled ? 0.55 : 1, ...style }}>
+      {label ? (
+        <label
+          htmlFor={htmlFor}
+          style={{
+            fontSize: "var(--tk-fz-caption)",
+            fontWeight: 600,
+            letterSpacing: ".04em",
+            textTransform: "uppercase",
+            color: error ? "var(--tk-red)" : "var(--tk-text-2)",
+            margin: "0 14px",
+          }}
+        >
+          {label}
+          {required ? <span style={{ color: "var(--tk-red)", marginLeft: 3 }}>*</span> : null}
+        </label>
+      ) : null}
+      {children}
+      {hint || error ? (
+        <div
+          id={describedBy}
+          style={{
+            fontSize: "var(--tk-fz-caption)",
+            color: error ? "var(--tk-red)" : "var(--tk-text-2)",
+            margin: "0 14px",
+          }}
+        >
+          {error || hint}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+export type TKFormInputProps = TKInputProps;
+
+export function TKFormInput(props: TKFormInputProps) {
+  return <TKInput {...props} />;
+}
+
+/* ---------------- Textarea ---------------- */
+
+export interface TKTextareaProps {
+  id?: string;
+  label?: ReactNode;
+  placeholder?: string;
+  value?: string;
+  defaultValue?: string;
+  onChange?: (value: string) => void;
+  hint?: ReactNode;
+  error?: ReactNode;
+  disabled?: boolean;
+  name?: string;
+  rows?: number;
+  maxLength?: number;
+  autoFocus?: boolean;
+  resize?: CSSProperties["resize"];
+}
+
+export function TKTextarea({
+  id,
+  label,
+  placeholder,
+  value,
+  defaultValue = "",
+  onChange,
+  hint,
+  error,
+  disabled,
+  name,
+  rows = 4,
+  maxLength,
+  autoFocus,
+  resize = "vertical",
+}: TKTextareaProps) {
+  const [val, setVal] = useControllable(value, defaultValue, onChange);
+  const [focus, setFocus] = useState(false);
+  const autoId = useId();
+  const inputId = id ?? autoId;
+  const describedBy = hint || error ? `${inputId}-description` : undefined;
+  const borderColor = error ? "var(--tk-red)" : focus ? "var(--tk-accent)" : "transparent";
+  return (
+    <TKFormField label={label} hint={hint} error={error} htmlFor={inputId} describedBy={describedBy} disabled={disabled}>
+      <div
+        style={{
+          background: "var(--tk-surface)",
+          borderRadius: "var(--tk-r-md)",
+          padding: "12px 14px",
+          boxShadow: `inset 0 0 0 1.5px ${borderColor}${focus && !error ? ", var(--tk-ring)" : ""}`,
+          transition: "box-shadow var(--tk-t2) var(--tk-ease)",
+        }}
+      >
+        <textarea
+          id={inputId}
+          name={name}
+          value={val}
+          placeholder={placeholder}
+          disabled={disabled}
+          rows={rows}
+          maxLength={maxLength}
+          autoFocus={autoFocus}
+          aria-describedby={describedBy}
+          aria-invalid={!!error}
+          onChange={(e) => setVal(e.target.value)}
+          onFocus={() => setFocus(true)}
+          onBlur={() => setFocus(false)}
+          style={{
+            width: "100%",
+            minHeight: rows * 22,
+            border: "none",
+            outline: "none",
+            background: "transparent",
+            color: "var(--tk-text)",
+            fontFamily: "inherit",
+            fontSize: "var(--tk-fz-body)",
+            lineHeight: 1.35,
+            resize,
+            boxShadow: "none",
+          }}
+        />
+        {maxLength ? (
+          <div style={{ textAlign: "right", fontSize: "var(--tk-fz-caption)", color: "var(--tk-text-3)", marginTop: 4 }}>
+            {val.length}/{maxLength}
+          </div>
+        ) : null}
+      </div>
+    </TKFormField>
+  );
+}
+
+/* ---------------- Selectable row ---------------- */
+
+export interface TKSelectableProps {
+  label: ReactNode;
+  subtitle?: ReactNode;
+  checked?: boolean;
+  defaultChecked?: boolean;
+  onChange?: (checked: boolean) => void;
+  disabled?: boolean;
+  type?: "checkbox" | "radio";
+  icon?: TKIconName;
+  after?: ReactNode;
+  name?: string;
+  value?: string;
+}
+
+export function TKSelectable({
+  label,
+  subtitle,
+  checked,
+  defaultChecked = false,
+  onChange,
+  disabled,
+  type = "checkbox",
+  icon,
+  after,
+  name,
+  value,
+}: TKSelectableProps) {
+  const [isChecked, setChecked] = useControllable(checked, defaultChecked, onChange);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (type !== "radio" || !name || checked !== undefined) return;
+    const syncGroup = (event: Event) => {
+      const target = event.target as HTMLInputElement | null;
+      if (target?.type === "radio" && target.name === name && inputRef.current) {
+        setChecked(inputRef.current.checked);
+      }
+    };
+    document.addEventListener("change", syncGroup, true);
+    return () => document.removeEventListener("change", syncGroup, true);
+  }, [checked, name, setChecked, type]);
+
+  return (
+    <label
+      className="tk-press tk-press-soft"
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        padding: "11px 14px",
+        borderRadius: "var(--tk-r-md)",
+        background: isChecked ? "var(--tk-accent-06)" : "transparent",
+        opacity: disabled ? 0.55 : 1,
+        cursor: disabled ? "default" : "pointer",
+      }}
+    >
+      <input
+        ref={inputRef}
+        type={type}
+        name={name}
+        value={value}
+        checked={isChecked}
+        disabled={disabled}
+        onChange={(e) => setChecked(e.target.checked)}
+        style={{ position: "absolute", opacity: 0, pointerEvents: "none" }}
+      />
+      <span
+        aria-hidden="true"
+        style={{
+          width: 24,
+          height: 24,
+          borderRadius: type === "radio" ? "50%" : "var(--tk-r-xs)",
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: isChecked ? "var(--tk-accent)" : "var(--tk-surface-2)",
+          color: "var(--tk-on-accent)",
+          boxShadow: isChecked ? "none" : "inset 0 0 0 1px var(--tk-sep)",
+          flexShrink: 0,
+          transition: "background var(--tk-t2) var(--tk-ease), box-shadow var(--tk-t2) var(--tk-ease)",
+        }}
+      >
+        {isChecked ? <TKIcon name="check" size={14} strokeWidth={2.7} /> : icon ? <TKIcon name={icon} size={14} /> : null}
+      </span>
+      <span style={{ flex: 1, minWidth: 0 }}>
+        <span style={{ display: "block", color: "var(--tk-text)", fontSize: "var(--tk-fz-body)", fontWeight: 600 }}>
+          {label}
+        </span>
+        {subtitle ? (
+          <span style={{ display: "block", color: "var(--tk-text-2)", fontSize: "var(--tk-fz-caption)", marginTop: 1 }}>
+            {subtitle}
+          </span>
+        ) : null}
+      </span>
+      {after}
+    </label>
+  );
+}
+
+/* ---------------- Multiselect ---------------- */
+
+export interface TKMultiselectProps {
+  label?: ReactNode;
+  options: TKOption[];
+  value?: string[];
+  defaultValue?: string[];
+  onChange?: (value: string[]) => void;
+  placeholder?: ReactNode;
+  disabled?: boolean;
+  hint?: ReactNode;
+  error?: ReactNode;
+}
+
+export function TKMultiselect({
+  label,
+  options,
+  value,
+  defaultValue = [],
+  onChange,
+  placeholder = "Select options",
+  disabled,
+  hint,
+  error,
+}: TKMultiselectProps) {
+  const items = options.map(tkOptionItem);
+  const [selected, setSelected] = useControllable(value, defaultValue, onChange);
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const id = useId();
+  const listId = `${id}-list`;
+  const chosen = items.filter((item) => selected.includes(item.value));
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: globalThis.PointerEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("pointerdown", close);
+    return () => document.removeEventListener("pointerdown", close);
+  }, [open]);
+
+  const toggle = (itemValue: string) => {
+    setSelected(selected.includes(itemValue) ? selected.filter((v) => v !== itemValue) : [...selected, itemValue]);
+  };
+
+  return (
+    <TKFormField label={label} hint={hint} error={error} disabled={disabled}>
+      <div ref={ref} style={{ position: "relative" }}>
+        <button
+          type="button"
+          role="combobox"
+          aria-expanded={open}
+          aria-haspopup="listbox"
+          aria-controls={listId}
+          disabled={disabled}
+          className="tk-press-soft tk-press"
+          onClick={() => setOpen(!open)}
+          style={{
+            width: "100%",
+            minHeight: 48,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 10,
+            padding: "8px 14px",
+            border: "none",
+            borderRadius: "var(--tk-r-md)",
+            background: "var(--tk-surface)",
+            color: chosen.length ? "var(--tk-text)" : "var(--tk-text-3)",
+            fontFamily: "inherit",
+            fontSize: "var(--tk-fz-body)",
+            boxShadow: error
+              ? "inset 0 0 0 1.5px var(--tk-red)"
+              : open
+                ? "inset 0 0 0 1.5px var(--tk-accent), var(--tk-ring)"
+                : "none",
+          }}
+        >
+          <span style={{ display: "flex", flexWrap: "wrap", gap: 6, minWidth: 0 }}>
+            {chosen.length ? (
+              chosen.slice(0, 3).map((item) => (
+                <span
+                  key={item.value}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 5,
+                    padding: "4px 8px",
+                    borderRadius: "var(--tk-r-pill)",
+                    background: "var(--tk-accent-12)",
+                    color: "var(--tk-accent)",
+                    fontSize: "var(--tk-fz-caption)",
+                    fontWeight: 700,
+                  }}
+                >
+                  {item.icon ? <TKIcon name={item.icon} size={13} /> : null}
+                  {item.label}
+                </span>
+              ))
+            ) : (
+              <span>{placeholder}</span>
+            )}
+            {chosen.length > 3 ? (
+              <span style={{ color: "var(--tk-text-2)", fontSize: "var(--tk-fz-caption)", alignSelf: "center" }}>
+                +{chosen.length - 3}
+              </span>
+            ) : null}
+          </span>
+          <span
+            style={{
+              display: "inline-flex",
+              color: "var(--tk-text-3)",
+              transform: open ? "rotate(180deg)" : "none",
+              transition: "transform var(--tk-t2) var(--tk-spring)",
+              flexShrink: 0,
+            }}
+          >
+            <TKIcon name="chevronDown" size={17} />
+          </span>
+        </button>
+        <div
+          id={listId}
+          role="listbox"
+          aria-multiselectable="true"
+          aria-hidden={!open}
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            top: "calc(100% + 6px)",
+            zIndex: 30,
+            background: "var(--tk-surface)",
+            borderRadius: "var(--tk-r-md)",
+            boxShadow: "var(--tk-shadow-md)",
+            padding: 6,
+            maxHeight: 250,
+            overflowY: "auto",
+            transformOrigin: "top center",
+            transform: open ? "scale(1) translateY(0)" : "scale(.92) translateY(-6px)",
+            opacity: open ? 1 : 0,
+            pointerEvents: open ? "auto" : "none",
+            transition: "transform var(--tk-t2) var(--tk-spring), opacity var(--tk-t2) var(--tk-ease)",
+          }}
+        >
+          {items.map((item) => {
+            const isSelected = selected.includes(item.value);
+            return (
+              <button
+                type="button"
+                key={item.value}
+                role="option"
+                aria-selected={isSelected}
+                disabled={item.disabled}
+                onClick={() => !item.disabled && toggle(item.value)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  width: "100%",
+                  padding: "10px",
+                  border: "none",
+                  borderRadius: "var(--tk-r-sm)",
+                  background: isSelected ? "var(--tk-accent-06)" : "transparent",
+                  color: item.disabled ? "var(--tk-text-3)" : "var(--tk-text)",
+                  fontSize: "var(--tk-fz-body)",
+                  fontFamily: "inherit",
+                  cursor: item.disabled ? "default" : "pointer",
+                }}
+              >
+                <span
+                  style={{
+                    width: 20,
+                    height: 20,
+                    borderRadius: "var(--tk-r-xs)",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    background: isSelected ? "var(--tk-accent)" : "var(--tk-surface-2)",
+                    color: "var(--tk-on-accent)",
+                    boxShadow: isSelected ? "none" : "inset 0 0 0 1px var(--tk-sep)",
+                    flexShrink: 0,
+                  }}
+                >
+                  {isSelected ? <TKIcon name="check" size={12} strokeWidth={2.7} /> : null}
+                </span>
+                {item.icon ? <TKIcon name={item.icon} size={17} /> : null}
+                <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {item.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </TKFormField>
+  );
+}
+
+/* ---------------- File input ---------------- */
+
+export interface TKFileInputProps {
+  label?: ReactNode;
+  hint?: ReactNode;
+  error?: ReactNode;
+  disabled?: boolean;
+  accept?: string;
+  multiple?: boolean;
+  buttonLabel?: ReactNode;
+  emptyLabel?: ReactNode;
+  onFilesChange?: (files: File[]) => void;
+}
+
+export function TKFileInput({
+  label,
+  hint,
+  error,
+  disabled,
+  accept,
+  multiple,
+  buttonLabel = "Choose file",
+  emptyLabel = "No file selected",
+  onFilesChange,
+}: TKFileInputProps) {
+  const ref = useRef<HTMLInputElement>(null);
+  const [files, setFiles] = useState<File[]>([]);
+  const commit = (next: File[]) => {
+    setFiles(next);
+    onFilesChange?.(next);
+  };
+  return (
+    <TKFormField label={label} hint={hint} error={error} disabled={disabled}>
+      <div
+        role="button"
+        tabIndex={disabled ? -1 : 0}
+        aria-disabled={disabled}
+        className="tk-press tk-press-soft"
+        onClick={() => !disabled && ref.current?.click()}
+        onKeyDown={(event) => {
+          if (disabled) return;
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            ref.current?.click();
+          }
+        }}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          minHeight: 58,
+          padding: "10px 14px",
+          borderRadius: "var(--tk-r-md)",
+          background: "var(--tk-surface)",
+          boxShadow: error ? "inset 0 0 0 1.5px var(--tk-red)" : "var(--tk-shadow-sm)",
+          cursor: disabled ? "default" : "pointer",
+        }}
+      >
+        <input
+          ref={ref}
+          type="file"
+          accept={accept}
+          multiple={multiple}
+          disabled={disabled}
+          onChange={(e) => commit(Array.from(e.target.files ?? []))}
+          style={{ position: "absolute", opacity: 0, pointerEvents: "none", width: 1, height: 1 }}
+        />
+        <span
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: 36,
+            height: 36,
+            borderRadius: "var(--tk-r-sm)",
+            background: "var(--tk-accent-12)",
+            color: "var(--tk-accent)",
+            flexShrink: 0,
+          }}
+        >
+          <TKIcon name="share" size={18} />
+        </span>
+        <span style={{ flex: 1, minWidth: 0 }}>
+          <span style={{ display: "block", fontSize: "var(--tk-fz-body)", fontWeight: 600, color: "var(--tk-text)" }}>
+            {buttonLabel}
+          </span>
+          <span
+            style={{
+              display: "block",
+              fontSize: "var(--tk-fz-caption)",
+              color: files.length ? "var(--tk-text-2)" : "var(--tk-text-3)",
+              marginTop: 1,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
+          >
+            {files.length ? files.map((file) => file.name).join(", ") : emptyLabel}
+          </span>
+        </span>
+      </div>
+    </TKFormField>
+  );
+}
+
 /* ---------------- Search ---------------- */
 
 export interface TKSearchProps {

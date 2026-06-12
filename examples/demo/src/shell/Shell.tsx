@@ -27,6 +27,7 @@ const font: CSSProperties = {
 function NavPill({ active, onSelect }: { active: AppKey; onSelect: (key: AppKey) => void }) {
   return (
     <div
+      data-demo-nav
       style={{
         display: "flex",
         gap: 4,
@@ -43,6 +44,7 @@ function NavPill({ active, onSelect }: { active: AppKey; onSelect: (key: AppKey)
         <button
           type="button"
           key={key}
+          data-demo-tab={key}
           onClick={() => onSelect(key)}
           style={{
             padding: "6px 14px",
@@ -95,7 +97,7 @@ export function Shell() {
     // Real-device mode: the example app takes the whole viewport, like an
     // actual Telegram mini app. The switcher floats on top.
     return (
-      <div style={{ height: "100dvh", position: "relative", ...font }}>
+      <div data-demo-shell style={{ height: "100dvh", position: "relative", ...font }}>
         {screen}
         <div style={{ position: "fixed", top: 10, left: "50%", transform: "translateX(-50%)", zIndex: 3000 }}>
           <NavPill active={app} onSelect={setApp} />
@@ -105,7 +107,7 @@ export function Shell() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", ...font }}>
+    <div data-demo-shell style={{ minHeight: "100vh", display: "flex", flexDirection: "column", ...font }}>
       <header
         style={{
           display: "flex",
@@ -137,7 +139,7 @@ export function Shell() {
           padding: "22px 28px 48px",
         }}
       >
-        <div style={{ width: FRAME_WIDTH * scale, height: FRAME_HEIGHT * scale }}>
+        <div data-demo-stage style={{ width: FRAME_WIDTH * scale, height: FRAME_HEIGHT * scale }}>
           <div style={{ transform: `scale(${scale})`, transformOrigin: "top left" }}>
             <DeviceFrame dark={tweaks.dark}>{screen}</DeviceFrame>
           </div>

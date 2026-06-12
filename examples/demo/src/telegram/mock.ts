@@ -1,7 +1,10 @@
 import type {
+  TelegramCloudStorage,
+  TelegramDeviceStorage,
   TelegramMainButton,
   TelegramPopupParams,
   TelegramSafeAreaInset,
+  TelegramSecureStorage,
   TelegramSimpleButton,
   TelegramThemeParams,
   TelegramWebApp,
@@ -33,6 +36,8 @@ export interface MockTelegramState {
   colorScheme: "light" | "dark";
   themeParams: TelegramThemeParams;
   isExpanded: boolean;
+  isFullscreen: boolean;
+  isActive: boolean;
   viewportHeight: number;
   viewportStableHeight: number;
   maxHeight: number;
@@ -45,6 +50,7 @@ export interface MockTelegramState {
   haptic: { kind: string; seq: number } | null;
   popup: MockPopupState | null;
   closingConfirmation: boolean;
+  homeScreenStatus: string;
   closed: boolean;
   log: { id: number; text: string }[];
 }
@@ -111,6 +117,8 @@ const THEMES: Record<"light" | "dark", TelegramThemeParams> = {
 };
 
 const CLOUD_PREFIX = "tg-demo-cloud:";
+const DEVICE_PREFIX = "tg-demo-device:";
+const SECURE_PREFIX = "tg-demo-secure:";
 
 export function createMockTelegram(): MockTelegram {
   const collapsedOf = (max: number) => Math.round(max * 0.62);
@@ -119,6 +127,8 @@ export function createMockTelegram(): MockTelegram {
     colorScheme: "light",
     themeParams: THEMES.light,
     isExpanded: false,
+    isFullscreen: false,
+    isActive: true,
     maxHeight: 740,
     viewportHeight: collapsedOf(740),
     viewportStableHeight: collapsedOf(740),
@@ -131,6 +141,7 @@ export function createMockTelegram(): MockTelegram {
     haptic: null,
     popup: null,
     closingConfirmation: false,
+    homeScreenStatus: "missed",
     closed: false,
     log: [],
   };
@@ -156,6 +167,8 @@ export function createMockTelegram(): MockTelegram {
     webApp.colorScheme = state.colorScheme;
     webApp.themeParams = state.themeParams;
     webApp.isExpanded = state.isExpanded;
+    webApp.isFullscreen = state.isFullscreen;
+    webApp.isActive = state.isActive;
     webApp.viewportHeight = state.viewportHeight;
     webApp.viewportStableHeight = state.viewportStableHeight;
     webApp.safeAreaInset = state.safeAreaInset;
@@ -252,15 +265,76 @@ export function createMockTelegram(): MockTelegram {
     commit({ closed: true });
   };
 
+  const makeStorage = (prefix: string, label: string): TelegramCloudStorage & TelegramDeviceStorage => ({
+    setItem: (key, value, cb) => {
+      localStorage.setItem(prefix + key, value);
+      log(`${label}.setItem("${key}")`);
+      notify();
+      cb?.(null, true);
+    },
+    getItem: (key, cb) => {
+      log(`${label}.getItem("${key}")`);
+      notify();
+      cb(null, localStorage.getItem(prefix + key));
+    },
+    getItems: (keys, cb) => {
+      log(`${label}.getItems(${keys.length})`);
+      cb(null, Object.fromEntries(keys.map((key) => [key, localStorage.getItem(prefix + key)])));
+    },
+    removeItem: (key, cb) => {
+      localStorage.removeItem(prefix + key);
+      log(`${label}.removeItem("${key}")`);
+      notify();
+      cb?.(null, true);
+    },
+    removeItems: (keys, cb) => {
+      keys.forEach((key) => localStorage.removeItem(prefix + key));
+      log(`${label}.removeItems(${keys.length})`);
+      notify();
+      cb?.(null, true);
+    },
+    getKeys: (cb) => {
+      const keys: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k?.startsWith(prefix)) keys.push(k.slice(prefix.length));
+      }
+      cb(null, keys);
+    },
+    clear: (cb) => {
+      const keys: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k?.startsWith(prefix)) keys.push(k);
+      }
+      keys.forEach((key) => localStorage.removeItem(key));
+      log(`${label}.clear()`);
+      notify();
+      cb?.(null, true);
+    },
+  });
+
+  const secureStorage: TelegramSecureStorage = {
+    ...makeStorage(SECURE_PREFIX, "SecureStorage"),
+    restoreItem: (key, cb) => {
+      log(`SecureStorage.restoreItem("${key}")`);
+      cb?.(null, localStorage.getItem(SECURE_PREFIX + key));
+    },
+  };
+
   const webApp: TelegramWebApp = {
-    version: "8.0",
+    version: "9.6",
     platform: "ios",
     colorScheme: state.colorScheme,
     themeParams: state.themeParams,
     initData: "query_id=AADemo&user=%7B%22id%22%3A99281932%7D&auth_date=1718000000&hash=demo-not-valid",
     initDataUnsafe: {
       user: { id: 99281932, first_name: "Anna", last_name: "Karlova", username: "annak", language_code: "en", is_premium: true },
+      chat: { id: -10023456, type: "supergroup", title: "UIKit builders" },
+      chat_type: "supergroup",
+      chat_instance: "demo-chat-instance",
       start_param: "platform_lab",
+      can_send_after: 0,
       auth_date: 1718000000,
     },
     MainButton: mainButton,
@@ -272,31 +346,86 @@ export function createMockTelegram(): MockTelegram {
       notificationOccurred: (type) => haptic(`notification · ${type}`),
       selectionChanged: () => haptic("selection"),
     },
-    CloudStorage: {
-      setItem: (key, value, cb) => {
-        localStorage.setItem(CLOUD_PREFIX + key, value);
-        log(`CloudStorage.setItem("${key}")`);
-        notify();
-        cb?.(null, true);
+    CloudStorage: makeStorage(CLOUD_PREFIX, "CloudStorage"),
+    DeviceStorage: makeStorage(DEVICE_PREFIX, "DeviceStorage"),
+    SecureStorage: secureStorage,
+    BiometricManager: {
+      isInited: true,
+      isBiometricAvailable: true,
+      biometricType: "face",
+      isAccessGranted: true,
+      init: (cb) => {
+        log("BiometricManager.init()");
+        dispatch("biometricManagerUpdated");
+        cb?.();
       },
-      getItem: (key, cb) => {
-        log(`CloudStorage.getItem("${key}")`);
-        notify();
-        cb(null, localStorage.getItem(CLOUD_PREFIX + key));
+      requestAccess: (_params, cb) => {
+        log("BiometricManager.requestAccess()");
+        cb?.(true);
       },
-      removeItem: (key, cb) => {
-        localStorage.removeItem(CLOUD_PREFIX + key);
-        log(`CloudStorage.removeItem("${key}")`);
-        notify();
-        cb?.(null, true);
+      authenticate: (_params, cb) => {
+        log("BiometricManager.authenticate()");
+        dispatch("biometricAuthRequested", { isAuthenticated: true, biometricToken: "demo-token" });
+        cb?.(true, "demo-token");
       },
-      getKeys: (cb) => {
-        const keys: string[] = [];
-        for (let i = 0; i < localStorage.length; i++) {
-          const k = localStorage.key(i);
-          if (k?.startsWith(CLOUD_PREFIX)) keys.push(k.slice(CLOUD_PREFIX.length));
-        }
-        cb(null, keys);
+      updateBiometricToken: (_token, cb) => {
+        log("BiometricManager.updateBiometricToken()");
+        dispatch("biometricTokenUpdated", { isUpdated: true });
+        cb?.(true);
+      },
+      openSettings: () => log("BiometricManager.openSettings()"),
+    },
+    LocationManager: {
+      isInited: true,
+      isLocationAvailable: true,
+      isAccessGranted: true,
+      init: (cb) => {
+        log("LocationManager.init()");
+        dispatch("locationManagerUpdated");
+        cb?.();
+      },
+      getLocation: (cb) => {
+        const locationData = { latitude: 55.751244, longitude: 37.618423, horizontal_accuracy: 12 };
+        log("LocationManager.getLocation()");
+        dispatch("locationRequested", { locationData });
+        cb?.(locationData);
+      },
+      openSettings: () => log("LocationManager.openSettings()"),
+    },
+    Accelerometer: {
+      start: (_params, cb) => {
+        log("Accelerometer.start()");
+        dispatch("accelerometerStarted");
+        cb?.(true);
+      },
+      stop: (cb) => {
+        log("Accelerometer.stop()");
+        dispatch("accelerometerStopped");
+        cb?.(true);
+      },
+    },
+    DeviceOrientation: {
+      start: (_params, cb) => {
+        log("DeviceOrientation.start()");
+        dispatch("deviceOrientationStarted");
+        cb?.(true);
+      },
+      stop: (cb) => {
+        log("DeviceOrientation.stop()");
+        dispatch("deviceOrientationStopped");
+        cb?.(true);
+      },
+    },
+    Gyroscope: {
+      start: (_params, cb) => {
+        log("Gyroscope.start()");
+        dispatch("gyroscopeStarted");
+        cb?.(true);
+      },
+      stop: (cb) => {
+        log("Gyroscope.stop()");
+        dispatch("gyroscopeStopped");
+        cb?.(true);
       },
     },
     onEvent: (event, handler) => {
@@ -334,6 +463,30 @@ export function createMockTelegram(): MockTelegram {
         doClose();
       }
     },
+    requestFullscreen: () => {
+      if (state.isFullscreen) return;
+      log("requestFullscreen()");
+      commit(
+        {
+          isFullscreen: true,
+          isExpanded: true,
+          viewportHeight: state.maxHeight,
+          viewportStableHeight: state.maxHeight,
+          contentSafeAreaInset: CHROME,
+        },
+        ["fullscreenChanged", "viewportChanged", "contentSafeAreaChanged"],
+      );
+    },
+    exitFullscreen: () => {
+      if (!state.isFullscreen) return;
+      log("exitFullscreen()");
+      commit({ isFullscreen: false, contentSafeAreaInset: ZERO }, ["fullscreenChanged", "contentSafeAreaChanged"]);
+    },
+    lockOrientation: () => log("lockOrientation()"),
+    unlockOrientation: () => log("unlockOrientation()"),
+    enableVerticalSwipes: () => log("enableVerticalSwipes()"),
+    disableVerticalSwipes: () => log("disableVerticalSwipes()"),
+    hideKeyboard: () => log("hideKeyboard()"),
     enableClosingConfirmation: () => {
       log("enableClosingConfirmation()");
       commit({ closingConfirmation: true });
@@ -356,8 +509,79 @@ export function createMockTelegram(): MockTelegram {
         },
         (id) => cb?.(id === "ok"),
       ),
+    showScanQrPopup: (params, cb) => {
+      log(`showScanQrPopup("${params.text ?? ""}")`);
+      window.setTimeout(() => {
+        const data = "tg://demo/qr-result";
+        dispatch("qrTextReceived", { data });
+        cb?.(data);
+      }, 250);
+    },
+    closeScanQrPopup: () => {
+      log("closeScanQrPopup()");
+      dispatch("scanQrPopupClosed");
+    },
+    readTextFromClipboard: (cb) => {
+      log("readTextFromClipboard()");
+      const data = "demo clipboard text";
+      dispatch("clipboardTextReceived", { data });
+      cb?.(data);
+    },
     openLink: (url) => log(`openLink("${url}")`),
     openTelegramLink: (url) => log(`openTelegramLink("${url}")`),
+    openInvoice: (url, cb) => {
+      log(`openInvoice("${url}")`);
+      window.setTimeout(() => {
+        dispatch("invoiceClosed", { url, status: "paid" });
+        cb?.("paid");
+      }, 300);
+    },
+    shareMessage: (msgId, cb) => {
+      log(`shareMessage("${msgId}")`);
+      dispatch("shareMessageSent");
+      cb?.(true);
+    },
+    shareToStory: (mediaUrl) => log(`shareToStory("${mediaUrl}")`),
+    downloadFile: (params, cb) => {
+      log(`downloadFile("${params.file_name ?? params.url}")`);
+      dispatch("fileDownloadRequested", { status: "downloading" });
+      cb?.(true);
+    },
+    sendData: (data) => log(`sendData("${data}")`),
+    switchInlineQuery: (query) => log(`switchInlineQuery("${query}")`),
+    requestContact: (cb) => {
+      log("requestContact()");
+      dispatch("contactRequested", { status: "sent" });
+      cb?.(true);
+    },
+    requestWriteAccess: (cb) => {
+      log("requestWriteAccess()");
+      dispatch("writeAccessRequested", { status: "allowed" });
+      cb?.(true);
+    },
+    addToHomeScreen: () => {
+      log("addToHomeScreen()");
+      commit({ homeScreenStatus: "added" }, ["homeScreenAdded"]);
+    },
+    checkHomeScreenStatus: (cb) => {
+      log("checkHomeScreenStatus()");
+      dispatch("homeScreenChecked", { status: state.homeScreenStatus });
+      cb?.(state.homeScreenStatus);
+    },
+    setEmojiStatus: (_customEmojiId, _params, cb) => {
+      log("setEmojiStatus()");
+      dispatch("emojiStatusSet");
+      cb?.(true);
+    },
+    requestEmojiStatusAccess: (cb) => {
+      log("requestEmojiStatusAccess()");
+      dispatch("emojiStatusAccessRequested", { status: "allowed" });
+      cb?.(true);
+    },
+    requestChat: (reqId, cb) => {
+      log(`requestChat("${reqId}")`);
+      cb?.(true);
+    },
     isVersionAtLeast: () => true,
   };
 

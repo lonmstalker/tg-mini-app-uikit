@@ -21,19 +21,42 @@ import {
   TKSwitch,
   TKTelegramProvider,
   TKToastProvider,
+  useActivity,
+  useBiometrics,
   useCloudStorage,
   useClosingConfirmation,
   useBackButton,
+  useChatRequest,
+  useClipboard,
+  useContactRequest,
+  useDataTransport,
+  useDeviceStorage,
+  useDownloadFile,
+  useEmojiStatus,
+  useFullscreen,
   useHaptics,
+  useHideKeyboard,
+  useHomeScreen,
   useInitData,
+  useInvoice,
+  useLocation,
   useMainButton,
+  useMotionSensors,
+  useOrientationLock,
+  useQrScanner,
   useSafeArea,
+  useSecureStorage,
   useSecondaryButton,
   useSettingsButton,
+  useShare,
+  useTelegramColors,
+  useTelegramLinks,
   useTelegramPopup,
   useTKToast,
+  useVerticalSwipes,
   useViewport,
   useWebApp,
+  useWriteAccess,
   type TelegramThemeParams,
 } from "tg-mini-app-uikit";
 import { createMockTelegram, type MockTelegram, type MockTelegramState } from "../../telegram/mock";
@@ -89,6 +112,29 @@ function KV({ label, value }: { label: string; value: ReactNode }) {
       <span style={{ color: "var(--tk-text-2)" }}>{label}</span>
       <span style={{ fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>{value}</span>
     </div>
+  );
+}
+
+function HookStatus({
+  label,
+  hook,
+}: {
+  label: string;
+  hook: { isSupported: boolean; status?: ReactNode; error?: ReactNode };
+}) {
+  return (
+    <KV
+      label={label}
+      value={
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+          <TKBadge tone={hook.isSupported ? "green" : "gray"} soft>
+            {hook.isSupported ? "supported" : "fallback"}
+          </TKBadge>
+          <span>{hook.status ?? "idle"}</span>
+          {hook.error ? <span style={{ color: "var(--tk-red)" }}>{hook.error}</span> : null}
+        </span>
+      }
+    />
   );
 }
 
@@ -223,7 +269,7 @@ function Chrome({
   );
 
   return (
-    <div style={{ height: "100%", display: "flex", flexDirection: "column", position: "relative", background: tp.secondary_bg_color }}>
+    <div data-demo-app="platform" style={{ height: "100%", display: "flex", flexDirection: "column", position: "relative", background: tp.secondary_bg_color }}>
       {/* Telegram header (the client's own chrome, not the mini app) */}
       <div
         style={{
@@ -316,6 +362,7 @@ function Chrome({
             {/* Grabber: drag to resize the mini app, tap to toggle — like the real sheet edge */}
             <div
               role="button"
+              data-demo-platform-grabber
               tabIndex={0}
               aria-label={state.isExpanded ? "Collapse the mini app" : "Expand the mini app"}
               onPointerDown={onGrabberDown}
@@ -533,10 +580,33 @@ function Lab({
   const webApp = useWebApp();
   const { user, startParam } = useInitData();
   const viewport = useViewport();
+  const activity = useActivity();
+  const fullscreen = useFullscreen();
   const { inset, contentInset } = useSafeArea();
   const haptics = useHaptics();
   const popup = useTelegramPopup();
   const cloud = useCloudStorage();
+  const deviceStorage = useDeviceStorage();
+  const secureStorage = useSecureStorage();
+  const links = useTelegramLinks();
+  const colors = useTelegramColors();
+  const invoice = useInvoice();
+  const share = useShare();
+  const transport = useDataTransport();
+  const contact = useContactRequest();
+  const writeAccess = useWriteAccess();
+  const clipboard = useClipboard();
+  const qr = useQrScanner();
+  const homeScreen = useHomeScreen();
+  const emojiStatus = useEmojiStatus();
+  const downloadFile = useDownloadFile();
+  const chatRequest = useChatRequest();
+  const keyboard = useHideKeyboard();
+  const biometrics = useBiometrics();
+  const location = useLocation();
+  const sensors = useMotionSensors();
+  const verticalSwipes = useVerticalSwipes();
+  const orientation = useOrientationLock();
 
   // Native buttons — fully driven by the declarative hooks.
   const [mainText, setMainText] = useState("CONTINUE");
@@ -570,6 +640,8 @@ function Lab({
   // Cloud storage: restore on mount, the same pattern a real app would use.
   const [note, setNote] = useState("");
   const [storedNote, setStoredNote] = useState<string | null>(null);
+  const [deviceValue, setDeviceValue] = useState<string | null>(null);
+  const [secureValue, setSecureValue] = useState<string | null>(null);
   useEffect(() => {
     cloud.get("note").then((v) => {
       setStoredNote(v);
@@ -679,6 +751,30 @@ function Lab({
         </Card>
       </Section>
 
+      <Section title="Fullscreen · activity">
+        <Card>
+          <KV label="isActive" value={String(activity.isActive)} />
+          <KV label="isFullscreen" value={String(fullscreen.isFullscreen)} />
+          {fullscreen.lastError ? <KV label="fullscreen error" value={fullscreen.lastError} /> : null}
+          <div style={{ display: "flex", gap: 8 }}>
+            <TKButton size="sm" full onClick={() => fullscreen.request()} disabled={fullscreen.isFullscreen}>
+              Fullscreen
+            </TKButton>
+            <TKButton size="sm" full variant="tonal" onClick={() => fullscreen.exit()} disabled={!fullscreen.isFullscreen}>
+              Exit
+            </TKButton>
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <TKButton size="sm" full variant="surface" onClick={() => verticalSwipes.disable()}>
+              Disable swipes
+            </TKButton>
+            <TKButton size="sm" full variant="surface" onClick={() => orientation.lock()}>
+              Lock orientation
+            </TKButton>
+          </div>
+        </Card>
+      </Section>
+
       <Section title="Main button · useMainButton">
         <Card>
           <TKInput label="Text" value={mainText} onChange={setMainText} clearable={false} />
@@ -746,6 +842,156 @@ function Lab({
         </div>
       </Section>
 
+      <Section title="Client APIs · links, invoice, share">
+        <Card>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
+            <TKButton size="sm" variant="surface" onClick={() => links.openLink("https://core.telegram.org/bots/webapps")}>
+              Open link
+            </TKButton>
+            <TKButton size="sm" variant="surface" onClick={() => links.openTelegramLink("https://t.me/telegram")}>
+              Telegram link
+            </TKButton>
+            <TKButton
+              size="sm"
+              variant="surface"
+              onClick={async () => toast.show({ icon: "card", text: `invoice → ${await invoice.open("https://t.me/invoice/demo")}` })}
+            >
+              Invoice
+            </TKButton>
+            <TKButton
+              size="sm"
+              variant="surface"
+              disabled={!share.isSupported}
+              onClick={async () => toast.show({ icon: "share", text: `share → ${await share.shareMessage("demo-message")}` })}
+            >
+              Share
+            </TKButton>
+            <TKButton size="sm" variant="surface" onClick={() => transport.sendData(JSON.stringify({ ok: true }))}>
+              sendData
+            </TKButton>
+            <TKButton size="sm" variant="surface" onClick={() => transport.switchInlineQuery("uikit demo", ["users", "groups"])}>
+              Inline query
+            </TKButton>
+            <TKButton size="sm" variant="surface" onClick={() => colors.setBottomBarColor(state.themeParams.bottom_bar_bg_color ?? "#f2f4f8")}>
+              Bottom color
+            </TKButton>
+            <TKButton size="sm" variant="surface" onClick={() => keyboard.hide()}>
+              Hide keyboard
+            </TKButton>
+          </div>
+        </Card>
+      </Section>
+
+      <Section title="Permissions · QR, clipboard, access">
+        <Card>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
+            <TKButton
+              size="sm"
+              variant="surface"
+              disabled={!contact.isSupported}
+              onClick={async () => toast.show({ icon: "user", text: `contact → ${await contact.request()}` })}
+            >
+              Contact
+            </TKButton>
+            <TKButton
+              size="sm"
+              variant="surface"
+              disabled={!writeAccess.isSupported}
+              onClick={async () => toast.show({ icon: "chat", text: `write → ${await writeAccess.request()}` })}
+            >
+              Write access
+            </TKButton>
+            <TKButton
+              size="sm"
+              variant="surface"
+              disabled={!qr.isSupported}
+              onClick={async () => toast.show({ icon: "grid", text: (await qr.open({ text: "Scan demo QR" })) ?? "no QR" })}
+            >
+              QR scan
+            </TKButton>
+            <TKButton
+              size="sm"
+              variant="surface"
+              disabled={!clipboard.isSupported}
+              onClick={async () => toast.show({ icon: "check", text: (await clipboard.readText()) ?? "empty clipboard" })}
+            >
+              Clipboard
+            </TKButton>
+            <TKButton
+              size="sm"
+              variant="surface"
+              onClick={async () => toast.show({ icon: "home", text: `home → ${await homeScreen.check()}` })}
+            >
+              Home status
+            </TKButton>
+            <TKButton size="sm" variant="surface" onClick={() => homeScreen.add()}>
+              Add home
+            </TKButton>
+            <TKButton
+              size="sm"
+              variant="surface"
+              disabled={!emojiStatus.isSupported}
+              onClick={async () => toast.show({ icon: "star", text: `emoji → ${await emojiStatus.set("5368324170671202286")}` })}
+            >
+              Emoji status
+            </TKButton>
+            <TKButton
+              size="sm"
+              variant="surface"
+              disabled={!downloadFile.isSupported}
+              onClick={async () => toast.show({ icon: "share", text: `download → ${await downloadFile.download({ url: "/demo.txt", fileName: "demo.txt" })}` })}
+            >
+              Download
+            </TKButton>
+            <TKButton
+              size="sm"
+              variant="surface"
+              disabled={!chatRequest.isSupported}
+              onClick={async () => toast.show({ icon: "chat", text: `chat → ${await chatRequest.request("prepared-demo-chat")}` })}
+            >
+              Request chat
+            </TKButton>
+            <TKButton
+              size="sm"
+              variant="surface"
+              disabled={!location.isSupported}
+              onClick={async () => toast.show({ icon: "location", text: (await location.getLocation()) ? "location ok" : "no location" })}
+            >
+              Location
+            </TKButton>
+            <TKButton
+              size="sm"
+              variant="surface"
+              disabled={!biometrics.isSupported}
+              onClick={async () => toast.show({ icon: "bolt", text: `biometric → ${(await biometrics.authenticate("Demo auth")).ok}` })}
+            >
+              Biometrics
+            </TKButton>
+            <TKButton
+              size="sm"
+              variant="surface"
+              disabled={!sensors.accelerometer.isSupported}
+              onClick={async () => toast.show({ icon: "tune", text: `sensor → ${await sensors.accelerometer.start(30)}` })}
+            >
+              Sensor
+            </TKButton>
+          </div>
+          <div style={{ display: "grid", gap: 6 }}>
+            <HookStatus label="share" hook={share} />
+            <HookStatus label="contact" hook={contact} />
+            <HookStatus label="write access" hook={writeAccess} />
+            <HookStatus label="qr" hook={qr} />
+            <HookStatus label="clipboard" hook={clipboard} />
+            <HookStatus label="emoji" hook={emojiStatus} />
+            <HookStatus label="download" hook={downloadFile} />
+            <HookStatus label="chat" hook={chatRequest} />
+            <HookStatus label="location" hook={location} />
+            <HookStatus label="biometrics" hook={biometrics} />
+            <HookStatus label="accelerometer" hook={sensors.accelerometer} />
+          </div>
+        </Card>
+      </Section>
+
       <Section title="Cloud storage · restore on launch">
         <Card>
           <TKInput label="Note" placeholder="Anything to remember" value={note} onChange={setNote} />
@@ -789,6 +1035,39 @@ function Lab({
           </div>
           <KV label="stored value" value={storedNote ?? "—"} />
           <KV label="backend" value={cloud.isSupported ? "Telegram CloudStorage" : "localStorage fallback"} />
+        </Card>
+      </Section>
+
+      <Section title="Device & secure storage">
+        <Card>
+          <div style={{ display: "flex", gap: 8 }}>
+            <TKButton
+              size="sm"
+              full
+              variant="surface"
+              onClick={async () => {
+                await deviceStorage.set("draft", "local device draft");
+                setDeviceValue(await deviceStorage.get("draft"));
+                toast.success("DeviceStorage saved");
+              }}
+            >
+              Device set
+            </TKButton>
+            <TKButton
+              size="sm"
+              full
+              variant="surface"
+              onClick={async () => {
+                await secureStorage.set("token", "secure-demo-token");
+                setSecureValue(await secureStorage.get("token"));
+                toast.success("SecureStorage saved");
+              }}
+            >
+              Secure set
+            </TKButton>
+          </div>
+          <KV label="device value" value={deviceValue ?? "—"} />
+          <KV label="secure value" value={secureValue ? "••••••••" : "—"} />
         </Card>
       </Section>
 

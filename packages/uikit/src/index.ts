@@ -1,9 +1,11 @@
 import "./styles/tokens.css";
 
 export * from "./theme";
+export * from "./typography";
 export * from "./telegram";
 export * from "./layout";
 export * from "./options";
+export * from "./service";
 export * from "./icons";
 export * from "./buttons";
 export * from "./controls";

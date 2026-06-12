@@ -391,6 +391,134 @@ export function TKActionSheet({ open, onClose, items, cancelLabel = "Cancel" }: 
   );
 }
 
+/* ---------------- Anchored popper / tooltip ---------------- */
+
+export type TKPopperPlacement = "top" | "bottom" | "left" | "right";
+
+export interface TKPopperProps {
+  open: boolean;
+  anchorRef: RefObject<HTMLElement | null>;
+  children?: ReactNode;
+  placement?: TKPopperPlacement;
+  offset?: number;
+  onClose?: () => void;
+  style?: CSSProperties;
+}
+
+export function TKPopper({ open, anchorRef, children, placement = "bottom", offset = 8, onClose, style }: TKPopperProps) {
+  const [rect, setRect] = useState<DOMRect | null>(null);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const sync = () => setRect(anchorRef.current?.getBoundingClientRect() ?? null);
+    sync();
+    window.addEventListener("resize", sync);
+    window.addEventListener("scroll", sync, true);
+    return () => {
+      window.removeEventListener("resize", sync);
+      window.removeEventListener("scroll", sync, true);
+    };
+  }, [anchorRef, open]);
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: globalThis.PointerEvent) => {
+      const target = e.target as Node;
+      if (ref.current?.contains(target) || anchorRef.current?.contains(target)) return;
+      onClose?.();
+    };
+    document.addEventListener("pointerdown", close);
+    return () => document.removeEventListener("pointerdown", close);
+  }, [anchorRef, onClose, open]);
+  if (!open || !rect) return null;
+  const x = placement === "left" ? rect.left : placement === "right" ? rect.right : rect.left + rect.width / 2;
+  const y = placement === "top" ? rect.top : placement === "bottom" ? rect.bottom : rect.top + rect.height / 2;
+  const transform =
+    placement === "top"
+      ? "translate(-50%, calc(-100% - var(--tk-popper-offset)))"
+      : placement === "bottom"
+        ? "translate(-50%, var(--tk-popper-offset))"
+        : placement === "left"
+          ? "translate(calc(-100% - var(--tk-popper-offset)), -50%)"
+          : "translate(var(--tk-popper-offset), -50%)";
+  return (
+    <div
+      ref={ref}
+      role="dialog"
+      style={
+        {
+          "--tk-popper-offset": `${offset}px`,
+          position: "fixed",
+          left: x,
+          top: y,
+          zIndex: 40,
+          maxWidth: "min(320px, calc(100vw - 28px))",
+          transform,
+          background: "var(--tk-surface)",
+          borderRadius: "var(--tk-r-md)",
+          boxShadow: "var(--tk-shadow-lg)",
+          padding: 8,
+          color: "var(--tk-text)",
+          animation: "tk-modal-in var(--tk-t2) var(--tk-spring) both",
+          ...style,
+        } as CSSProperties
+      }
+    >
+      {children}
+    </div>
+  );
+}
+
+export interface TKTooltipProps {
+  children: ReactNode;
+  content: ReactNode;
+  placement?: "top" | "bottom";
+  disabled?: boolean;
+  style?: CSSProperties;
+}
+
+export function TKTooltip({ children, content, placement = "top", disabled, style }: TKTooltipProps) {
+  const [open, setOpen] = useState(false);
+  return (
+    <span
+      onMouseEnter={() => !disabled && setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+      onFocus={() => !disabled && setOpen(true)}
+      onBlur={() => setOpen(false)}
+      style={{ position: "relative", display: "inline-flex", ...style }}
+    >
+      {children}
+      <span
+        role="tooltip"
+        style={{
+          position: "absolute",
+          left: "50%",
+          top: placement === "bottom" ? "calc(100% + 7px)" : undefined,
+          bottom: placement === "top" ? "calc(100% + 7px)" : undefined,
+          zIndex: 20,
+          transform: open ? "translateX(-50%) scale(1)" : "translateX(-50%) scale(.96)",
+          transformOrigin: placement === "top" ? "bottom center" : "top center",
+          minWidth: "max-content",
+          maxWidth: 220,
+          padding: "7px 9px",
+          borderRadius: "var(--tk-r-sm)",
+          background: "var(--tk-glass)",
+          backdropFilter: "blur(14px)",
+          WebkitBackdropFilter: "blur(14px)",
+          boxShadow: "var(--tk-shadow-md)",
+          color: "var(--tk-text)",
+          fontSize: "var(--tk-fz-caption)",
+          fontWeight: 600,
+          pointerEvents: "none",
+          opacity: open ? 1 : 0,
+          transition: "opacity var(--tk-t2) var(--tk-ease), transform var(--tk-t2) var(--tk-spring)",
+        }}
+      >
+        {content}
+      </span>
+    </span>
+  );
+}
+
 /* ---------------- Toasts ---------------- */
 
 export interface TKToastOptions {

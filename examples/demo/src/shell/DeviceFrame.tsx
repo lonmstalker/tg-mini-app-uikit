@@ -52,6 +52,7 @@ export const FRAME_HEIGHT = 874;
 export function DeviceFrame({ children, dark = false }: { children?: ReactNode; dark?: boolean }) {
   return (
     <div
+      data-demo-frame
       style={{
         width: FRAME_WIDTH,
         height: FRAME_HEIGHT,

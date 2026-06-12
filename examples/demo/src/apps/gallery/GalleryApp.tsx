@@ -1,13 +1,18 @@
 import { useState, type ReactNode } from "react";
 import {
   TKActionSheet,
+  TKAccordion,
   TKAvatar,
   TKBadge,
   TKBannerCard,
   TKBars,
   TKBookingCard,
   TKButton,
+  TKCaption,
   TKCategoryTabs,
+  TKCard,
+  TKCardCell,
+  TKCardChip,
   TKCell,
   TKCheckbox,
   TKChip,
@@ -16,12 +21,17 @@ import {
   TKDialog,
   TKDot,
   TKEmptyState,
+  TKFileInput,
+  TKFormField,
+  TKFormInput,
   TKHeader,
   TKIconButton,
   TKImage,
+  TKInlineButtons,
   TKInput,
   TKListGroup,
   TKMainButton,
+  TKMultiselect,
   TKOTP,
   TKPageDots,
   TKPaymentSummary,
@@ -33,6 +43,7 @@ import {
   TKRing,
   TKSearch,
   TKSegmented,
+  TKSelectable,
   TKSelect,
   TKSheet,
   TKSkeletonCard,
@@ -45,8 +56,16 @@ import {
   TKSteps,
   TKSwitch,
   TKTabbar,
+  TKTappable,
+  TKText,
+  TKTextarea,
   TKTimeline,
+  TKTitle,
+  TKTooltip,
   TKToastProvider,
+  TKVisuallyHidden,
+  TKWalletConnectButton,
+  TKWalletStatusCell,
   TKXPHeader,
   useTKToast,
 } from "tg-mini-app-uikit";
@@ -120,12 +139,13 @@ function GalleryInner() {
   const [progress, setProgress] = useState(64);
   const [ring, setRing] = useState(0.72);
   const [counter, setCounter] = useState(3);
+  const [inline, setInline] = useState("pickup");
   const [sheetOpen, setSheetOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [actionsOpen, setActionsOpen] = useState(false);
 
   return (
-    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+    <div data-demo-app="gallery" style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <div style={{ padding: "64px 16px 8px" }}>
         <div style={{ fontSize: "var(--tk-fz-title1)", fontWeight: 700, letterSpacing: "-.02em" }}>Components</div>
         <div style={{ fontSize: "var(--tk-fz-sub)", color: "var(--tk-text-2)" }}>
@@ -133,7 +153,7 @@ function GalleryInner() {
         </div>
       </div>
 
-      <div style={{ flex: 1, overflow: "auto" }}>
+      <div data-demo-gallery-scroll style={{ flex: 1, overflow: "auto" }}>
         <div style={{ padding: "8px 16px 32px", display: "flex", flexDirection: "column", gap: 22 }}>
         <Section title="Buttons · variants & sizes">
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
@@ -209,6 +229,107 @@ function GalleryInner() {
               { value: "Yerevan", icon: "location" },
             ]}
           />
+        </Section>
+
+        <Section title="Form primitives" lazy={false}>
+          <TKFormInput label="Apartment" placeholder="12B" icon="home" hint="Shown through the form alias" />
+          <TKTextarea
+            label="Courier note"
+            placeholder="Leave the order at reception"
+            defaultValue="Please call before arrival."
+            maxLength={120}
+            rows={3}
+          />
+          <TKMultiselect
+            label="Preferences"
+            defaultValue={["Coffee", "Desserts"]}
+            options={[
+              { value: "Coffee", icon: "ticket" },
+              { value: "Tea", icon: "gift" },
+              "Desserts",
+              { value: "Merch", disabled: true },
+            ]}
+            hint="Multi-select keeps chips readable in narrow viewports."
+          />
+          <TKFormField label="Delivery channel" hint="Selectable rows work as form rows or standalone cells.">
+            <div style={{ background: "var(--tk-surface)", borderRadius: "var(--tk-r-md)", boxShadow: "var(--tk-shadow-sm)", overflow: "hidden" }}>
+              <TKSelectable label="Telegram updates" subtitle="Fastest status notifications" defaultChecked icon="bell" />
+              <div style={{ height: 0.5, background: "var(--tk-sep)", marginLeft: 50 }} />
+              <TKSelectable label="Email receipt" subtitle="Send PDF after payment" icon="ticket" />
+            </div>
+          </TKFormField>
+          <TKFileInput label="Receipt attachment" accept="image/*,.pdf" multiple />
+        </Section>
+
+        <Section title="Composition primitives" lazy={false}>
+          <TKCard>
+            <TKTitle level={3}>Reusable layout block</TKTitle>
+            <TKText style={{ marginTop: 6 }}>
+              `TKCard`, `TKText` and `TKCaption` cover simple app surfaces without pulling product-card assumptions into forms.
+            </TKText>
+            <TKCaption style={{ marginTop: 8 }}>Zero runtime dependencies beyond React.</TKCaption>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
+              <TKCardChip selected>iOS feel</TKCardChip>
+              <TKCardChip tone="green">Telegram</TKCardChip>
+              <TKCardChip tone="gray">React</TKCardChip>
+            </div>
+          </TKCard>
+          <TKCard padding={6}>
+            <TKCardCell
+              before={<TKAvatar initials="TG" size={34} />}
+              title="Wallet-ready row"
+              subtitle="Use slots above TonConnect or any external adapter"
+              after={<TKBadge tone="green" soft>Live</TKBadge>}
+            />
+            <TKCardCell
+              compact
+              title="Compact cell"
+              subtitle="Good for settings, filters and nested cards"
+              after={<TKButton size="sm" variant="tonal" pill>Open</TKButton>}
+            />
+          </TKCard>
+          <TKAccordion
+            title="FAQ"
+            defaultValue={["shipping"]}
+            items={[
+              {
+                id: "shipping",
+                icon: "cart",
+                title: "Delivery timing",
+                subtitle: "Accordion row with icon",
+                content: "Orders are dispatched from the closest pickup point and keep safe-area spacing intact.",
+              },
+              {
+                id: "refund",
+                icon: "card",
+                iconBg: "var(--tk-orange)",
+                title: "Refund policy",
+                content: "Content expands inside the list group without layout jumps.",
+              },
+            ]}
+          />
+          <TKInlineButtons
+            value={inline}
+            onChange={setInline}
+            items={[
+              { id: "pickup", label: "Pickup", icon: "home" },
+              { id: "courier", label: "Courier", icon: "location" },
+              { id: "gift", label: "Gift", icon: "gift" },
+            ]}
+          />
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <TKTooltip content="Tooltip is powered by the generic TKPopper positioning primitive.">
+              <TKButton variant="surface" size="sm" pill>Hover tooltip</TKButton>
+            </TKTooltip>
+            <TKTappable
+              label="Track order"
+              onClick={() => toast.show({ text: "Accessible tappable pressed" })}
+              style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: "var(--tk-r-pill)", background: "var(--tk-surface)" }}
+            >
+              <TKBadge tone="green" soft>Track</TKBadge>
+              <TKVisuallyHidden>order status</TKVisuallyHidden>
+            </TKTappable>
+          </div>
         </Section>
 
         <Section title="OTP">
@@ -388,6 +509,14 @@ function GalleryInner() {
         </Section>
 
         <Section title="Patterns">
+          <TKWalletConnectButton connected address="EQD4...9f2A" onClick={() => toast.success("External wallet adapter slot")} />
+          <TKWalletStatusCell
+            walletName="Tonkeeper"
+            address="EQD4...9f2A"
+            connected
+            status={<TKBadge tone="green" soft>12.4 TON</TKBadge>}
+            onClick={() => toast.show({ text: "Wallet cell passed to host app" })}
+          />
           <TKSlotPicker
             days={[{ label: "Mon", date: 15 }, { label: "Tue", date: 16 }, { label: "Wed", date: 17 }, { label: "Thu", date: 18 }, { label: "Fri", date: 19 }, { label: "Sat", date: 20 }]}
             slots={["10:00", "10:45", "11:30", "12:15", "14:30", "15:15"]}
