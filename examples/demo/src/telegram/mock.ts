@@ -1,5 +1,7 @@
 import type {
+  TelegramBiometricManager,
   TelegramCloudStorage,
+  TelegramDeviceOrientation,
   TelegramDeviceStorage,
   TelegramMainButton,
   TelegramPopupParams,
@@ -25,7 +27,29 @@ export interface MockButtonState {
   progress: boolean;
   color?: string;
   textColor?: string;
+  hasShineEffect?: boolean;
+  position?: "left" | "right" | "top" | "bottom";
+  iconCustomEmojiId?: string;
 }
+
+export interface MockSensorValues {
+  x?: number;
+  y?: number;
+  z?: number;
+  alpha?: number;
+  beta?: number;
+  gamma?: number;
+}
+
+export interface MockSensorState {
+  isStarted: boolean;
+  refreshRate: number | null;
+  /** DeviceOrientation only — whether absolute tracking was requested. */
+  absolute?: boolean;
+  values: MockSensorValues;
+}
+
+export type MockSensorKey = "accelerometer" | "deviceOrientation" | "gyroscope";
 
 export interface MockPopupState {
   params: TelegramPopupParams;
@@ -35,6 +59,10 @@ export interface MockPopupState {
 export interface MockTelegramState {
   colorScheme: "light" | "dark";
   themeParams: TelegramThemeParams;
+  /** Raw values passed to `set*Color` (keyword or #hex); null = client default. */
+  headerColor: string | null;
+  backgroundColor: string | null;
+  bottomBarColor: string | null;
   isExpanded: boolean;
   isFullscreen: boolean;
   isActive: boolean;
@@ -50,6 +78,9 @@ export interface MockTelegramState {
   haptic: { kind: string; seq: number } | null;
   popup: MockPopupState | null;
   closingConfirmation: boolean;
+  verticalSwipes: boolean;
+  orientationLocked: boolean;
+  sensors: Record<MockSensorKey, MockSensorState>;
   homeScreenStatus: string;
   closed: boolean;
   log: { id: number; text: string }[];
@@ -91,6 +122,7 @@ const THEMES: Record<"light" | "dark", TelegramThemeParams> = {
     bottom_bar_bg_color: "#f2f4f8",
     text_color: "#131c26",
     subtitle_text_color: "#7b8794",
+    section_header_text_color: "#707579",
     hint_color: "#a8b2bd",
     link_color: "#3390ec",
     accent_text_color: "#3390ec",
@@ -107,6 +139,7 @@ const THEMES: Record<"light" | "dark", TelegramThemeParams> = {
     bottom_bar_bg_color: "#202c39",
     text_color: "#f3f6f9",
     subtitle_text_color: "#8a99a8",
+    section_header_text_color: "#788797",
     hint_color: "#5d6c7b",
     link_color: "#3390ec",
     accent_text_color: "#3390ec",
@@ -120,12 +153,41 @@ const CLOUD_PREFIX = "tg-demo-cloud:";
 const DEVICE_PREFIX = "tg-demo-device:";
 const SECURE_PREFIX = "tg-demo-secure:";
 
+/** Deterministic sensor readings — static so e2e assertions never race a ticker. */
+const SENSOR_READINGS: Record<MockSensorKey, MockSensorValues> = {
+  accelerometer: { x: 0.12, y: 9.77, z: 0.34 }, // m/s², gravity on y
+  deviceOrientation: { alpha: 0.66, beta: 0.18, gamma: -0.05 }, // radians
+  gyroscope: { x: 0.01, y: 0.02, z: 0 }, // rad/s
+};
+
+/** Resolves the stored `set*Color` values (keyword, #hex or client default) against the theme. */
+export function resolveMockColors(
+  state: Pick<MockTelegramState, "themeParams" | "headerColor" | "backgroundColor" | "bottomBarColor">,
+): { header: string; background: string; bottomBar: string } {
+  const tp = state.themeParams;
+  const resolve = (raw: string | null, fallback?: string): string => {
+    if (raw === null) return fallback ?? "#ffffff";
+    if (raw === "bg_color") return tp.bg_color ?? fallback ?? "#ffffff";
+    if (raw === "secondary_bg_color") return tp.secondary_bg_color ?? fallback ?? "#ffffff";
+    if (raw === "bottom_bar_bg_color") return tp.bottom_bar_bg_color ?? fallback ?? "#ffffff";
+    return raw;
+  };
+  return {
+    header: resolve(state.headerColor, tp.header_bg_color),
+    background: resolve(state.backgroundColor, tp.bg_color),
+    bottomBar: resolve(state.bottomBarColor, tp.bottom_bar_bg_color),
+  };
+}
+
 export function createMockTelegram(): MockTelegram {
   const collapsedOf = (max: number) => Math.round(max * 0.62);
 
   let state: MockTelegramState = {
     colorScheme: "light",
     themeParams: THEMES.light,
+    headerColor: null,
+    backgroundColor: null,
+    bottomBarColor: null,
     isExpanded: false,
     isFullscreen: false,
     isActive: true,
@@ -141,6 +203,13 @@ export function createMockTelegram(): MockTelegram {
     haptic: null,
     popup: null,
     closingConfirmation: false,
+    verticalSwipes: true,
+    orientationLocked: false,
+    sensors: {
+      accelerometer: { isStarted: false, refreshRate: null, values: {} },
+      deviceOrientation: { isStarted: false, refreshRate: null, absolute: false, values: {} },
+      gyroscope: { isStarted: false, refreshRate: null, values: {} },
+    },
     homeScreenStatus: "missed",
     closed: false,
     log: [],
@@ -162,13 +231,31 @@ export function createMockTelegram(): MockTelegram {
     handlers.get(event)?.forEach((h) => h(payload));
   };
 
+  const syncSensor = (target: TelegramDeviceOrientation, s: MockSensorState) => {
+    target.isStarted = s.isStarted;
+    target.x = s.values.x;
+    target.y = s.values.y;
+    target.z = s.values.z;
+    target.alpha = s.values.alpha;
+    target.beta = s.values.beta;
+    target.gamma = s.values.gamma;
+    if (s.absolute != null) target.absolute = s.absolute;
+  };
+
   /* Mirrors the mutable state into the flat WebApp fields the hooks read. */
   const syncWebApp = () => {
     webApp.colorScheme = state.colorScheme;
     webApp.themeParams = state.themeParams;
+    const colors = resolveMockColors(state);
+    webApp.headerColor = colors.header;
+    webApp.backgroundColor = colors.background;
+    webApp.bottomBarColor = colors.bottomBar;
     webApp.isExpanded = state.isExpanded;
     webApp.isFullscreen = state.isFullscreen;
     webApp.isActive = state.isActive;
+    webApp.isClosingConfirmationEnabled = state.closingConfirmation;
+    webApp.isVerticalSwipesEnabled = state.verticalSwipes;
+    webApp.isOrientationLocked = state.orientationLocked;
     webApp.viewportHeight = state.viewportHeight;
     webApp.viewportStableHeight = state.viewportStableHeight;
     webApp.safeAreaInset = state.safeAreaInset;
@@ -177,12 +264,20 @@ export function createMockTelegram(): MockTelegram {
     mainButton.isVisible = state.main.visible;
     mainButton.isActive = state.main.active;
     mainButton.isProgressVisible = state.main.progress;
+    mainButton.hasShineEffect = state.main.hasShineEffect;
+    mainButton.iconCustomEmojiId = state.main.iconCustomEmojiId;
     secondaryButton.text = state.secondary.text;
     secondaryButton.isVisible = state.secondary.visible;
     secondaryButton.isActive = state.secondary.active;
     secondaryButton.isProgressVisible = state.secondary.progress;
+    secondaryButton.hasShineEffect = state.secondary.hasShineEffect;
+    secondaryButton.position = state.secondary.position;
+    secondaryButton.iconCustomEmojiId = state.secondary.iconCustomEmojiId;
     backButton.isVisible = state.back.visible;
     settingsButton.isVisible = state.settings.visible;
+    syncSensor(accelerometerSensor, state.sensors.accelerometer);
+    syncSensor(deviceOrientationSensor, state.sensors.deviceOrientation);
+    syncSensor(gyroscopeSensor, state.sensors.gyroscope);
   };
 
   const commit = (next: Partial<MockTelegramState>, events: string[] = []) => {
@@ -206,7 +301,9 @@ export function createMockTelegram(): MockTelegram {
       disable: () => patch({ active: false }, "disable()"),
       showProgress: () => patch({ progress: true }, "showProgress()"),
       hideProgress: () => patch({ progress: false }, "hideProgress()"),
-      setParams: (params) =>
+      setParams: (params) => {
+        const shine = params.has_shine_effect ?? params.hasShineEffect;
+        const icon = params.icon_custom_emoji_id ?? params.iconCustomEmojiId;
         patch(
           {
             ...(params.text != null ? { text: params.text } : {}),
@@ -214,9 +311,13 @@ export function createMockTelegram(): MockTelegram {
             ...(params.text_color != null ? { textColor: params.text_color } : {}),
             ...(params.is_visible != null ? { visible: params.is_visible } : {}),
             ...(params.is_active != null ? { active: params.is_active } : {}),
+            ...(shine != null ? { hasShineEffect: shine } : {}),
+            ...(params.position != null ? { position: params.position } : {}),
+            ...(icon != null ? { iconCustomEmojiId: icon } : {}),
           },
           "setParams(…)",
-        ),
+        );
+      },
       onClick: (h) => clicks.add(h),
       offClick: (h) => clicks.delete(h),
     };
@@ -248,6 +349,42 @@ export function createMockTelegram(): MockTelegram {
   const fireClicks = (button: object) => {
     (button as { __clicks: Set<() => void> }).__clicks.forEach((h) => h());
   };
+
+  /* One factory for all three motion sensors; `need_absolute` matters only
+   * for DeviceOrientation, exactly like in the real client. */
+  const makeSensor = (key: MockSensorKey, label: string): TelegramDeviceOrientation => ({
+    start: (params, cb) => {
+      const absolute = key === "deviceOrientation" && !!params?.need_absolute;
+      log(`${label}.start(${params?.refresh_rate ?? "default"}${absolute ? ", absolute" : ""})`);
+      commit(
+        {
+          sensors: {
+            ...state.sensors,
+            [key]: {
+              isStarted: true,
+              refreshRate: params?.refresh_rate ?? null,
+              ...(key === "deviceOrientation" ? { absolute } : {}),
+              values: SENSOR_READINGS[key],
+            },
+          },
+        },
+        [`${key}Started`, `${key}Changed`],
+      );
+      cb?.(true);
+    },
+    stop: (cb) => {
+      log(`${label}.stop()`);
+      commit(
+        { sensors: { ...state.sensors, [key]: { ...state.sensors[key], isStarted: false } } },
+        [`${key}Stopped`],
+      );
+      cb?.(true);
+    },
+  });
+
+  const accelerometerSensor = makeSensor("accelerometer", "Accelerometer");
+  const deviceOrientationSensor = makeSensor("deviceOrientation", "DeviceOrientation");
+  const gyroscopeSensor = makeSensor("gyroscope", "Gyroscope");
 
   const haptic = (kind: string) => {
     log(`haptic · ${kind}`);
@@ -322,6 +459,37 @@ export function createMockTelegram(): MockTelegram {
     },
   };
 
+  const biometricManager: TelegramBiometricManager = {
+    isInited: true,
+    isBiometricAvailable: true,
+    biometricType: "face",
+    isAccessRequested: true,
+    isAccessGranted: true,
+    isBiometricTokenSaved: false,
+    deviceId: "demo-device-01",
+    init: (cb) => {
+      log("BiometricManager.init()");
+      dispatch("biometricManagerUpdated");
+      cb?.();
+    },
+    requestAccess: (_params, cb) => {
+      log("BiometricManager.requestAccess()");
+      cb?.(true);
+    },
+    authenticate: (_params, cb) => {
+      log("BiometricManager.authenticate()");
+      dispatch("biometricAuthRequested", { isAuthenticated: true, biometricToken: "demo-token" });
+      cb?.(true, "demo-token");
+    },
+    updateBiometricToken: (token, cb) => {
+      log("BiometricManager.updateBiometricToken()");
+      biometricManager.isBiometricTokenSaved = !!token;
+      dispatch("biometricTokenUpdated", { isUpdated: true });
+      cb?.(true);
+    },
+    openSettings: () => log("BiometricManager.openSettings()"),
+  };
+
   const webApp: TelegramWebApp = {
     version: "9.6",
     platform: "ios",
@@ -329,13 +497,25 @@ export function createMockTelegram(): MockTelegram {
     themeParams: state.themeParams,
     initData: "query_id=AADemo&user=%7B%22id%22%3A99281932%7D&auth_date=1718000000&hash=demo-not-valid",
     initDataUnsafe: {
-      user: { id: 99281932, first_name: "Anna", last_name: "Karlova", username: "annak", language_code: "en", is_premium: true },
+      query_id: "AADemo",
+      user: {
+        id: 99281932,
+        is_bot: false,
+        first_name: "Anna",
+        last_name: "Karlova",
+        username: "annak",
+        language_code: "en",
+        is_premium: true,
+        allows_write_to_pm: true,
+      },
       chat: { id: -10023456, type: "supergroup", title: "UIKit builders" },
       chat_type: "supergroup",
       chat_instance: "demo-chat-instance",
       start_param: "platform_lab",
       can_send_after: 0,
       auth_date: 1718000000,
+      hash: "demo-not-valid",
+      signature: "demo-signature-not-valid",
     },
     MainButton: mainButton,
     SecondaryButton: secondaryButton,
@@ -349,32 +529,7 @@ export function createMockTelegram(): MockTelegram {
     CloudStorage: makeStorage(CLOUD_PREFIX, "CloudStorage"),
     DeviceStorage: makeStorage(DEVICE_PREFIX, "DeviceStorage"),
     SecureStorage: secureStorage,
-    BiometricManager: {
-      isInited: true,
-      isBiometricAvailable: true,
-      biometricType: "face",
-      isAccessGranted: true,
-      init: (cb) => {
-        log("BiometricManager.init()");
-        dispatch("biometricManagerUpdated");
-        cb?.();
-      },
-      requestAccess: (_params, cb) => {
-        log("BiometricManager.requestAccess()");
-        cb?.(true);
-      },
-      authenticate: (_params, cb) => {
-        log("BiometricManager.authenticate()");
-        dispatch("biometricAuthRequested", { isAuthenticated: true, biometricToken: "demo-token" });
-        cb?.(true, "demo-token");
-      },
-      updateBiometricToken: (_token, cb) => {
-        log("BiometricManager.updateBiometricToken()");
-        dispatch("biometricTokenUpdated", { isUpdated: true });
-        cb?.(true);
-      },
-      openSettings: () => log("BiometricManager.openSettings()"),
-    },
+    BiometricManager: biometricManager,
     LocationManager: {
       isInited: true,
       isLocationAvailable: true,
@@ -385,49 +540,26 @@ export function createMockTelegram(): MockTelegram {
         cb?.();
       },
       getLocation: (cb) => {
-        const locationData = { latitude: 55.751244, longitude: 37.618423, horizontal_accuracy: 12 };
+        const locationData = {
+          latitude: 55.751244,
+          longitude: 37.618423,
+          altitude: 144,
+          course: 90,
+          speed: 0,
+          horizontal_accuracy: 12,
+          vertical_accuracy: 6,
+          course_accuracy: 15,
+          speed_accuracy: 1,
+        };
         log("LocationManager.getLocation()");
         dispatch("locationRequested", { locationData });
         cb?.(locationData);
       },
       openSettings: () => log("LocationManager.openSettings()"),
     },
-    Accelerometer: {
-      start: (_params, cb) => {
-        log("Accelerometer.start()");
-        dispatch("accelerometerStarted");
-        cb?.(true);
-      },
-      stop: (cb) => {
-        log("Accelerometer.stop()");
-        dispatch("accelerometerStopped");
-        cb?.(true);
-      },
-    },
-    DeviceOrientation: {
-      start: (_params, cb) => {
-        log("DeviceOrientation.start()");
-        dispatch("deviceOrientationStarted");
-        cb?.(true);
-      },
-      stop: (cb) => {
-        log("DeviceOrientation.stop()");
-        dispatch("deviceOrientationStopped");
-        cb?.(true);
-      },
-    },
-    Gyroscope: {
-      start: (_params, cb) => {
-        log("Gyroscope.start()");
-        dispatch("gyroscopeStarted");
-        cb?.(true);
-      },
-      stop: (cb) => {
-        log("Gyroscope.stop()");
-        dispatch("gyroscopeStopped");
-        cb?.(true);
-      },
-    },
+    Accelerometer: accelerometerSensor,
+    DeviceOrientation: deviceOrientationSensor,
+    Gyroscope: gyroscopeSensor,
     onEvent: (event, handler) => {
       if (!handlers.has(event)) handlers.set(event, new Set());
       handlers.get(event)!.add(handler);
@@ -482,10 +614,34 @@ export function createMockTelegram(): MockTelegram {
       log("exitFullscreen()");
       commit({ isFullscreen: false, contentSafeAreaInset: ZERO }, ["fullscreenChanged", "contentSafeAreaChanged"]);
     },
-    lockOrientation: () => log("lockOrientation()"),
-    unlockOrientation: () => log("unlockOrientation()"),
-    enableVerticalSwipes: () => log("enableVerticalSwipes()"),
-    disableVerticalSwipes: () => log("disableVerticalSwipes()"),
+    lockOrientation: () => {
+      log("lockOrientation()");
+      commit({ orientationLocked: true });
+    },
+    unlockOrientation: () => {
+      log("unlockOrientation()");
+      commit({ orientationLocked: false });
+    },
+    enableVerticalSwipes: () => {
+      log("enableVerticalSwipes()");
+      commit({ verticalSwipes: true });
+    },
+    disableVerticalSwipes: () => {
+      log("disableVerticalSwipes()");
+      commit({ verticalSwipes: false });
+    },
+    setHeaderColor: (color) => {
+      log(`setHeaderColor("${color}")`);
+      commit({ headerColor: color });
+    },
+    setBackgroundColor: (color) => {
+      log(`setBackgroundColor("${color}")`);
+      commit({ backgroundColor: color });
+    },
+    setBottomBarColor: (color) => {
+      log(`setBottomBarColor("${color}")`);
+      commit({ bottomBarColor: color });
+    },
     hideKeyboard: () => log("hideKeyboard()"),
     enableClosingConfirmation: () => {
       log("enableClosingConfirmation()");

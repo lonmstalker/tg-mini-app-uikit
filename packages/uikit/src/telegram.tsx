@@ -260,6 +260,15 @@ export interface TelegramMotionSensor {
   stop?: (callback?: (ok: boolean) => void) => unknown;
 }
 
+/** `WebApp.DeviceOrientation` — the shared sensor shape plus absolute-orientation tracking (Bot API 8.0+). */
+export interface TelegramDeviceOrientation extends TelegramMotionSensor {
+  absolute?: boolean;
+  start?: (
+    params?: { refresh_rate?: number; need_absolute?: boolean },
+    callback?: (ok: boolean) => void,
+  ) => unknown;
+}
+
 export interface TelegramEventMap {
   activated: [];
   deactivated: [];
@@ -321,6 +330,12 @@ export interface TelegramWebApp {
   viewportStableHeight?: number;
   isFullscreen?: boolean;
   isActive?: boolean;
+  headerColor?: string;
+  backgroundColor?: string;
+  bottomBarColor?: string;
+  isClosingConfirmationEnabled?: boolean;
+  isVerticalSwipesEnabled?: boolean;
+  isOrientationLocked?: boolean;
   safeAreaInset?: TelegramSafeAreaInset;
   contentSafeAreaInset?: TelegramSafeAreaInset;
   MainButton?: TelegramMainButton;
@@ -334,7 +349,7 @@ export interface TelegramWebApp {
   BiometricManager?: TelegramBiometricManager;
   LocationManager?: TelegramLocationManager;
   Accelerometer?: TelegramMotionSensor;
-  DeviceOrientation?: TelegramMotionSensor;
+  DeviceOrientation?: TelegramDeviceOrientation;
   Gyroscope?: TelegramMotionSensor;
   onEvent?: (event: string, handler: (...args: unknown[]) => void) => unknown;
   offEvent?: (event: string, handler: (...args: unknown[]) => void) => unknown;
@@ -1000,6 +1015,10 @@ export function useTelegramLinks(): TKTelegramLinks {
 }
 
 export interface TKTelegramColors {
+  /** Current values of `WebApp.headerColor` / `backgroundColor` / `bottomBarColor`. */
+  headerColor?: string;
+  backgroundColor?: string;
+  bottomBarColor?: string;
   setHeaderColor: (color: string) => boolean;
   setBackgroundColor: (color: string) => boolean;
   setBottomBarColor: (color: string) => boolean;
@@ -1008,26 +1027,42 @@ export interface TKTelegramColors {
 
 export function useTelegramColors(): TKTelegramColors {
   const wa = useWebApp();
+  const read = useCallback(
+    () => ({
+      headerColor: wa?.headerColor,
+      backgroundColor: wa?.backgroundColor,
+      bottomBarColor: wa?.bottomBarColor,
+    }),
+    [wa],
+  );
+  const [colors, setColors] = useState(read);
+  useEffect(() => setColors(read()), [read]);
+  // Keyword colors ("bg_color", …) follow the theme, so re-read on theme flips.
+  useTelegramEvent("themeChanged", () => setColors(read()));
   return useMemo(
     () => ({
+      ...colors,
       setHeaderColor: (color) => {
         if (!wa?.setHeaderColor) return false;
         wa.setHeaderColor(color);
+        setColors(read());
         return true;
       },
       setBackgroundColor: (color) => {
         if (!wa?.setBackgroundColor) return false;
         wa.setBackgroundColor(color);
+        setColors(read());
         return true;
       },
       setBottomBarColor: (color) => {
         if (!wa?.setBottomBarColor) return false;
         wa.setBottomBarColor(color);
+        setColors(read());
         return true;
       },
       isSupported: !!(wa?.setHeaderColor || wa?.setBackgroundColor || wa?.setBottomBarColor),
     }),
-    [wa],
+    [colors, read, wa],
   );
 }
 
@@ -1630,22 +1665,24 @@ export function useLocation(): TKLocation {
   );
 }
 
-interface TKMotionSensorApi extends TKTelegramAsyncState<TelegramMotionSensorError> {
-  sensor: TelegramMotionSensor | undefined;
-  start: (refreshRate?: number) => Promise<boolean>;
+interface TKMotionSensorApi<S extends TelegramMotionSensor = TelegramMotionSensor>
+  extends TKTelegramAsyncState<TelegramMotionSensorError> {
+  sensor: S | undefined;
+  /** `needAbsolute` maps to `need_absolute` and is honoured by `DeviceOrientation` only. */
+  start: (refreshRate?: number, options?: { needAbsolute?: boolean }) => Promise<boolean>;
   stop: () => Promise<boolean>;
   isSupported: boolean;
 }
 
-function sensorApi(
-  sensor: TelegramMotionSensor | undefined,
+function sensorApi<S extends TelegramMotionSensor>(
+  sensor: S | undefined,
   state: TKTelegramAsyncState<TelegramMotionSensorError>,
   setState: (state: TKTelegramAsyncState<TelegramMotionSensorError>) => void,
-): TKMotionSensorApi {
+): TKMotionSensorApi<S> {
   const isSupported = !!sensor;
   return {
     sensor,
-    start: (refreshRate?: number) => {
+    start: (refreshRate?: number, options?: { needAbsolute?: boolean }) => {
       setState({ status: "pending" });
       return new Promise<boolean>((resolve) => {
         if (!sensor?.start) {
@@ -1653,7 +1690,10 @@ function sensorApi(
           resolve(false);
           return;
         }
-        sensor.start(refreshRate ? { refresh_rate: refreshRate } : undefined, (ok) => {
+        const params: { refresh_rate?: number; need_absolute?: boolean } = {};
+        if (refreshRate) params.refresh_rate = refreshRate;
+        if (options?.needAbsolute != null) params.need_absolute = options.needAbsolute;
+        sensor.start(Object.keys(params).length > 0 ? params : undefined, (ok) => {
           setState(ok ? { status: "success" } : { status: "error", error: "START_FAILED" });
           resolve(!!ok);
         });
@@ -1699,42 +1739,64 @@ export function useMotionSensors() {
   );
 }
 
-export function useVerticalSwipes(): { enable: () => boolean; disable: () => boolean; isSupported: boolean } {
+export function useVerticalSwipes(): {
+  /** Mirrors `WebApp.isVerticalSwipesEnabled` (swipes are enabled by default). */
+  isEnabled: boolean;
+  enable: () => boolean;
+  disable: () => boolean;
+  isSupported: boolean;
+} {
   const wa = useWebApp();
+  const [isEnabled, setIsEnabled] = useState(() => wa?.isVerticalSwipesEnabled ?? true);
+  useEffect(() => setIsEnabled(wa?.isVerticalSwipesEnabled ?? true), [wa]);
   return useMemo(
     () => ({
+      isEnabled,
       enable: () => {
         if (!wa?.enableVerticalSwipes) return false;
         wa.enableVerticalSwipes();
+        setIsEnabled(wa.isVerticalSwipesEnabled ?? true);
         return true;
       },
       disable: () => {
         if (!wa?.disableVerticalSwipes) return false;
         wa.disableVerticalSwipes();
+        setIsEnabled(wa.isVerticalSwipesEnabled ?? false);
         return true;
       },
       isSupported: !!(wa?.enableVerticalSwipes || wa?.disableVerticalSwipes),
     }),
-    [wa],
+    [isEnabled, wa],
   );
 }
 
-export function useOrientationLock(): { lock: () => boolean; unlock: () => boolean; isSupported: boolean } {
+export function useOrientationLock(): {
+  /** Mirrors `WebApp.isOrientationLocked`. */
+  isLocked: boolean;
+  lock: () => boolean;
+  unlock: () => boolean;
+  isSupported: boolean;
+} {
   const wa = useWebApp();
+  const [isLocked, setIsLocked] = useState(() => wa?.isOrientationLocked ?? false);
+  useEffect(() => setIsLocked(wa?.isOrientationLocked ?? false), [wa]);
   return useMemo(
     () => ({
+      isLocked,
       lock: () => {
         if (!wa?.lockOrientation) return false;
         wa.lockOrientation();
+        setIsLocked(wa.isOrientationLocked ?? true);
         return true;
       },
       unlock: () => {
         if (!wa?.unlockOrientation) return false;
         wa.unlockOrientation();
+        setIsLocked(wa.isOrientationLocked ?? false);
         return true;
       },
       isSupported: !!(wa?.lockOrientation || wa?.unlockOrientation),
     }),
-    [wa],
+    [isLocked, wa],
   );
 }

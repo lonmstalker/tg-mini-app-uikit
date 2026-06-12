@@ -7,12 +7,15 @@ import {
   useBackButton,
   useBiometrics,
   useCloudStorage,
+  useClosingConfirmation,
   useDataTransport,
   useFullscreen,
   useHaptics,
   useInitData,
   useInvoice,
   useMainButton,
+  useMotionSensors,
+  useOrientationLock,
   useSecondaryButton,
   useShare,
   useTelegramColors,
@@ -20,6 +23,7 @@ import {
   useTelegramLinks,
   useTelegramPopup,
   useTelegramTheme,
+  useVerticalSwipes,
   useViewport,
   useWebApp,
   type TelegramWebApp,
@@ -409,5 +413,149 @@ describe("window.Telegram.WebApp", () => {
     expect(mock.getState().haptic?.kind).toBe("impact · heavy");
     act(() => result.current.notification("error"));
     expect(mock.getState().haptic?.kind).toBe("notification · error");
+  });
+});
+
+/* ---------------- WebApp state fields (colors, flags, sensors) ---------------- */
+
+describe("useTelegramColors state", () => {
+  it("reflects the WebApp color fields and updates after each setter", () => {
+    const mock = createMockTelegram();
+    const { result } = renderHook(() => useTelegramColors(), { wrapper: wrapperFor(mock.webApp) });
+
+    expect(result.current.headerColor).toBe("#ffffff");
+    expect(result.current.bottomBarColor).toBe("#f2f4f8");
+
+    let ok = false;
+    act(() => {
+      ok = result.current.setHeaderColor("#112233");
+    });
+    expect(ok).toBe(true);
+    expect(result.current.headerColor).toBe("#112233");
+    expect(mock.webApp.headerColor).toBe("#112233");
+
+    act(() => {
+      result.current.setBackgroundColor("secondary_bg_color");
+    });
+    expect(result.current.backgroundColor).toBe("#eef1f6"); // keyword resolved against the light theme
+  });
+
+  it("keyword colors follow themeChanged", () => {
+    const mock = createMockTelegram();
+    const { result } = renderHook(() => useTelegramColors(), { wrapper: wrapperFor(mock.webApp) });
+
+    act(() => {
+      result.current.setHeaderColor("bg_color");
+    });
+    expect(result.current.headerColor).toBe("#ffffff");
+
+    act(() => mock.setColorScheme("dark"));
+    expect(result.current.headerColor).toBe("#17212b");
+  });
+});
+
+describe("useVerticalSwipes / useOrientationLock state", () => {
+  it("mirrors isVerticalSwipesEnabled through enable/disable", () => {
+    const mock = createMockTelegram();
+    const { result } = renderHook(() => useVerticalSwipes(), { wrapper: wrapperFor(mock.webApp) });
+
+    expect(result.current.isEnabled).toBe(true);
+    act(() => {
+      expect(result.current.disable()).toBe(true);
+    });
+    expect(result.current.isEnabled).toBe(false);
+    expect(mock.webApp.isVerticalSwipesEnabled).toBe(false);
+
+    act(() => {
+      result.current.enable();
+    });
+    expect(result.current.isEnabled).toBe(true);
+    expect(mock.webApp.isVerticalSwipesEnabled).toBe(true);
+  });
+
+  it("mirrors isOrientationLocked through lock/unlock", () => {
+    const mock = createMockTelegram();
+    const { result } = renderHook(() => useOrientationLock(), { wrapper: wrapperFor(mock.webApp) });
+
+    expect(result.current.isLocked).toBe(false);
+    act(() => {
+      expect(result.current.lock()).toBe(true);
+    });
+    expect(result.current.isLocked).toBe(true);
+    expect(mock.getState().orientationLocked).toBe(true);
+
+    act(() => {
+      result.current.unlock();
+    });
+    expect(result.current.isLocked).toBe(false);
+    expect(mock.webApp.isOrientationLocked).toBe(false);
+  });
+});
+
+describe("useClosingConfirmation", () => {
+  it("drives isClosingConfirmationEnabled and resets on unmount", () => {
+    const mock = createMockTelegram();
+    const { unmount } = renderHook(() => useClosingConfirmation(true), { wrapper: wrapperFor(mock.webApp) });
+
+    expect(mock.webApp.isClosingConfirmationEnabled).toBe(true);
+    unmount();
+    expect(mock.webApp.isClosingConfirmationEnabled).toBe(false);
+  });
+});
+
+describe("motion sensors", () => {
+  it("device orientation honours needAbsolute and mirrors readings", async () => {
+    const mock = createMockTelegram();
+    const { result } = renderHook(() => useMotionSensors(), { wrapper: wrapperFor(mock.webApp) });
+
+    let ok = false;
+    await act(async () => {
+      ok = await result.current.deviceOrientation.start(60, { needAbsolute: true });
+    });
+    expect(ok).toBe(true);
+    expect(mock.getState().sensors.deviceOrientation).toMatchObject({
+      isStarted: true,
+      refreshRate: 60,
+      absolute: true,
+    });
+    expect(mock.webApp.DeviceOrientation).toMatchObject({ isStarted: true, absolute: true, alpha: 0.66 });
+
+    await act(async () => {
+      await result.current.deviceOrientation.stop();
+    });
+    expect(mock.getState().sensors.deviceOrientation.isStarted).toBe(false);
+    expect(mock.webApp.DeviceOrientation?.isStarted).toBe(false);
+  });
+
+  it("accelerometer exposes fixed readings while started", async () => {
+    const mock = createMockTelegram();
+    const { result } = renderHook(() => useMotionSensors(), { wrapper: wrapperFor(mock.webApp) });
+
+    await act(async () => {
+      await result.current.accelerometer.start(30);
+    });
+    expect(mock.webApp.Accelerometer).toMatchObject({ isStarted: true, x: 0.12, y: 9.77, z: 0.34 });
+  });
+});
+
+describe("BottomButton params (Bot API 9.5+)", () => {
+  it("forwards shine and the custom emoji icon to MainButton", () => {
+    const mock = createMockTelegram();
+    renderHook(() => useMainButton({ text: "Pay", shine: true, iconCustomEmojiId: "5368324170671202286" }), {
+      wrapper: wrapperFor(mock.webApp),
+    });
+
+    expect(mock.getState().main).toMatchObject({ hasShineEffect: true, iconCustomEmojiId: "5368324170671202286" });
+    expect(mock.webApp.MainButton).toMatchObject({ hasShineEffect: true, iconCustomEmojiId: "5368324170671202286" });
+  });
+
+  it("positions the SecondaryButton", () => {
+    const mock = createMockTelegram();
+    renderHook(() => useSecondaryButton({ text: "Cancel", visible: true, position: "left" }), {
+      wrapper: wrapperFor(mock.webApp),
+    });
+
+    expect(mock.getState().secondary.position).toBe("left");
+    expect(mock.webApp.SecondaryButton?.position).toBe("left");
   });
 });

@@ -59,7 +59,14 @@ import {
   useWriteAccess,
   type TelegramThemeParams,
 } from "tg-mini-app-uikit";
-import { createMockTelegram, type MockTelegram, type MockTelegramState } from "../../telegram/mock";
+import {
+  createMockTelegram,
+  resolveMockColors,
+  type MockSensorState,
+  type MockSensorValues,
+  type MockTelegram,
+  type MockTelegramState,
+} from "../../telegram/mock";
 import type { ShellApi } from "../../shell/types";
 
 /*
@@ -111,6 +118,67 @@ function KV({ label, value }: { label: string; value: ReactNode }) {
     <div style={{ display: "flex", justifyContent: "space-between", gap: 10, fontSize: "var(--tk-fz-sub)" }}>
       <span style={{ color: "var(--tk-text-2)" }}>{label}</span>
       <span style={{ fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>{value}</span>
+    </div>
+  );
+}
+
+function ColorKV({ label, value }: { label: string; value?: string }) {
+  return (
+    <KV
+      label={label}
+      value={
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+          <span
+            aria-hidden
+            style={{
+              width: 12,
+              height: 12,
+              borderRadius: "50%",
+              background: value,
+              boxShadow: "inset 0 0 0 1px var(--tk-sep)",
+            }}
+          />
+          {value ?? "—"}
+        </span>
+      }
+    />
+  );
+}
+
+const fmtReading = (n?: number) => (n == null ? "—" : n.toFixed(2));
+
+function SensorRow({
+  label,
+  sensor,
+  format,
+  onStart,
+  onStop,
+  testId,
+}: {
+  label: string;
+  sensor: MockSensorState;
+  format: (values: MockSensorValues) => string;
+  onStart: () => void;
+  onStop: () => void;
+  testId: string;
+}) {
+  return (
+    <div data-demo-sensor={testId} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: "var(--tk-fz-sub)", fontWeight: 600 }}>{label}</div>
+        <div
+          style={{
+            fontSize: "var(--tk-fz-caption)",
+            color: "var(--tk-text-2)",
+            fontVariantNumeric: "tabular-nums",
+          }}
+        >
+          {sensor.isStarted ? format(sensor.values) : "not started"}
+        </div>
+      </div>
+      <TKButton size="sm" variant={sensor.isStarted ? "tonal" : "filled"} onClick={sensor.isStarted ? onStop : onStart}>
+        {sensor.isStarted ? "Stop" : "Start"}
+      </TKButton>
     </div>
   );
 }
@@ -175,6 +243,7 @@ function Chrome({
   setHighlight: (on: boolean) => void;
 }) {
   const tp = state.themeParams;
+  const chromeColors = resolveMockColors(state);
   const chatRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{ startY: number; startH: number; moved: boolean } | null>(null);
   const rafRef = useRef<number | null>(null);
@@ -272,13 +341,15 @@ function Chrome({
     <div data-demo-app="platform" style={{ height: "100%", display: "flex", flexDirection: "column", position: "relative", background: tp.secondary_bg_color }}>
       {/* Telegram header (the client's own chrome, not the mini app) */}
       <div
+        data-demo-platform-header
         style={{
           flexShrink: 0,
           display: "flex",
           alignItems: "center",
           gap: 8,
           padding: "56px 10px 8px",
-          background: tp.header_bg_color,
+          background: chromeColors.header, // setHeaderColor() repaints the client header
+          transition: "background-color .25s ease",
           borderBottom: `0.5px solid ${tp.section_separator_color}`,
           color: tp.text_color,
         }}
@@ -343,6 +414,7 @@ function Chrome({
           </div>
         ) : (
           <div
+            data-demo-platform-sheet
             style={{
               position: "absolute",
               left: 0,
@@ -434,13 +506,15 @@ function Chrome({
             {/* Native bottom buttons rendered by the "client" */}
             {state.main.visible || state.secondary.visible ? (
               <div
+                data-demo-platform-bottombar
                 style={{
                   flexShrink: 0,
                   display: "flex",
                   flexDirection: "column",
                   gap: 7,
                   padding: "7px 12px 10px",
-                  background: tp.bottom_bar_bg_color,
+                  background: chromeColors.bottomBar, // setBottomBarColor() repaints the bar
+                  transition: "background-color .25s ease",
                   borderTop: `0.5px solid ${tp.section_separator_color}`,
                 }}
               >
@@ -617,6 +691,7 @@ function Lab({
   const [backVisible, setBackVisible] = useState(false);
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [confirmClose, setConfirmClose] = useState(false);
+  const [needAbsolute, setNeedAbsolute] = useState(false);
 
   useMainButton({
     text: mainText,
@@ -725,6 +800,30 @@ function Lab({
         </div>
       </Section>
 
+      <Section title="Appearance · setHeaderColor">
+        <Card>
+          <ColorKV label="headerColor" value={colors.headerColor} />
+          <ColorKV label="backgroundColor" value={colors.backgroundColor} />
+          <ColorKV label="bottomBarColor" value={colors.bottomBarColor} />
+          <div style={{ display: "flex", gap: 8 }}>
+            <TKButton size="sm" full onClick={() => colors.setHeaderColor("#3390ec")}>
+              Accent header
+            </TKButton>
+            <TKButton size="sm" full variant="tonal" onClick={() => colors.setHeaderColor("bg_color")}>
+              Reset header
+            </TKButton>
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <TKButton size="sm" full variant="surface" onClick={() => colors.setBackgroundColor("secondary_bg_color")}>
+              Tint background
+            </TKButton>
+            <TKButton size="sm" full variant="surface" onClick={() => colors.setBottomBarColor("#1c93e3")}>
+              Accent bottom bar
+            </TKButton>
+          </div>
+        </Card>
+      </Section>
+
       <Section title="Viewport · expand()">
         <Card>
           <KV label="viewportHeight" value={`${Math.round(viewport.height ?? 0)} px`} />
@@ -764,14 +863,16 @@ function Lab({
               Exit
             </TKButton>
           </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <TKButton size="sm" full variant="surface" onClick={() => verticalSwipes.disable()}>
-              Disable swipes
-            </TKButton>
-            <TKButton size="sm" full variant="surface" onClick={() => orientation.lock()}>
-              Lock orientation
-            </TKButton>
-          </div>
+          <TKSwitch
+            label="Vertical swipes to close"
+            checked={verticalSwipes.isEnabled}
+            onChange={(on) => (on ? verticalSwipes.enable() : verticalSwipes.disable())}
+          />
+          <TKSwitch
+            label="Lock orientation"
+            checked={orientation.isLocked}
+            onChange={(on) => (on ? orientation.lock() : orientation.unlock())}
+          />
         </Card>
       </Section>
 
@@ -992,6 +1093,40 @@ function Lab({
         </Card>
       </Section>
 
+      <Section title="Sensors · useMotionSensors">
+        <Card>
+          <SensorRow
+            label="Accelerometer"
+            sensor={state.sensors.accelerometer}
+            format={(v) => `x ${fmtReading(v.x)} · y ${fmtReading(v.y)} · z ${fmtReading(v.z)} m/s²`}
+            onStart={() => sensors.accelerometer.start(30)}
+            onStop={() => sensors.accelerometer.stop()}
+            testId="accelerometer"
+          />
+          <SensorRow
+            label="Device orientation"
+            sensor={state.sensors.deviceOrientation}
+            format={(v) =>
+              `α ${fmtReading(v.alpha)} · β ${fmtReading(v.beta)} · γ ${fmtReading(v.gamma)}${
+                state.sensors.deviceOrientation.absolute ? " · absolute" : ""
+              }`
+            }
+            onStart={() => sensors.deviceOrientation.start(60, { needAbsolute })}
+            onStop={() => sensors.deviceOrientation.stop()}
+            testId="orientation"
+          />
+          <SensorRow
+            label="Gyroscope"
+            sensor={state.sensors.gyroscope}
+            format={(v) => `x ${fmtReading(v.x)} · y ${fmtReading(v.y)} · z ${fmtReading(v.z)} rad/s`}
+            onStart={() => sensors.gyroscope.start(60)}
+            onStop={() => sensors.gyroscope.stop()}
+            testId="gyroscope"
+          />
+          <TKSwitch label="Absolute orientation (need_absolute)" checked={needAbsolute} onChange={setNeedAbsolute} />
+        </Card>
+      </Section>
+
       <Section title="Cloud storage · restore on launch">
         <Card>
           <TKInput label="Note" placeholder="Anything to remember" value={note} onChange={setNote} />
@@ -1074,6 +1209,7 @@ function Lab({
       <Section title="Closing · confirmation">
         <Card>
           <TKSwitch label="Ask before closing" checked={confirmClose} onChange={setConfirmClose} />
+          <KV label="isClosingConfirmationEnabled" value={String(webApp?.isClosingConfirmationEnabled ?? false)} />
           <TKButton variant="destructive" full onClick={() => webApp?.close?.()}>
             Close mini app
           </TKButton>
