@@ -9,11 +9,17 @@
     "build": "npm run build -w tg-mini-app-uikit && npm run build -w tg-mini-app-uikit-demo",
     "dev": "npm run dev -w tg-mini-app-uikit-demo",
     "record:demo": "node scripts/record-demo.mjs",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:visual": "playwright test --project=visual",
+    "test:e2e:update": "playwright test --project=visual --update-snapshots",
     "typecheck": "npm run typecheck -w tg-mini-app-uikit && npm run typecheck -w tg-mini-app-uikit-demo"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.10.2",
+    "@playwright/test": "1.60.0",
     "gifenc": "^1.0.3",
-    "playwright": "^1.60.0",
+    "playwright": "1.60.0",
     "pngjs": "^7.0.0"
   }
 }

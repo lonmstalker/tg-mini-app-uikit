@@ -154,7 +154,15 @@ export function TKCell({
       {value ? (
         <span style={{ fontSize: "var(--tk-fz-body)", color: "var(--tk-text-2)", flexShrink: 0 }}>{value}</span>
       ) : null}
-      {hasToggle ? <TKSwitch small checked={toggle} defaultChecked={defaultToggle} onChange={onToggle} /> : null}
+      {hasToggle ? (
+        <TKSwitch
+          small
+          ariaLabel={typeof title === "string" ? title : undefined}
+          checked={toggle}
+          defaultChecked={defaultToggle}
+          onChange={onToggle}
+        />
+      ) : null}
       {after}
       {chevron ? (
         <span

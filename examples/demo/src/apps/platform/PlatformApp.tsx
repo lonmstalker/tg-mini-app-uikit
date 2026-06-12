@@ -1082,7 +1082,12 @@ function Lab({
 
       <Section title="Event log">
         <TKListGroup footer="Every WebApp call and event the mock receives, newest first.">
-          <div style={{ padding: "10px 14px", maxHeight: 180, overflowY: "auto" }}>
+          <div
+            role="log"
+            aria-label="Event log"
+            tabIndex={0}
+            style={{ padding: "10px 14px", maxHeight: 180, overflowY: "auto" }}
+          >
             {state.log.length === 0 ? (
               <div style={{ fontSize: "var(--tk-fz-caption)", color: "var(--tk-text-3)" }}>quiet so far…</div>
             ) : (

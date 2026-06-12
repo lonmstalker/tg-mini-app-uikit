@@ -240,8 +240,9 @@
   letter-spacing: .02em;
 }
 
-/* generic focus ring */
-.tk :focus-visible { outline: none; box-shadow: var(--tk-ring); }
+/* generic focus ring — outline (follows border-radius) so the inline
+   box-shadows that components set for elevation can never mask it */
+.tk :focus-visible { outline: 3.5px solid var(--tk-accent-20); outline-offset: 0; }
 
 /* reduced motion: collapse transitions, keep purely-informational spinners */
 @media (prefers-reduced-motion: reduce) {

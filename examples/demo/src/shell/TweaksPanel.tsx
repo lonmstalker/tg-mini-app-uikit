@@ -74,7 +74,7 @@ export function TweaksPanel({ tweaks, onChange, style }: TweaksPanelProps) {
       </div>
 
       <Label>Roundness · ×{tweaks.roundness.toFixed(2)}</Label>
-      <TKSlider min={0.4} max={1.6} step={0.05} value={tweaks.roundness} onChange={(roundness) => onChange({ roundness })} />
+      <TKSlider label="Roundness" min={0.4} max={1.6} step={0.05} value={tweaks.roundness} onChange={(roundness) => onChange({ roundness })} />
 
       <Label>Motion</Label>
       <TKSegmented
@@ -84,10 +84,10 @@ export function TweaksPanel({ tweaks, onChange, style }: TweaksPanelProps) {
         onChange={(v) => onChange({ motion: v === "Springy" ? "springy" : "smooth" })}
       />
       <Label>Speed · ×{tweaks.motionSpeed.toFixed(1)}</Label>
-      <TKSlider min={0.4} max={2} step={0.1} value={tweaks.motionSpeed} onChange={(motionSpeed) => onChange({ motionSpeed })} />
+      <TKSlider label="Speed" min={0.4} max={2} step={0.1} value={tweaks.motionSpeed} onChange={(motionSpeed) => onChange({ motionSpeed })} />
 
       <Label>Base font size · {tweaks.fontSize}px</Label>
-      <TKSlider min={14} max={19} step={0.5} value={tweaks.fontSize} onChange={(fontSize) => onChange({ fontSize })} />
+      <TKSlider label="Base font size" min={14} max={19} step={0.5} value={tweaks.fontSize} onChange={(fontSize) => onChange({ fontSize })} />
 
       <div style={{ fontSize: "var(--tk-fz-caption2)", color: "var(--tk-text-3)", marginTop: 6 }}>
         Every knob maps to a design token — the apps restyle live.

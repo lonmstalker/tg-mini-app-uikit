@@ -247,6 +247,8 @@ export function TKRadioGroup({ options, value, defaultValue, onChange, disabled 
 
 export interface TKSwitchProps {
   label?: ReactNode;
+  /** Accessible name for the label-less (standalone) variant. */
+  ariaLabel?: string;
   checked?: boolean;
   defaultChecked?: boolean;
   onChange?: (checked: boolean) => void;
@@ -254,16 +256,13 @@ export interface TKSwitchProps {
   disabled?: boolean;
 }
 
-export function TKSwitch({ label, checked, defaultChecked, onChange, small, disabled }: TKSwitchProps) {
+export function TKSwitch({ label, ariaLabel, checked, defaultChecked, onChange, small, disabled }: TKSwitchProps) {
   const [on, setOn] = useControllable(checked, !!defaultChecked, onChange);
   const W = small ? 42 : 51;
   const H = small ? 26 : 31;
   const K = H - 4;
   const node = (
     <span
-      role={label ? undefined : "switch"}
-      aria-checked={label ? undefined : on}
-      onClick={label || disabled ? undefined : () => setOn(!on)}
       style={{
         display: "inline-flex",
         alignItems: "center",
@@ -291,7 +290,26 @@ export function TKSwitch({ label, checked, defaultChecked, onChange, small, disa
       />
     </span>
   );
-  if (!label) return node;
+  if (!label)
+    return (
+      <button
+        type="button"
+        role="switch"
+        aria-checked={on}
+        aria-label={ariaLabel}
+        disabled={disabled}
+        onClick={() => setOn(!on)}
+        style={{
+          display: "inline-flex",
+          padding: 0,
+          border: "none",
+          background: "transparent",
+          cursor: disabled ? "default" : "pointer",
+        }}
+      >
+        {node}
+      </button>
+    );
   return (
     <button
       type="button"
@@ -466,10 +484,11 @@ export interface TKStepperProps {
 
 export function TKStepper({ value, defaultValue = 1, min = 0, max = 99, onChange }: TKStepperProps) {
   const [v, setV] = useControllable(value, defaultValue, onChange);
-  const btn = (icon: TKIconName, fn: () => void, disabled: boolean) => (
+  const btn = (icon: TKIconName, name: string, fn: () => void, disabled: boolean) => (
     <button
       type="button"
       className="tk-press"
+      aria-label={name}
       disabled={disabled}
       onClick={fn}
       style={{
@@ -499,7 +518,7 @@ export function TKStepper({ value, defaultValue = 1, min = 0, max = 99, onChange
         background: "var(--tk-surface-2)",
       }}
     >
-      {btn("minus", () => setV(Math.max(min, v - 1)), v <= min)}
+      {btn("minus", "Decrease", () => setV(Math.max(min, v - 1)), v <= min)}
       <span
         key={v}
         className="tk-pop"
@@ -507,7 +526,7 @@ export function TKStepper({ value, defaultValue = 1, min = 0, max = 99, onChange
       >
         {v}
       </span>
-      {btn("plus", () => setV(Math.min(max, v + 1)), v >= max)}
+      {btn("plus", "Increase", () => setV(Math.min(max, v + 1)), v >= max)}
     </div>
   );
 }
@@ -525,13 +544,15 @@ export function TKRating({ max = 5, value, defaultValue = 0, onChange }: TKRatin
   const [v, setV] = useControllable(value, defaultValue, onChange);
   const [hov, setHov] = useState(0);
   return (
-    <div style={{ display: "flex", gap: 4 }}>
+    <div role="group" aria-label="Rating" style={{ display: "flex", gap: 4 }}>
       {Array.from({ length: max }).map((_, i) => {
         const on = i < (hov || v);
         return (
           <button
             type="button"
             key={i}
+            aria-label={`${i + 1} of ${max}`}
+            aria-pressed={v === i + 1}
             onClick={() => setV(i + 1)}
             onMouseEnter={() => setHov(i + 1)}
             onMouseLeave={() => setHov(0)}

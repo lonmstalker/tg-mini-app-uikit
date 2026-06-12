@@ -66,9 +66,19 @@ function NavPill({ active, onSelect }: { active: AppKey; onSelect: (key: AppKey)
   );
 }
 
+/** Boot state from the URL (`?app=gallery&dark=1`) so demos and e2e tests can deep-link. */
+function bootParams(): { app: AppKey; dark: boolean } {
+  const params = new URLSearchParams(window.location.search);
+  const app = params.get("app") as AppKey | null;
+  return {
+    app: app && NAV.some((n) => n.key === app) ? app : "shop",
+    dark: params.get("dark") === "1",
+  };
+}
+
 export function Shell() {
-  const [app, setApp] = useState<AppKey>("shop");
-  const [tweaks, setTweaks] = useState<Tweaks>(DEFAULT_TWEAKS);
+  const [app, setApp] = useState<AppKey>(() => bootParams().app);
+  const [tweaks, setTweaks] = useState<Tweaks>(() => ({ ...DEFAULT_TWEAKS, dark: bootParams().dark }));
   const patch = (p: Partial<Tweaks>) => setTweaks((t) => ({ ...t, ...p }));
   const narrow = useMediaQuery("(max-width: 920px)");
   const scale = useFrameScale(FRAME_WIDTH, FRAME_HEIGHT);

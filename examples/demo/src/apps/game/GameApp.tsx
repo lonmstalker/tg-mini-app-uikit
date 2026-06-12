@@ -19,7 +19,9 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 export function GameApp() {
   return (
     <TKToastProvider offset={96}>
-      <GameInner />
+      <div data-demo-app="game" style={{ height: "100%" }}>
+        <GameInner />
+      </div>
     </TKToastProvider>
   );
 }

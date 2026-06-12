@@ -91,6 +91,7 @@ function Section({
 }) {
   return (
     <section
+      data-demo-section={title.split("·")[0].trim().toLowerCase().replace(/[^a-z0-9]+/g, "-")}
       style={{
         display: "flex",
         flexDirection: "column",
@@ -198,7 +199,7 @@ function GalleryInner() {
         </Section>
 
         <Section title="Slider · stepper · rating">
-          <TKSlider defaultValue={60} suffix="%" />
+          <TKSlider defaultValue={60} suffix="%" label="Percentage" />
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
             <TKStepper defaultValue={1} />
             <TKRating defaultValue={3} />

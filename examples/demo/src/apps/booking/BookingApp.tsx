@@ -53,7 +53,9 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 export function BookingApp() {
   return (
     <TKToastProvider offset={20}>
-      <BookingInner />
+      <div data-demo-app="booking" style={{ height: "100%" }}>
+        <BookingInner />
+      </div>
     </TKToastProvider>
   );
 }

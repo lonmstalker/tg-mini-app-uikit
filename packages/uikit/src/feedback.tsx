@@ -72,13 +72,16 @@ export function TKSkeletonList({ rows = 3 }: { rows?: number }) {
 export interface TKProgressProps {
   /** 0–100 */
   value: number;
+  /** Accessible name of the progress bar. */
+  label?: string;
   style?: CSSProperties;
 }
 
-export function TKProgress({ value, style }: TKProgressProps) {
+export function TKProgress({ value, label = "Progress", style }: TKProgressProps) {
   return (
     <div
       role="progressbar"
+      aria-label={label}
       aria-valuenow={value}
       aria-valuemin={0}
       aria-valuemax={100}

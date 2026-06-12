@@ -5,3 +5,6 @@ dist/
 .idea/
 .playwright-mcp/
 frames/
+test-results/
+playwright-report/
+blob-report/

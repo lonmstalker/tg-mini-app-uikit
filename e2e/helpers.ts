@@ -1,0 +1,90 @@
+import { expect, type Locator, type Page } from "@playwright/test";
+
+export type DemoApp = "shop" | "booking" | "game" | "platform" | "gallery";
+
+/** All gallery section anchors, in DOM order (slug = title before the first "·"). */
+export const GALLERY_SECTIONS = [
+  "buttons",
+  "main-button",
+  "selection-controls",
+  "slider",
+  "steps",
+  "inputs",
+  "form-primitives",
+  "composition-primitives",
+  "otp",
+  "chips",
+  "navigation",
+  "lists-cells",
+  "cards",
+  "images",
+  "feedback",
+  "data",
+  "empty-states",
+  "overlays",
+  "stress",
+  "patterns",
+] as const;
+
+export type GallerySlug = (typeof GALLERY_SECTIONS)[number];
+
+/** Deep-link into a demo app (narrow mode renders it full-viewport). */
+export async function gotoApp(page: Page, app: DemoApp, opts: { dark?: boolean } = {}): Promise<Locator> {
+  await page.goto(`/?app=${app}${opts.dark ? "&dark=1" : ""}`);
+  const root = page.locator(`[data-demo-app="${app}"]`);
+  await expect(root).toBeVisible();
+  await page.evaluate(() => document.fonts.ready);
+  return root;
+}
+
+/** Scrolls a gallery section into view and waits for content-visibility paint. */
+export async function gallerySection(page: Page, slug: GallerySlug): Promise<Locator> {
+  const section = page.locator(`[data-demo-section="${slug}"]`);
+  await section.scrollIntoViewIfNeeded();
+  // content-visibility: auto paints on intersection; a frame guarantees layout
+  await section.evaluate((el) => new Promise(requestAnimationFrame));
+  await expect(section).toBeVisible();
+  return section;
+}
+
+/** Computed style of an element (or its pseudo-element). */
+export function computedStyle(loc: Locator, prop: string, pseudo?: string): Promise<string> {
+  return loc.evaluate(
+    (el, arg) => getComputedStyle(el, arg.pseudo ?? null).getPropertyValue(arg.prop),
+    { prop, pseudo },
+  );
+}
+
+/** Horizontal scale factor from a computed `transform` matrix ("none" -> 1). */
+export function matrixScaleX(transform: string): number {
+  const m = transform.match(/matrix\(([^)]+)\)/);
+  return m ? parseFloat(m[1].split(",")[0]) : 1;
+}
+
+/** Horizontal translation from a computed `transform` matrix ("none" -> 0). */
+export function matrixTranslateX(transform: string): number {
+  const m = transform.match(/matrix\(([^)]+)\)/);
+  return m ? parseFloat(m[1].split(",")[4]) : 0;
+}
+
+/** Opens one of the gallery overlay demos and returns the overlay locator. */
+export async function openGalleryOverlay(
+  page: Page,
+  button: "Bottom sheet" | "Dialog" | "Action sheet",
+): Promise<Locator> {
+  await gotoApp(page, "gallery");
+  const section = await gallerySection(page, "overlays");
+  await section.getByRole("button", { name: button, exact: true }).click();
+  const overlay = page.getByRole(button === "Dialog" ? "alertdialog" : "dialog");
+  await expect(overlay).toBeVisible();
+  return overlay;
+}
+
+/** Adds the mug to the shop cart and opens the Cart tab. */
+export async function fillCart(page: Page) {
+  await gotoApp(page, "shop");
+  await page.locator('[data-demo-product="mug"]').click();
+  await page.locator("[data-demo-product-sheet]").getByRole("button", { name: /Add / }).click();
+  await page.locator("[data-demo-shop-tabbar]").getByRole("button", { name: "Cart" }).click();
+  await expect(page.locator("[data-demo-pay-button]")).toBeVisible();
+}

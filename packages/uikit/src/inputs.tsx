@@ -453,6 +453,7 @@ export function TKMultiselect({
           aria-expanded={open}
           aria-haspopup="listbox"
           aria-controls={listId}
+          aria-label={typeof label === "string" ? label : undefined}
           disabled={disabled}
           className="tk-press-soft tk-press"
           onClick={() => setOpen(!open)}
@@ -540,7 +541,10 @@ export function TKMultiselect({
             transform: open ? "scale(1) translateY(0)" : "scale(.92) translateY(-6px)",
             opacity: open ? 1 : 0,
             pointerEvents: open ? "auto" : "none",
-            transition: "transform var(--tk-t2) var(--tk-spring), opacity var(--tk-t2) var(--tk-ease)",
+            // visibility keeps the closed list (and its buttons) out of the
+            // focus order; the delay preserves the closing animation
+            visibility: open ? "visible" : "hidden",
+            transition: `transform var(--tk-t2) var(--tk-spring), opacity var(--tk-t2) var(--tk-ease), visibility 0s linear ${open ? "0s" : "var(--tk-t2)"}`,
           }}
         >
           {items.map((item) => {
@@ -662,7 +666,9 @@ export function TKFileInput({
           multiple={multiple}
           disabled={disabled}
           onChange={(e) => commit(Array.from(e.target.files ?? []))}
-          style={{ position: "absolute", opacity: 0, pointerEvents: "none", width: 1, height: 1 }}
+          // display:none keeps it clickable programmatically while staying out
+          // of the focus order and accessibility tree (the row is the control)
+          style={{ display: "none" }}
         />
         <span
           style={{
@@ -1049,6 +1055,7 @@ export function TKOTP({
         onFocus={() => setFocus(true)}
         onBlur={() => setFocus(false)}
         inputMode="numeric"
+        aria-label="One-time code"
         style={{ position: "absolute", opacity: 0, pointerEvents: "none", width: 1, height: 1 }}
       />
       <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
