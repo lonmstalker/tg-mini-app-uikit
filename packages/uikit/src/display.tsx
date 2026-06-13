@@ -5,12 +5,12 @@ import { useTKLocale } from "./i18n";
 
 export type TKTone = "accent" | "green" | "red" | "orange" | "gray";
 
-const BADGE_TONES: Record<TKTone, [solid: string, soft: string]> = {
-  accent: ["var(--tk-accent)", "var(--tk-accent-12)"],
-  green: ["var(--tk-green)", "var(--tk-green-12)"],
-  red: ["var(--tk-red)", "var(--tk-red-12)"],
-  orange: ["var(--tk-orange)", "var(--tk-orange-12)"],
-  gray: ["var(--tk-text-2)", "var(--tk-surface-3)"],
+const BADGE_TONES: Record<TKTone, [solid: string, soft: string, ink: string]> = {
+  accent: ["var(--tk-accent)", "var(--tk-accent-12)", "var(--tk-accent-ink)"],
+  green: ["var(--tk-green)", "var(--tk-green-12)", "var(--tk-green-ink)"],
+  red: ["var(--tk-red)", "var(--tk-red-12)", "var(--tk-red-ink)"],
+  orange: ["var(--tk-orange)", "var(--tk-orange-12)", "var(--tk-orange-ink)"],
+  gray: ["var(--tk-text-2)", "var(--tk-surface-3)", "var(--tk-text-2)"],
 };
 
 export interface TKBadgeProps {
@@ -23,7 +23,7 @@ export interface TKBadgeProps {
 }
 
 export function TKBadge({ children, tone = "accent", soft, style, testId }: TKBadgeProps) {
-  const [solid, softBg] = BADGE_TONES[tone] ?? BADGE_TONES.accent;
+  const [solid, softBg, ink] = BADGE_TONES[tone] ?? BADGE_TONES.accent;
   return (
     <span
       data-testid={testId}
@@ -37,7 +37,7 @@ export function TKBadge({ children, tone = "accent", soft, style, testId }: TKBa
         fontWeight: 600,
         letterSpacing: ".01em",
         background: soft ? softBg : solid,
-        color: soft ? solid : "var(--tk-on-accent)",
+        color: soft ? ink : "var(--tk-on-accent)",
         ...style,
       }}
     >

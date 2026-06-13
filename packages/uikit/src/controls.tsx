@@ -13,6 +13,7 @@ import { tkOptionItem, type TKOption } from "./options";
 import { useControllable } from "./internal/useControllable";
 import { tkFormat, useTKLocale } from "./i18n";
 import { tkDomProps, type TKDomProps } from "./internal/dom";
+import { tkRovingNext, tkTabbableIndex } from "./internal/roving";
 
 /* ---------------- Chips ---------------- */
 
@@ -20,6 +21,8 @@ export interface TKChipProps extends TKDomProps<HTMLButtonElement> {
   children?: ReactNode;
   selected?: boolean;
   onClick?: (e: MouseEvent<HTMLButtonElement>) => void;
+  onKeyDown?: (e: KeyboardEvent<HTMLButtonElement>) => void;
+  tabIndex?: number;
   icon?: TKIconName;
   removable?: boolean;
   onRemove?: () => void;
@@ -28,7 +31,7 @@ export interface TKChipProps extends TKDomProps<HTMLButtonElement> {
 }
 
 export const TKChip = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKChipProps>(function TKChip(
-  { children, selected, onClick, icon, removable, onRemove, disabled, style, ...dom },
+  { children, selected, onClick, onKeyDown, tabIndex, icon, removable, onRemove, disabled, style, ...dom },
   ref,
 ) {
   return (
@@ -37,6 +40,8 @@ export const TKChip = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKChipProps>
       ref={ref}
       className="tk-press"
       onClick={onClick}
+      onKeyDown={onKeyDown}
+      tabIndex={tabIndex}
       disabled={disabled}
       {...tkDomProps(dom)}
       style={{
@@ -99,6 +104,11 @@ export function TKChipGroup({ items, multi, value, defaultValue, onChange, testI
     defaultValue ?? (multi ? [] : ""),
     onChange,
   );
+  const normalized = items.map(tkOptionItem);
+  const refs = useRef<(HTMLButtonElement | null)[]>([]);
+  const disabledAt = (i: number) => !!normalized[i]?.disabled;
+  // toolbar pattern: focus roves with the arrows, selection stays put
+  const [focusIdx, setFocusIdx] = useState(() => tkTabbableIndex(0, normalized.length, disabledAt));
   const isSel = (item: string) => (multi ? (sel as string[]).includes(item) : sel === item);
   const toggle = (item: string) => {
     if (!multi) return setSel(item);
@@ -107,13 +117,25 @@ export function TKChipGroup({ items, multi, value, defaultValue, onChange, testI
   };
   return (
     <div data-testid={testId} style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-      {items.map(tkOptionItem).map((item) => (
+      {normalized.map((item, i) => (
         <TKChip
           key={item.value}
+          ref={(el) => {
+            refs.current[i] = el;
+          }}
+          tabIndex={i === focusIdx ? 0 : -1}
           selected={isSel(item.value)}
           icon={item.icon}
           disabled={item.disabled}
           onClick={() => toggle(item.value)}
+          onFocus={() => setFocusIdx(i)}
+          onKeyDown={(e) => {
+            const next = tkRovingNext(e.key, i, normalized.length, disabledAt, "horizontal");
+            if (next == null) return;
+            e.preventDefault();
+            setFocusIdx(next);
+            refs.current[next]?.focus();
+          }}
         >
           {item.label}
         </TKChip>
@@ -200,9 +222,12 @@ export function TKRadioGroup({ options, value, defaultValue, onChange, disabled,
   const items = options.map(tkOptionItem);
   const firstEnabled = items.find((item) => !item.disabled);
   const [val, setVal] = useControllable(value, defaultValue ?? firstEnabled?.value ?? "", onChange);
+  const refs = useRef<(HTMLButtonElement | null)[]>([]);
+  const disabledAt = (i: number) => disabled || !!items[i]?.disabled;
+  const tabbable = tkTabbableIndex(items.findIndex((item) => item.value === val), items.length, disabledAt);
   return (
     <div role="radiogroup" data-testid={testId} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      {items.map((item) => {
+      {items.map((item, i) => {
         const on = item.value === val;
         const off = disabled || item.disabled;
         return (
@@ -211,8 +236,20 @@ export function TKRadioGroup({ options, value, defaultValue, onChange, disabled,
             role="radio"
             aria-checked={on}
             key={item.value}
+            ref={(el) => {
+              refs.current[i] = el;
+            }}
+            tabIndex={i === tabbable ? 0 : -1}
             disabled={off}
             onClick={() => setVal(item.value)}
+            onKeyDown={(e) => {
+              // WAI-ARIA radio: arrows move both focus and selection
+              const next = tkRovingNext(e.key, i, items.length, disabledAt);
+              if (next == null) return;
+              e.preventDefault();
+              setVal(items[next].value);
+              refs.current[next]?.focus();
+            }}
             style={{
               display: "inline-flex",
               alignItems: "center",

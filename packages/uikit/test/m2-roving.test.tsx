@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import * as kit from "../src/index";
 import {
   TKCategoryTabs,
   TKChipGroup,
@@ -118,5 +119,22 @@ describe("M2.4 TKSegmented disabled option is visibly distinct", () => {
     expect(off).toBeDisabled();
     expect(off.style.opacity).toBe("0.45");
     expect(off.style.color).toBe("var(--tk-text-3)");
+  });
+});
+
+describe("M2.3 keyboard-accessible popovers", () => {
+  it("TKTooltip opens on focus and closes on blur", () => {
+    render(
+      <kit.TKTooltip content="hint">
+        <button type="button">target</button>
+      </kit.TKTooltip>,
+    );
+    const tooltip = screen.getByRole("tooltip");
+    const target = screen.getByRole("button", { name: "target" });
+    expect(tooltip.style.opacity).toBe("0");
+    fireEvent.focus(target.parentElement!);
+    expect(tooltip.style.opacity).toBe("1");
+    fireEvent.blur(target.parentElement!);
+    expect(tooltip.style.opacity).toBe("0");
   });
 });

@@ -169,6 +169,16 @@ export const TKCardChip = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKCardCh
           : tone === "gray"
             ? "var(--tk-text-2)"
             : "var(--tk-accent)";
+  const ink =
+    tone === "green"
+      ? "var(--tk-green-ink)"
+      : tone === "red"
+        ? "var(--tk-red-ink)"
+        : tone === "orange"
+          ? "var(--tk-orange-ink)"
+          : tone === "gray"
+            ? "var(--tk-text-2)"
+            : "var(--tk-accent-ink)";
   return (
     <button
       type="button"
@@ -182,7 +192,7 @@ export const TKCardChip = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKCardCh
         borderRadius: "var(--tk-r-pill)",
         padding: "6px 10px",
         background: selected ? color : "var(--tk-surface-2)",
-        color: selected ? "var(--tk-on-accent)" : color,
+        color: selected ? "var(--tk-on-accent)" : ink,
         fontFamily: "inherit",
         fontSize: "var(--tk-fz-caption)",
         fontWeight: 700,
@@ -463,7 +473,7 @@ export function TKBannerCard({ title, text, cta, onCta, testId }: TKBannerCardPr
               fontWeight: 600,
               fontFamily: "inherit",
               background: "rgba(255,255,255,.92)",
-              color: "var(--tk-accent)",
+              color: "var(--tk-accent-ink)",
             }}
           >
             {cta}
@@ -553,7 +563,7 @@ export function TKBookingCard({
                   alignItems: "center",
                   gap: 6,
                   marginLeft: "auto",
-                  color: "var(--tk-accent)",
+                  color: "var(--tk-accent-ink)",
                   fontWeight: 600,
                   cursor: "pointer",
                 }}

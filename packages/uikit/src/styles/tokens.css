@@ -83,6 +83,14 @@
   --tk-accent-grad: linear-gradient(180deg,
       color-mix(in srgb, var(--tk-accent) 88%, #ffffff) 0%,
       var(--tk-accent) 100%);
+
+  /* ---- "ink" text colors: brand colors darkened (light) / lightened (dark)
+     toward the text color until small text passes WCAG AA on the tinted
+     12%-surfaces and plain backgrounds ---- */
+  --tk-accent-ink: color-mix(in srgb, var(--tk-accent) 62%, var(--tk-text));
+  --tk-red-ink: color-mix(in srgb, var(--tk-red) 62%, var(--tk-text));
+  --tk-green-ink: color-mix(in srgb, var(--tk-green) 58%, var(--tk-text));
+  --tk-orange-ink: color-mix(in srgb, var(--tk-orange) 50%, var(--tk-text));
   --tk-ring: 0 0 0 3.5px var(--tk-accent-20);
 
   font-size: var(--tk-fz-body);
@@ -99,8 +107,8 @@
   --tk-surface-2: #f2f4f8;
   --tk-surface-3: #e8ebf1;
   --tk-text: #131c26;
-  --tk-text-2: #7b8794;
-  --tk-text-3: #a8b2bd;
+  --tk-text-2: #57636f;
+  --tk-text-3: #646e79;
   --tk-sep: rgba(19, 28, 38, .08);
   --tk-on-accent: #ffffff;
   --tk-green: #2fae5d;
@@ -124,8 +132,8 @@
   --tk-surface-2: #202c39;
   --tk-surface-3: #283645;
   --tk-text: #f3f6f9;
-  --tk-text-2: #8a99a8;
-  --tk-text-3: #5d6c7b;
+  --tk-text-2: #aebbc9;
+  --tk-text-3: #95a3b2;
   --tk-sep: rgba(243, 246, 249, .08);
   --tk-on-accent: #ffffff;
   --tk-green: #4cc26a;
@@ -150,8 +158,8 @@
   --tk-bg: var(--tg-theme-secondary-bg-color, #eef1f6);
   --tk-surface: var(--tg-theme-section-bg-color, #ffffff);
   --tk-text: var(--tg-theme-text-color, #131c26);
-  --tk-text-2: var(--tg-theme-subtitle-text-color, #7b8794);
-  --tk-text-3: var(--tg-theme-hint-color, #a8b2bd);
+  --tk-text-2: var(--tg-theme-subtitle-text-color, #57636f);
+  --tk-text-3: var(--tg-theme-hint-color, #646e79);
   --tk-sep: var(--tg-theme-section-separator-color, rgba(19, 28, 38, .08));
   --tk-red: var(--tg-theme-destructive-text-color, #e5484d);
 }

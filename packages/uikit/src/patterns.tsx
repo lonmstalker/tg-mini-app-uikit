@@ -313,7 +313,7 @@ export function TKLeaderboard({ rows, youLabel, testId }: TKLeaderboardProps) {
               textAlign: "center",
               fontWeight: 800,
               fontSize: "var(--tk-fz-sub)",
-              color: row.you ? "var(--tk-accent)" : "var(--tk-text-2)",
+              color: row.you ? "var(--tk-accent-ink)" : "var(--tk-text-2)",
               fontVariantNumeric: "tabular-nums",
             }}
           >
@@ -338,7 +338,7 @@ export function TKLeaderboard({ rows, youLabel, testId }: TKLeaderboardProps) {
               fontWeight: 700,
               fontSize: "var(--tk-fz-sub)",
               fontVariantNumeric: "tabular-nums",
-              color: row.you ? "var(--tk-accent)" : "var(--tk-text)",
+              color: row.you ? "var(--tk-accent-ink)" : "var(--tk-text)",
             }}
           >
             {row.points}

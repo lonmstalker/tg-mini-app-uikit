@@ -119,11 +119,11 @@ Validation M1: `grep -rnE '>(Done|Cancel|Back|Search)<'` по `packages/uikit/sr
 
 Цель: закрыть известные пробелы доступности до того, как код размножится в новых компонентах. Зависимости: M0.
 
-- [ ] M2.1 Roving tabindex + стрелочная навигация: `TKRadioGroup`, `TKChipGroup`, `TKMultiselect` (известный гэп из памяти), `TKCategoryTabs`, `TKInlineButtons`, `TKSegmented`. Паттерн WAI-ARIA radio/toolbar/listbox соответственно. e2e-клавиатурные сценарии в aria-спеке (помнить про Alt+Tab в WebKit).
-- [ ] M2.2 Контраст-долг `--tk-text-3`: подобрать значения light/dark, проходящие AA на своих поверхностях; снизить `CONTRAST_BUDGET` до 0 и удалить заморозку. Все visual-эталоны перегенерировать (darwin+linux).
-- [ ] M2.3 Фокус: видимое фокус-кольцо проверено на новых интерактивных элементах M0 (outline, не box-shadow — уже конвенция); `TKPopper`/`TKTooltip` доступны с клавиатуры (focus-открытие уже есть у Tooltip — покрыть тестом).
-- [ ] M2.4 `TKSegmented`: видимое disabled-состояние опций (сейчас не отличимо).
-- [ ] M2.5 Аудит-тест: axe-прогон новых компонентов включён в существующий a11y-спек (автоматически через галерею — проверить, что новые секции в неё попадают).
+- [x] M2.1 Roving tabindex + стрелочная навигация: `TKRadioGroup`, `TKChipGroup`, `TKMultiselect` (известный гэп из памяти), `TKCategoryTabs`, `TKInlineButtons`, `TKSegmented`. Паттерн WAI-ARIA radio/toolbar/listbox соответственно. e2e-клавиатурные сценарии в aria-спеке (помнить про Alt+Tab в WebKit).
+- [x] M2.2 Контраст-долг `--tk-text-3`: подобрать значения light/dark, проходящие AA на своих поверхностях; снизить `CONTRAST_BUDGET` до 0 и удалить заморозку. Все visual-эталоны перегенерировать (darwin+linux).
+- [x] M2.3 Фокус: видимое фокус-кольцо проверено на новых интерактивных элементах M0 (outline, не box-shadow — уже конвенция); `TKPopper`/`TKTooltip` доступны с клавиатуры (focus-открытие уже есть у Tooltip — покрыть тестом).
+- [x] M2.4 `TKSegmented`: видимое disabled-состояние опций (сейчас не отличимо).
+- [x] M2.5 Аудит-тест: axe-прогон новых компонентов включён в существующий a11y-спек (автоматически через галерею — проверить, что новые секции в неё попадают).
 
 Validation M2: a11y-спек зелёный с `CONTRAST_BUDGET=0`; клавиатурные сценарии для каждого компонента из M2.1.
 
@@ -284,7 +284,7 @@ Validation M10: сайт собирается в CI и открывается л
 - [x] (2026-06-13) ExecPlan составлен и сохранён как `plans.md`.
 - [x] (2026-06-13) M0 Фундамент API (8/8): forwardRef на 21+ компоненте, полиморфизм as/href (Button/Cell/CardCell/Tappable), точечный DOM-проброс через `internal/dom.ts`, loading у TKButton + size-варианты IconButton, testId на всех компонентах (параметризованный тест), spacing/z-index шкалы + `@layer tk` (visual без диффов), Escape/Enter в оверлеях. +122 vitest (278 всего).
 - [x] (2026-06-13) M1 i18n (4/4): `src/i18n.tsx` (TKLocale/TKLocaleProvider/useTKLocale/tkFormat, пресеты en+ru), все строки из аудита вынесены (grep-валидация пуста), vitest-приоритет «проп → провайдер → en», демо: ?locale=en|ru|ar + сегмент Language в Tweaks + ar→RTL + секция галереи Localization (+4 visual эталона darwin+linux), e2e/i18n.spec.ts (4 смоука).
-- [ ] M2 A11y-долг (5 задач)
+- [x] (2026-06-13) M2 A11y-долг (5/5): roving tabindex + стрелки (RadioGroup/ChipGroup/Multiselect/CategoryTabs/InlineButtons/Segmented, общий `internal/roving.ts`), контраст: AA-значения --tk-text-2/3 + новые `--tk-*-ink` токены для брендового текста на тонированных подложках, CONTRAST_BUDGET=0; tooltip focus-тест; Segmented disabled = text-3; новые клавиатурные e2e; все 189 visual-эталонов перегенерированы (darwin+linux).
 - [ ] M3 Жесты и оверлеи 2.0 (8 задач)
 - [ ] M4 Формы 2.0 (10 задач)
 - [ ] M5 Дисплеи, медиа, иконки (11 задач)
@@ -307,6 +307,8 @@ Validation M10: сайт собирается в CI и открывается л
 - Observation (2026-06-13, M0): `forwardRef`-компоненты — объекты, не функции; параметризованные тесты (SSR-смоук) с фильтром `typeof === "function"` молча теряли их. Введён общий хелпер `test/helpers/components.ts` (`$$typeof`-проверка).
 - Observation (2026-06-13, M0): visual-тест `gallery — light › media` флакует и на чистом main (~0.01 ratio, шиммер скелетонов); не связан с волной M0 — receipt-регрессию в WebKit вызвала обёртка контента TKButton в span, исправлено рендером без обёртки вне loading.
 - Observation (2026-06-13, M0): `@layer tk` вокруг tokens.css прошёл без визуальных диффов — прототип оставлен.
+- Observation (2026-06-13, M2): контраст-долг шире, чем text-3: падали и text-2, и брендовый текст на 12%-подложках (tonal-кнопки, soft-бейджи). Введены производные токены `--tk-accent/red/green/orange-ink` (color-mix к --tk-text) — AA в обеих темах при любом акценте. «Белый на сплошном брендовом» (filled-кнопки, счётчики) остаётся осознанным исключением: акцент приходит из темы Telegram, его контраст — решение хост-приложения; блокирующий скан по-прежнему исключает color-contrast, burn-down закреплён на 0.
+  Evidence: дамп axe до фикса (15 узлов), после — 0; попытка включить color-contrast в блокирующий скан дала 12 падений только на white-on-brand.
 - (далее заполняется по ходу работ)
 
 

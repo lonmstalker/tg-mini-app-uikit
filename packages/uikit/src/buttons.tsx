@@ -13,6 +13,7 @@ import {
 import { TKIcon, type TKIconName } from "./icons";
 import { useTKLocale } from "./i18n";
 import { tkDomProps, type TKDomProps } from "./internal/dom";
+import { tkRovingNext, tkTabbableIndex } from "./internal/roving";
 import type { TKPolymorphicProps } from "./internal/polymorphic";
 
 export type TKButtonVariant = "filled" | "tonal" | "plain" | "outline" | "destructive" | "surface";
@@ -29,13 +30,13 @@ export function tkButtonVariantStyle(variant: TKButtonVariant): CSSProperties {
     case "filled":
       return { background: "var(--tk-accent-grad)", color: "var(--tk-on-accent)", boxShadow: "0 6px 16px -6px var(--tk-accent-35)" };
     case "tonal":
-      return { background: "var(--tk-accent-12)", color: "var(--tk-accent)" };
+      return { background: "var(--tk-accent-12)", color: "var(--tk-accent-ink)" };
     case "plain":
-      return { background: "transparent", color: "var(--tk-accent)" };
+      return { background: "transparent", color: "var(--tk-accent-ink)" };
     case "outline":
-      return { background: "transparent", color: "var(--tk-accent)", boxShadow: "inset 0 0 0 1.5px var(--tk-accent-35)" };
+      return { background: "transparent", color: "var(--tk-accent-ink)", boxShadow: "inset 0 0 0 1.5px var(--tk-accent-35)" };
     case "destructive":
-      return { background: "var(--tk-red-12)", color: "var(--tk-red)" };
+      return { background: "var(--tk-red-12)", color: "var(--tk-red-ink)" };
     case "surface":
       return { background: "var(--tk-surface)", color: "var(--tk-text)", boxShadow: "var(--tk-shadow-sm)" };
   }
@@ -245,6 +246,10 @@ export function TKInlineButtons({
   const active = value ?? inner;
   const height = size === "sm" ? 34 : 40;
   const fontSize = size === "sm" ? "var(--tk-fz-caption)" : "var(--tk-fz-sub)";
+  const refs = useRef<(HTMLButtonElement | null)[]>([]);
+  const disabledAt = (i: number) => !!items[i]?.disabled;
+  // toolbar pattern: focus roves, activation stays on click/Enter
+  const [focusIdx, setFocusIdx] = useState(() => tkTabbableIndex(0, items.length, disabledAt));
 
   return (
     <div
@@ -259,13 +264,25 @@ export function TKInlineButtons({
         ...style,
       }}
     >
-      {items.map((item) => {
+      {items.map((item, i) => {
         const selected = item.selected ?? active === item.id;
         const color = item.danger ? "var(--tk-red)" : selected ? "var(--tk-on-accent)" : "var(--tk-text)";
         return (
           <button
             key={item.id}
             type="button"
+            ref={(el) => {
+              refs.current[i] = el;
+            }}
+            tabIndex={i === focusIdx ? 0 : -1}
+            onFocus={() => setFocusIdx(i)}
+            onKeyDown={(e) => {
+              const next = tkRovingNext(e.key, i, items.length, disabledAt, "horizontal");
+              if (next == null) return;
+              e.preventDefault();
+              setFocusIdx(next);
+              refs.current[next]?.focus();
+            }}
             aria-pressed={selected}
             disabled={item.disabled}
             className="tk-press"

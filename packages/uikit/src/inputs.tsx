@@ -468,16 +468,29 @@ export const TKMultiselect = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKMul
   const locale = useTKLocale();
   const items = options.map(tkOptionItem);
   const [selected, setSelected] = useControllable(value, defaultValue, onChange);
-  const [open, setOpen] = useState(false);
+  const [open, setOpenRaw] = useState(false);
+  const [active, setActive] = useState(-1);
   const ref = useRef<HTMLDivElement>(null);
   const id = useId();
   const listId = `${id}-list`;
   const chosen = items.filter((item) => selected.includes(item.value));
+  const setOpen = (next: boolean) => {
+    setOpenRaw(next);
+    setActive(next ? items.findIndex((item) => !item.disabled) : -1);
+  };
+  const moveActive = (dir: 1 | -1) => {
+    if (!items.some((item) => !item.disabled)) return;
+    let i = active < 0 ? (dir === 1 ? -1 : items.length) : active;
+    do {
+      i = (i + dir + items.length) % items.length;
+    } while (items[i].disabled);
+    setActive(i);
+  };
 
   useEffect(() => {
     if (!open) return;
     const close = (e: globalThis.PointerEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpenRaw(false);
     };
     document.addEventListener("pointerdown", close);
     return () => document.removeEventListener("pointerdown", close);
@@ -485,6 +498,29 @@ export const TKMultiselect = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKMul
 
   const toggle = (itemValue: string) => {
     setSelected(selected.includes(itemValue) ? selected.filter((v) => v !== itemValue) : [...selected, itemValue]);
+  };
+
+  const onKeyDown = (e: KeyboardEvent<HTMLButtonElement>) => {
+    if (!open) {
+      if (e.key === "ArrowDown" || e.key === "ArrowUp" || e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        setOpen(true);
+      }
+      return;
+    }
+    if (e.key === "Escape" || e.key === "Tab") {
+      setOpen(false);
+      return;
+    }
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      e.preventDefault();
+      moveActive(e.key === "ArrowDown" ? 1 : -1);
+    } else if (e.key === "Enter" || e.key === " ") {
+      // toggling keeps the listbox open — it is a multi-select
+      e.preventDefault();
+      const item = items[active];
+      if (item && !item.disabled) toggle(item.value);
+    }
   };
 
   return (
@@ -497,10 +533,12 @@ export const TKMultiselect = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKMul
           aria-expanded={open}
           aria-haspopup="listbox"
           aria-controls={listId}
+          aria-activedescendant={open && active >= 0 ? `${id}-opt-${active}` : undefined}
           aria-label={typeof label === "string" ? label : undefined}
           disabled={disabled}
           className="tk-press-soft tk-press"
           onClick={() => setOpen(!open)}
+          onKeyDown={onKeyDown}
           style={{
             width: "100%",
             minHeight: 48,
@@ -534,7 +572,7 @@ export const TKMultiselect = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKMul
                     padding: "4px 8px",
                     borderRadius: "var(--tk-r-pill)",
                     background: "var(--tk-accent-12)",
-                    color: "var(--tk-accent)",
+                    color: "var(--tk-accent-ink)",
                     fontSize: "var(--tk-fz-caption)",
                     fontWeight: 700,
                   }}
@@ -591,16 +629,19 @@ export const TKMultiselect = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKMul
             transition: `transform var(--tk-t2) var(--tk-spring), opacity var(--tk-t2) var(--tk-ease), visibility 0s linear ${open ? "0s" : "var(--tk-t2)"}`,
           }}
         >
-          {items.map((item) => {
+          {items.map((item, i) => {
             const isSelected = selected.includes(item.value);
             return (
               <button
                 type="button"
                 key={item.value}
+                id={`${id}-opt-${i}`}
                 role="option"
                 aria-selected={isSelected}
                 disabled={item.disabled}
+                tabIndex={-1}
                 onClick={() => !item.disabled && toggle(item.value)}
+                onMouseEnter={() => !item.disabled && setActive(i)}
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -609,7 +650,7 @@ export const TKMultiselect = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKMul
                   padding: "10px",
                   border: "none",
                   borderRadius: "var(--tk-r-sm)",
-                  background: isSelected ? "var(--tk-accent-06)" : "transparent",
+                  background: i === active ? "var(--tk-surface-2)" : isSelected ? "var(--tk-accent-06)" : "transparent",
                   color: item.disabled ? "var(--tk-text-3)" : "var(--tk-text)",
                   fontSize: "var(--tk-fz-body)",
                   fontFamily: "inherit",
@@ -826,7 +867,7 @@ export const TKSearch = /* @__PURE__ */ forwardRef<HTMLInputElement, TKSearchPro
         style={{
           border: "none",
           background: "transparent",
-          color: "var(--tk-accent)",
+          color: "var(--tk-accent-ink)",
           fontSize: "var(--tk-fz-body)",
           fontFamily: "inherit",
           cursor: "pointer",
@@ -1186,7 +1227,7 @@ export const TKOTP = /* @__PURE__ */ forwardRef<HTMLInputElement, TKOTPProps>(fu
                 e.stopPropagation();
                 onResend?.();
               }}
-              style={{ color: "var(--tk-accent)", fontWeight: 600, cursor: "pointer" }}
+              style={{ color: "var(--tk-accent-ink)", fontWeight: 600, cursor: "pointer" }}
             >
               {resendLabel ?? locale.resend}
             </span>

@@ -422,7 +422,7 @@ export const TKActionSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKAction
             fontSize: "var(--tk-fz-body)",
             fontWeight: 700,
             fontFamily: "inherit",
-            color: "var(--tk-accent)",
+            color: "var(--tk-accent-ink)",
           }}
         >
           {cancelLabel ?? locale.cancel}
@@ -696,7 +696,7 @@ export function TKToastProvider({ children, offset = 14, duration = 2400, max = 
                   t.onAction?.();
                   dismiss(t.id);
                 }}
-                style={{ fontSize: "var(--tk-fz-sub)", fontWeight: 700, color: "var(--tk-accent)", cursor: "pointer" }}
+                style={{ fontSize: "var(--tk-fz-sub)", fontWeight: 700, color: "var(--tk-accent-ink)", cursor: "pointer" }}
               >
                 {t.action}
               </span>

@@ -9,10 +9,12 @@ import { GALLERY_SECTIONS, fillCart, gallerySection, gotoApp } from "./helpers";
 
 /**
  * Known kit-level debt, excluded from the blocking scan but tracked by the
- * non-blocking audit test below:
- * - color-contrast: --tk-text-3 hint/caption text deliberately trades
- *   contrast for the iOS look; triaging it is a design decision, not a bug
- *   in any single screen.
+ * burn-down audit below:
+ * - color-contrast: tinted-surface text was fixed in M2.2 (`--tk-text-2/3`
+ *   now pass AA, brand text uses the AA `--tk-*-ink` colors). What remains
+ *   is white-on-solid-brand chrome (filled buttons, counters) — the accent
+ *   is user-supplied (Telegram theme), so its contrast is the host app's
+ *   design decision, not a kit bug.
  */
 const KNOWN_DEBT_RULES = ["color-contrast"];
 
@@ -83,12 +85,10 @@ test.describe("gallery sections", () => {
 });
 
 /**
- * Contrast burn-down: color-contrast is excluded from the blocking scan above
- * (deliberate iOS-look debt), but this budget stops the debt from GROWING.
- * Fixing nodes lets the budget shrink; adding new low-contrast UI fails here.
- * When lowering the number, update CONTRAST_BUDGET to the new count.
+ * Contrast burn-down: paid down to zero in M2.2 — this test keeps it there.
+ * Adding new low-contrast UI fails here with the exact node list attached.
  */
-const CONTRAST_BUDGET = 15;
+const CONTRAST_BUDGET = 0;
 
 test("contrast burn-down — debt must not grow", async ({ page }, testInfo) => {
   await gotoApp(page, "gallery");

@@ -18,8 +18,8 @@ test("bottom sheet: focus trap, Escape, focus restore", async ({ page }) => {
   const close = sheet.getByRole("button", { name: "Close" });
   await expect(close).toBeFocused();
 
-  // Tab cycle: Close -> 3 radios -> Confirm -> wraps to Close.
-  for (let i = 0; i < 4; i++) await page.keyboard.press("Tab");
+  // Tab cycle: Close -> radio group (one roving stop) -> Confirm -> wraps.
+  for (let i = 0; i < 2; i++) await page.keyboard.press("Tab");
   await expect(sheet.getByRole("button", { name: "Confirm" })).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(close).toBeFocused();
@@ -165,4 +165,48 @@ test("Escape closes only the sheet, app state survives", async ({ page }) => {
   await expect(page.locator('[data-demo-app="shop"]')).toBeVisible();
   await cartTab.click();
   await expect(page.locator("[data-demo-pay-button]")).toBeVisible(); // cart kept its item
+});
+
+
+test("radio group: roving tabindex, arrows move selection and skip disabled", async ({ page }) => {
+  await gotoApp(page, "gallery");
+  const section = await gallerySection(page, "selection-controls");
+  const radios = section.getByRole("radio");
+  // single tab stop: only the checked radio participates in the tab order
+  await expect(radios.first()).toHaveAttribute("tabindex", "0");
+  await expect(radios.nth(1)).toHaveAttribute("tabindex", "-1");
+
+  await radios.first().focus();
+  await page.keyboard.press("ArrowDown");
+  await expect(radios.nth(1)).toBeFocused();
+  await expect(radios.nth(1)).toHaveAttribute("aria-checked", "true");
+  // the last radio is disabled — ArrowDown wraps back to the first
+  await page.keyboard.press("ArrowDown");
+  await expect(radios.first()).toBeFocused();
+  await expect(radios.first()).toHaveAttribute("aria-checked", "true");
+});
+
+test("segmented: arrows move the thumb with the focus", async ({ page }) => {
+  await gotoApp(page, "gallery");
+  const section = await gallerySection(page, "navigation");
+  const delivery = section.getByRole("button", { name: "Delivery", exact: true });
+  await delivery.focus();
+  await page.keyboard.press("ArrowRight");
+  const pickup = section.getByRole("button", { name: "Pickup", exact: true });
+  await expect(pickup).toBeFocused();
+  await expect(pickup).toHaveAttribute("aria-pressed", "true");
+});
+
+test("chip group: arrows rove focus without selecting", async ({ page }) => {
+  await gotoApp(page, "gallery");
+  const section = await gallerySection(page, "chips");
+  const all = section.getByRole("button", { name: "All", exact: true });
+  const coffee = section.getByRole("button", { name: "Coffee", exact: true });
+  await expect(all).toHaveAttribute("tabindex", "0");
+  await expect(coffee).toHaveAttribute("tabindex", "-1");
+  await all.focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(coffee).toBeFocused();
+  await expect(coffee).toHaveAttribute("tabindex", "0");
+  await expect(all).toHaveAttribute("tabindex", "-1");
 });

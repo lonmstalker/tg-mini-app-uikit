@@ -1,10 +1,11 @@
-import type { CSSProperties, ReactNode } from "react";
+import { useRef, type CSSProperties, type ReactNode } from "react";
 import { TKIcon, type TKIconName } from "./icons";
 import { TKCounter } from "./display";
 import { tkOptionItem, type TKOption } from "./options";
 import { useSafeArea } from "./telegram";
 import { useControllable } from "./internal/useControllable";
 import { tkFormat, useTKLocale } from "./i18n";
+import { tkRovingNext, tkTabbableIndex } from "./internal/roving";
 
 /* ---------------- Header / nav bar ---------------- */
 
@@ -182,6 +183,9 @@ export function TKSegmented({ options, value, defaultValue, onChange, full, test
   const [val, setVal] = useControllable(value, defaultValue ?? firstEnabled?.value ?? "", onChange);
   const idx = Math.max(0, items.findIndex((item) => item.value === val));
   const n = items.length;
+  const refs = useRef<(HTMLButtonElement | null)[]>([]);
+  const disabledAt = (i: number) => !!items[i]?.disabled;
+  const tabbable = tkTabbableIndex(idx, n, disabledAt);
   return (
     <div
       data-testid={testId}
@@ -209,13 +213,24 @@ export function TKSegmented({ options, value, defaultValue, onChange, full, test
           boxShadow: "var(--tk-shadow-sm)",
         }}
       />
-      {items.map((item) => (
+      {items.map((item, i) => (
         <button
           type="button"
           key={item.value}
+          ref={(el) => {
+            refs.current[i] = el;
+          }}
+          tabIndex={i === tabbable ? 0 : -1}
           disabled={item.disabled}
           aria-pressed={item.value === val}
           onClick={() => setVal(item.value)}
+          onKeyDown={(e) => {
+            const next = tkRovingNext(e.key, i, n, disabledAt, "horizontal");
+            if (next == null) return;
+            e.preventDefault();
+            setVal(items[next].value);
+            refs.current[next]?.focus();
+          }}
           style={{
             position: "relative",
             zIndex: 1,
@@ -225,7 +240,7 @@ export function TKSegmented({ options, value, defaultValue, onChange, full, test
             fontSize: "var(--tk-fz-sub)",
             fontWeight: item.value === val ? 600 : 500,
             fontFamily: "inherit",
-            color: item.value === val ? "var(--tk-text)" : "var(--tk-text-2)",
+            color: item.disabled ? "var(--tk-text-3)" : item.value === val ? "var(--tk-text)" : "var(--tk-text-2)",
             cursor: item.disabled ? "default" : "pointer",
             opacity: item.disabled ? 0.45 : 1,
             transition: "color var(--tk-t2) var(--tk-ease)",
@@ -252,19 +267,34 @@ export interface TKCategoryTabsProps {
 
 export function TKCategoryTabs({ tabs, value, defaultValue = 0, onChange, style, testId }: TKCategoryTabsProps) {
   const [active, setActive] = useControllable(value, defaultValue, onChange);
+  const items = tabs.map(tkOptionItem);
+  const refs = useRef<(HTMLButtonElement | null)[]>([]);
+  const disabledAt = (i: number) => !!items[i]?.disabled;
+  const tabbable = tkTabbableIndex(active, items.length, disabledAt);
   return (
     <div
       data-testid={testId}
       style={{ display: "flex", gap: 4, overflowX: "auto", scrollbarWidth: "none", padding: "0 12px", ...style }}
     >
-      {tabs.map(tkOptionItem).map((item, i) => {
+      {items.map((item, i) => {
         const on = i === active;
         return (
           <button
             type="button"
             key={item.value}
+            ref={(el) => {
+              refs.current[i] = el;
+            }}
+            tabIndex={i === tabbable ? 0 : -1}
             disabled={item.disabled}
             onClick={() => setActive(i)}
+            onKeyDown={(e) => {
+              const next = tkRovingNext(e.key, i, items.length, disabledAt, "horizontal");
+              if (next == null) return;
+              e.preventDefault();
+              setActive(next);
+              refs.current[next]?.focus();
+            }}
             style={{
               display: "flex",
               flexDirection: "column",
