@@ -5,16 +5,19 @@ import {
   useContext,
   useEffect,
   useId,
+  useImperativeHandle,
   useMemo,
   useRef,
   useState,
   type CSSProperties,
   type ReactNode,
+  type Ref,
   type RefObject,
 } from "react";
 import { TKIcon, type TKIconName } from "./icons";
 import { TKIconButton } from "./buttons";
 import { mergeRefs, tkZ } from "./internal/dom";
+import { tkShouldCommit, useDragGesture } from "./internal/useDragGesture";
 import { useTKLocale } from "./i18n";
 
 /*
@@ -153,29 +156,119 @@ function Scrim({ closing, onClick }: { closing: boolean; onClick?: () => void })
 
 /* ---------------- Bottom sheet ---------------- */
 
+export interface TKSheetHandle {
+  /** Requests closing (calls `onClose`; the consumer owns the `open` state). */
+  close: () => void;
+  /** Animates to the given snap point index. */
+  snapTo: (index: number) => void;
+  /** Current snap point index. */
+  readonly snapIndex: number;
+}
+
 export interface TKSheetProps {
   open: boolean;
   onClose?: () => void;
+  /** Fires with the requested open state (mount, close request, swipe-close). */
+  onOpenChange?: (open: boolean) => void;
   title?: ReactNode;
   children?: ReactNode;
   /** Hide the grabber handle. */
   noGrabber?: boolean;
+  /**
+   * Snap points as fractions of the positioned ancestor height (ascending),
+   * e.g. `[0.4, 0.9]`. Without them the sheet sizes to its content.
+   */
+  snapPoints?: number[];
+  /** Initial snap point index (default 0). */
+  defaultSnap?: number;
+  /** Set to false to disable closing via scrim, Escape and swipe. */
+  dismissible?: boolean;
+  /** Imperative API: `close()`, `snapTo(i)`, `snapIndex`. */
+  sheetRef?: Ref<TKSheetHandle>;
   testId?: string;
 }
 
 export const TKSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSheetProps>(function TKSheet(
-  { open, onClose, title, children, noGrabber, testId },
+  {
+    open,
+    onClose,
+    onOpenChange,
+    title,
+    children,
+    noGrabber,
+    snapPoints,
+    defaultSnap = 0,
+    dismissible = true,
+    sheetRef,
+    testId,
+  },
   forwardedRef,
 ) {
   const locale = useTKLocale();
   const { mounted, closing } = useMountTransition(open, 380);
   const ref = useRef<HTMLDivElement>(null);
   const titleId = useId();
-  useOverlayA11y(mounted && !closing, ref, onClose);
+  const [snap, setSnap] = useState(() =>
+    snapPoints ? Math.min(Math.max(defaultSnap, 0), snapPoints.length - 1) : 0,
+  );
+  const snapRef = useRef(snap);
+  snapRef.current = snap;
+  const [dragY, setDragY] = useState(0);
+  const [dragging, setDragging] = useState(false);
+
+  const closeRequest = useRef(onClose);
+  closeRequest.current = onClose;
+  const requestClose = useCallback(() => {
+    closeRequest.current?.();
+  }, []);
+
+  useOverlayA11y(mounted && !closing, ref, dismissible ? requestClose : undefined);
+
+  const openChangeRef = useRef(onOpenChange);
+  openChangeRef.current = onOpenChange;
+  useEffect(() => {
+    openChangeRef.current?.(open);
+  }, [open]);
+
+  useImperativeHandle(
+    sheetRef,
+    () => ({
+      close: requestClose,
+      snapTo: (index: number) => {
+        if (!snapPoints) return;
+        setSnap(Math.min(Math.max(index, 0), snapPoints.length - 1));
+      },
+      get snapIndex() {
+        return snapRef.current;
+      },
+    }),
+    [requestClose, snapPoints],
+  );
+
+  const grabDrag = useDragGesture({
+    axis: "y",
+    enabled: dismissible || !!snapPoints,
+    cancelOnCrossAxis: false,
+    onStart: () => setDragging(true),
+    onMove: (state) => setDragY(snapPoints ? state.delta : Math.max(0, state.delta)),
+    onEnd: (state) => {
+      setDragging(false);
+      setDragY(0);
+      const height = ref.current?.clientHeight ?? 400;
+      if (state.delta > 0 && tkShouldCommit(state.delta, state.velocity, height)) {
+        // swiping down: step down a snap point, close from the lowest
+        if (snapPoints && snapRef.current > 0) setSnap(snapRef.current - 1);
+        else if (dismissible) requestClose();
+      } else if (state.delta < 0 && snapPoints && snapRef.current < snapPoints.length - 1) {
+        if (tkShouldCommit(-state.delta, -state.velocity, height)) setSnap(snapRef.current + 1);
+      }
+    },
+  });
+
   if (!mounted) return null;
   return (
     <>
-      <Scrim closing={closing} onClick={onClose} />
+      <Scrim closing={closing} onClick={dismissible ? requestClose : undefined} />
       <div
         ref={mergeRefs(ref, forwardedRef)}
         data-testid={testId}
@@ -190,40 +283,51 @@ export const TKSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSheetProps>(
           right: 0,
           bottom: 0,
           zIndex: tkZ.sheet,
+          height: snapPoints ? `${(snapPoints[snap] ?? snapPoints[0]) * 100}%` : undefined,
+          display: "flex",
+          flexDirection: "column",
           background: "var(--tk-surface)",
           borderRadius: "var(--tk-r-xl) var(--tk-r-xl) 0 0",
           boxShadow: "var(--tk-shadow-lg)",
           padding: "8px 16px 16px",
+          transform: dragY > 0 || (dragging && dragY !== 0) ? `translateY(${Math.max(0, dragY)}px)` : undefined,
+          transition: dragging
+            ? "none"
+            : "height var(--tk-t3) var(--tk-spring), transform var(--tk-t2) var(--tk-ease)",
           animation: `${closing ? "tk-sheet-down" : "tk-sheet-up"} var(--tk-t3) ${closing ? "var(--tk-ease)" : "var(--tk-spring)"} both`,
         }}
       >
-        {!noGrabber ? (
-          <div
-            style={{
-              width: 36,
-              height: 4.5,
-              borderRadius: 3,
-              background: "var(--tk-surface-3)",
-              margin: "4px auto 14px",
-            }}
-          />
-        ) : null}
-        {title ? (
-          <div
-            style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}
-          >
-            <div id={titleId} style={{ fontSize: "var(--tk-fz-title3)", fontWeight: 700 }}>{title}</div>
-            <TKIconButton
-              icon="close"
-              size={30}
-              variant="surface"
-              label={locale.close}
-              onClick={onClose}
-              style={{ background: "var(--tk-surface-2)", boxShadow: "none", color: "var(--tk-text-2)" }}
+        <div {...grabDrag} style={{ touchAction: "none", margin: "-8px -16px 0", padding: "8px 16px 0" }}>
+          {!noGrabber ? (
+            <div
+              style={{
+                width: 36,
+                height: 4.5,
+                borderRadius: 3,
+                background: "var(--tk-surface-3)",
+                margin: "4px auto 14px",
+              }}
             />
-          </div>
-        ) : null}
-        {children}
+          ) : null}
+          {title ? (
+            <div
+              style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}
+            >
+              <div id={titleId} style={{ fontSize: "var(--tk-fz-title3)", fontWeight: 700 }}>{title}</div>
+              <TKIconButton
+                icon="close"
+                size={30}
+                variant="surface"
+                label={locale.close}
+                onClick={requestClose}
+                style={{ background: "var(--tk-surface-2)", boxShadow: "none", color: "var(--tk-text-2)" }}
+              />
+            </div>
+          ) : null}
+        </div>
+        <div style={{ flex: snapPoints ? 1 : undefined, minHeight: 0, overflowY: snapPoints ? "auto" : undefined }}>
+          {children}
+        </div>
       </div>
     </>
   );
@@ -443,11 +547,20 @@ export interface TKPopperProps {
   placement?: TKPopperPlacement;
   offset?: number;
   onClose?: () => void;
+  /** Pointer arrow toward the anchor. */
+  arrow?: boolean;
+  /** Flip to the opposite side when the preferred one has no room (default true). */
+  autoFlip?: boolean;
   testId?: string;
   style?: CSSProperties;
 }
 
-export function TKPopper({ open, anchorRef, children, placement = "bottom", offset = 8, onClose, testId, style }: TKPopperProps) {
+const FLIP: Record<TKPopperPlacement, TKPopperPlacement> = { top: "bottom", bottom: "top", left: "right", right: "left" };
+
+/** Minimum room a popper needs on its side before auto-flip kicks in, px. */
+const FLIP_MIN = 140;
+
+export function TKPopper({ open, anchorRef, children, placement: preferred = "bottom", offset = 8, onClose, arrow, autoFlip = true, testId, style }: TKPopperProps) {
   const [rect, setRect] = useState<DOMRect | null>(null);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -480,6 +593,14 @@ export function TKPopper({ open, anchorRef, children, placement = "bottom", offs
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose, open]);
   if (!open || !rect) return null;
+  const room: Record<TKPopperPlacement, number> = {
+    top: rect.top,
+    bottom: (typeof window !== "undefined" ? window.innerHeight : 0) - rect.bottom,
+    left: rect.left,
+    right: (typeof window !== "undefined" ? window.innerWidth : 0) - rect.right,
+  };
+  const placement =
+    autoFlip && room[preferred] < FLIP_MIN && room[FLIP[preferred]] > room[preferred] ? FLIP[preferred] : preferred;
   const x = placement === "left" ? rect.left : placement === "right" ? rect.right : rect.left + rect.width / 2;
   const y = placement === "top" ? rect.top : placement === "bottom" ? rect.bottom : rect.top + rect.height / 2;
   const transform =
@@ -514,6 +635,25 @@ export function TKPopper({ open, anchorRef, children, placement = "bottom", offs
         } as CSSProperties
       }
     >
+      {arrow ? (
+        <span
+          data-tk-popper-arrow
+          style={{
+            position: "absolute",
+            width: 12,
+            height: 12,
+            background: "var(--tk-surface)",
+            transform: "rotate(45deg)",
+            ...(placement === "top"
+              ? { bottom: -5, left: "50%", marginLeft: -6, boxShadow: "3px 3px 6px -3px rgba(0,0,0,.18)" }
+              : placement === "bottom"
+                ? { top: -5, left: "50%", marginLeft: -6 }
+                : placement === "left"
+                  ? { right: -5, top: "50%", marginTop: -6 }
+                  : { left: -5, top: "50%", marginTop: -6 }),
+          }}
+        />
+      ) : null}
       {children}
     </div>
   );
@@ -599,14 +739,17 @@ const TKToastContext = createContext<TKToastApi | null>(null);
 
 export interface TKToastProviderProps {
   children?: ReactNode;
-  /** Distance from the bottom of the positioned ancestor, px. */
+  /** Distance from the chosen edge of the positioned ancestor, px. */
   offset?: number;
   duration?: number;
   /** Max toasts visible at once. */
   max?: number;
+  /** Stack edge (default bottom). */
+  position?: "top" | "bottom";
+  testId?: string;
 }
 
-export function TKToastProvider({ children, offset = 14, duration = 2400, max = 3 }: TKToastProviderProps) {
+export function TKToastProvider({ children, offset = 14, duration = 2400, max = 3, position = "bottom", testId }: TKToastProviderProps) {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const idRef = useRef(0);
   const timersRef = useRef<number[]>([]);
@@ -641,11 +784,13 @@ export function TKToastProvider({ children, offset = 14, duration = 2400, max = 
       <div
         role="status"
         aria-live="polite"
+        data-testid={testId}
         style={{
           position: "absolute",
           left: 14,
           right: 14,
-          bottom: offset,
+          top: position === "top" ? offset : undefined,
+          bottom: position === "bottom" ? offset : undefined,
           display: "flex",
           flexDirection: "column",
           gap: 8,

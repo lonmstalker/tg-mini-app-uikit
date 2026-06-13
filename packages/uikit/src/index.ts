@@ -16,5 +16,6 @@ export * from "./navigation";
 export * from "./lists";
 export * from "./cards";
 export * from "./overlays";
+export * from "./gestures";
 export * from "./feedback";
 export * from "./patterns";

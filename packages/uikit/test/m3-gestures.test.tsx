@@ -128,7 +128,7 @@ describe("M3.4 TKPullToRefresh", () => {
     const area = screen.getByTestId("ptr");
     fireEvent.pointerDown(area, { pointerId: 1, clientY: 50 });
     fireEvent.pointerMove(area, { pointerId: 1, clientY: 260 });
-    fireEvent.pointerUp(area, { pointerId: 1 });
+    fireEvent.pointerUp(area, { pointerId: 1, clientY: 260 });
     expect(onRefresh).toHaveBeenCalledOnce();
     await act(async () => {
       resolve();
@@ -145,7 +145,7 @@ describe("M3.4 TKPullToRefresh", () => {
     const area = screen.getByTestId("ptr");
     fireEvent.pointerDown(area, { pointerId: 1, clientY: 50 });
     fireEvent.pointerMove(area, { pointerId: 1, clientY: 80 });
-    fireEvent.pointerUp(area, { pointerId: 1 });
+    fireEvent.pointerUp(area, { pointerId: 1, clientY: 80 });
     expect(onRefresh).not.toHaveBeenCalled();
   });
 });
@@ -168,7 +168,7 @@ describe("M3.5 TKSwipeCell", () => {
     Object.defineProperty(cell, "clientWidth", { value: 320, configurable: true });
     fireEvent.pointerDown(cell, { pointerId: 1, clientX: 300, clientY: 10 });
     fireEvent.pointerMove(cell, { pointerId: 1, clientX: 20, clientY: 10 });
-    fireEvent.pointerUp(cell, { pointerId: 1 });
+    fireEvent.pointerUp(cell, { pointerId: 1, clientX: 20, clientY: 10 });
     expect(onDelete).toHaveBeenCalledOnce();
   });
 

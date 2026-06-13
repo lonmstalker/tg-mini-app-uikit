@@ -23,6 +23,7 @@ export const GALLERY_SECTIONS = [
   "data",
   "empty-states",
   "overlays",
+  "gestures",
   "popper",
   "stress",
   "stress-locales",

@@ -32,6 +32,10 @@ const paths = {
   card: <><rect x="3" y="5.5" width="18" height="13.5" rx="2.5" /><path d="M3 10h18" /></>,
   chat: <path d="M21 11.8a8.4 8.4 0 01-12.3 7.4L4 20.5l1.4-4.4A8.4 8.4 0 1121 11.8z" />,
   grid: <><rect x="4" y="4" width="7" height="7" rx="2" /><rect x="13" y="4" width="7" height="7" rx="2" /><rect x="4" y="13" width="7" height="7" rx="2" /><rect x="13" y="13" width="7" height="7" rx="2" /></>,
+  eye: <><path d="M2.5 12S6 5.8 12 5.8 21.5 12 21.5 12 18 18.2 12 18.2 2.5 12 2.5 12z" /><circle cx="12" cy="12" r="3" /></>,
+  eyeOff: <><path d="M4 4l16 16" /><path d="M9.9 5.1A9.8 9.8 0 0112 5.8c6 0 9.5 6.2 9.5 6.2a17 17 0 01-3.3 3.9M6 6.7A16.6 16.6 0 002.5 12S6 18.2 12 18.2c1.2 0 2.3-.2 3.3-.6" /><path d="M10 10.2a3 3 0 004 4.1" /></>,
+  backspace: <><path d="M8.5 5h10A2.5 2.5 0 0121 7.5v9a2.5 2.5 0 01-2.5 2.5h-10L3 12z" /><path d="M11 9.5l5 5M16 9.5l-5 5" /></>,
+  fingerprint: <><path d="M7.5 19.6c-1.2-2-1.9-4-1.9-6.6a6.4 6.4 0 0110.2-5.2" /><path d="M18 9.5c.4.9.6 2 .6 3.5 0 1.3-.1 2.5-.4 3.6" /><path d="M12 9.7a3.3 3.3 0 00-3.3 3.3c0 2.4.6 4.3 1.6 6" /><path d="M15.3 13c0 3-.4 5.2-1.3 7" /><path d="M12 13.1c0 2.9-.4 5.1-1.2 6.9" /></>,
 } satisfies Record<string, ReactNode>;
 
 export type TKIconName = keyof typeof paths;

@@ -132,14 +132,14 @@ Validation M2: a11y-спек зелёный с `CONTRAST_BUDGET=0`; клавиа
 
 Цель: жестовая инфраструктура кита + закрытие самого горячего кластера запросов жанра (sheet-жесты, PTR, свайпы). Зависимости: M0; M3.1 — фундамент для остальных задач милстоуна и для M6.
 
-- [ ] M3.1 Внутренний хук `useDragGesture` (pointer events, rAF-троттлинг как в PlatformApp, пороги, velocity, отмена при скролле, опция оси) — НЕ экспортируется до стабилизации; на нём строятся M3.2/M3.4/M3.5/M6.2. Vitest на математику порогов/velocity.
-- [ ] M3.2 `TKSheet` 2.0: swipe-to-close за граббер/шапку; snap points (`snapPoints?: number[]`, проценты высоты; программная смена с анимацией — сигнал Ionic #25025); императивное API через ref (`close()/snapTo(i)`) — сигнал TGUI #85; `onOpenChange` колбэк. Reduced-motion: мгновенные переходы.
-- [ ] M3.3 Фикс слоёв: `TKSelect`/`TKMultiselect`/`TKPopper` внутри `TKSheet`/`TKDialog` рендерятся поверх (z-index шкала из M0.6 + портал-якорь TKProvider). Сигнал: TGUI #100. e2e: дропдаун внутри шита кликабелен.
-- [ ] M3.4 `TKPullToRefresh` (обёртка скролл-области: resistance-кривая, порог, спиннер на основе TKSpinner, `onRefresh: () => Promise<void>`, авто-скрытие). Хаптика `impact(light)` на взведении порога через optional-haptics (см. M7.4; до M7.4 — без хаптики). Сигнал: Konsta #218/#242, VKUI #2060.
-- [ ] M3.5 Swipe actions: `TKSwipeCell` (обёртка над TKCell: leading/trailing экшены, частичный и full-swipe, авто-закрытие соседей, клавиатурная альтернатива — кнопки видимы по фокусу). Сигнал: F7 Swipeout, Ionic Item Sliding, Konsta #247.
-- [ ] M3.6 `useLongPress` (экспортируемый хук: порог 500мс, отмена при движении, неконфликтность с кликом). Сигнал: VKUI #4843, Ionic #19183.
-- [ ] M3.7 `TKToast`: позиция `top|bottom` у провайдера, `action: {label, onClick}` (паттерн undo). Очередь/стекинг уже есть (`max`) — покрыть тестом переполнения. Сигнал: Ionic #20389.
-- [ ] M3.8 `TKPopper`: стрелка (`arrow?: boolean`) и auto-flip у краёв вьюпорта (свой расчёт, zero-deps). Сигнал: TGUI #67 (наоборот — у них стрелку нельзя убрать; у нас будет опцией).
+- [x] M3.1 Внутренний хук `useDragGesture` (pointer events, rAF-троттлинг как в PlatformApp, пороги, velocity, отмена при скролле, опция оси) — НЕ экспортируется до стабилизации; на нём строятся M3.2/M3.4/M3.5/M6.2. Vitest на математику порогов/velocity.
+- [x] M3.2 `TKSheet` 2.0: swipe-to-close за граббер/шапку; snap points (`snapPoints?: number[]`, проценты высоты; программная смена с анимацией — сигнал Ionic #25025); императивное API через ref (`close()/snapTo(i)`) — сигнал TGUI #85; `onOpenChange` колбэк. Reduced-motion: мгновенные переходы.
+- [x] M3.3 Фикс слоёв: `TKSelect`/`TKMultiselect`/`TKPopper` внутри `TKSheet`/`TKDialog` рендерятся поверх (z-index шкала из M0.6 + портал-якорь TKProvider). Сигнал: TGUI #100. e2e: дропдаун внутри шита кликабелен.
+- [x] M3.4 `TKPullToRefresh` (обёртка скролл-области: resistance-кривая, порог, спиннер на основе TKSpinner, `onRefresh: () => Promise<void>`, авто-скрытие). Хаптика `impact(light)` на взведении порога через optional-haptics (см. M7.4; до M7.4 — без хаптики). Сигнал: Konsta #218/#242, VKUI #2060.
+- [x] M3.5 Swipe actions: `TKSwipeCell` (обёртка над TKCell: leading/trailing экшены, частичный и full-swipe, авто-закрытие соседей, клавиатурная альтернатива — кнопки видимы по фокусу). Сигнал: F7 Swipeout, Ionic Item Sliding, Konsta #247.
+- [x] M3.6 `useLongPress` (экспортируемый хук: порог 500мс, отмена при движении, неконфликтность с кликом). Сигнал: VKUI #4843, Ionic #19183.
+- [x] M3.7 `TKToast`: позиция `top|bottom` у провайдера, `action: {label, onClick}` (паттерн undo). Очередь/стекинг уже есть (`max`) — покрыть тестом переполнения. Сигнал: Ionic #20389.
+- [x] M3.8 `TKPopper`: стрелка (`arrow?: boolean`) и auto-flip у краёв вьюпорта (свой расчёт, zero-deps). Сигнал: TGUI #67 (наоборот — у них стрелку нельзя убрать; у нас будет опцией).
 
 Validation M3: e2e-сценарии: свайп закрывает шит (и не закрывает при `dismissible={false}`), PTR триггерит refresh ровно один раз, свайп-экшен открывается/закрывается, full-swipe вызывает действие; visual: шит на snap-точках, открытый свайп-экшен; reduced-motion варианты.
 
@@ -285,7 +285,7 @@ Validation M10: сайт собирается в CI и открывается л
 - [x] (2026-06-13) M0 Фундамент API (8/8): forwardRef на 21+ компоненте, полиморфизм as/href (Button/Cell/CardCell/Tappable), точечный DOM-проброс через `internal/dom.ts`, loading у TKButton + size-варианты IconButton, testId на всех компонентах (параметризованный тест), spacing/z-index шкалы + `@layer tk` (visual без диффов), Escape/Enter в оверлеях. +122 vitest (278 всего).
 - [x] (2026-06-13) M1 i18n (4/4): `src/i18n.tsx` (TKLocale/TKLocaleProvider/useTKLocale/tkFormat, пресеты en+ru), все строки из аудита вынесены (grep-валидация пуста), vitest-приоритет «проп → провайдер → en», демо: ?locale=en|ru|ar + сегмент Language в Tweaks + ar→RTL + секция галереи Localization (+4 visual эталона darwin+linux), e2e/i18n.spec.ts (4 смоука).
 - [x] (2026-06-13) M2 A11y-долг (5/5): roving tabindex + стрелки (RadioGroup/ChipGroup/Multiselect/CategoryTabs/InlineButtons/Segmented, общий `internal/roving.ts`), контраст: AA-значения --tk-text-2/3 + новые `--tk-*-ink` токены для брендового текста на тонированных подложках, CONTRAST_BUDGET=0; tooltip focus-тест; Segmented disabled = text-3; новые клавиатурные e2e; все 189 visual-эталонов перегенерированы (darwin+linux).
-- [ ] M3 Жесты и оверлеи 2.0 (8 задач)
+- [x] (2026-06-13) M3 Жесты и оверлеи 2.0 (8/8): `internal/useDragGesture` (пороги/velocity/rAF/отмена кросс-оси, экспортируемая математика покрыта vitest), TKSheet 2.0 (snapPoints, sheetRef: close/snapTo/snapIndex, onOpenChange, dismissible, swipe-to-close за граббер), слои: дропдаун внутри шита кликабелен (e2e), TKPullToRefresh, TKSwipeCell (leading/trailing, full-swipe, авто-закрытие соседей, клавиатурная альтернатива), useLongPress, TKToast position top|bottom + тест переполнения, TKPopper arrow + auto-flip. Демо-секция Gestures + e2e/gestures.spec.ts (5 сценариев).
 - [ ] M4 Формы 2.0 (10 задач)
 - [ ] M5 Дисплеи, медиа, иконки (11 задач)
 - [ ] M6 Навигационный каркас (6 задач)
@@ -309,6 +309,7 @@ Validation M10: сайт собирается в CI и открывается л
 - Observation (2026-06-13, M0): `@layer tk` вокруг tokens.css прошёл без визуальных диффов — прототип оставлен.
 - Observation (2026-06-13, M2): контраст-долг шире, чем text-3: падали и text-2, и брендовый текст на 12%-подложках (tonal-кнопки, soft-бейджи). Введены производные токены `--tk-accent/red/green/orange-ink` (color-mix к --tk-text) — AA в обеих темах при любом акценте. «Белый на сплошном брендовом» (filled-кнопки, счётчики) остаётся осознанным исключением: акцент приходит из темы Telegram, его контраст — решение хост-приложения; блокирующий скан по-прежнему исключает color-contrast, burn-down закреплён на 0.
   Evidence: дамп axe до фикса (15 узлов), после — 0; попытка включить color-contrast в блокирующий скан дала 12 падений только на white-on-brand.
+- Observation (2026-06-13, M3): mouse-драг в e2e выделял текст ячейки, и следующий клик уезжал в native drag выделения — флак 50%. Лечение в компоненте (а не тесте): `user-select:none` на корне TKSwipeCell; плюс хелперы centerInView/waitSettled в gestures.spec (ленивые секции смещают геометрию после scrollIntoView, шит анимируется при открытии).
 - (далее заполняется по ходу работ)
 
 

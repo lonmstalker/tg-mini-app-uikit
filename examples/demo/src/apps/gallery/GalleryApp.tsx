@@ -45,6 +45,7 @@ import {
   TKProductCardB,
   TKProgress,
   TKProvider,
+  TKPullToRefresh,
   TKRadioGroup,
   TKRating,
   TKRing,
@@ -59,6 +60,7 @@ import {
   TKSkeletonList,
   TKSlider,
   TKSlotPicker,
+  TKSwipeCell,
   ruLocale,
   TKSpinner,
   TKStatTile,
@@ -264,6 +266,9 @@ function GalleryInner() {
   const [actionsOpen, setActionsOpen] = useState(false);
   const [popperOpen, setPopperOpen] = useState(false);
   const popperAnchor = useRef<HTMLSpanElement>(null);
+  const [snapSheetOpen, setSnapSheetOpen] = useState(false);
+  const [ptrCount, setPtrCount] = useState(0);
+  const [rows, setRows] = useState(["Flat white", "Cinnamon bun", "Filter brew"]);
 
   return (
     <div data-demo-app="gallery" style={{ height: "100%", display: "flex", flexDirection: "column" }}>
@@ -653,6 +658,38 @@ function GalleryInner() {
           </div>
         </Section>
 
+        <Section title="Gestures · pull-to-refresh, swipe actions, snap sheet">
+          <TKFrame height={210} testId="demo-ptr-frame">
+            <TKPullToRefresh
+              testId="demo-ptr"
+              onRefresh={() => new Promise((resolve) => setTimeout(() => { setPtrCount((n) => n + 1); resolve(undefined); }, 350))}
+            >
+              <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+                <TKCaption uppercase>Pulled to refresh: <span data-demo-ptr-count>{ptrCount}</span> times</TKCaption>
+                <TKListGroup>
+                  <TKCell icon="clock" title="Drag the list down" subtitle="release past the arrow flip" />
+                  <TKCell icon="bolt" title="Resistance curve" subtitle="raw delta × 0.5" />
+                </TKListGroup>
+              </div>
+            </TKPullToRefresh>
+          </TKFrame>
+          <TKListGroup footer="Swipe a row left for actions; the buttons are keyboard-reachable too.">
+            {rows.map((row) => (
+              <TKSwipeCell
+                key={row}
+                testId={`demo-swipe-${row.replace(/\s+/g, "-").toLowerCase()}`}
+                trailing={[
+                  { label: "Archive", icon: "gift", tone: "accent", onAction: () => toast.show({ text: `${row} archived` }) },
+                  { label: "Delete", icon: "trash", tone: "red", onAction: () => setRows((r) => r.filter((x) => x !== row)) },
+                ]}
+              >
+                <TKCell icon="cart" title={row} subtitle="swipe left" />
+              </TKSwipeCell>
+            ))}
+          </TKListGroup>
+          <TKButton variant="tonal" onClick={() => setSnapSheetOpen(true)}>Snap-point sheet</TKButton>
+        </Section>
+
         <Section title="Popper · anchored positioning" lazy={false}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <span ref={popperAnchor} style={{ display: "inline-flex" }}>
@@ -845,6 +882,21 @@ function GalleryInner() {
         </div>
       </div>
 
+      <TKSheet
+        open={snapSheetOpen}
+        onClose={() => setSnapSheetOpen(false)}
+        title="Snap points"
+        snapPoints={[0.45, 0.85]}
+        testId="demo-snap-sheet"
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: 12, paddingTop: 4 }}>
+          <TKCaption>Drag the grabber up/down to switch between 45% and 85% height; drag down from the lowest point to close.</TKCaption>
+          <TKSelect label="City" options={["Lisbon", "Berlin", "Belgrade"]} />
+          <TKListGroup>
+            <TKCell icon="location" title="Dropdowns layer above the sheet" subtitle="z-index scale + select inside a dialog" />
+          </TKListGroup>
+        </div>
+      </TKSheet>
       <TKSheet open={sheetOpen} onClose={() => setSheetOpen(false)} title="Delivery time">
         <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
           <TKRadioGroup options={["As soon as possible · 25–35 min", "Today, 18:00–18:30", "Schedule for tomorrow"]} />

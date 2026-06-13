@@ -58,6 +58,17 @@ export interface TKLocale {
   toggleFavorite: string;
   /** TKPageDots dot aria label template: `Page {page}`. */
   page: string;
+  /** TKInput password visibility toggle. */
+  showPassword: string;
+  hidePassword: string;
+  /** TKMultiselect "select all" row. */
+  selectAll: string;
+  /** TKCalendar month navigation. */
+  prevMonth: string;
+  nextMonth: string;
+  /** TKPinInput keypad. */
+  backspace: string;
+  biometrics: string;
   /** TKProgress default aria label. */
   progress: string;
 }
@@ -91,6 +102,13 @@ export const enLocale: TKLocale = {
   disconnected: "Disconnected",
   toggleFavorite: "Toggle favorite",
   page: "Page {page}",
+  showPassword: "Show password",
+  hidePassword: "Hide password",
+  selectAll: "Select all",
+  prevMonth: "Previous month",
+  nextMonth: "Next month",
+  backspace: "Backspace",
+  biometrics: "Unlock with biometrics",
   progress: "Progress",
 };
 
@@ -124,6 +142,13 @@ export const ruLocale: TKLocale = {
   disconnected: "Отключён",
   toggleFavorite: "В избранное",
   page: "Страница {page}",
+  showPassword: "Показать пароль",
+  hidePassword: "Скрыть пароль",
+  selectAll: "Выбрать все",
+  prevMonth: "Предыдущий месяц",
+  nextMonth: "Следующий месяц",
+  backspace: "Удалить символ",
+  biometrics: "Войти по биометрии",
   progress: "Прогресс",
 };
 
