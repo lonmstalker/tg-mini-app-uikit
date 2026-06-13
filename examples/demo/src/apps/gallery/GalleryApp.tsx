@@ -1,11 +1,14 @@
 import { useRef, useState, type CSSProperties, type ReactNode } from "react";
 import {
+  TK_ICON_NAMES,
   TKActionSheet,
   TKAccordion,
   TKAvatar,
+  TKAvatarStack,
   TKBadge,
   TKBannerCard,
   TKBars,
+  TKBlockquote,
   TKBookingCard,
   TKBottomBar,
   TKButton,
@@ -29,7 +32,9 @@ import {
   TKFormField,
   TKFormInput,
   TKFrame,
+  TKGallery,
   TKHeader,
+  TKIcon,
   TKIconButton,
   TKImage,
   TKImg,
@@ -63,6 +68,8 @@ import {
   TKSkeleton,
   TKSkeletonCard,
   TKSkeletonList,
+  TKSkeletonText,
+  TKSpoiler,
   TKSlider,
   TKSlotPicker,
   TKSwipeCell,
@@ -74,6 +81,7 @@ import {
   TKSwitch,
   TKTabbar,
   TKTimeInput,
+  TKVirtualList,
   TKTappable,
   TKText,
   TKTextarea,
@@ -275,6 +283,7 @@ function GalleryInner() {
   const [snapSheetOpen, setSnapSheetOpen] = useState(false);
   const [ptrCount, setPtrCount] = useState(0);
   const [rows, setRows] = useState(["Flat white", "Cinnamon bun", "Filter brew"]);
+  const [iconQuery, setIconQuery] = useState("");
   const [pinStatus, setPinStatus] = useState("");
   const [priceRange, setPriceRange] = useState<[number, number]>([20, 70]);
 
@@ -647,6 +656,83 @@ function GalleryInner() {
           </div>
           <div style={{ fontSize: "var(--tk-fz-caption)", color: "var(--tk-text-2)" }}>
             `TKImg` is the striped wireframe placeholder; bare `TKSkeleton` composes custom loading layouts.
+          </div>
+        </Section>
+
+        <Section title="Icons · search & copy">
+          <TKSearch placeholder="Filter icons…" value={iconQuery} onChange={setIconQuery} testId="demo-icon-search" />
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(64px, 1fr))", gap: 6 }}>
+            {TK_ICON_NAMES.filter((n) => n.toLowerCase().includes(iconQuery.toLowerCase())).map((name) => (
+              <button
+                key={name}
+                type="button"
+                className="tk-press"
+                title={name}
+                onClick={() => {
+                  void navigator.clipboard?.writeText(name).catch(() => {});
+                  toast.show({ icon: "copy", text: name });
+                }}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: 5,
+                  padding: "10px 2px",
+                  border: "none",
+                  borderRadius: "var(--tk-r-sm)",
+                  background: "var(--tk-surface)",
+                  color: "var(--tk-text)",
+                  fontFamily: "inherit",
+                  cursor: "pointer",
+                }}
+              >
+                <TKIcon name={name} size={20} />
+                <span style={{ fontSize: "var(--tk-fz-caption2)", color: "var(--tk-text-3)", maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</span>
+              </button>
+            ))}
+          </div>
+        </Section>
+
+        <Section title="Display 2.0 · avatars, spoiler, quote, carousel">
+          <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+            <TKAvatarStack avatars={[{ initials: "AK" }, { initials: "BL", tone: "linear-gradient(135deg,#7c5cff,#5436c9)" }, { initials: "CM", tone: "linear-gradient(135deg,#1fab66,#127a47)" }, { initials: "DN" }, { initials: "EO" }]} max={3} testId="demo-avatar-stack" />
+            <TKAvatar initials="ON" status="online" />
+            <TKAvatar initials="OF" status="offline" />
+            <TKIconButton icon="bell" label="Alerts" badge={7} />
+            <TKIconButton icon="chat" label="Chats" badge />
+            <TKCounter value={1280} max={99} />
+          </div>
+          <TKBlockquote author="Anna" icon={<TKIcon name="reply" size={14} />}>
+            Спойлер ниже скрыт от ридеров до тапа — телеграм-паттерн.
+          </TKBlockquote>
+          <div style={{ fontSize: "var(--tk-fz-sub)" }}>
+            Промокод: <TKSpoiler testId="demo-spoiler">SPRING-2026</TKSpoiler>
+          </div>
+          <TKSkeletonText lines={3} />
+          <TKGallery testId="demo-carousel">
+            {[1, 2, 3].map((n) => (
+              <TKCard key={n} padding={0}>
+                <TKImg label={`slide ${n}`} ratio="2 / 1" />
+              </TKCard>
+            ))}
+          </TKGallery>
+          <TKFrame height={230} testId="demo-collapsing">
+            <TKPage header={<TKHeader large collapsing title="Collapsing" subtitle="scroll the list" back={false} />} safeTop={false}>
+              {Array.from({ length: 12 }).map((_, i) => (
+                <TKCell key={i} icon="document" title={`Row ${i + 1}`} />
+              ))}
+            </TKPage>
+          </TKFrame>
+          <div>
+            <TKCaption uppercase>Virtual list · 10 000 rows</TKCaption>
+            <TKVirtualList
+              items={Array.from({ length: 10000 }, (_, i) => `Item ${i + 1}`)}
+              itemHeight={44}
+              height={200}
+              renderItem={(item) => <TKCell title={item} icon="grid" />}
+              testId="demo-virtual"
+              style={{ background: "var(--tk-surface)", borderRadius: "var(--tk-r-md)" }}
+            />
           </div>
         </Section>
 

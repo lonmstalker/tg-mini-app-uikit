@@ -173,10 +173,12 @@ export interface TKIconButtonProps extends TKDomProps<HTMLButtonElement> {
   disabled?: boolean;
   /** Accessible label — icon buttons have no visible text. */
   label?: string;
+  /** Corner badge: a number renders a counter, `true` renders a dot. */
+  badge?: number | boolean;
 }
 
 export const TKIconButton = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKIconButtonProps>(function TKIconButton(
-  { icon, variant = "tonal", size = "md", onClick, style, active, disabled, label, ...dom },
+  { icon, variant = "tonal", size = "md", onClick, style, active, disabled, label, badge, ...dom },
   ref,
 ) {
   const px = typeof size === "number" ? size : (ICON_BTN_SIZES[size] ?? ICON_BTN_SIZES.md);
@@ -190,6 +192,7 @@ export const TKIconButton = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKIcon
       {...tkDomProps(dom)}
       aria-label={dom["aria-label"] ?? label}
       style={{
+        position: badge != null && badge !== false ? "relative" : undefined,
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
@@ -205,6 +208,43 @@ export const TKIconButton = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKIcon
       }}
     >
       <TKIcon name={icon} size={Math.round(px * 0.52)} />
+      {typeof badge === "number" ? (
+        <span
+          style={{
+            position: "absolute",
+            top: -4,
+            right: -4,
+            minWidth: 17,
+            height: 17,
+            padding: "0 4px",
+            borderRadius: "var(--tk-r-pill)",
+            background: "var(--tk-red)",
+            color: "#fff",
+            fontSize: "var(--tk-fz-caption2)",
+            fontWeight: 700,
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            boxShadow: "0 0 0 2px var(--tk-surface)",
+          }}
+        >
+          {badge}
+        </span>
+      ) : badge ? (
+        <span
+          data-tk-badge-dot
+          style={{
+            position: "absolute",
+            top: -1,
+            right: -1,
+            width: 9,
+            height: 9,
+            borderRadius: "50%",
+            background: "var(--tk-red)",
+            boxShadow: "0 0 0 2px var(--tk-surface)",
+          }}
+        />
+      ) : null}
     </button>
   );
 });

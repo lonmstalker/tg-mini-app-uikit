@@ -20,6 +20,8 @@ export const GALLERY_SECTIONS = [
   "cards",
   "images",
   "media",
+  "icons",
+  "display-2-0",
   "feedback",
   "data",
   "empty-states",

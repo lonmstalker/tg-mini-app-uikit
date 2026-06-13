@@ -1,4 +1,5 @@
-import type { CSSProperties, ReactNode } from "react";
+import { useState, type CSSProperties, type ReactNode } from "react";
+import { TKPageScrollContext } from "./internal/pageScroll";
 import { useSafeArea } from "./telegram";
 
 /*
@@ -100,6 +101,7 @@ export function TKPage({
   const { inset, contentInset } = useSafeArea();
   const top = inset.top + contentInset.top;
   const bottom = inset.bottom + contentInset.bottom;
+  const [scrollTop, setScrollTop] = useState(0);
   return (
     <div
       className={className}
@@ -112,11 +114,20 @@ export function TKPage({
         ...style,
       }}
     >
-      {header ? <div style={{ flexShrink: 0 }}>{header}</div> : null}
+      {header ? (
+        <TKPageScrollContext.Provider value={scrollTop}>
+          <div style={{ flexShrink: 0, position: "relative", zIndex: 1 }}>{header}</div>
+        </TKPageScrollContext.Provider>
+      ) : null}
       {/* tabIndex keeps the scroll region keyboard-reachable even when the
           page content has no focusable children (WCAG 2.1.1 / axe
           scrollable-region-focusable). */}
-      <div tabIndex={0} style={{ flex: 1, minHeight: 0, overflowY: "auto", WebkitOverflowScrolling: "touch" }}>
+      <div
+        tabIndex={0}
+        data-tk-page-scroll
+        onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
+        style={{ flex: 1, minHeight: 0, overflowY: "auto", WebkitOverflowScrolling: "touch" }}
+      >
         <div
           style={{
             display: "flex",

@@ -1,4 +1,5 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { useControllable } from "./internal/useControllable";
 import { useTKLocale } from "./i18n";
 
 /* ---------------- Badges & status ---------------- */
@@ -78,14 +79,17 @@ export function TKDot({ tone = "green", pulse, testId }: TKDotProps) {
 export interface TKCounterProps {
   value: ReactNode;
   tone?: "red" | "accent" | "gray";
+  /** Numeric values above this render as `max+` (e.g. `99+`). */
+  max?: number;
   testId?: string;
 }
 
-export function TKCounter({ value, tone = "red", testId }: TKCounterProps) {
+export function TKCounter({ value, tone = "red", max, testId }: TKCounterProps) {
   const map = { red: "var(--tk-red)", accent: "var(--tk-accent)", gray: "var(--tk-text-3)" };
+  const shown = typeof value === "number" && max != null && value > max ? `${max}+` : value;
   return (
     <span
-      key={String(value)}
+      key={String(shown)}
       data-testid={testId}
       className="tk-pop"
       style={{
@@ -102,7 +106,7 @@ export function TKCounter({ value, tone = "red", testId }: TKCounterProps) {
         fontWeight: 700,
       }}
     >
-      {value}
+      {shown}
     </span>
   );
 }
@@ -117,12 +121,40 @@ export interface TKAvatarProps {
   /** Photo URL; falls back to the initials while loading or on error. */
   src?: string;
   alt?: string;
+  /** Presence dot: `online` (green), `offline` (gray) or a custom node. */
+  status?: "online" | "offline" | ReactNode;
   testId?: string;
 }
 
-export function TKAvatar({ initials = "", size = 40, tone, src, alt = "", testId }: TKAvatarProps) {
+export function TKAvatar({ initials = "", size = 40, tone, src, alt = "", status, testId }: TKAvatarProps) {
   const [failed, setFailed] = useState(false);
   useEffect(() => setFailed(false), [src]);
+  if (status != null) {
+    const dot =
+      status === "online" || status === "offline" ? (
+        <span
+          data-tk-avatar-status
+          style={{
+            position: "absolute",
+            right: 0,
+            bottom: 0,
+            width: Math.max(8, size * 0.26),
+            height: Math.max(8, size * 0.26),
+            borderRadius: "50%",
+            background: status === "online" ? "var(--tk-green)" : "var(--tk-text-3)",
+            boxShadow: "0 0 0 2px var(--tk-surface)",
+          }}
+        />
+      ) : (
+        <span data-tk-avatar-status style={{ position: "absolute", right: -2, bottom: -2 }}>{status}</span>
+      );
+    return (
+      <span data-testid={testId} style={{ position: "relative", display: "inline-flex", flexShrink: 0 }}>
+        <TKAvatar initials={initials} size={size} tone={tone} src={src} alt={alt} />
+        {dot}
+      </span>
+    );
+  }
   return (
     <span
       data-testid={testId}
@@ -181,6 +213,10 @@ export function TKImg({ label, ratio = "1 / 1", radius = "var(--tk-r-md)", style
 
 export interface TKImageProps {
   src?: string;
+  srcSet?: string;
+  sizes?: string;
+  /** Tiny placeholder shown blurred until the real image loads (blur-up). */
+  placeholderSrc?: string;
   alt?: string;
   ratio?: string;
   radius?: string;
@@ -202,6 +238,9 @@ export interface TKImageProps {
  */
 export function TKImage({
   src,
+  srcSet,
+  sizes,
+  placeholderSrc,
   alt = "",
   ratio = "1 / 1",
   radius = "var(--tk-r-md)",
@@ -245,10 +284,29 @@ export function TKImage({
       }}
     >
       {state === "loading" ? (
-        <div className="tk-skel" style={{ position: "absolute", inset: 0, borderRadius: 0 }} />
+        placeholderSrc ? (
+          <img
+            src={placeholderSrc}
+            alt=""
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: fit,
+              filter: "blur(14px)",
+              transform: "scale(1.08)",
+            }}
+          />
+        ) : (
+          <div className="tk-skel" style={{ position: "absolute", inset: 0, borderRadius: 0 }} />
+        )
       ) : null}
       <img
         src={src}
+        srcSet={srcSet}
+        sizes={sizes}
         alt={alt}
         loading={lazy ? "lazy" : undefined}
         onLoad={() => {
@@ -269,5 +327,156 @@ export function TKImage({
         }}
       />
     </div>
+  );
+}
+
+/* ---------------- Avatar stack ---------------- */
+
+export interface TKAvatarStackItem {
+  initials?: string;
+  src?: string;
+  tone?: string;
+  alt?: string;
+}
+
+export interface TKAvatarStackProps {
+  avatars: TKAvatarStackItem[];
+  /** Visible avatars before the `+N` tail (default 4). */
+  max?: number;
+  size?: number;
+  testId?: string;
+  style?: CSSProperties;
+}
+
+/** Overlapping avatar row with a `+N` overflow chip. */
+export function TKAvatarStack({ avatars, max = 4, size = 32, testId, style }: TKAvatarStackProps) {
+  const shown = avatars.slice(0, max);
+  const rest = avatars.length - shown.length;
+  return (
+    <span data-testid={testId} style={{ display: "inline-flex", alignItems: "center", ...style }}>
+      {shown.map((a, i) => (
+        <span
+          key={i}
+          style={{
+            display: "inline-flex",
+            marginLeft: i ? -size * 0.3 : 0,
+            borderRadius: "50%",
+            boxShadow: "0 0 0 2px var(--tk-surface)",
+            zIndex: shown.length - i,
+          }}
+        >
+          <TKAvatar initials={a.initials} src={a.src} tone={a.tone} alt={a.alt} size={size} />
+        </span>
+      ))}
+      {rest > 0 ? (
+        <span
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: size,
+            height: size,
+            marginLeft: -size * 0.3,
+            borderRadius: "50%",
+            background: "var(--tk-surface-3)",
+            color: "var(--tk-text-2)",
+            fontSize: size * 0.36,
+            fontWeight: 700,
+            boxShadow: "0 0 0 2px var(--tk-surface)",
+          }}
+        >
+          +{rest}
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
+/* ---------------- Spoiler ---------------- */
+
+export interface TKSpoilerProps {
+  children?: ReactNode;
+  revealed?: boolean;
+  defaultRevealed?: boolean;
+  onRevealChange?: (revealed: boolean) => void;
+  testId?: string;
+  style?: CSSProperties;
+}
+
+/**
+ * Telegram-style spoiler: the content is blurred and hidden from assistive
+ * tech until tapped (or controlled via `revealed`).
+ */
+export function TKSpoiler({ children, revealed, defaultRevealed = false, onRevealChange, testId, style }: TKSpoilerProps) {
+  const [open, setOpen] = useControllable(revealed, defaultRevealed, onRevealChange);
+  const locale = useTKLocale();
+  return (
+    <span
+      data-testid={testId}
+      role={open ? undefined : "button"}
+      aria-label={open ? undefined : locale.revealSpoiler}
+      tabIndex={open ? undefined : 0}
+      onClick={() => !open && setOpen(true)}
+      onKeyDown={(e) => {
+        if (!open && (e.key === "Enter" || e.key === " ")) {
+          e.preventDefault();
+          setOpen(true);
+        }
+      }}
+      style={{ display: "inline", cursor: open ? "inherit" : "pointer", ...style }}
+    >
+      <span
+        aria-hidden={open ? undefined : "true"}
+        style={{
+          filter: open ? "none" : "blur(6px)",
+          background: open ? "transparent" : "var(--tk-surface-3)",
+          borderRadius: "var(--tk-r-xs)",
+          transition: "filter var(--tk-t2) var(--tk-ease), background var(--tk-t2) var(--tk-ease)",
+          userSelect: open ? undefined : "none",
+          WebkitUserSelect: open ? undefined : "none",
+        }}
+      >
+        {children}
+      </span>
+    </span>
+  );
+}
+
+/* ---------------- Blockquote ---------------- */
+
+export interface TKBlockquoteProps {
+  children?: ReactNode;
+  author?: ReactNode;
+  /** Optional leading icon name shown next to the author line. */
+  icon?: ReactNode;
+  testId?: string;
+  style?: CSSProperties;
+}
+
+/** Quote block with the Telegram-style vertical accent bar. */
+export function TKBlockquote({ children, author, icon, testId, style }: TKBlockquoteProps) {
+  return (
+    <blockquote
+      data-testid={testId}
+      style={{
+        margin: 0,
+        padding: "8px 12px",
+        borderLeft: "3px solid var(--tk-accent)",
+        borderRadius: "var(--tk-r-xs)",
+        background: "var(--tk-accent-06)",
+        display: "flex",
+        flexDirection: "column",
+        gap: 3,
+        ...style,
+      }}
+    >
+      {author ? (
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--tk-accent-ink)", fontWeight: 700, fontSize: "var(--tk-fz-sub)" }}>
+          {icon}
+          {author}
+        </span>
+      ) : null}
+      <span style={{ fontSize: "var(--tk-fz-sub)", lineHeight: 1.4, color: "var(--tk-text)" }}>{children}</span>
+    </blockquote>
   );
 }

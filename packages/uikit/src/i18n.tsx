@@ -71,6 +71,8 @@ export interface TKLocale {
   biometrics: string;
   /** TKStepper editable value field aria label. */
   quantity: string;
+  /** TKSpoiler tap-to-reveal aria label. */
+  revealSpoiler: string;
   /** TKProgress default aria label. */
   progress: string;
 }
@@ -112,6 +114,7 @@ export const enLocale: TKLocale = {
   backspace: "Backspace",
   biometrics: "Unlock with biometrics",
   quantity: "Quantity",
+  revealSpoiler: "Show hidden content",
   progress: "Progress",
 };
 
@@ -153,6 +156,7 @@ export const ruLocale: TKLocale = {
   backspace: "Удалить символ",
   biometrics: "Войти по биометрии",
   quantity: "Количество",
+  revealSpoiler: "Показать скрытое",
   progress: "Прогресс",
 };
 

@@ -6,6 +6,7 @@ import { useSafeArea } from "./telegram";
 import { useControllable } from "./internal/useControllable";
 import { tkFormat, useTKLocale } from "./i18n";
 import { tkRovingNext, tkTabbableIndex } from "./internal/roving";
+import { usePageScrollTop } from "./internal/pageScroll";
 
 /* ---------------- Header / nav bar ---------------- */
 
@@ -13,17 +14,22 @@ export interface TKHeaderProps {
   title?: ReactNode;
   subtitle?: ReactNode;
   large?: boolean;
+  /** Large title collapses into the compact bar as the `TKPage` content scrolls. */
+  collapsing?: boolean;
   back?: boolean;
   onBack?: () => void;
   actions?: ReactNode;
   testId?: string;
 }
 
-export function TKHeader({ title, subtitle, large, back = true, onBack, actions, testId }: TKHeaderProps) {
+export function TKHeader({ title, subtitle, large, collapsing, back = true, onBack, actions, testId }: TKHeaderProps) {
   const locale = useTKLocale();
+  const scrollTop = usePageScrollTop();
+  const collapsed = !!collapsing && large === true && scrollTop > 28;
   return (
     <div
       data-testid={testId}
+      data-collapsed={collapsing ? collapsed : undefined}
       style={{
         display: "flex",
         flexDirection: "column",
@@ -56,10 +62,18 @@ export function TKHeader({ title, subtitle, large, back = true, onBack, actions,
             <TKIcon name="chevronLeft" size={24} strokeWidth={2.3} />
           </button>
         ) : null}
-        {!large ? (
-          <div style={{ flex: 1, textAlign: "center", marginRight: back ? 18 : 0 }}>
+        {!large || collapsed ? (
+          <div
+            style={{
+              flex: 1,
+              textAlign: "center",
+              marginRight: back ? 18 : 0,
+              opacity: large && !collapsed ? 0 : 1,
+              transition: "opacity var(--tk-t2) var(--tk-ease)",
+            }}
+          >
             <div style={{ fontSize: "var(--tk-fz-body)", fontWeight: 600 }}>{title}</div>
-            {subtitle ? (
+            {subtitle && !large ? (
               <div style={{ fontSize: "var(--tk-fz-caption)", color: "var(--tk-text-2)" }}>{subtitle}</div>
             ) : null}
           </div>
@@ -69,11 +83,19 @@ export function TKHeader({ title, subtitle, large, back = true, onBack, actions,
         {actions ? <div style={{ display: "flex", gap: 6 }}>{actions}</div> : null}
       </div>
       {large ? (
-        <div>
-          <div style={{ fontSize: "var(--tk-fz-title1)", fontWeight: 700, letterSpacing: "-.02em" }}>{title}</div>
-          {subtitle ? (
-            <div style={{ fontSize: "var(--tk-fz-sub)", color: "var(--tk-text-2)" }}>{subtitle}</div>
-          ) : null}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateRows: collapsed ? "0fr" : "1fr",
+            transition: "grid-template-rows var(--tk-t2) var(--tk-ease)",
+          }}
+        >
+          <div style={{ overflow: "hidden", opacity: collapsed ? 0 : 1, transition: "opacity var(--tk-t2) var(--tk-ease)" }}>
+            <div style={{ fontSize: "var(--tk-fz-title1)", fontWeight: 700, letterSpacing: "-.02em" }}>{title}</div>
+            {subtitle ? (
+              <div style={{ fontSize: "var(--tk-fz-sub)", color: "var(--tk-text-2)" }}>{subtitle}</div>
+            ) : null}
+          </div>
         </div>
       ) : null}
     </div>
@@ -112,6 +134,7 @@ export function TKTabbar({ tabs, value, defaultValue = 0, onChange, safeArea, te
         backdropFilter: "blur(14px)",
         WebkitBackdropFilter: "blur(14px)",
         borderTop: "0.5px solid var(--tk-sep)",
+        minHeight: "var(--tk-tabbar-h, auto)",
         padding: "8px 0 10px",
         paddingBottom: safeArea ? `calc(max(var(--tk-safe-bottom), ${safeBottom}px) + 10px)` : 10,
       }}

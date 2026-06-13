@@ -36,5 +36,7 @@ export const MINIMAL_PROPS: Record<string, Record<string, unknown>> = {
   TKLeaderboard: { rows: [{ rank: 1, initials: "AK", name: "Anna", points: 120 }] },
   TKSlotPicker: { days: [{ label: "Mon", date: 12 }], slots: ["10:00", "11:00"] },
   TKMaskedInput: { mask: "##-##" },
+  TKAvatarStack: { avatars: [{ initials: "AK" }, { initials: "BL" }] },
+  TKVirtualList: { items: ["a", "b"], itemHeight: 40, height: 200, renderItem: (x: unknown) => String(x) },
   TKPullToRefresh: { onRefresh: () => {} },
 };

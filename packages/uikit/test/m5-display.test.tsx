@@ -174,3 +174,21 @@ describe("M5.11 TKProgress size / TKAccordion lazy", () => {
     expect(probe).toHaveBeenCalled();
   });
 });
+
+/* ---------------- M5.9 collapsing header ---------------- */
+
+describe("M5.9 TKHeader collapsing", () => {
+  it("collapses the large title when the page content scrolls", () => {
+    render(
+      <kit.TKPage header={<kit.TKHeader large collapsing title="Orders" back={false} testId="hdr" />} safeTop={false}>
+        <div style={{ height: 2000 }}>content</div>
+      </kit.TKPage>,
+    );
+    const header = screen.getByTestId("hdr");
+    expect(header.dataset.collapsed).toBe("false");
+    const scroller = document.querySelector("[data-tk-page-scroll]")!;
+    Object.defineProperty(scroller, "scrollTop", { value: 120, configurable: true });
+    fireEvent.scroll(scroller);
+    expect(screen.getByTestId("hdr").dataset.collapsed).toBe("true");
+  });
+});

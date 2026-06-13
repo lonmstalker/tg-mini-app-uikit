@@ -75,6 +75,23 @@ export function TKSkeletonList({ rows = 3, testId }: { rows?: number; testId?: s
   );
 }
 
+export interface TKSkeletonTextProps {
+  /** Number of text lines (default 3); the last one renders shorter. */
+  lines?: number;
+  testId?: string;
+  style?: CSSProperties;
+}
+
+export function TKSkeletonText({ lines = 3, testId, style }: TKSkeletonTextProps) {
+  return (
+    <div data-testid={testId} style={{ display: "flex", flexDirection: "column", gap: 8, ...style }}>
+      {Array.from({ length: lines }).map((_, i) => (
+        <div key={i} className="tk-skel" style={{ height: 12, width: i === lines - 1 ? "62%" : "100%" }} />
+      ))}
+    </div>
+  );
+}
+
 /* ---------------- Linear progress ---------------- */
 
 export interface TKProgressProps {
@@ -82,12 +99,17 @@ export interface TKProgressProps {
   value: number;
   /** Accessible name of the progress bar. */
   label?: string;
+  /** Bar thickness (default md). */
+  size?: "sm" | "md" | "lg";
   style?: CSSProperties;
   testId?: string;
 }
 
-export function TKProgress({ value, label, style, testId }: TKProgressProps) {
+const PROGRESS_H = { sm: 4, md: 7, lg: 12 } as const;
+
+export function TKProgress({ value, label, size = "md", style, testId }: TKProgressProps) {
   const locale = useTKLocale();
+  const h = PROGRESS_H[size] ?? PROGRESS_H.md;
   return (
     <div
       data-testid={testId}
@@ -96,13 +118,13 @@ export function TKProgress({ value, label, style, testId }: TKProgressProps) {
       aria-valuenow={value}
       aria-valuemin={0}
       aria-valuemax={100}
-      style={{ height: 7, borderRadius: 4, background: "var(--tk-surface-3)", overflow: "hidden", ...style }}
+      style={{ height: h, borderRadius: h / 2, background: "var(--tk-surface-3)", overflow: "hidden", ...style }}
     >
       <div
         style={{
           height: "100%",
           width: `${Math.min(100, Math.max(0, value))}%`,
-          borderRadius: 4,
+          borderRadius: h / 2,
           background: "var(--tk-accent-grad)",
           transition: "width var(--tk-t3) var(--tk-spring)",
         }}
@@ -223,6 +245,8 @@ export function TKBars({ data, labels, height = 110, onBarClick, testId }: TKBar
 
 export interface TKEmptyStateProps {
   icon?: TKIconName;
+  /** Custom illustration (Lottie, img …) shown instead of the icon circle. */
+  media?: ReactNode;
   title?: ReactNode;
   text?: ReactNode;
   cta?: ReactNode;
@@ -231,7 +255,7 @@ export interface TKEmptyStateProps {
   testId?: string;
 }
 
-export function TKEmptyState({ icon = "cart", title, text, cta, onCta, tone = "accent", testId }: TKEmptyStateProps) {
+export function TKEmptyState({ icon = "cart", media, title, text, cta, onCta, tone = "accent", testId }: TKEmptyStateProps) {
   const color = tone === "red" ? "var(--tk-red)" : "var(--tk-accent)";
   const bg = tone === "red" ? "var(--tk-red-12)" : "var(--tk-accent-12)";
   return (
@@ -246,21 +270,23 @@ export function TKEmptyState({ icon = "cart", title, text, cta, onCta, tone = "a
         padding: "10px 12px",
       }}
     >
-      <div
-        style={{
-          width: 68,
-          height: 68,
-          borderRadius: "50%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: bg,
-          color,
-          marginBottom: 6,
-        }}
-      >
-        <TKIcon name={icon} size={30} />
-      </div>
+      {media ?? (
+        <div
+          style={{
+            width: 68,
+            height: 68,
+            borderRadius: "50%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: bg,
+            color,
+            marginBottom: 6,
+          }}
+        >
+          <TKIcon name={icon} size={30} />
+        </div>
+      )}
       <div style={{ fontSize: "var(--tk-fz-title3)", fontWeight: 700 }}>{title}</div>
       {text ? (
         <div style={{ fontSize: "var(--tk-fz-sub)", color: "var(--tk-text-2)", maxWidth: 240 }}>{text}</div>

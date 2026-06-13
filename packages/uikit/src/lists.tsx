@@ -1,7 +1,10 @@
 import {
   Children,
   forwardRef,
+  useEffect,
+  useRef,
   useState,
+  type CSSProperties,
   type ElementType,
   type ForwardedRef,
   type ReactElement,
@@ -233,6 +236,8 @@ export interface TKAccordionProps {
   title?: ReactNode;
   footer?: ReactNode;
   inset?: boolean;
+  /** Mount item content only after the item first opens. */
+  lazy?: boolean;
   testId?: string;
 }
 
@@ -245,11 +250,14 @@ export function TKAccordion({
   title,
   footer,
   inset = true,
+  lazy,
   testId,
 }: TKAccordionProps) {
   const [open, setOpen] = useControllable(value, defaultValue, onChange);
+  const [everOpened, setEverOpened] = useState<Record<string, boolean>>({});
 
   const toggle = (id: string) => {
+    setEverOpened((m) => (m[id] ? m : { ...m, [id]: true }));
     setOpen(
       open.includes(id)
         ? open.filter((item) => item !== id)
@@ -359,7 +367,7 @@ export function TKAccordion({
                     lineHeight: 1.38,
                   }}
                 >
-                  {item.content}
+                  {!lazy || isOpen || everOpened[item.id] ? item.content : null}
                 </div>
               </div>
             </div>
@@ -367,5 +375,98 @@ export function TKAccordion({
         );
       })}
     </TKListGroup>
+  );
+}
+
+
+/* ---------------- Infinite list ---------------- */
+
+export interface TKInfiniteListProps {
+  children?: ReactNode;
+  /** Called when the sentinel becomes visible and `hasMore` is true. */
+  onLoadMore: () => void;
+  hasMore?: boolean;
+  /** Custom loader row shown while more content is expected. */
+  loader?: ReactNode;
+  /** Root margin of the IntersectionObserver (default `240px`). */
+  margin?: string;
+  testId?: string;
+  style?: CSSProperties;
+}
+
+/** IntersectionObserver-driven "load more" wrapper for any list. */
+export function TKInfiniteList({ children, onLoadMore, hasMore = true, loader, margin = "240px", testId, style }: TKInfiniteListProps) {
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const loadRef = useRef(onLoadMore);
+  loadRef.current = onLoadMore;
+
+  useEffect(() => {
+    const node = sentinelRef.current;
+    if (!node || !hasMore || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) loadRef.current();
+      },
+      { rootMargin: margin },
+    );
+    io.observe(node);
+    return () => io.disconnect();
+  }, [hasMore, margin]);
+
+  return (
+    <div data-testid={testId} style={style}>
+      {children}
+      {hasMore ? (
+        <div ref={sentinelRef} data-tk-sentinel style={{ display: "flex", justifyContent: "center", padding: 12 }}>
+          {loader ?? <span className="tk-skel" style={{ width: 120, height: 12, borderRadius: 6 }} />}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/* ---------------- Virtual list (fixed row height) ---------------- */
+
+export interface TKVirtualListProps<T> {
+  items: T[];
+  /** Fixed row height, px. */
+  itemHeight: number;
+  /** Viewport height, px. */
+  height: number;
+  renderItem: (item: T, index: number) => ReactNode;
+  /** Extra rows rendered above/below the viewport (default 6). */
+  overscan?: number;
+  testId?: string;
+  style?: CSSProperties;
+}
+
+/**
+ * Windowed list for weak WebViews: renders only the visible rows plus
+ * overscan. Fixed row height in this first iteration (see plans.md M11 for
+ * the variable-height candidate).
+ */
+export function TKVirtualList<T>({ items, itemHeight, height, renderItem, overscan = 6, testId, style }: TKVirtualListProps<T>) {
+  const [scrollTop, setScrollTop] = useState(0);
+  const first = Math.max(0, Math.floor(scrollTop / itemHeight) - overscan);
+  const visible = Math.ceil(height / itemHeight) + overscan * 2;
+  const slice = items.slice(first, first + visible);
+  return (
+    <div
+      data-testid={testId}
+      tabIndex={0}
+      onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
+      style={{ height, overflowY: "auto", WebkitOverflowScrolling: "touch", position: "relative", ...style }}
+    >
+      <div style={{ height: items.length * itemHeight, position: "relative" }}>
+        {slice.map((item, i) => (
+          <div
+            key={first + i}
+            style={{ position: "absolute", top: (first + i) * itemHeight, left: 0, right: 0, height: itemHeight }}
+          >
+            {renderItem(item, first + i)}
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
