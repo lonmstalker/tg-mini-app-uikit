@@ -38,5 +38,8 @@ export const MINIMAL_PROPS: Record<string, Record<string, unknown>> = {
   TKMaskedInput: { mask: "##-##" },
   TKAvatarStack: { avatars: [{ initials: "AK" }, { initials: "BL" }] },
   TKVirtualList: { items: ["a", "b"], itemHeight: 40, height: 200, renderItem: (x: unknown) => String(x) },
+  TKMessages: { messages: [{ id: "1", text: "hi" }] },
+  TKWriteBar: { onSend: () => {} },
+  TKOnboardingTooltip: { steps: [{ target: { current: null } }] },
   TKPullToRefresh: { onRefresh: () => {} },
 };

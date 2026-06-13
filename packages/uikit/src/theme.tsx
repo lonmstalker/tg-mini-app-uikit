@@ -41,8 +41,18 @@ export function tkThemeVars(knobs: TKThemeKnobs): CSSProperties {
 
 const TKThemeContext = createContext<TKThemeValue>({ theme: "light" });
 
+export type TKThemePreset = "ios" | "material";
+
+/** Preset = a named bundle of knobs (see plans.md Decision Log — no per-platform component forks). */
+const PRESET_KNOBS: Record<TKThemePreset, TKThemeKnobs> = {
+  ios: {},
+  material: { roundness: 0.5, motion: "smooth", motionSpeed: 1.15 },
+};
+
 export interface TKProviderProps extends TKThemeKnobs {
   theme?: TKTheme;
+  /** Style preset applied under any explicit knobs. */
+  preset?: TKThemePreset;
   /**
    * Inherit the live Telegram theme: adds the `tk-tg` class so every token
    * resolves from `--tg-theme-*` variables when running inside Telegram.
@@ -61,6 +71,7 @@ export interface TKProviderProps extends TKThemeKnobs {
  */
 export function TKProvider({
   theme = "light",
+  preset,
   accent,
   roundness,
   motionSpeed,
@@ -72,7 +83,15 @@ export function TKProvider({
   children,
   testId,
 }: TKProviderProps) {
-  const vars = tkThemeVars({ accent, roundness, motionSpeed, motion, fontSize });
+  const presetKnobs = preset ? PRESET_KNOBS[preset] : undefined;
+  const vars = tkThemeVars({
+    ...presetKnobs,
+    ...(accent != null ? { accent } : null),
+    ...(roundness != null ? { roundness } : null),
+    ...(motionSpeed != null ? { motionSpeed } : null),
+    ...(motion != null ? { motion } : null),
+    ...(fontSize != null ? { fontSize } : null),
+  });
   return (
     <TKThemeContext.Provider value={{ theme, accent, roundness, motionSpeed, motion, fontSize }}>
       <div

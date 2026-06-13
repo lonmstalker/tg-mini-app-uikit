@@ -12,6 +12,7 @@ import {
 } from "react";
 import { TKIcon, type TKIconName } from "./icons";
 import { useTKLocale } from "./i18n";
+import { useOptionalHaptics } from "./telegram";
 import { tkDomProps, type TKDomProps } from "./internal/dom";
 import { tkRovingNext, tkTabbableIndex } from "./internal/roving";
 import type { TKPolymorphicProps } from "./internal/polymorphic";
@@ -412,6 +413,7 @@ export const TKMainButton = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKMain
   ref,
 ) {
   const locale = useTKLocale();
+  const haptics = useOptionalHaptics();
   const successText = successLabel ?? locale.done;
   const [auto, setAuto] = useState<TKMainButtonStatus>("idle");
   const timer = useRef<number | undefined>(undefined);
@@ -436,6 +438,7 @@ export const TKMainButton = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKMain
       (result as Promise<unknown>).then(
         () => {
           if (!mounted.current) return;
+          haptics.notification("success");
           setAuto("success");
           timer.current = window.setTimeout(() => mounted.current && setAuto("idle"), successDuration);
         },

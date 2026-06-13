@@ -22,3 +22,6 @@ export * from "./overlays";
 export * from "./gestures";
 export * from "./feedback";
 export * from "./patterns";
+export * from "./chat";
+export * from "./onboarding";
+export * from "./confetti";

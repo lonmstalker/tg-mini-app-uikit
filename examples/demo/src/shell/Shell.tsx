@@ -171,6 +171,7 @@ export function Shell() {
   const screen = (
     <TKProvider
       theme={tweaks.dark ? "dark" : "light"}
+      preset={tweaks.preset}
       accent={tweaks.accent}
       roundness={tweaks.roundness}
       motionSpeed={tweaks.motionSpeed}

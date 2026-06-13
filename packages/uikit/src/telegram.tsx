@@ -444,7 +444,43 @@ export interface TKTelegramProviderProps {
   webApp?: TelegramWebApp;
   /** Call `webApp.ready()` on mount (default true). */
   signalReady?: boolean;
+  /**
+   * Opt-in haptic feedback on kit interactions (switches, tabs, sliders,
+   * pull-to-refresh, pin errors, …). Default false.
+   */
+  haptics?: boolean;
   children?: ReactNode;
+}
+
+const TKHapticsContext = createContext(false);
+
+export interface TKOptionalHaptics {
+  selection: () => void;
+  impact: (style?: "light" | "medium" | "heavy" | "rigid" | "soft") => void;
+  notification: (type?: "error" | "success" | "warning") => void;
+}
+
+/**
+ * Haptics that fire only when the provider enables them (`haptics` prop) and
+ * a real `HapticFeedback` is available — safe to call unconditionally.
+ */
+export function useOptionalHaptics(): TKOptionalHaptics {
+  const enabled = useContext(TKHapticsContext);
+  const wa = useWebApp();
+  return useMemo(
+    () => ({
+      selection: () => {
+        if (enabled) wa?.HapticFeedback?.selectionChanged?.();
+      },
+      impact: (style = "light") => {
+        if (enabled) wa?.HapticFeedback?.impactOccurred?.(style);
+      },
+      notification: (type = "success") => {
+        if (enabled) wa?.HapticFeedback?.notificationOccurred?.(type);
+      },
+    }),
+    [enabled, wa],
+  );
 }
 
 /**
@@ -452,7 +488,7 @@ export interface TKTelegramProviderProps {
  * Optional outside of tests and demos — without it the hooks fall back to
  * `window.Telegram.WebApp` and degrade to no-ops in a plain browser.
  */
-export function TKTelegramProvider({ webApp, signalReady = true, children }: TKTelegramProviderProps) {
+export function TKTelegramProvider({ webApp, signalReady = true, haptics = false, children }: TKTelegramProviderProps) {
   const wa = webApp ?? getTelegramWebApp();
   useEffect(() => {
     if (signalReady) wa?.ready?.();
@@ -469,7 +505,11 @@ export function TKTelegramProvider({ webApp, signalReady = true, children }: TKT
       btn.offClick?.(handler);
     };
   }, [wa]);
-  return <TKTelegramContext.Provider value={wa}>{children}</TKTelegramContext.Provider>;
+  return (
+    <TKTelegramContext.Provider value={wa}>
+      <TKHapticsContext.Provider value={haptics}>{children}</TKHapticsContext.Provider>
+    </TKTelegramContext.Provider>
+  );
 }
 
 /** The active WebApp: the injected one, or `window.Telegram.WebApp`, or `undefined`. */

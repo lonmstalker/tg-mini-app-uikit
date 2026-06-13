@@ -30,6 +30,8 @@ export const GALLERY_SECTIONS = [
   "popper",
   "stress",
   "stress-locales",
+  "chat",
+  "wow",
   "patterns",
   "localization",
   "layout",

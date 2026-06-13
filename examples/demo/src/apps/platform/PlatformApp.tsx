@@ -289,7 +289,7 @@ export function PlatformApp({ shell }: { shell: ShellApi }) {
   }, [shell.dark]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <TKTelegramProvider webApp={mock.webApp}>
+    <TKTelegramProvider webApp={mock.webApp} haptics>
       <Chrome mock={mock} state={state} highlight={highlight} setHighlight={setHighlight} />
     </TKTelegramProvider>
   );

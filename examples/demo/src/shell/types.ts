@@ -1,9 +1,10 @@
-import type { TKMotion } from "tg-mini-app-uikit";
+import type { TKMotion, TKThemePreset } from "tg-mini-app-uikit";
 
 export type DemoLocale = "en" | "ru" | "ar";
 
 export interface Tweaks {
   dark: boolean;
+  preset?: TKThemePreset;
   locale: DemoLocale;
   accent: string;
   roundness: number;

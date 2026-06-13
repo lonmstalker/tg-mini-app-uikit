@@ -13,6 +13,7 @@ import { TKIconButton } from "./buttons";
 import { TKInput, type TKInputProps } from "./inputs";
 import { TKSheet } from "./overlays";
 import { useTKLocale } from "./i18n";
+import { useOptionalHaptics } from "./telegram";
 import { useControllable } from "./internal/useControllable";
 
 /* ---------------- Calendar ---------------- */
@@ -359,12 +360,17 @@ export interface TKPinInputProps {
 /** PIN screen: dot indicators + on-screen 3×4 keypad, optional biometrics key. */
 export function TKPinInput({ length = 4, onComplete, error, onBiometricRequest, title, testId, style }: TKPinInputProps) {
   const locale = useTKLocale();
+  const haptics = useOptionalHaptics();
   const [pin, setPin] = useState("");
   const completeRef = useRef(onComplete);
   completeRef.current = onComplete;
 
   useEffect(() => {
-    if (error) setPin("");
+    if (error) {
+      setPin("");
+      haptics.notification("error");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [error]);
 
   const push = (digit: string) => {

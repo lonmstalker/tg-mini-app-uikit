@@ -73,6 +73,11 @@ export interface TKLocale {
   quantity: string;
   /** TKSpoiler tap-to-reveal aria label. */
   revealSpoiler: string;
+  /** TKWriteBar send button aria label. */
+  send: string;
+  /** TKOnboardingTooltip controls. */
+  next: string;
+  skip: string;
   /** TKProgress default aria label. */
   progress: string;
 }
@@ -115,6 +120,9 @@ export const enLocale: TKLocale = {
   biometrics: "Unlock with biometrics",
   quantity: "Quantity",
   revealSpoiler: "Show hidden content",
+  send: "Send",
+  next: "Next",
+  skip: "Skip",
   progress: "Progress",
 };
 
@@ -157,6 +165,9 @@ export const ruLocale: TKLocale = {
   biometrics: "Войти по биометрии",
   quantity: "Количество",
   revealSpoiler: "Показать скрытое",
+  send: "Отправить",
+  next: "Далее",
+  skip: "Пропустить",
   progress: "Прогресс",
 };
 

@@ -20,6 +20,7 @@ import {
   TKCardChip,
   TKCell,
   TKCheckbox,
+  TKConfetti,
   TKChipsInput,
   TKChip,
   TKChipGroup,
@@ -43,7 +44,9 @@ import {
   TKListGroup,
   TKLocaleProvider,
   TKMainButton,
+  TKMessages,
   TKMultiselect,
+  TKOnboardingTooltip,
   TKOTP,
   TKPage,
   TKPhoneInput,
@@ -82,6 +85,7 @@ import {
   TKTabbar,
   TKTimeInput,
   TKVirtualList,
+  TKWriteBar,
   TKTappable,
   TKText,
   TKTextarea,
@@ -95,6 +99,7 @@ import {
   TKXPHeader,
   useTKTheme,
   useTKToast,
+  type TKMessage,
   type TKThemeKnobs,
 } from "tg-mini-app-uikit";
 import { ACCENTS } from "../../shell/types";
@@ -284,6 +289,15 @@ function GalleryInner() {
   const [ptrCount, setPtrCount] = useState(0);
   const [rows, setRows] = useState(["Flat white", "Cinnamon bun", "Filter brew"]);
   const [iconQuery, setIconQuery] = useState("");
+  const [chatMessages, setChatMessages] = useState<TKMessage[]>([
+    { id: "1", text: "Привет! Чем можем помочь?", time: "12:01" },
+    { id: "2", text: "Заказ #1042 ещё в пути?", out: true, time: "12:02", status: "read" },
+    { id: "3", text: "Да, курьер будет через ~20 минут 🚴", time: "12:03" },
+  ]);
+  const [confetti, setConfetti] = useState(false);
+  const [tourRun, setTourRun] = useState(0);
+  const tourTarget1 = useRef<HTMLButtonElement>(null);
+  const tourTarget2 = useRef<HTMLButtonElement>(null);
   const [pinStatus, setPinStatus] = useState("");
   const [priceRange, setPriceRange] = useState<[number, number]>([20, 70]);
 
@@ -881,6 +895,43 @@ function GalleryInner() {
               />
             </TKListGroup>
           </div>
+        </Section>
+
+        <Section title="Chat · messages & write bar">
+          <TKFrame height={320} testId="demo-chat">
+            <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: 12 }}>
+              <TKMessages messages={chatMessages} />
+            </div>
+            <TKWriteBar
+              placeholder="Message"
+              safeArea={false}
+              onSend={(text) =>
+                setChatMessages((m) => [...m, { id: String(m.length + 1), text, out: true, time: "12:04", status: "sent" }])
+              }
+            />
+          </TKFrame>
+        </Section>
+
+        <Section title="Wow · onboarding tour, confetti" lazy={false}>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <TKButton ref={tourTarget1} variant="tonal" onClick={() => setTourRun((n) => n + 1)} testId="demo-start-tour">
+              Start tour
+            </TKButton>
+            <TKButton ref={tourTarget2} variant="surface" onClick={() => setConfetti(true)} testId="demo-confetti-btn">
+              Confetti 🎉
+            </TKButton>
+          </div>
+          {tourRun > 0 ? (
+            <TKOnboardingTooltip
+              key={tourRun}
+              steps={[
+                { target: tourTarget1, title: "Coach marks", text: "Шаг подсвечивает цель через вырез в скриме." },
+                { target: tourTarget2, title: "Микро-награды", text: "А эта кнопка запускает конфетти." },
+              ]}
+              testId="demo-tour"
+            />
+          ) : null}
+          {confetti ? <TKConfetti onDone={() => setConfetti(false)} testId="demo-confetti" /> : null}
         </Section>
 
         <Section title="Patterns">

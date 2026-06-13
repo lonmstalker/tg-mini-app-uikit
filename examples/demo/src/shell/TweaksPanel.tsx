@@ -88,6 +88,17 @@ export function TweaksPanel({ tweaks, onChange, style }: TweaksPanelProps) {
         onChange={(locale) => onChange({ locale: locale as Tweaks["locale"] })}
       />
 
+      <Label>Preset</Label>
+      <TKSegmented
+        full
+        options={[
+          { value: "ios", label: "iOS" },
+          { value: "material", label: "Material" },
+        ]}
+        value={tweaks.preset ?? "ios"}
+        onChange={(preset) => onChange({ preset: preset as Tweaks["preset"] })}
+      />
+
       <Label>Motion</Label>
       <TKSegmented
         full

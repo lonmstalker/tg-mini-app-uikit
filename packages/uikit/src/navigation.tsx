@@ -7,6 +7,7 @@ import { useControllable } from "./internal/useControllable";
 import { tkFormat, useTKLocale } from "./i18n";
 import { tkRovingNext, tkTabbableIndex } from "./internal/roving";
 import { usePageScrollTop } from "./internal/pageScroll";
+import { useOptionalHaptics } from "./telegram";
 
 /* ---------------- Header / nav bar ---------------- */
 
@@ -122,6 +123,7 @@ export interface TKTabbarProps {
 
 export function TKTabbar({ tabs, value, defaultValue = 0, onChange, safeArea, testId }: TKTabbarProps) {
   const [active, setActive] = useControllable(value, defaultValue, onChange);
+  const haptics = useOptionalHaptics();
   const { inset, contentInset } = useSafeArea();
   const safeBottom = inset.bottom + contentInset.bottom;
   return (
@@ -145,7 +147,10 @@ export function TKTabbar({ tabs, value, defaultValue = 0, onChange, safeArea, te
           <button
             type="button"
             key={t.label}
-            onClick={() => setActive(i)}
+            onClick={() => {
+              haptics.selection();
+              setActive(i);
+            }}
             style={{
               display: "flex",
               flexDirection: "column",
@@ -207,6 +212,7 @@ export function TKSegmented({ options, value, defaultValue, onChange, full, test
   const idx = Math.max(0, items.findIndex((item) => item.value === val));
   const n = items.length;
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
+  const haptics = useOptionalHaptics();
   const disabledAt = (i: number) => !!items[i]?.disabled;
   const tabbable = tkTabbableIndex(idx, n, disabledAt);
   return (
@@ -246,7 +252,10 @@ export function TKSegmented({ options, value, defaultValue, onChange, full, test
           tabIndex={i === tabbable ? 0 : -1}
           disabled={item.disabled}
           aria-pressed={item.value === val}
-          onClick={() => setVal(item.value)}
+          onClick={() => {
+            haptics.selection();
+            setVal(item.value);
+          }}
           onKeyDown={(e) => {
             const next = tkRovingNext(e.key, i, n, disabledAt, "horizontal");
             if (next == null) return;

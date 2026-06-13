@@ -15,6 +15,7 @@ import { useControllable } from "./internal/useControllable";
 import { tkFormat, useTKLocale } from "./i18n";
 import { tkDomProps, type TKDomProps } from "./internal/dom";
 import { tkRovingNext, tkTabbableIndex } from "./internal/roving";
+import { useOptionalHaptics } from "./telegram";
 
 /* ---------------- Chips ---------------- */
 
@@ -162,6 +163,7 @@ export const TKCheckbox = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKCheckb
   ref,
 ) {
   const [on, setOn] = useControllable(checked, !!defaultChecked, onChange);
+  const haptics = useOptionalHaptics();
   const boxOn = on || indeterminate;
   return (
     <button
@@ -170,7 +172,10 @@ export const TKCheckbox = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKCheckb
       role="checkbox"
       aria-checked={indeterminate ? "mixed" : on}
       disabled={disabled}
-      onClick={() => setOn(!on)}
+      onClick={() => {
+        haptics.selection();
+        setOn(!on);
+      }}
       {...tkDomProps(dom)}
       style={{
         display: "inline-flex",
@@ -231,6 +236,7 @@ export function TKRadioGroup({ options, value, defaultValue, onChange, disabled,
   const firstEnabled = items.find((item) => !item.disabled);
   const [val, setVal] = useControllable(value, defaultValue ?? firstEnabled?.value ?? "", onChange);
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
+  const haptics = useOptionalHaptics();
   const disabledAt = (i: number) => disabled || !!items[i]?.disabled;
   const tabbable = tkTabbableIndex(items.findIndex((item) => item.value === val), items.length, disabledAt);
   return (
@@ -249,7 +255,10 @@ export function TKRadioGroup({ options, value, defaultValue, onChange, disabled,
             }}
             tabIndex={i === tabbable ? 0 : -1}
             disabled={off}
-            onClick={() => setVal(item.value)}
+            onClick={() => {
+              haptics.selection();
+              setVal(item.value);
+            }}
             onKeyDown={(e) => {
               // WAI-ARIA radio: arrows move both focus and selection
               const next = tkRovingNext(e.key, i, items.length, disabledAt);
@@ -321,6 +330,11 @@ export const TKSwitch = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKSwitchPr
   ref,
 ) {
   const [on, setOn] = useControllable(checked, !!defaultChecked, onChange);
+  const haptics = useOptionalHaptics();
+  const toggle = () => {
+    haptics.selection();
+    setOn(!on);
+  };
   const W = small ? 42 : 51;
   const H = small ? 26 : 31;
   const K = H - 4;
@@ -382,7 +396,7 @@ export const TKSwitch = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKSwitchPr
       role="switch"
       aria-checked={on}
       disabled={disabled}
-      onClick={() => setOn(!on)}
+      onClick={toggle}
       {...tkDomProps(dom)}
       style={{
         display: "flex",
@@ -565,11 +579,22 @@ function TKSingleSliderImpl({ min = 0, max = 100, step = 1, value, defaultValue,
   const [val, setVal] = useControllable(value, defaultValue ?? min, onChange);
   const [drag, setDrag] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const haptics = useOptionalHaptics();
+  const lastTick = useRef(0);
   const pct = max === min ? 0 : ((val - min) / (max - min)) * 100;
 
   const snap = (raw: number) => {
     const snapped = min + Math.round((raw - min) / step) * step;
-    setVal(Number(Math.min(max, Math.max(min, snapped)).toFixed(4)));
+    const next = Number(Math.min(max, Math.max(min, snapped)).toFixed(4));
+    if (next !== val) {
+      // step tick haptic, throttled so fast drags do not buzz continuously
+      const now = typeof performance !== "undefined" ? performance.now() : 0;
+      if (now - lastTick.current > 80) {
+        haptics.selection();
+        lastTick.current = now;
+      }
+    }
+    setVal(next);
   };
 
   const setFromEvent = (e: PointerEvent<HTMLDivElement>) => {

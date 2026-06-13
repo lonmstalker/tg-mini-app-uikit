@@ -10,6 +10,7 @@ import {
 import { TKIcon, type TKIconName } from "./icons";
 import { TKSpinner } from "./buttons";
 import { useDragGesture, tkShouldCommit } from "./internal/useDragGesture";
+import { useOptionalHaptics } from "./telegram";
 
 /* ---------------- useLongPress ---------------- */
 
@@ -89,6 +90,7 @@ export function TKPullToRefresh({ children, onRefresh, threshold = 72, disabled,
   const [refreshing, setRefreshing] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const armedRef = useRef(false);
+  const haptics = useOptionalHaptics();
 
   const resist = (delta: number) => Math.max(0, delta) * 0.5;
 
@@ -98,7 +100,9 @@ export function TKPullToRefresh({ children, onRefresh, threshold = 72, disabled,
     onMove(state) {
       if ((scrollRef.current?.scrollTop ?? 0) > 0) return; // only from the very top
       const next = resist(state.delta);
-      armedRef.current = next >= threshold;
+      const armed = next >= threshold;
+      if (armed && !armedRef.current) haptics.impact("light"); // threshold crossed
+      armedRef.current = armed;
       setPull(Math.min(next, threshold * 1.6));
     },
     onEnd(state) {
@@ -207,6 +211,7 @@ const OPEN_EVENT = "tk-swipecell-open";
  * the first action. The buttons stay keyboard-reachable without gestures.
  */
 export function TKSwipeCell({ children, leading = [], trailing = [], fullSwipe = true, testId, style }: TKSwipeCellProps) {
+  const haptics = useOptionalHaptics();
   const [offset, setOffset] = useState(0);
   const [dragging, setDragging] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -245,6 +250,7 @@ export function TKSwipeCell({ children, leading = [], trailing = [], fullSwipe =
       const side = raw < 0 ? trailing : leading;
       const max = side.length * ACTION_W;
       if (fullSwipe && side.length && Math.abs(raw) > width * 0.6) {
+        haptics.impact("medium");
         setOffset(0);
         side[0].onAction();
         return;
