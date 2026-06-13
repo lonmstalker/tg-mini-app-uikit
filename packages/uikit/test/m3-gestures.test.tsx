@@ -261,4 +261,36 @@ describe("M3.8 TKPopper arrow and auto-flip", () => {
     // flipped: positioned above the anchor rather than below it
     expect(Number.parseFloat(screen.getByTestId("pop").style.top)).toBeLessThan(window.innerHeight - 30);
   });
+
+  it("attaches one listener set while open and removes it on unmount", () => {
+    const anchorRef = anchorAt(100);
+    const onClose = vi.fn();
+    const windowAdd = vi.spyOn(window, "addEventListener");
+    const windowRemove = vi.spyOn(window, "removeEventListener");
+    const documentAdd = vi.spyOn(document, "addEventListener");
+    const documentRemove = vi.spyOn(document, "removeEventListener");
+
+    const { rerender, unmount } = render(
+      <kit.TKPopper open anchorRef={anchorRef} onClose={onClose} testId="pop">
+        One
+      </kit.TKPopper>,
+    );
+    rerender(
+      <kit.TKPopper open anchorRef={anchorRef} onClose={onClose} testId="pop">
+        Two
+      </kit.TKPopper>,
+    );
+
+    expect(windowAdd.mock.calls.filter(([event]) => event === "resize")).toHaveLength(1);
+    expect(windowAdd.mock.calls.filter(([event]) => event === "scroll")).toHaveLength(1);
+    expect(documentAdd.mock.calls.filter(([event]) => event === "pointerdown")).toHaveLength(1);
+    expect(documentAdd.mock.calls.filter(([event]) => event === "keydown")).toHaveLength(1);
+
+    unmount();
+
+    expect(windowRemove.mock.calls.filter(([event]) => event === "resize")).toHaveLength(1);
+    expect(windowRemove.mock.calls.filter(([event]) => event === "scroll")).toHaveLength(1);
+    expect(documentRemove.mock.calls.filter(([event]) => event === "pointerdown")).toHaveLength(1);
+    expect(documentRemove.mock.calls.filter(([event]) => event === "keydown")).toHaveLength(1);
+  });
 });

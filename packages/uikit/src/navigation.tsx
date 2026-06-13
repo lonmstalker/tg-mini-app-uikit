@@ -129,6 +129,7 @@ export function TKTabbar({ tabs, value, defaultValue = 0, onChange, safeArea, te
   return (
     <div
       data-testid={testId}
+      role="navigation"
       style={{
         display: "grid",
         gridTemplateColumns: `repeat(${tabs.length}, 1fr)`,
@@ -147,6 +148,7 @@ export function TKTabbar({ tabs, value, defaultValue = 0, onChange, safeArea, te
           <button
             type="button"
             key={t.label}
+            aria-current={on ? "page" : undefined}
             onClick={() => {
               haptics.selection();
               setActive(i);
@@ -379,6 +381,50 @@ export function TKSteps({ steps, current, onStepClick, testId }: TKStepsProps) {
       {steps.map((s, i) => {
         const done = i < current;
         const active = i === current;
+        const stepStyle: CSSProperties = {
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 6,
+          border: "none",
+          background: "transparent",
+          padding: 0,
+          cursor: onStepClick ? "pointer" : "default",
+          fontFamily: "inherit",
+        };
+        const stepContent = (
+          <>
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 28,
+                height: 28,
+                borderRadius: "50%",
+                fontSize: "var(--tk-fz-caption)",
+                fontWeight: 700,
+                background: done || active ? "var(--tk-accent)" : "var(--tk-surface-3)",
+                color: done || active ? "var(--tk-on-accent)" : "var(--tk-text-2)",
+                boxShadow: active ? "var(--tk-ring)" : "none",
+                transition: "background var(--tk-t2) var(--tk-ease), box-shadow var(--tk-t2) var(--tk-ease)",
+              }}
+            >
+              {done ? <TKIcon name="check" size={14} strokeWidth={3} /> : i + 1}
+            </span>
+            <span
+              aria-current={active ? "step" : undefined}
+              style={{
+                fontSize: "var(--tk-fz-caption)",
+                fontWeight: active ? 600 : 500,
+                color: active ? "var(--tk-text)" : "var(--tk-text-2)",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {s}
+            </span>
+          </>
+        );
         return (
           <span key={s} style={{ display: "contents" }}>
             {i > 0 ? (
@@ -403,50 +449,13 @@ export function TKSteps({ steps, current, onStepClick, testId }: TKStepsProps) {
                 />
               </div>
             ) : null}
-            <button
-              type="button"
-              onClick={onStepClick ? () => onStepClick(i) : undefined}
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 6,
-                border: "none",
-                background: "transparent",
-                padding: 0,
-                cursor: onStepClick ? "pointer" : "default",
-                fontFamily: "inherit",
-              }}
-            >
-              <span
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: 28,
-                  height: 28,
-                  borderRadius: "50%",
-                  fontSize: "var(--tk-fz-caption)",
-                  fontWeight: 700,
-                  background: done || active ? "var(--tk-accent)" : "var(--tk-surface-3)",
-                  color: done || active ? "var(--tk-on-accent)" : "var(--tk-text-2)",
-                  boxShadow: active ? "var(--tk-ring)" : "none",
-                  transition: "background var(--tk-t2) var(--tk-ease), box-shadow var(--tk-t2) var(--tk-ease)",
-                }}
-              >
-                {done ? <TKIcon name="check" size={14} strokeWidth={3} /> : i + 1}
-              </span>
-              <span
-                style={{
-                  fontSize: "var(--tk-fz-caption)",
-                  fontWeight: active ? 600 : 500,
-                  color: active ? "var(--tk-text)" : "var(--tk-text-2)",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {s}
-              </span>
-            </button>
+            {onStepClick ? (
+              <button type="button" onClick={() => onStepClick(i)} style={stepStyle}>
+                {stepContent}
+              </button>
+            ) : (
+              <span style={stepStyle}>{stepContent}</span>
+            )}
           </span>
         );
       })}

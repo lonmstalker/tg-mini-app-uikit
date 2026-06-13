@@ -418,15 +418,24 @@ export const TKOTP = /* @__PURE__ */ forwardRef<HTMLInputElement, TKOTPProps>(fu
         ) : (
           <>
             {resendPrompt ?? locale.didntGetCode}{" "}
-            <span
+            <button
+              type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 onResend?.();
               }}
-              style={{ color: "var(--tk-accent-ink)", fontWeight: 600, cursor: "pointer" }}
+              style={{
+                border: "none",
+                background: "transparent",
+                padding: 0,
+                color: "var(--tk-accent-ink)",
+                font: "inherit",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
             >
               {resendLabel ?? locale.resend}
-            </span>
+            </button>
           </>
         )}
       </div>

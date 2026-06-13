@@ -19,3 +19,11 @@ Use `useBackIntercept` for transient surfaces. Dialogs and sheets should close b
 ## tg-mini-app-testkit
 
 Use this kit's `createMockTelegram()` while building UI locally. For consumer-app e2e suites, pair it with `tg-mini-app-testkit` so Bot API behavior, start params and client events are testable outside Telegram.
+
+## Non-Telegram Browser Usage
+
+Wrap app code in `TKTelegramProvider` only when you want to inject a mock or a real WebApp object. Without Telegram, hooks report unsupported state or use browser-safe fallbacks. This lets the same components run in Storybook, local Vite, SSR, and tests.
+
+Storage fallbacks are local only. `useCloudStorage()` writes to a `tk-cloud:` localStorage namespace outside Telegram. `useSecureStorage()` may still read and write a `tk-secure:` local fallback, but `isSupported` remains false and the fallback is not secure storage.
+
+For identity, render friendly UI from `useInitData().unsafe` if useful, but send `useInitData().raw` to your backend for Telegram hash validation before trusting the user or start parameter.

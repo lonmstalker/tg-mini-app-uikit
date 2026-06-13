@@ -129,12 +129,15 @@ describe("M2.3 keyboard-accessible popovers", () => {
         <button type="button">target</button>
       </kit.TKTooltip>,
     );
-    const tooltip = screen.getByRole("tooltip");
+    const tooltip = screen.getByRole("tooltip", { hidden: true });
     const target = screen.getByRole("button", { name: "target" });
     expect(tooltip.style.opacity).toBe("0");
-    fireEvent.focus(target.parentElement!);
+    expect(tooltip).toHaveAttribute("aria-hidden", "true");
+    fireEvent.focus(target);
     expect(tooltip.style.opacity).toBe("1");
-    fireEvent.blur(target.parentElement!);
+    expect(target).toHaveAttribute("aria-describedby", tooltip.id);
+    fireEvent.blur(target);
     expect(tooltip.style.opacity).toBe("0");
+    expect(tooltip).toHaveAttribute("aria-hidden", "true");
   });
 });

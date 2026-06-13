@@ -3,9 +3,10 @@
 - button "Close mini app": ✕
 - text: chat with @uikit_demo_bot
 - button "Expand the mini app": drag up to expand
-- text: "Compact launch height Mini apps open half-screen — drag the grabber up or call expand() Back priorities · sheet beats stack The kit keeps a LIFO back-handler queue: an open sheet consumes the native Back press first; the next press pops the nav stack. Open details"
+- text: "Compact launch height Mini apps open half-screen — drag the grabber up or call expand() Back priorities · sheet beats stack The kit keeps a LIFO back-handler queue: an open sheet consumes the native Back press first; the next press pops the nav stack."
+- button "Open details"
 - button "Press native Back"
-- text: queue is empty Init data · user AK Anna Karlova Premium @annak · id 99281932 start_param platform_lab platform / version ios · 9.6 Theme · themeChanged
+- text: /queue is empty Init data · user AK Anna Karlova Premium @annak · id \d+ start_param platform_lab platform \/ version ios · 9\.6 Theme · themeChanged/
 - button "Light" [pressed]
 - button "Dark"
 - text: "bg secondary_bg button text hint destructive_text Appearance · setHeaderColor headerColor #ffffff backgroundColor #ffffff bottomBarColor #f2f4f8"
@@ -13,7 +14,7 @@
 - button "Reset header"
 - button "Tint background"
 - button "Accent bottom bar"
-- text: Viewport · expand() viewportHeight 478 px viewportStableHeight 478 px isExpanded false
+- text: /Viewport · expand\(\) viewportHeight \d+ px viewportStableHeight \d+ px isExpanded false/
 - button "Expand"
 - button "Collapse" [disabled]
 - text: Safe area · TKPage insets

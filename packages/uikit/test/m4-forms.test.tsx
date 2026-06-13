@@ -423,6 +423,20 @@ describe("M4.9 control extras", () => {
     expect(onChange.mock.calls.length).toBeGreaterThan(2);
   });
 
+  it("TKStepper clears autorepeat timers on unmount", () => {
+    vi.useFakeTimers();
+    const onChange = vi.fn();
+    const { unmount } = render(<kit.TKStepper defaultValue={0} max={99} onChange={onChange} />);
+    const plus = screen.getByRole("button", { name: /increase/i });
+
+    fireEvent.pointerDown(plus, { clientX: 1, clientY: 1 });
+    expect(onChange).toHaveBeenCalledTimes(1);
+    unmount();
+    act(() => vi.advanceTimersByTime(1300));
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+  });
+
   it("TKRating readonly ignores clicks; allowHalf renders halves", () => {
     const onChange = vi.fn();
     render(<kit.TKRating readonly defaultValue={3.5} allowHalf onChange={onChange} />);

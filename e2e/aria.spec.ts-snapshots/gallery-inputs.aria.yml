@@ -4,15 +4,14 @@
 - textbox "Full name":
   - /placeholder: Anna Karlova
 - text: Promo code
-- textbox "Promo code Applied at checkout":
+- textbox "Promo code":
   - /placeholder: SPRING24
 - text: Applied at checkout Card number
-- textbox "Card number Check the card number":
+- textbox "Card number":
   - /placeholder: 4242 4242 4242 4242
   - text: /\d+ \d+/
-- button
+- button "Clear Card number"
 - text: Check the card number
 - textbox "Search"
-- button "Cancel"
 - text: City
 - combobox "City": Lisbon

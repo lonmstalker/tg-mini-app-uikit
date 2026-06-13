@@ -85,7 +85,7 @@ export function TKOnboardingTooltip({
   const last = index === steps.length - 1;
 
   return (
-    <div data-testid={testId}>
+    <div>
       {/* spotlight: a scrim with a cutout punched over the target */}
       <div
         style={
@@ -104,7 +104,7 @@ export function TKOnboardingTooltip({
             : { position: "fixed", inset: 0, zIndex: tkZ.popper, pointerEvents: "auto", background: "var(--tk-scrim)" }
         }
       />
-      <TKPopper open anchorRef={step.target} placement={step.placement ?? "bottom"} arrow autoFlip>
+      <TKPopper open anchorRef={step.target} placement={step.placement ?? "bottom"} arrow autoFlip testId={testId}>
         <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: 4, minWidth: 200 }}>
           {step.title ? <div style={{ fontWeight: 700, fontSize: "var(--tk-fz-body)" }}>{step.title}</div> : null}
           {step.text ? (

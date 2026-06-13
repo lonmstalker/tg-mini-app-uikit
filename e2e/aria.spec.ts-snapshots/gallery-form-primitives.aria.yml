@@ -1,5 +1,5 @@
 - text: Form primitives Apartment
-- textbox "Apartment Shown through the form alias":
+- textbox "Apartment":
   - /placeholder: 12B
 - text: Shown through the form alias Courier note
 - textbox "Courier note":

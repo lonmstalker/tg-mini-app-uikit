@@ -47,7 +47,7 @@ test("chips input: typing + Enter adds, × removes", async ({ page }) => {
   await chips.getByRole("textbox").fill("typescript");
   await chips.getByRole("textbox").press("Enter");
   await expect(chips.getByText("typescript")).toBeVisible();
-  await chips.getByRole("button", { name: "design ×" }).click();
+  await chips.getByRole("button", { name: "Remove design" }).click();
   await expect(chips.getByText("design", { exact: true })).toBeHidden();
 });
 

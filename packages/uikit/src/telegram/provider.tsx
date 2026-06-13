@@ -4,9 +4,9 @@ import type { TelegramEventMap, TelegramEventName, TelegramWebApp } from "./type
 /* ---------------- Provider & access ---------------- */
 
 /** The real `window.Telegram.WebApp`, when running inside Telegram. */
-export function getTelegramWebApp(): TelegramWebApp | undefined {
-  if (typeof window === "undefined") return undefined;
-  return (window as { Telegram?: { WebApp?: TelegramWebApp } }).Telegram?.WebApp;
+export function getTelegramWebApp(): TelegramWebApp | null {
+  if (typeof window === "undefined") return null;
+  return (window as { Telegram?: { WebApp?: TelegramWebApp } }).Telegram?.WebApp ?? null;
 }
 
 const TKTelegramContext = /* @__PURE__ */ createContext<TelegramWebApp | undefined>(undefined);
@@ -98,7 +98,7 @@ export function useOptionalHaptics(): TKOptionalHaptics {
  * `window.Telegram.WebApp` and degrade to no-ops in a plain browser.
  */
 export function TKTelegramProvider({ webApp, signalReady = true, haptics = false, children }: TKTelegramProviderProps) {
-  const wa = webApp ?? getTelegramWebApp();
+  const wa = webApp ?? getTelegramWebApp() ?? undefined;
   useEffect(() => {
     if (signalReady) wa?.ready?.();
   }, [wa, signalReady]);
@@ -123,7 +123,7 @@ export function TKTelegramProvider({ webApp, signalReady = true, haptics = false
 
 /** The active WebApp: the injected one, or `window.Telegram.WebApp`, or `undefined`. */
 export function useWebApp(): TelegramWebApp | undefined {
-  return useContext(TKTelegramContext) ?? getTelegramWebApp();
+  return useContext(TKTelegramContext) ?? getTelegramWebApp() ?? undefined;
 }
 
 /** Subscribes to a typed WebApp event for the component's lifetime. */

@@ -97,6 +97,7 @@
   line-height: 1.45;
   color: var(--tk-text);
   background: var(--tk-bg);
+  --tk-separator: var(--tk-sep);
 }
 
 /* ---- light ---- */

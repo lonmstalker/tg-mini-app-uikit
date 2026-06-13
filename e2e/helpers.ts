@@ -84,8 +84,28 @@ export async function gotoApp(
 export async function gallerySection(page: Page, slug: GallerySlug): Promise<Locator> {
   const section = page.locator(`[data-demo-section="${slug}"]`);
   await section.scrollIntoViewIfNeeded();
-  // content-visibility: auto paints on intersection; a frame guarantees layout
-  await section.evaluate((el) => new Promise(requestAnimationFrame));
+  // content-visibility: auto paints on intersection. WebKit can expose the
+  // target before children such as virtual lists have contributed their final
+  // height, so wait for a few stable frames before pixel comparisons.
+  await section.evaluate(
+    (el) =>
+      new Promise<void>((resolve) => {
+        let lastHeight = -1;
+        let stableFrames = 0;
+
+        const tick = () => {
+          const height = Math.round(el.getBoundingClientRect().height);
+          if (height === lastHeight && height > 0) stableFrames += 1;
+          else stableFrames = 0;
+          lastHeight = height;
+
+          if (stableFrames >= 2) resolve();
+          else requestAnimationFrame(tick);
+        };
+
+        requestAnimationFrame(tick);
+      }),
+  );
   await expect(section).toBeVisible();
   return section;
 }

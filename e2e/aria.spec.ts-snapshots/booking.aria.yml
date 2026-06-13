@@ -2,5 +2,10 @@
 - button "1 Service"
 - button "2 Time"
 - button "3 Confirm"
-- text: /Choose a service Consultation Skin check & treatment plan \$\d+ Dermatoscopy Full-body mole mapping \$\d+ Chemical peel Light glycolic acid peel \$\d+ Follow-up visit For returning patients \$\d+ Prices include all materials\./
+- text: Choose a service
+- button /Consultation Skin check & treatment plan \$\d+/
+- button /Dermatoscopy Full-body mole mapping \$\d+/
+- button /Chemical peel Light glycolic acid peel \$\d+/
+- button /Follow-up visit For returning patients \$\d+/
+- text: Prices include all materials.
 - button "Continue"

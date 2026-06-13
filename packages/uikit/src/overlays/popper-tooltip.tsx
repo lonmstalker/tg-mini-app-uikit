@@ -1,4 +1,16 @@
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from "react";
+import {
+  cloneElement,
+  isValidElement,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactElement,
+  type ReactNode,
+  type RefObject,
+} from "react";
 import { createPortal } from "react-dom";
 import { tkZ } from "../internal/dom";
 
@@ -193,6 +205,30 @@ export interface TKTooltipProps {
 
 export function TKTooltip({ children, content, placement = "top", disabled, testId, style }: TKTooltipProps) {
   const [open, setOpen] = useState(false);
+  const id = useId();
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open]);
+
+  const describedChildren = isValidElement(children)
+    ? cloneElement(children as ReactElement<{ "aria-describedby"?: string }>, {
+        "aria-describedby":
+          open && !disabled
+            ? [
+                (children.props as { "aria-describedby"?: string })["aria-describedby"],
+                id,
+              ]
+                .filter(Boolean)
+                .join(" ")
+            : (children.props as { "aria-describedby"?: string })["aria-describedby"],
+      })
+    : children;
+
   return (
     <span
       data-testid={testId}
@@ -202,9 +238,11 @@ export function TKTooltip({ children, content, placement = "top", disabled, test
       onBlur={() => setOpen(false)}
       style={{ position: "relative", display: "inline-flex", ...style }}
     >
-      {children}
+      {describedChildren}
       <span
+        id={id}
         role="tooltip"
+        aria-hidden={!open}
         style={{
           position: "absolute",
           left: "50%",

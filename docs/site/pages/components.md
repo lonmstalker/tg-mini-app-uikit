@@ -10,3 +10,17 @@ The public surface is grouped by workflow rather than by file.
 - Telegram patterns: `TKMessages`, `TKMessageBubble`, `TKWriteBar`, `TKOnboardingTooltip`, `TKConfetti`, `TKPullToRefresh`, `TKSwipeCell`, `TKPaymentSummary`, `TKWalletConnectButton`, `TKWalletStatusCell`.
 
 Every component accepts `testId?: string` and forwards refs where a meaningful DOM root exists. Stateful controls use controlled/uncontrolled pairs.
+
+## Accessibility contracts
+
+Custom interactive controls expose native or explicit keyboard semantics:
+
+- `TKChip` uses `aria-pressed` for selectable chips. Removable chips expose a keyboard-operable remove control named `Remove <label>`.
+- `TKOTP` renders the resend action as a real button, so Enter and Space activate the same action as pointer input.
+- `TKTabbar` is bottom navigation, not a tablist. The active item is exposed with `aria-current="page"`.
+- `TKSteps` renders passive progress as non-focusable content. It renders buttons only when `onStepClick` makes steps interactive; the current step is exposed with `aria-current="step"`.
+- `TKTooltip` links the trigger to the tooltip with `aria-describedby`, opens on hover and focus, and closes on Escape.
+- `TKRing` exposes progress as `role="progressbar"` with `aria-valuemin`, `aria-valuemax`, and `aria-valuenow`.
+- `TKBars` is decorative by default. When `onBarClick` is provided, each bar is a named keyboard-operable button.
+
+For overlays, `TKDialog`, `TKSheet`, and `TKActionSheet` own their focus behavior while open and restore or release focus on close according to their component contract.

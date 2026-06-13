@@ -207,6 +207,11 @@ describe("M0.5 testId renders data-testid", () => {
       document.body.appendChild(anchor);
       props = { ...props, anchorRef: { current: anchor } };
     }
+    if (name === "TKOnboardingTooltip") {
+      const anchor = document.createElement("button");
+      document.body.appendChild(anchor);
+      props = { steps: [{ target: { current: anchor } }] };
+    }
     const { baseElement } = render(<Component {...props} testId="probe" />);
     expect(baseElement.querySelector('[data-testid="probe"]')).not.toBeNull();
   });

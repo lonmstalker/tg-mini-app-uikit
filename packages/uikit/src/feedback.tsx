@@ -139,17 +139,29 @@ export interface TKRingProps {
   /** 0–1 */
   value: number;
   size?: number;
+  /** Accessible name of the progress ring. */
+  label?: string;
   /** Center content; defaults to the percentage. */
   children?: ReactNode;
   testId?: string;
 }
 
-export function TKRing({ value, size = 92, children, testId }: TKRingProps) {
+export function TKRing({ value, size = 92, label, children, testId }: TKRingProps) {
+  const locale = useTKLocale();
   const r = (size - 12) / 2;
   const C = 2 * Math.PI * r;
   const clamped = Math.min(1, Math.max(0, value));
+  const percent = Math.round(clamped * 100);
   return (
-    <div data-testid={testId} style={{ position: "relative", width: size, height: size }}>
+    <div
+      data-testid={testId}
+      role="progressbar"
+      aria-label={label ?? locale.progress}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={percent}
+      style={{ position: "relative", width: size, height: size }}
+    >
       <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
         <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--tk-surface-3)" strokeWidth="9" />
         <circle
@@ -177,7 +189,7 @@ export function TKRing({ value, size = 92, children, testId }: TKRingProps) {
           fontVariantNumeric: "tabular-nums",
         }}
       >
-        {children ?? Math.round(clamped * 100)}
+        {children ?? percent}
       </div>
     </div>
   );
@@ -198,32 +210,54 @@ export function TKBars({ data, labels, height = 110, onBarClick, testId }: TKBar
   const max = Math.max(...data, 1);
   return (
     <div data-testid={testId} style={{ display: "flex", alignItems: "flex-end", gap: 8, height }}>
-      {data.map((b, i) => (
-        <div
-          key={i}
-          style={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 6,
-            height: "100%",
-            justifyContent: "flex-end",
-          }}
-        >
-          <div
-            onMouseEnter={() => setHover(i)}
-            onMouseLeave={() => setHover(-1)}
-            onClick={onBarClick ? () => onBarClick(i) : undefined}
-            style={{
+      {data.map((b, i) => {
+        const interactive = typeof onBarClick === "function";
+        const label = labels?.[i] ?? `Bar ${i + 1}`;
+        const barStyle: CSSProperties = {
               width: "100%",
               borderRadius: "var(--tk-r-xs)",
               height: `${(b / max) * 100}%`,
               background: hover === i ? "var(--tk-accent)" : "var(--tk-accent-20)",
               transition: "height var(--tk-t3) var(--tk-spring), background var(--tk-t1) var(--tk-ease)",
-              cursor: "pointer",
+          cursor: interactive ? "pointer" : "default",
+        };
+        return (
+          <div
+            key={i}
+            style={{
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 6,
+              height: "100%",
+              justifyContent: "flex-end",
             }}
-          />
+          >
+            {interactive ? (
+              <button
+                type="button"
+                aria-label={label}
+                aria-pressed={false}
+                onMouseEnter={() => setHover(i)}
+                onMouseLeave={() => setHover(-1)}
+                onClick={() => onBarClick(i)}
+                style={{
+                  ...barStyle,
+                  appearance: "none",
+                  border: "none",
+                  padding: 0,
+                  font: "inherit",
+                }}
+              />
+            ) : (
+              <div
+                aria-hidden="true"
+                onMouseEnter={() => setHover(i)}
+                onMouseLeave={() => setHover(-1)}
+                style={barStyle}
+              />
+            )}
           {labels?.[i] != null ? (
             <span
               style={{
@@ -236,7 +270,8 @@ export function TKBars({ data, labels, height = 110, onBarClick, testId }: TKBar
             </span>
           ) : null}
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

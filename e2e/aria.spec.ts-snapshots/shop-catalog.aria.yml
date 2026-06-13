@@ -1,7 +1,6 @@
 - text: Shop
 - button "Notifications"
 - textbox "Search products"
-- button "Cancel"
 - button "For you"
 - button "Mugs"
 - button "Bags"
@@ -29,8 +28,9 @@
 - img "Weekly planner"
 - text: /Weekly planner \$\d+/
 - button "Add to cart"
-- button "Home"
-- button "Catalog"
-- button "Cart"
-- button "Profile"
+- navigation:
+  - button "Home"
+  - button "Catalog"
+  - button "Cart"
+  - button "Profile"
 - text: "2"

@@ -116,6 +116,20 @@ describe("coverage-backed component behaviours", () => {
     expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:preview");
   });
 
+  it("TKFileInput revokes the active preview object URL on unmount", () => {
+    installBlobUrlMocks();
+    const { unmount } = render(<kit.TKFileInput preview testId="file" />);
+    const input = screen.getByTestId("file").querySelector("input[type='file']") as HTMLInputElement;
+    const image = new File(["image"], "photo.png", { type: "image/png" });
+
+    fireEvent.change(input, { target: { files: [image] } });
+    expect(URL.createObjectURL).toHaveBeenCalledWith(image);
+
+    unmount();
+
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:preview");
+  });
+
   it("TKFileInput ignores disabled keyboard and drop interactions", () => {
     const onFilesChange = vi.fn();
     render(<kit.TKFileInput disabled dropZone onFilesChange={onFilesChange} testId="file-disabled" />);
@@ -404,7 +418,7 @@ describe("coverage-backed component behaviours", () => {
       </>,
     );
 
-    await user.click(screen.getByText("Selected").parentElement!.querySelector("span:last-child") as HTMLElement);
+    await user.click(screen.getByRole("button", { name: "Remove Selected" }));
     expect(onRemove).toHaveBeenCalledOnce();
     expect(onClick).not.toHaveBeenCalled();
 
@@ -613,12 +627,12 @@ describe("coverage-backed component behaviours", () => {
     fireEvent.load(screen.getByAltText("Photo"));
     expect(onLoad).toHaveBeenCalledOnce();
 
-    const bars = screen.getByTestId("bars").querySelectorAll("div[style*='border-radius']");
-    fireEvent.mouseEnter(bars[1]);
-    fireEvent.click(bars[1]);
-    fireEvent.mouseLeave(bars[1]);
+    const bar = screen.getByRole("button", { name: "B" });
+    fireEvent.mouseEnter(bar);
+    fireEvent.click(bar);
+    fireEvent.mouseLeave(bar);
     expect(onBarClick).toHaveBeenCalledWith(1);
-    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "140");
+    expect(screen.getByTestId("progress")).toHaveAttribute("aria-valuenow", "140");
 
     rerender(<kit.TKImage src="photo.png" alt="Photo" onError={onError} testId="image" />);
     fireEvent.error(screen.getByAltText("Photo"));

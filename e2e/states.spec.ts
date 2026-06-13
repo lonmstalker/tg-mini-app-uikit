@@ -118,6 +118,7 @@ test.describe("feedback", () => {
 test.describe("shop — payment outcomes", () => {
   test("payment error sheet", async ({ page }) => {
     await fillCart(page);
+    await expect(page.getByText("Ceramic mug added to cart")).toBeHidden();
     await page.locator("[data-demo-decline-toggle]").getByRole("switch").click();
     await page.locator("[data-demo-pay-button]").getByRole("button").click();
     await expect(page.getByRole("alertdialog")).toBeVisible({ timeout: 10_000 });
@@ -126,6 +127,7 @@ test.describe("shop — payment outcomes", () => {
 
   test("receipt", async ({ page }) => {
     await fillCart(page);
+    await expect(page.getByText("Ceramic mug added to cart")).toBeHidden();
     await page.locator("[data-demo-pay-button]").getByRole("button").click();
     await expect(page.locator("[data-demo-receipt]")).toBeVisible({ timeout: 10_000 });
     await expect(page.locator('[data-demo-app="shop"]')).toHaveScreenshot("states-receipt.png");

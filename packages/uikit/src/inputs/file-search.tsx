@@ -1,4 +1,4 @@
-import { forwardRef, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { forwardRef, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { TKIcon } from "../icons";
 import { useControllable } from "../internal/useControllable";
 import { mergeRefs } from "../internal/dom";
@@ -49,12 +49,20 @@ export const TKFileInput = /* @__PURE__ */ forwardRef<HTMLInputElement, TKFileIn
   const [files, setFiles] = useState<File[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const previewUrlRef = useRef<string | null>(null);
+  const revokePreviewUrl = () => {
+    if (previewUrlRef.current && typeof URL.revokeObjectURL === "function") URL.revokeObjectURL(previewUrlRef.current);
+    previewUrlRef.current = null;
+  };
+  useEffect(() => revokePreviewUrl, []);
   const commit = (next: File[]) => {
     setFiles(next);
     onFilesChange?.(next);
-    if (previewUrl && typeof URL.revokeObjectURL === "function") URL.revokeObjectURL(previewUrl);
+    revokePreviewUrl();
     const img = preview ? next.find((f) => f.type.startsWith("image/")) : undefined;
-    setPreviewUrl(img && typeof URL.createObjectURL === "function" ? URL.createObjectURL(img) : null);
+    const nextPreviewUrl = img && typeof URL.createObjectURL === "function" ? URL.createObjectURL(img) : null;
+    previewUrlRef.current = nextPreviewUrl;
+    setPreviewUrl(nextPreviewUrl);
   };
   return (
     <TKFormField label={label} hint={hint} error={error} disabled={disabled} testId={testId}>

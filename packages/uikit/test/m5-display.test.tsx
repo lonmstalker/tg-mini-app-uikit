@@ -148,6 +148,51 @@ describe("M5.10 TKInfiniteList / TKVirtualList", () => {
     expect(screen.getByTestId("inf").querySelector("[data-tk-sentinel]")).not.toBeNull();
   });
 
+  it("TKInfiniteList disconnects its observer and does not load after unmount", () => {
+    const original = globalThis.IntersectionObserver;
+    const instances: Array<{
+      disconnected: boolean;
+      disconnect: ReturnType<typeof vi.fn>;
+      observe: ReturnType<typeof vi.fn>;
+      trigger: (isIntersecting?: boolean) => void;
+    }> = [];
+    class MockIntersectionObserver {
+      disconnected = false;
+      observe = vi.fn();
+      disconnect = vi.fn(() => {
+        this.disconnected = true;
+      });
+      constructor(private readonly callback: IntersectionObserverCallback) {
+        instances.push(this);
+      }
+      trigger(isIntersecting = true) {
+        if (!this.disconnected) this.callback([{ isIntersecting } as IntersectionObserverEntry], this as never);
+      }
+    }
+    Object.defineProperty(globalThis, "IntersectionObserver", { value: MockIntersectionObserver, configurable: true });
+    const onLoadMore = vi.fn();
+
+    try {
+      const { unmount } = render(
+        <kit.TKInfiniteList hasMore onLoadMore={onLoadMore} testId="inf">
+          <div>item</div>
+        </kit.TKInfiniteList>,
+      );
+
+      expect(instances[0].observe).toHaveBeenCalledWith(screen.getByTestId("inf").querySelector("[data-tk-sentinel]"));
+      instances[0].trigger();
+      expect(onLoadMore).toHaveBeenCalledOnce();
+
+      unmount();
+      expect(instances[0].disconnect).toHaveBeenCalledOnce();
+      instances[0].trigger();
+      expect(onLoadMore).toHaveBeenCalledOnce();
+    } finally {
+      if (original) Object.defineProperty(globalThis, "IntersectionObserver", { value: original, configurable: true });
+      else Reflect.deleteProperty(globalThis, "IntersectionObserver");
+    }
+  });
+
   it("TKVirtualList renders only the visible window plus overscan", () => {
     const items = Array.from({ length: 10000 }, (_, i) => `row ${i}`);
     render(

@@ -30,6 +30,15 @@ interface TelegramStorageApi {
   restoreItem?: (key: string, callback?: (error: Error | null, value?: string | null) => void) => unknown;
 }
 
+function getLocalStorage(): Storage | undefined {
+  if (typeof window === "undefined") return undefined;
+  try {
+    return window.localStorage;
+  } catch {
+    return undefined;
+  }
+}
+
 export function createStorageApi(storageApi: TelegramStorageApi | undefined, localPrefix: string): TKCloudStorage {
   if (storageApi?.getItem && storageApi.setItem) {
     return {
@@ -85,32 +94,70 @@ export function createStorageApi(storageApi: TelegramStorageApi | undefined, loc
       isSupported: true,
     };
   }
-  const storage = typeof window !== "undefined" ? window.localStorage : undefined;
   return {
-    get: async (key: string) => storage?.getItem(localPrefix + key) ?? null,
-    getMany: async (keys: string[]) => Object.fromEntries(keys.map((key) => [key, storage?.getItem(localPrefix + key) ?? null])),
+    get: async (key: string) => {
+      try {
+        return getLocalStorage()?.getItem(localPrefix + key) ?? null;
+      } catch {
+        return null;
+      }
+    },
+    getMany: async (keys: string[]) =>
+      Object.fromEntries(
+        keys.map((key) => {
+          try {
+            return [key, getLocalStorage()?.getItem(localPrefix + key) ?? null];
+          } catch {
+            return [key, null];
+          }
+        }),
+      ),
     set: async (key: string, value: string) => {
-      storage?.setItem(localPrefix + key, value);
+      try {
+        getLocalStorage()?.setItem(localPrefix + key, value);
+      } catch {
+        /* best-effort local fallback */
+      }
     },
     remove: async (key: string) => {
-      storage?.removeItem(localPrefix + key);
+      try {
+        getLocalStorage()?.removeItem(localPrefix + key);
+      } catch {
+        /* best-effort local fallback */
+      }
     },
     removeMany: async (keys: string[]) => {
-      keys.forEach((key) => storage?.removeItem(localPrefix + key));
+      keys.forEach((key) => {
+        try {
+          getLocalStorage()?.removeItem(localPrefix + key);
+        } catch {
+          /* best-effort local fallback */
+        }
+      });
     },
     keys: async () => {
+      const storage = getLocalStorage();
       if (!storage) return [];
       const out: string[] = [];
-      for (let i = 0; i < storage.length; i++) {
-        const k = storage.key(i);
-        if (k?.startsWith(localPrefix)) out.push(k.slice(localPrefix.length));
+      try {
+        for (let i = 0; i < storage.length; i++) {
+          const k = storage.key(i);
+          if (k?.startsWith(localPrefix)) out.push(k.slice(localPrefix.length));
+        }
+      } catch {
+        return [];
       }
       return out;
     },
     clear: async () => {
+      const storage = getLocalStorage();
       if (!storage) return;
-      const keys = Object.keys(storage).filter((key) => key.startsWith(localPrefix));
-      keys.forEach((key) => storage.removeItem(key));
+      try {
+        const keys = Object.keys(storage).filter((key) => key.startsWith(localPrefix));
+        keys.forEach((key) => storage.removeItem(key));
+      } catch {
+        /* best-effort local fallback */
+      }
     },
     isSupported: false,
   };

@@ -32,6 +32,108 @@ export const TKChip = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKChipProps>
   { children, selected, onClick, onKeyDown, tabIndex, icon, removable, onRemove, disabled, style, ...dom },
   ref,
 ) {
+  const domProps = tkDomProps(dom);
+  const labelText = typeof children === "string" ? children : undefined;
+  const removeLabel = labelText ? `Remove ${labelText}` : "Remove chip";
+  const remove = (event: MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    event.preventDefault();
+    if (!disabled) onRemove?.();
+  };
+  const content = (
+    <>
+      {selected ? (
+        <span className="tk-pop" style={{ display: "inline-flex" }}>
+          <TKIcon name="check" size={15} strokeWidth={2.6} />
+        </span>
+      ) : icon ? (
+        <TKIcon name={icon} size={15} />
+      ) : null}
+      {children}
+    </>
+  );
+  const rootStyle: CSSProperties = {
+    opacity: disabled ? 0.45 : 1,
+    pointerEvents: disabled ? "none" : undefined,
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 6,
+    height: 34,
+    padding: "0 14px",
+    border: "none",
+    borderRadius: "var(--tk-r-pill)",
+    fontSize: "var(--tk-fz-sub)",
+    fontWeight: 500,
+    fontFamily: "inherit",
+    background: selected ? "var(--tk-accent)" : "var(--tk-surface)",
+    color: selected ? "var(--tk-on-accent)" : "var(--tk-text)",
+    boxShadow: selected ? "0 4px 12px -4px var(--tk-accent-35)" : "var(--tk-shadow-sm)",
+    transition:
+      "background var(--tk-t2) var(--tk-ease), color var(--tk-t2) var(--tk-ease), box-shadow var(--tk-t2) var(--tk-ease)",
+    ...style,
+  };
+
+  if (removable) {
+    return (
+      <span
+        style={{
+          ...rootStyle,
+          padding: "0 8px 0 14px",
+        }}
+      >
+        <button
+          type="button"
+          ref={ref}
+          className="tk-press"
+          onClick={onClick}
+          onKeyDown={onKeyDown}
+          tabIndex={tabIndex}
+          disabled={disabled}
+          {...domProps}
+          aria-label={domProps["aria-label"] ?? labelText}
+          aria-pressed={selected == null ? undefined : selected}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            height: "100%",
+            padding: 0,
+            border: "none",
+            background: "transparent",
+            color: "inherit",
+            font: "inherit",
+          }}
+        >
+          {content}
+        </button>
+        <button
+          type="button"
+          className="tk-press"
+          aria-label={removeLabel}
+          disabled={disabled}
+          onClick={remove}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: 22,
+            height: 22,
+            marginRight: -4,
+            padding: 0,
+            border: "none",
+            borderRadius: "50%",
+            background: "transparent",
+            color: "inherit",
+            opacity: 0.65,
+            font: "inherit",
+          }}
+        >
+          <TKIcon name="close" size={14} />
+        </button>
+      </span>
+    );
+  }
+
   return (
     <button
       type="button"
@@ -41,47 +143,11 @@ export const TKChip = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKChipProps>
       onKeyDown={onKeyDown}
       tabIndex={tabIndex}
       disabled={disabled}
-      {...tkDomProps(dom)}
-      style={{
-        opacity: disabled ? 0.45 : 1,
-        pointerEvents: disabled ? "none" : undefined,
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 6,
-        height: 34,
-        padding: "0 14px",
-        border: "none",
-        borderRadius: "var(--tk-r-pill)",
-        fontSize: "var(--tk-fz-sub)",
-        fontWeight: 500,
-        fontFamily: "inherit",
-        background: selected ? "var(--tk-accent)" : "var(--tk-surface)",
-        color: selected ? "var(--tk-on-accent)" : "var(--tk-text)",
-        boxShadow: selected ? "0 4px 12px -4px var(--tk-accent-35)" : "var(--tk-shadow-sm)",
-        transition:
-          "background var(--tk-t2) var(--tk-ease), color var(--tk-t2) var(--tk-ease), box-shadow var(--tk-t2) var(--tk-ease)",
-        ...style,
-      }}
+      {...domProps}
+      aria-pressed={selected == null ? undefined : selected}
+      style={rootStyle}
     >
-      {selected ? (
-        <span className="tk-pop" style={{ display: "inline-flex" }}>
-          <TKIcon name="check" size={15} strokeWidth={2.6} />
-        </span>
-      ) : icon ? (
-        <TKIcon name={icon} size={15} />
-      ) : null}
-      {children}
-      {removable ? (
-        <span
-          onClick={(e) => {
-            e.stopPropagation();
-            onRemove?.();
-          }}
-          style={{ display: "inline-flex", opacity: 0.6, marginRight: -4 }}
-        >
-          <TKIcon name="close" size={14} />
-        </span>
-      ) : null}
+      {content}
     </button>
   );
 });

@@ -1,4 +1,5 @@
 - text: Navigation
+- button "code"
 - button "Back"
 - text: Checkout step 2 of 3
 - button "Close"
@@ -10,7 +11,8 @@
 - button "Tea"
 - button "Desserts"
 - button "Merch"
-- button "Home"
-- button "Catalog"
-- button "2 Cart"
-- button "Profile"
+- navigation:
+  - button "Home"
+  - button "Catalog"
+  - button "2 Cart"
+  - button "Profile"
