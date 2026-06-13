@@ -39,7 +39,7 @@ export function tkThemeVars(knobs: TKThemeKnobs): CSSProperties {
   return vars as CSSProperties;
 }
 
-const TKThemeContext = createContext<TKThemeValue>({ theme: "light" });
+const TKThemeContext = /* @__PURE__ */ createContext<TKThemeValue>({ theme: "light" });
 
 export type TKThemePreset = "ios" | "material";
 

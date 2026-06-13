@@ -400,7 +400,7 @@ export function getTelegramWebApp(): TelegramWebApp | undefined {
   return (window as { Telegram?: { WebApp?: TelegramWebApp } }).Telegram?.WebApp;
 }
 
-const TKTelegramContext = createContext<TelegramWebApp | undefined>(undefined);
+const TKTelegramContext = /* @__PURE__ */ createContext<TelegramWebApp | undefined>(undefined);
 
 /*
  * Back-handler queue: overlays and nav stacks register LIFO interceptors;
@@ -452,7 +452,7 @@ export interface TKTelegramProviderProps {
   children?: ReactNode;
 }
 
-const TKHapticsContext = createContext(false);
+const TKHapticsContext = /* @__PURE__ */ createContext(false);
 
 export interface TKOptionalHaptics {
   selection: () => void;

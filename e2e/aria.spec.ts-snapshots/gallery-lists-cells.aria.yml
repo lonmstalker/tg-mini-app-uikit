@@ -1,3 +1,5 @@
-- text: /Lists & cells Account Profile Anna Karlova · @annak Payment methods Visa ··\d+ Notifications/
+- text: Lists & cells
+- button "code"
+- text: /Account Profile Anna Karlova · @annak Payment methods Visa ··\d+ Notifications/
 - switch "Notifications" [checked]
 - text: /Order history 2 Delete account Receipts are stored for \d+ months\. AK MS RB/

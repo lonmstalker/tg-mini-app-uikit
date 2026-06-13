@@ -144,20 +144,54 @@ function bootParams(): {
   }
 }
 
+const TWEAKS_KEY = "tk-demo-tweaks";
+
+function loadSavedTweaks(): Partial<Tweaks> {
+  try {
+    return JSON.parse(localStorage.getItem(TWEAKS_KEY) ?? "{}") as Partial<Tweaks>;
+  } catch {
+    return {};
+  }
+}
+
 export function Shell() {
   const [app, setApp] = useState<AppKey>(() => bootParams().app);
   const [tweaks, setTweaks] = useState<Tweaks>(() => {
     const boot = bootParams();
     return {
       ...DEFAULT_TWEAKS,
-      dark: boot.dark,
+      // persisted panel settings survive reloads (M8.4)…
+      ...loadSavedTweaks(),
+      // …but explicit URL params win (e2e and shared links rely on this)
+      dark: boot.dark || (loadSavedTweaks().dark ?? false),
       locale: boot.locale,
       ...(boot.accent != null ? { accent: boot.accent } : null),
       ...(boot.roundness != null ? { roundness: boot.roundness } : null),
       ...(boot.fontSize != null ? { fontSize: boot.fontSize } : null),
     };
   });
-  const patch = (p: Partial<Tweaks>) => setTweaks((t) => ({ ...t, ...p }));
+  const patch = (p: Partial<Tweaks>) =>
+    setTweaks((t) => {
+      const next = { ...t, ...p };
+      try {
+        localStorage.setItem(TWEAKS_KEY, JSON.stringify(next));
+      } catch {
+        /* private mode etc. — persistence is best-effort */
+      }
+      return next;
+    });
+  const resetDemoData = () => {
+    try {
+      // mock cloud/device storage namespaces + the tweaks themselves
+      for (const key of Object.keys(localStorage)) {
+        if (key.startsWith("tg-demo-") || key.startsWith("tk-demo")) localStorage.removeItem(key);
+      }
+      localStorage.removeItem(TWEAKS_KEY);
+    } catch {
+      /* ignore */
+    }
+    window.location.reload();
+  };
   const narrow = useMediaQuery("(max-width: 920px)");
   const scale = useFrameScale(FRAME_WIDTH, FRAME_HEIGHT);
 
@@ -254,7 +288,7 @@ export function Shell() {
             <DeviceFrame dark={tweaks.dark}>{screen}</DeviceFrame>
           </div>
         </div>
-        <TweaksPanel tweaks={tweaks} onChange={patch} style={{ position: "sticky", top: 22 }} />
+        <TweaksPanel tweaks={tweaks} onChange={patch} onReset={resetDemoData} style={{ position: "sticky", top: 22 }} />
       </main>
     </div>
   );

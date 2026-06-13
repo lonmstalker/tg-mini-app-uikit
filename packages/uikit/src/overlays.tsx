@@ -740,7 +740,7 @@ interface ToastItem extends TKToastOptions {
   out: boolean;
 }
 
-const TKToastContext = createContext<TKToastApi | null>(null);
+const TKToastContext = /* @__PURE__ */ createContext<TKToastApi | null>(null);
 
 export interface TKToastProviderProps {
   children?: ReactNode;

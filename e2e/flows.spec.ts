@@ -65,7 +65,7 @@ test.describe("game", () => {
     await expect(root.getByText("2,190")).toBeVisible();
     await expect(root.getByText("7 days")).toBeVisible();
     await expect(root.getByText("7,390")).toBeVisible();
-    await expect(root.getByRole("button", { name: /come back tomorrow/ })).toBeDisabled();
+    await expect(root.getByRole("button", { name: /next reward in/ })).toBeDisabled();
   });
 
   test("reset progress via action sheet", async ({ page }) => {

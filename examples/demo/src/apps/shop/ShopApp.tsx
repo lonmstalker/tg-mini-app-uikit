@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   TKAvatar,
   TKBadge,
@@ -6,10 +6,12 @@ import {
   TKButton,
   TKCategoryTabs,
   TKCell,
+  TKCounter,
   TKDialog,
   TKEmptyState,
   TKIconButton,
   TKImage,
+  TKInput,
   TKListGroup,
   TKMainButton,
   TKPaymentSummary,
@@ -17,19 +19,28 @@ import {
   TKProductCardB,
   TKSearch,
   TKSheet,
+  TKSkeletonCard,
   TKStepper,
   TKTabbar,
   TKTimeline,
   TKToastProvider,
+  useCloudStorage,
   useTKToast,
 } from "tg-mini-app-uikit";
 import { CATEGORIES, PRODUCTS, fmt, type Product } from "./data";
+import { bootScreen, demoDelay } from "../../shell/boot";
 import type { ShellApi } from "../../shell/types";
 
 /* Shop — storefront example: catalog, product sheet, cart with a payment
    failure path, receipt, profile. */
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+const CART_KEY = "shop-cart";
+const PROMO_CODE = "SPRING24";
+const PROMO_RATE = 0.2;
+
+const stockOf = (p: Product) => p.stock ?? 99;
 
 export function ShopApp({ shell }: { shell: ShellApi }) {
   return (
@@ -41,8 +52,12 @@ export function ShopApp({ shell }: { shell: ShellApi }) {
 
 function ShopInner({ shell }: { shell: ShellApi }) {
   const toast = useTKToast();
-  const [tab, setTab] = useState(0);
+  const storage = useCloudStorage();
+  // Deep link (M8.10): ?app=shop&screen=cart opens the cart tab right away.
+  const [tab, setTab] = useState(() => (bootScreen() === "cart" ? 2 : 0));
   const [cart, setCart] = useState<Record<string, number>>({ mug: 1, candle: 1 });
+  const [hydrated, setHydrated] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [favs, setFavs] = useState<Record<string, boolean>>({});
   const [category, setCategory] = useState(0);
   const [query, setQuery] = useState("");
@@ -52,6 +67,52 @@ function ShopInner({ shell }: { shell: ShellApi }) {
   const [failPayment, setFailPayment] = useState(false);
   const [payErrorOpen, setPayErrorOpen] = useState(false);
   const [receipt, setReceipt] = useState<{ items: number; total: number } | null>(null);
+  const [promoCode, setPromoCode] = useState("");
+  const [promoApplied, setPromoApplied] = useState(false);
+  const [promoError, setPromoError] = useState<string | null>(null);
+
+  // Simulated network (M8.5): skeletons while the "catalog request" is in flight.
+  useEffect(() => {
+    let alive = true;
+    demoDelay(700).then(() => {
+      if (alive) setLoading(false);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  // Cart persistence (M8.4): best-effort restore from CloudStorage; errors
+  // and unsupported environments are ignored silently.
+  useEffect(() => {
+    let alive = true;
+    storage
+      .get(CART_KEY)
+      .then((raw) => {
+        if (!alive || !raw) return;
+        const parsed: unknown = JSON.parse(raw);
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+          const next: Record<string, number> = {};
+          for (const [id, n] of Object.entries(parsed as Record<string, unknown>)) {
+            const p = PRODUCTS.find((x) => x.id === id);
+            if (p && typeof n === "number" && n > 0) next[id] = Math.min(Math.floor(n), stockOf(p));
+          }
+          setCart(next);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (alive) setHydrated(true);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [storage]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    storage.set(CART_KEY, JSON.stringify(cart)).catch(() => {});
+  }, [cart, hydrated, storage]);
 
   const cartCount = Object.values(cart).reduce((a, b) => a + b, 0);
 
@@ -65,7 +126,12 @@ function ShopInner({ shell }: { shell: ShellApi }) {
   }, [category, query]);
 
   const add = (p: Product, count = 1) => {
-    setCart((c) => ({ ...c, [p.id]: (c[p.id] ?? 0) + count }));
+    const max = stockOf(p);
+    if ((cart[p.id] ?? 0) >= max) {
+      toast.error(`Only ${max} in stock`);
+      return;
+    }
+    setCart((c) => ({ ...c, [p.id]: Math.min((c[p.id] ?? 0) + count, max) }));
     toast.show({ icon: "cart", color: "var(--tk-green)", text: `${p.title} added to cart` });
   };
 
@@ -79,7 +145,19 @@ function ShopInner({ shell }: { shell: ShellApi }) {
     return sum + (p ? p.price * n : 0);
   }, 0);
 
-  const total = subtotal + 3.5 - subtotal * 0.1;
+  const discount = promoApplied ? subtotal * PROMO_RATE : 0;
+  const total = subtotal + 3.5 - discount;
+
+  // Promo code (M8.8): SPRING24 → −20%, anything else → field error.
+  const applyPromo = () => {
+    if (promoCode.trim().toUpperCase() === PROMO_CODE) {
+      setPromoApplied(true);
+      setPromoError(null);
+    } else {
+      setPromoApplied(false);
+      setPromoError("Invalid promo code");
+    }
+  };
 
   const pay = async () => {
     await sleep(1300);
@@ -89,6 +167,9 @@ function ShopInner({ shell }: { shell: ShellApi }) {
     }
     setReceipt({ items: cartCount, total });
     setCart({});
+    setPromoCode("");
+    setPromoApplied(false);
+    setPromoError(null);
   };
 
   return (
@@ -118,10 +199,16 @@ function ShopInner({ shell }: { shell: ShellApi }) {
                 cta="Browse deals"
                 onCta={() => setCategory(1)}
               />
-              {visible.length ? (
+              {loading ? (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  {Array.from({ length: 4 }, (_, i) => (
+                    <TKSkeletonCard key={i} />
+                  ))}
+                </div>
+              ) : visible.length ? (
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                   {visible.map((p) => (
-                    <div key={p.id} data-demo-product={p.id}>
+                    <div key={p.id} data-demo-product={p.id} style={{ position: "relative" }}>
                       <TKProductCardA
                         title={p.title}
                         price={fmt(p.price)}
@@ -130,6 +217,14 @@ function ShopInner({ shell }: { shell: ShellApi }) {
                         onClick={() => openProduct(p)}
                         onAdd={() => add(p)}
                       />
+                      {p.stock != null ? (
+                        <span
+                          data-demo-stock-badge
+                          style={{ position: "absolute", top: 16, left: 16, zIndex: 1, pointerEvents: "none" }}
+                        >
+                          <TKBadge tone="orange">{p.stock} left</TKBadge>
+                        </span>
+                      ) : null}
                     </div>
                   ))}
                 </div>
@@ -155,22 +250,39 @@ function ShopInner({ shell }: { shell: ShellApi }) {
             </div>
             <div style={{ flex: 1, overflow: "auto", padding: "0 16px 16px" }}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                {PRODUCTS.map((p) => (
-                  <TKProductCardB
-                    key={p.id}
-                    title={p.title}
-                    price={fmt(p.price)}
-                    oldPrice={p.oldPrice ? fmt(p.oldPrice) : undefined}
-                    discount={p.oldPrice ? `−${Math.round((1 - p.price / p.oldPrice) * 100)}%` : undefined}
-                    rating={p.rating}
-                    reviews={`${p.reviews} reviews`}
-                    img={p.img}
-                    src={p.photo}
-                    fav={!!favs[p.id]}
-                    onFavChange={(on) => setFavs((f) => ({ ...f, [p.id]: on }))}
-                    onAdd={() => add(p)}
-                  />
-                ))}
+                {loading
+                  ? Array.from({ length: 4 }, (_, i) => <TKSkeletonCard key={i} />)
+                  : PRODUCTS.map((p) => (
+                      <div key={p.id} style={{ position: "relative" }}>
+                        <TKProductCardB
+                          title={p.title}
+                          price={fmt(p.price)}
+                          oldPrice={p.oldPrice ? fmt(p.oldPrice) : undefined}
+                          discount={p.oldPrice ? `−${Math.round((1 - p.price / p.oldPrice) * 100)}%` : undefined}
+                          rating={p.rating}
+                          reviews={`${p.reviews} reviews`}
+                          img={p.img}
+                          src={p.photo}
+                          fav={!!favs[p.id]}
+                          onFavChange={(on) => setFavs((f) => ({ ...f, [p.id]: on }))}
+                          onAdd={() => add(p)}
+                        />
+                        {p.stock != null ? (
+                          <span
+                            data-demo-stock-badge
+                            style={{
+                              position: "absolute",
+                              top: p.oldPrice ? 44 : 16,
+                              left: 16,
+                              zIndex: 1,
+                              pointerEvents: "none",
+                            }}
+                          >
+                            <TKBadge tone="orange">{p.stock} left</TKBadge>
+                          </span>
+                        ) : null}
+                      </div>
+                    ))}
               </div>
             </div>
           </>
@@ -204,16 +316,17 @@ function ShopInner({ shell }: { shell: ShellApi }) {
                         <TKCell
                           key={id}
                           title={p.title}
-                          subtitle={fmt(p.price)}
+                          subtitle={p.stock != null ? `${fmt(p.price)} · ${p.stock} left` : fmt(p.price)}
                           after={
                             <TKStepper
                               value={n}
                               min={0}
+                              max={stockOf(p)}
                               onChange={(v) =>
                                 setCart((c) => {
                                   const next = { ...c };
                                   if (v <= 0) delete next[id];
-                                  else next[id] = v;
+                                  else next[id] = Math.min(v, stockOf(p));
                                   return next;
                                 })
                               }
@@ -223,11 +336,32 @@ function ShopInner({ shell }: { shell: ShellApi }) {
                       );
                     })}
                   </TKListGroup>
+                  <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+                    <div data-demo-promo-input style={{ flex: 1 }}>
+                      <TKInput
+                        placeholder="Promo code"
+                        value={promoCode}
+                        onChange={(v) => {
+                          setPromoCode(v);
+                          setPromoError(null);
+                        }}
+                        error={promoError}
+                        hint={promoApplied ? `${PROMO_CODE} applied — −20%` : undefined}
+                      />
+                    </div>
+                    <div data-demo-promo-apply>
+                      <TKButton variant="tonal" onClick={applyPromo}>
+                        Apply
+                      </TKButton>
+                    </div>
+                  </div>
                   <TKPaymentSummary
                     rows={[
                       { label: "Subtotal", value: fmt(subtotal) },
                       { label: "Delivery", value: fmt(3.5) },
-                      { label: "Promo SPRING24", value: `−${fmt(subtotal * 0.1)}`, accent: true },
+                      ...(promoApplied
+                        ? [{ label: `Promo ${PROMO_CODE} (−20%)`, value: `−${fmt(discount)}`, accent: true }]
+                        : []),
                       { label: "Total", value: fmt(total), total: true },
                     ]}
                   />
@@ -281,17 +415,23 @@ function ShopInner({ shell }: { shell: ShellApi }) {
         ) : null}
       </div>
 
-      <div data-demo-shop-tabbar>
+      <div data-demo-shop-tabbar style={{ position: "relative" }}>
         <TKTabbar
           value={tab}
           onChange={setTab}
           tabs={[
             { icon: "home", label: "Home" },
             { icon: "grid", label: "Catalog" },
-            { icon: "cart", label: "Cart", count: cartCount },
+            { icon: "cart", label: "Cart" },
             { icon: "user", label: "Profile" },
           ]}
         />
+        {/* Cart badge with overflow cap (M8.8): 12 items render as 9+. */}
+        {cartCount ? (
+          <span style={{ position: "absolute", top: 5, left: "calc(62.5% + 2px)", zIndex: 1, pointerEvents: "none" }}>
+            <TKCounter value={cartCount} max={9} />
+          </span>
+        ) : null}
         <div style={{ height: 16, background: "var(--tk-glass)" }} />
       </div>
 
@@ -309,10 +449,11 @@ function ShopInner({ shell }: { shell: ShellApi }) {
                   </span>
                 ) : null}
               </div>
-              <TKStepper value={qty} min={1} onChange={setQty} />
+              <TKStepper value={qty} min={1} max={stockOf(sheetProduct)} onChange={setQty} />
             </div>
             <div style={{ fontSize: "var(--tk-fz-sub)", color: "var(--tk-text-2)" }}>
               ★ {sheetProduct.rating} · {sheetProduct.reviews} reviews — hand-made, ships in 2 days.
+              {sheetProduct.stock != null ? ` Only ${sheetProduct.stock} left in stock.` : ""}
             </div>
             <TKButton
               full

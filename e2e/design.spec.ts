@@ -71,3 +71,11 @@ for (const theme of ["light", "dark"] as const) {
     }
   });
 }
+
+test.describe("locales — RTL", () => {
+  test("shop home in Arabic RTL", async ({ page }) => {
+    const root = await gotoApp(page, "shop", { params: { locale: "ar" } });
+    await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
+    await expect(root).toHaveScreenshot("shop-home-ar-rtl.png");
+  });
+});

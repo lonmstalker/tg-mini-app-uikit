@@ -1,4 +1,6 @@
-- text: Inputs Full name
+- text: Inputs
+- button "code"
+- text: Full name
 - textbox "Full name":
   - /placeholder: Anna Karlova
 - text: Promo code

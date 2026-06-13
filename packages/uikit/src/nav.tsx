@@ -34,7 +34,7 @@ interface NavEntry {
   key: number;
 }
 
-const TKNavContext = createContext<TKNavApi | null>(null);
+const TKNavContext = /* @__PURE__ */ createContext<TKNavApi | null>(null);
 
 /** Stack navigation API of the nearest `TKNavStack`. */
 export function useNav(): TKNavApi {

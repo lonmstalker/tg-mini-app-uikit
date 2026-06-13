@@ -16,7 +16,8 @@
     "test:e2e:update": "playwright test --update-snapshots",
     "test:e2e:update:linux": "scripts/update-linux-snapshots.sh",
     "check:package": "node scripts/check-package.mjs",
-    "typecheck": "npm run typecheck -w tg-mini-app-uikit && npm run typecheck -w tg-mini-app-uikit-demo"
+    "typecheck": "npm run typecheck -w tg-mini-app-uikit && npm run typecheck -w tg-mini-app-uikit-demo",
+    "check:snippets": "node scripts/check-snippets.mjs"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.3",

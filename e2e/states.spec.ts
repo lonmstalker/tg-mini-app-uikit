@@ -80,8 +80,9 @@ test.describe("main button state machine", () => {
   test("loading", async ({ page }) => {
     await gotoApp(page, "gallery");
     const section = await gallerySection(page, "main-button");
-    await section.getByRole("button", { name: /Pay/ }).click();
-    await expect(section.getByRole("button")).toHaveAttribute("aria-busy", "true");
+    const pay = section.getByRole("button", { name: /Pay/ });
+    await pay.click();
+    await expect(pay).toHaveAttribute("aria-busy", "true");
     await expect(section).toHaveScreenshot("states-main-button-loading.png");
   });
 

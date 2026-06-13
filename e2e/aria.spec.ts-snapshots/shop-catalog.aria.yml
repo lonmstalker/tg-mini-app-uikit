@@ -18,16 +18,19 @@
 - img "Soy candle"
 - text: /Soy candle \$\d+/
 - button "Add to cart"
+- text: 2 left
 - img "Notebook"
 - text: /Notebook \$\d+/
 - button "Add to cart"
 - img "Stone teapot"
 - text: /Stone teapot \$\d+/
 - button "Add to cart"
+- text: 3 left
 - img "Weekly planner"
 - text: /Weekly planner \$\d+/
 - button "Add to cart"
 - button "Home"
 - button "Catalog"
-- button "2 Cart"
+- button "Cart"
 - button "Profile"
+- text: "2"

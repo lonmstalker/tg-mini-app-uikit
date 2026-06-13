@@ -2,15 +2,19 @@
 - button "Decrease"
 - text: "2"
 - button "Increase"
-- text: /Soy candle \$\d+/
+- text: /Soy candle \$\d+ · 2 left/
 - button "Decrease"
 - text: "1"
 - button "Increase"
-- text: /Subtotal \$\d+ Delivery \$\d+\.\d+ Promo SPRING24 −\$6 Total \$\d+\.\d+ Visa ·· \d+ Default payment method Simulate decline Next payment will fail/
+- textbox:
+  - /placeholder: Promo code
+- button "Apply"
+- text: /Subtotal \$\d+ Delivery \$\d+\.\d+ Total \$\d+\.\d+ Visa ·· \d+ Default payment method Simulate decline Next payment will fail/
 - switch "Simulate decline"
 - text: The decline switch makes the next payment fail — for testing the error path.
 - button /Pay \$\d+\.\d+/
 - button "Home"
 - button "Catalog"
-- button "3 Cart"
+- button "Cart"
 - button "Profile"
+- text: "3"

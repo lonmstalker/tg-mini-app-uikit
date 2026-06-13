@@ -1,4 +1,4 @@
-import { useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import {
   TK_ICON_NAMES,
   TKActionSheet,
@@ -103,6 +103,9 @@ import {
   type TKThemeKnobs,
 } from "tg-mini-app-uikit";
 import { ACCENTS } from "../../shell/types";
+import { bootSection } from "../../shell/boot";
+import { SECTION_SNIPPETS } from "./snippets";
+import { Playground } from "./Playground";
 import { productPhoto } from "../shop/data";
 
 /* Components — a live gallery of everything the kit exports. */
@@ -110,6 +113,71 @@ import { productPhoto } from "../shop/data";
 const LONG_TITLE = "Hand-thrown stoneware mug with a reactive glaze, 350 ml, dishwasher safe";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+function sectionSlug(title: string): string {
+  return title.split("·")[0].trim().toLowerCase().replace(/[^a-z0-9]+/g, "-");
+}
+
+function SectionCode({ slug }: { slug: string }) {
+  const toast = useTKToast();
+  const [open, setOpen] = useState(false);
+  const code = SECTION_SNIPPETS[slug];
+  if (!code) return null;
+  return (
+    <>
+      <button
+        type="button"
+        className="tk-press"
+        data-demo-section-code={slug}
+        onClick={() => setOpen(true)}
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 4,
+          border: "none",
+          background: "transparent",
+          color: "var(--tk-accent-ink)",
+          fontFamily: "inherit",
+          fontSize: "var(--tk-fz-caption)",
+          fontWeight: 700,
+          cursor: "pointer",
+          padding: 0,
+        }}
+      >
+        <TKIcon name="copy" size={13} /> code
+      </button>
+      <TKSheet open={open} onClose={() => setOpen(false)} title={`${slug} · JSX`} testId="demo-snippet-sheet">
+        <pre
+          style={{
+            margin: "0 0 12px",
+            padding: "12px 14px",
+            borderRadius: "var(--tk-r-md)",
+            background: "var(--tk-surface-2)",
+            overflowX: "auto",
+            fontSize: "var(--tk-fz-caption)",
+            fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace',
+            lineHeight: 1.5,
+            maxHeight: 320,
+          }}
+        >
+          {code}
+        </pre>
+        <TKButton
+          full
+          variant="tonal"
+          icon="copy"
+          testId="demo-snippet-copy"
+          onClick={() => {
+            void navigator.clipboard?.writeText(code).catch(() => {});
+            toast.show({ icon: "copy", text: "Snippet copied" });
+          }}
+        >
+          Copy snippet
+        </TKButton>
+      </TKSheet>
+    </>
+  );
+}
 
 function Section({
   title,
@@ -125,7 +193,7 @@ function Section({
 }) {
   return (
     <section
-      data-demo-section={title.split("·")[0].trim().toLowerCase().replace(/[^a-z0-9]+/g, "-")}
+      data-demo-section={sectionSlug(title)}
       style={{
         display: "flex",
         flexDirection: "column",
@@ -143,15 +211,25 @@ function Section({
     >
       <div
         style={{
-          fontSize: "var(--tk-fz-caption)",
-          fontWeight: 600,
-          letterSpacing: ".05em",
-          textTransform: "uppercase",
-          color: "var(--tk-text-3)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 8,
           padding: pad ? 0 : "0 16px",
         }}
       >
-        {title}
+        <span
+          style={{
+            fontSize: "var(--tk-fz-caption)",
+            fontWeight: 600,
+            letterSpacing: ".05em",
+            textTransform: "uppercase",
+            color: "var(--tk-text-3)",
+          }}
+        >
+          {title}
+        </span>
+        <SectionCode slug={sectionSlug(title)} />
       </div>
       {children}
     </section>
@@ -301,17 +379,65 @@ function GalleryInner() {
   const [pinStatus, setPinStatus] = useState("");
   const [priceRange, setPriceRange] = useState<[number, number]>([20, 70]);
 
+  const [tocOpen, setTocOpen] = useState(false);
+  const [tocQuery, setTocQuery] = useState("");
+  const scrollToSection = (slug: string) => {
+    // lazily painted sections need a paint pass before the offset is right
+    const el = document.querySelector(`[data-demo-section="${slug}"]`);
+    el?.scrollIntoView({ block: "start", behavior: "instant" as ScrollBehavior });
+    requestAnimationFrame(() => el?.scrollIntoView({ block: "start", behavior: "instant" as ScrollBehavior }));
+  };
+  const tocSections = () =>
+    Array.from(document.querySelectorAll<HTMLElement>("[data-demo-section]")).map((el) => ({
+      slug: el.dataset.demoSection!,
+      title: el.querySelector("span")?.textContent ?? el.dataset.demoSection!,
+    }));
+
+  // deep-link: ?app=gallery&section=inputs (M8.2)
+  useEffect(() => {
+    const slug = bootSection();
+    if (slug) setTimeout(() => scrollToSection(slug), 60);
+  }, []);
+
   return (
     <div data-demo-app="gallery" style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <div style={{ padding: "64px 16px 8px" }}>
-        <div style={{ fontSize: "var(--tk-fz-title1)", fontWeight: 700, letterSpacing: "-.02em" }}>Components</div>
-        <div style={{ fontSize: "var(--tk-fz-sub)", color: "var(--tk-text-2)" }}>
-          Every kit component, fully interactive
+      <div style={{ padding: "64px 16px 8px", display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 10 }}>
+        <div>
+          <div style={{ fontSize: "var(--tk-fz-title1)", fontWeight: 700, letterSpacing: "-.02em" }}>Components</div>
+          <div style={{ fontSize: "var(--tk-fz-sub)", color: "var(--tk-text-2)" }}>
+            Every kit component, fully interactive
+          </div>
         </div>
+        <TKIconButton icon="filter" label="Sections" testId="demo-toc-open" onClick={() => setTocOpen(true)} />
       </div>
+      <TKSheet open={tocOpen} onClose={() => setTocOpen(false)} title="Sections" snapPoints={[0.85]} testId="demo-toc">
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingBottom: 8 }}>
+          <TKSearch placeholder="Filter sections…" value={tocQuery} onChange={setTocQuery} testId="demo-toc-search" />
+          <TKListGroup>
+            {tocSections()
+              .filter(({ title }) => title.toLowerCase().includes(tocQuery.toLowerCase()))
+              .map(({ slug, title }) => (
+                <TKCell
+                  key={slug}
+                  title={title.toLowerCase()}
+                  chevron
+                  testId={`toc-${slug}`}
+                  onClick={() => {
+                    setTocOpen(false);
+                    setTimeout(() => scrollToSection(slug), 60);
+                  }}
+                />
+              ))}
+          </TKListGroup>
+        </div>
+      </TKSheet>
 
       <div data-demo-gallery-scroll style={{ flex: 1, overflow: "auto" }}>
         <div style={{ padding: "8px 16px 32px", display: "flex", flexDirection: "column", gap: 22 }}>
+        <Section title="Playground · live props" lazy={false}>
+          <Playground />
+        </Section>
+
         <Section title="Buttons · variants & sizes">
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
             <TKButton variant="filled">Filled</TKButton>

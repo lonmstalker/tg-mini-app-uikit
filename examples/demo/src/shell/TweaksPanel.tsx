@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { TKProvider, TKSegmented, TKSlider, TKSwitch } from "tg-mini-app-uikit";
+import { TKButton, TKProvider, TKSegmented, TKSlider, TKSwitch } from "tg-mini-app-uikit";
 import { ACCENTS, type Tweaks } from "./types";
 
 /* The panel itself is built from the kit — dogfooding the components. */
@@ -24,10 +24,12 @@ function Label({ children, first }: { children: ReactNode; first?: boolean }) {
 export interface TweaksPanelProps {
   tweaks: Tweaks;
   onChange: (patch: Partial<Tweaks>) => void;
+  /** Clears persisted demo data (carts, progress, tweaks) and reloads. */
+  onReset?: () => void;
   style?: React.CSSProperties;
 }
 
-export function TweaksPanel({ tweaks, onChange, style }: TweaksPanelProps) {
+export function TweaksPanel({ tweaks, onChange, onReset, style }: TweaksPanelProps) {
   return (
     <TKProvider
       theme="dark"
@@ -115,6 +117,11 @@ export function TweaksPanel({ tweaks, onChange, style }: TweaksPanelProps) {
       <div style={{ fontSize: "var(--tk-fz-caption2)", color: "var(--tk-text-3)", marginTop: 6 }}>
         Every knob maps to a design token — the apps restyle live.
       </div>
+      {onReset ? (
+        <TKButton size="sm" variant="plain" onClick={onReset} testId="demo-reset-data">
+          Reset demo data
+        </TKButton>
+      ) : null}
     </TKProvider>
   );
 }

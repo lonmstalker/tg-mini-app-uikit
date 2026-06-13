@@ -171,7 +171,7 @@ export const ruLocale: TKLocale = {
   progress: "Прогресс",
 };
 
-const TKLocaleContext = createContext<TKLocale>(enLocale);
+const TKLocaleContext = /* @__PURE__ */ createContext<TKLocale>(enLocale);
 
 export interface TKLocaleProviderProps {
   /** Partial dictionaries fall back to English per key. */

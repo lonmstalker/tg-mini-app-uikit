@@ -4,6 +4,7 @@ export type DemoApp = "shop" | "booking" | "game" | "platform" | "gallery";
 
 /** All gallery section anchors, in DOM order (slug = title before the first "·"). */
 export const GALLERY_SECTIONS = [
+  "playground",
   "buttons",
   "main-button",
   "selection-controls",
@@ -47,9 +48,10 @@ export async function gotoApp(
   app: DemoApp,
   opts: { dark?: boolean; params?: Record<string, string> } = {},
 ): Promise<Locator> {
-  const extra = opts.params
-    ? "&" + new URLSearchParams(opts.params).toString()
-    : "";
+  const params = { ...(opts.params ?? {}) };
+  // dynamic Booking dates would drift the visual baselines day to day
+  if (app === "booking" && !params.today) params.today = "2026-06-15";
+  const extra = Object.keys(params).length ? "&" + new URLSearchParams(params).toString() : "";
   await page.goto(`/?app=${app}${opts.dark ? "&dark=1" : ""}${extra}`);
   // The skeleton shimmer is an infinite pseudo-element animation; Playwright's
   // animations:"disabled" pauses it at a nondeterministic offset, which made

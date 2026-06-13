@@ -143,9 +143,13 @@ test("focus ring shows for keyboard focus only", async ({ page }) => {
   expect(await computedStyle(button, "outline-style")).toBe("none");
 
   // Keyboard: click the (non-focusable) section title to set the sequential
-  // focus start point, then Tab onto the button.
+  // focus start point, then Tab onto the button (skipping the section's
+  // "code" snippet button added in M8).
   await section.locator("div").first().click();
-  await page.keyboard.press("Tab");
+  for (let i = 0; i < 4; i++) {
+    await page.keyboard.press("Tab");
+    if (await button.evaluate((el) => el === document.activeElement)) break;
+  }
   await expect(button).toBeFocused();
   expect(await computedStyle(button, "outline-style")).toBe("solid");
   // Chromium rounds 3.5px down in the computed value.

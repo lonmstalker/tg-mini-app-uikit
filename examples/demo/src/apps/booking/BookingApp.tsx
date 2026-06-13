@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   TKAvatar,
   TKBadge,
   TKBookingCard,
   TKButton,
   TKCell,
+  TKDialog,
   TKHeader,
   TKIcon,
   TKListGroup,
@@ -23,6 +24,7 @@ import {
   useTKToast,
   type TKIconName,
 } from "tg-mini-app-uikit";
+import { bootToday } from "../../shell/boot";
 
 /* Booking — appointment flow example: service → time → confirm → status. */
 
@@ -43,14 +45,25 @@ const SERVICES: Service[] = [
   { id: "follow", icon: "calendar", iconBg: "var(--tk-green)", title: "Follow-up visit", subtitle: "For returning patients", price: 40, duration: "20 min" },
 ];
 
-const DAYS = [
-  { label: "Mon", date: 15 },
-  { label: "Tue", date: 16 },
-  { label: "Wed", date: 17 },
-  { label: "Thu", date: 18 },
-  { label: "Fri", date: 19 },
-  { label: "Sat", date: 20 },
-];
+interface Day {
+  label: string;
+  date: number;
+  month: string;
+}
+
+/** 6 consecutive days starting from "today" (`?today=YYYY-MM-DD` pins it for tests). */
+function buildDays(): Day[] {
+  const start = bootToday();
+  return Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
+    return {
+      label: d.toLocaleDateString("en-US", { weekday: "short" }),
+      date: d.getDate(),
+      month: d.toLocaleDateString("en-US", { month: "short" }),
+    };
+  });
+}
 const SLOTS = ["10:00", "10:45", "11:30", "12:15", "14:30", "15:15", "16:00", "17:30", "18:15"];
 const BUSY = ["10:45", "14:30", "17:30"];
 
@@ -102,15 +115,18 @@ function DoctorProfile() {
 function BookingInner() {
   const toast = useTKToast();
   const nav = useNav();
+  const DAYS = useMemo(buildDays, []);
   const [step, setStep] = useState(0);
   const [serviceId, setServiceId] = useState("consult");
   const [day, setDay] = useState(4);
   const [slot, setSlot] = useState("15:15");
   const [remind, setRemind] = useState(true);
   const [booked, setBooked] = useState(false);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [notifsDenied, setNotifsDenied] = useState(false);
 
   const service = SERVICES.find((s) => s.id === serviceId) ?? SERVICES[0];
-  const dateLabel = `${DAYS[day].label}, Jun ${DAYS[day].date}`;
+  const dateLabel = `${DAYS[day].label}, ${DAYS[day].month} ${DAYS[day].date}`;
 
   const confirm = async () => {
     await sleep(1400);
@@ -121,6 +137,29 @@ function BookingInner() {
   const reset = () => {
     setBooked(false);
     setStep(0);
+  };
+
+  /* Reschedule keeps the chosen service and jumps back to the Time step. */
+  const reschedule = () => {
+    setBooked(false);
+    setStep(1);
+  };
+
+  const cancelBooking = () => {
+    setCancelOpen(false);
+    reset();
+    toast.success("Booking cancelled");
+  };
+
+  /* Simulated notifications permission: `?noNotifs=1` makes the OS "deny" it. */
+  const onRemindChange = (next: boolean) => {
+    if (next && typeof window !== "undefined" && new URLSearchParams(window.location.search).get("noNotifs") === "1") {
+      setRemind(false);
+      setNotifsDenied(true);
+      return;
+    }
+    if (!next) setNotifsDenied(false);
+    setRemind(next);
   };
 
   if (booked) {
@@ -142,8 +181,8 @@ function BookingInner() {
             status={<TKBadge tone="green" soft>Confirmed</TKBadge>}
             date={dateLabel}
             time={slot}
-            actionLabel="Reschedule"
-            onAction={reset}
+            actionLabel={<span data-testid="booking-reschedule">Reschedule</span>}
+            onAction={reschedule}
           />
           <div>
             <div
@@ -170,11 +209,33 @@ function BookingInner() {
           </div>
           </div>
         </div>
-        <div style={{ padding: "8px 16px 30px" }}>
+        <div style={{ padding: "8px 16px 30px", display: "flex", flexDirection: "column", gap: 10 }}>
           <TKButton full variant="tonal" onClick={reset}>
             Book another visit
           </TKButton>
+          <TKButton full variant="destructive" onClick={() => setCancelOpen(true)} testId="booking-cancel">
+            Cancel booking
+          </TKButton>
         </div>
+        <TKDialog
+          open={cancelOpen}
+          onClose={() => setCancelOpen(false)}
+          onConfirm={cancelBooking}
+          icon="calendar"
+          tone="red"
+          title="Cancel this booking?"
+          text={`${service.title} · ${dateLabel} · ${slot}. The slot will be released for other patients.`}
+          actions={
+            <>
+              <TKButton variant="tonal" onClick={() => setCancelOpen(false)}>
+                Keep it
+              </TKButton>
+              <TKButton variant="destructive" onClick={cancelBooking} testId="booking-cancel-confirm">
+                Cancel booking
+              </TKButton>
+            </>
+          }
+        />
       </div>
     );
   }
@@ -255,8 +316,40 @@ function BookingInner() {
               ]}
             />
             <div style={{ background: "var(--tk-surface)", borderRadius: "var(--tk-r-md)", boxShadow: "var(--tk-shadow-sm)", padding: "12px 14px" }}>
-              <TKSwitch label="Remind me 2 hours before" checked={remind} onChange={setRemind} />
+              <TKSwitch label="Remind me 2 hours before" checked={remind} onChange={onRemindChange} />
             </div>
+            {notifsDenied ? (
+              <div
+                data-testid="booking-notifs-denied"
+                style={{
+                  background: "var(--tk-surface)",
+                  borderRadius: "var(--tk-r-md)",
+                  boxShadow: "var(--tk-shadow-sm)",
+                  padding: "16px 14px",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: 8,
+                  textAlign: "center",
+                }}
+              >
+                <span style={{ display: "inline-flex", color: "var(--tk-red-ink)" }}>
+                  <TKIcon name="bell" size={28} />
+                </span>
+                <div style={{ fontSize: "var(--tk-fz-body)", fontWeight: 600 }}>Notifications are disabled</div>
+                <div style={{ fontSize: "var(--tk-fz-caption)", color: "var(--tk-text-2)" }}>
+                  Allow notifications in your device settings to get the reminder.
+                </div>
+                <TKButton
+                  variant="tonal"
+                  size="sm"
+                  pill
+                  onClick={() => toast.show({ icon: "bell", color: "var(--tk-accent)", text: "This would open system settings" })}
+                >
+                  Open settings
+                </TKButton>
+              </div>
+            ) : null}
           </>
         ) : null}
         </div>

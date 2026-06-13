@@ -8,6 +8,8 @@ export interface Product {
   img: string;
   photo: string;
   category: string;
+  /** Remaining units when the item is low on stock (M8.8). Unset = plenty. */
+  stock?: number;
 }
 
 /* Self-contained "product photo": a gradient SVG still life rendered to a
@@ -31,9 +33,9 @@ export const CATEGORIES = ["For you", "Mugs", "Bags", "Candles", "Paper"];
 export const PRODUCTS: Product[] = [
   { id: "mug", title: "Ceramic mug", price: 18, oldPrice: 24, rating: 4.8, reviews: 212, img: "mug photo", photo: productPhoto("☕", "#f6d365", "#fda085"), category: "Mugs" },
   { id: "tote", title: "Linen tote", price: 32, rating: 4.6, reviews: 96, img: "tote photo", photo: productPhoto("👜", "#a8edea", "#5ee7df"), category: "Bags" },
-  { id: "candle", title: "Soy candle", price: 24, rating: 4.9, reviews: 154, img: "candle photo", photo: productPhoto("🕯️", "#fbc2eb", "#a18cd1"), category: "Candles" },
+  { id: "candle", title: "Soy candle", price: 24, rating: 4.9, reviews: 154, img: "candle photo", photo: productPhoto("🕯️", "#fbc2eb", "#a18cd1"), category: "Candles", stock: 2 },
   { id: "notebook", title: "Notebook", price: 12, rating: 4.5, reviews: 67, img: "notebook photo", photo: productPhoto("📓", "#84fab0", "#8fd3f4"), category: "Paper" },
-  { id: "pot", title: "Stone teapot", price: 42, oldPrice: 55, rating: 4.7, reviews: 88, img: "teapot photo", photo: productPhoto("🫖", "#e0c3fc", "#8ec5fc"), category: "Mugs" },
+  { id: "pot", title: "Stone teapot", price: 42, oldPrice: 55, rating: 4.7, reviews: 88, img: "teapot photo", photo: productPhoto("🫖", "#e0c3fc", "#8ec5fc"), category: "Mugs", stock: 3 },
   { id: "planner", title: "Weekly planner", price: 16, rating: 4.4, reviews: 41, img: "planner photo", photo: productPhoto("🗓️", "#fddb92", "#d1fdff"), category: "Paper" },
 ];
 

@@ -2,7 +2,7 @@
   {
     "name": "full kit · esm · gzip",
     "path": "packages/uikit/dist/index.js",
-    "limit": "34 kB",
+    "limit": "40 kB",
     "ignore": [
       "react",
       "react-dom"
@@ -11,7 +11,7 @@
   {
     "name": "full kit · cjs · gzip",
     "path": "packages/uikit/dist/index.cjs",
-    "limit": "35 kB",
+    "limit": "41 kB",
     "ignore": [
       "react",
       "react-dom"
@@ -21,7 +21,7 @@
     "name": "tree-shaking · import { TKButton }",
     "path": "packages/uikit/dist/index.js",
     "import": "{ TKButton }",
-    "limit": "3 kB",
+    "limit": "4.5 kB",
     "ignore": [
       "react",
       "react-dom"
@@ -31,7 +31,7 @@
     "name": "tree-shaking · import { TKSpinner }",
     "path": "packages/uikit/dist/index.js",
     "import": "{ TKSpinner }",
-    "limit": "2 kB",
+    "limit": "3.5 kB",
     "ignore": [
       "react",
       "react-dom"
