@@ -3,7 +3,9 @@
 - button "Close mini app": ✕
 - text: chat with @uikit_demo_bot
 - button "Expand the mini app": drag up to expand
-- text: /Compact launch height Mini apps open half-screen — drag the grabber up or call expand\(\) Init data · user AK Anna Karlova Premium @annak · id \d+ start_param platform_lab platform \/ version ios · 9\.6 Theme · themeChanged/
+- text: "Compact launch height Mini apps open half-screen — drag the grabber up or call expand() Back priorities · sheet beats stack The kit keeps a LIFO back-handler queue: an open sheet consumes the native Back press first; the next press pops the nav stack. Open details"
+- button "Press native Back"
+- text: /queue is empty Init data · user AK Anna Karlova Premium @annak · id \d+ start_param platform_lab platform \/ version ios · 9\.6 Theme · themeChanged/
 - button "Light" [pressed]
 - button "Dark"
 - text: "bg secondary_bg button text hint destructive_text Appearance · setHeaderColor headerColor #ffffff backgroundColor #ffffff bottomBarColor #f2f4f8"
@@ -86,7 +88,7 @@
 - text: isClosingConfirmationEnabled false
 - button "Close mini app"
 - text: Event log
-- log "Event log": ready() CloudStorage.getItem("note") SettingsButton.hide() BackButton.hide() SecondaryButton.hideProgress() SecondaryButton.setParams(…) MainButton.hideProgress() MainButton.setParams(…) SettingsButton.hide() BackButton.hide() SecondaryButton.hide() SecondaryButton.hideProgress() MainButton.hide() MainButton.hideProgress() event · gyroscopeStopped Gyroscope.stop() event · deviceOrientationStopped DeviceOrientation.stop() event · accelerometerStopped Accelerometer.stop() event · scanQrPopupClosed closeScanQrPopup() ready() event · viewportChanged CloudStorage.getItem("note") SettingsButton.hide() BackButton.hide() SecondaryButton.hideProgress() SecondaryButton.setParams(…) MainButton.hideProgress()
+- log "Event log": ready() CloudStorage.getItem("note") SettingsButton.hide() BackButton.hide() SecondaryButton.hideProgress() SecondaryButton.setParams(…) MainButton.hideProgress() MainButton.setParams(…) BackButton.hide() BackButton.hide() SettingsButton.hide() BackButton.hide() SecondaryButton.hide() SecondaryButton.hideProgress() MainButton.hide() MainButton.hideProgress() event · gyroscopeStopped Gyroscope.stop() event · deviceOrientationStopped DeviceOrientation.stop() event · accelerometerStopped Accelerometer.stop() event · scanQrPopupClosed closeScanQrPopup() ready() event · viewportChanged CloudStorage.getItem("note") SettingsButton.hide() BackButton.hide() SecondaryButton.hideProgress()
 - text: Every WebApp call and event the mock receives, newest first.
 - status
 - button "CONTINUE"

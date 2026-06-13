@@ -1,4 +1,4 @@
-import { expect, type Locator, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 
 export type DemoApp = "shop" | "booking" | "game" | "platform" | "gallery";
 
@@ -49,6 +49,14 @@ export async function gotoApp(
     ? "&" + new URLSearchParams(opts.params).toString()
     : "";
   await page.goto(`/?app=${app}${opts.dark ? "&dark=1" : ""}${extra}`);
+  // The skeleton shimmer is an infinite pseudo-element animation; Playwright's
+  // animations:"disabled" pauses it at a nondeterministic offset, which made
+  // screenshot specs flake (~1 in 6). Freeze it in the pixel-comparing
+  // projects only (the motion spec asserts the animation actually runs).
+  const project = test.info().project.name;
+  if (/visual|narrow|dpr/.test(project)) {
+    await page.addStyleTag({ content: ".tk-skel::after { animation: none !important; transform: translateX(-90%); }" });
+  }
   const root = page.locator(`[data-demo-app="${app}"]`);
   await expect(root).toBeVisible();
   await page.evaluate(() => document.fonts.ready);

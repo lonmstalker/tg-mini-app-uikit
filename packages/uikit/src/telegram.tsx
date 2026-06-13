@@ -402,6 +402,43 @@ export function getTelegramWebApp(): TelegramWebApp | undefined {
 
 const TKTelegramContext = createContext<TelegramWebApp | undefined>(undefined);
 
+/*
+ * Back-handler queue: overlays and nav stacks register LIFO interceptors;
+ * the Telegram Back button (or anything calling the dispatcher) runs the
+ * most recently registered active handler — so an open sheet closes before
+ * the nav stack pops (M6.3).
+ */
+type BackHandler = () => void;
+const backQueue: BackHandler[] = [];
+
+/** Registers `handler` as the top back interceptor while `active` is true. */
+export function useBackIntercept(active: boolean, handler: BackHandler): void {
+  const ref = useRef(handler);
+  ref.current = handler;
+  useEffect(() => {
+    if (!active) return;
+    const entry: BackHandler = () => ref.current();
+    backQueue.push(entry);
+    return () => {
+      const i = backQueue.indexOf(entry);
+      if (i >= 0) backQueue.splice(i, 1);
+    };
+  }, [active]);
+}
+
+/**
+ * Returns a stable dispatcher that runs the top back interceptor (if any).
+ * Wire it to `useBackButton` or call it from custom chrome.
+ */
+export function useBackDispatcher(): () => boolean {
+  return useCallback(() => {
+    const top = backQueue[backQueue.length - 1];
+    if (!top) return false;
+    top();
+    return true;
+  }, []);
+}
+
 export interface TKTelegramProviderProps {
   /** WebApp implementation; defaults to `window.Telegram.WebApp`. Inject a mock here in demos and tests. */
   webApp?: TelegramWebApp;
@@ -420,6 +457,18 @@ export function TKTelegramProvider({ webApp, signalReady = true, children }: TKT
   useEffect(() => {
     if (signalReady) wa?.ready?.();
   }, [wa, signalReady]);
+  // route native Back presses through the back-handler queue (M6.3)
+  useEffect(() => {
+    const btn = wa?.BackButton;
+    if (!btn?.onClick) return;
+    const handler = () => {
+      backQueue[backQueue.length - 1]?.();
+    };
+    btn.onClick(handler);
+    return () => {
+      btn.offClick?.(handler);
+    };
+  }, [wa]);
   return <TKTelegramContext.Provider value={wa}>{children}</TKTelegramContext.Provider>;
 }
 
@@ -1492,6 +1541,43 @@ export function useChatRequest(): {
     }),
     [isSupported, state.error, state.status, wa],
   );
+}
+
+export interface TKKeyboardState {
+  /** True while the on-screen keyboard overlaps the layout. */
+  visible: boolean;
+  /** Height covered by the keyboard, px (0 when hidden). */
+  height: number;
+}
+
+/**
+ * Keyboard-aware layout hook driven by `visualViewport` (M6.5): returns the
+ * overlap height so inputs can stay above the keyboard. SSR- and
+ * plain-browser-safe (reports hidden when `visualViewport` is missing).
+ */
+export function useKeyboard(threshold = 80): TKKeyboardState {
+  const [state, setState] = useState<TKKeyboardState>({ visible: false, height: 0 });
+  useEffect(() => {
+    const vv = typeof window !== "undefined" ? window.visualViewport : undefined;
+    if (!vv) return;
+    const sync = () => {
+      const covered = Math.max(0, window.innerHeight - vv.height - (vv.offsetTop ?? 0));
+      setState((prev) => {
+        const next = { visible: covered > threshold, height: covered > threshold ? Math.round(covered) : 0 };
+        return prev.visible === next.visible && prev.height === next.height ? prev : next;
+      });
+      // recipe hook: `.tk-kb-open` lets CSS lift bottom bars above the keyboard
+      document.querySelectorAll(".tk").forEach((el) => el.classList.toggle("tk-kb-open", covered > threshold));
+    };
+    sync();
+    vv.addEventListener("resize", sync);
+    vv.addEventListener("scroll", sync);
+    return () => {
+      vv.removeEventListener("resize", sync);
+      vv.removeEventListener("scroll", sync);
+    };
+  }, [threshold]);
+  return state;
 }
 
 export function useHideKeyboard(): { hide: () => boolean; isSupported: boolean } {

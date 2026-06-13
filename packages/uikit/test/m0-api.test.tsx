@@ -182,6 +182,7 @@ const NO_TESTID = new Set([
   "TKTelegramProvider", // renders no DOM of its own
   "TKToastProvider", // provider; the toast region is internal
   "TKLocaleProvider", // renders no DOM of its own
+  "TKNavPanel", // marker component — renders only its children
 ]);
 
 const TESTID_PROPS: Record<string, Record<string, unknown>> = {

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import {
+  TKAvatar,
   TKBadge,
   TKBookingCard,
   TKButton,
@@ -8,12 +9,17 @@ import {
   TKIcon,
   TKListGroup,
   TKMainButton,
+  TKNavPanel,
+  TKNavStack,
+  TKPage,
   TKPaymentSummary,
+  TKRating,
   TKSlotPicker,
   TKSteps,
   TKSwitch,
   TKTimeline,
   TKToastProvider,
+  useNav,
   useTKToast,
   type TKIconName,
 } from "tg-mini-app-uikit";
@@ -54,14 +60,48 @@ export function BookingApp() {
   return (
     <TKToastProvider offset={20}>
       <div data-demo-app="booking" style={{ height: "100%" }}>
-        <BookingInner />
+        {/* dogfooding M6: the doctor profile lives on the nav stack with swipe-back */}
+        <TKNavStack initial="booking" testId="booking-nav">
+          <TKNavPanel id="booking">
+            <BookingInner />
+          </TKNavPanel>
+          <TKNavPanel id="doctor">
+            <DoctorProfile />
+          </TKNavPanel>
+        </TKNavStack>
       </div>
     </TKToastProvider>
   );
 }
 
+function DoctorProfile() {
+  const nav = useNav();
+  return (
+    <TKPage
+      safeTop={false}
+      header={<TKHeader title="Doctor" onBack={() => nav.pop()} testId="doctor-header" />}
+    >
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, padding: "10px 0 2px" }}>
+        <TKAvatar initials="RV" size={76} status="online" />
+        <div style={{ fontSize: "var(--tk-fz-title2)", fontWeight: 700 }}>Dr. Renata Voss</div>
+        <div style={{ fontSize: "var(--tk-fz-sub)", color: "var(--tk-text-2)" }}>Dermatologist · 12 years of practice</div>
+        <TKRating readonly allowHalf defaultValue={4.5} />
+      </div>
+      <TKListGroup title="About">
+        <TKCell icon="shield" iconBg="var(--tk-green)" title="Board certified" subtitle="European Academy of Dermatology" />
+        <TKCell icon="globe" iconBg="var(--tk-accent)" title="Languages" value="EN · DE · PT" />
+        <TKCell icon="calendar" iconBg="var(--tk-orange)" title="Visits" value="280+" />
+      </TKListGroup>
+      <TKButton full variant="tonal" onClick={() => nav.pop()} testId="doctor-back">
+        Back to booking
+      </TKButton>
+    </TKPage>
+  );
+}
+
 function BookingInner() {
   const toast = useTKToast();
+  const nav = useNav();
   const [step, setStep] = useState(0);
   const [serviceId, setServiceId] = useState("consult");
   const [day, setDay] = useState(4);
@@ -195,7 +235,7 @@ function BookingInner() {
               onSlotChange={setSlot}
             />
             <TKListGroup>
-              <TKCell icon="user" title="Dr. Renata Voss" subtitle="4.9 · 280 visits" chevron onClick={() => {}} />
+              <TKCell icon="user" title="Dr. Renata Voss" subtitle="4.9 · 280 visits" chevron onClick={() => nav.push("doctor")} testId="doctor-cell" />
             </TKListGroup>
           </>
         ) : null}

@@ -19,6 +19,7 @@ import { TKIconButton } from "./buttons";
 import { mergeRefs, tkZ } from "./internal/dom";
 import { tkShouldCommit, useDragGesture } from "./internal/useDragGesture";
 import { useTKLocale } from "./i18n";
+import { useBackIntercept } from "./telegram";
 
 /*
  * Overlays position themselves against the nearest positioned ancestor —
@@ -223,6 +224,8 @@ export const TKSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSheetProps>(
   }, []);
 
   useOverlayA11y(mounted && !closing, ref, dismissible ? requestClose : undefined);
+  // an open sheet handles the Telegram Back button before the nav stack
+  useBackIntercept(mounted && !closing && dismissible, requestClose);
 
   const openChangeRef = useRef(onOpenChange);
   openChangeRef.current = onOpenChange;
@@ -367,6 +370,7 @@ export const TKDialog = /* @__PURE__ */ forwardRef<HTMLDivElement, TKDialogProps
   const ref = useRef<HTMLDivElement>(null);
   const titleId = useId();
   useOverlayA11y(mounted && !closing, ref, onClose, onConfirm);
+  useBackIntercept(mounted && !closing && !!onClose, () => onClose?.());
   if (!mounted) return null;
   const [color, bg] = DIALOG_TONES[tone] ?? DIALOG_TONES.accent;
   return (
@@ -450,6 +454,7 @@ export const TKActionSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKAction
   const { mounted, closing } = useMountTransition(open, 360);
   const ref = useRef<HTMLDivElement>(null);
   useOverlayA11y(mounted && !closing, ref, onClose);
+  useBackIntercept(mounted && !closing && !!onClose, () => onClose?.());
   if (!mounted) return null;
   return (
     <>

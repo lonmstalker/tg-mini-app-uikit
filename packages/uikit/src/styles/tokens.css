@@ -209,6 +209,10 @@
   0%        { transform: scale(1); opacity: 1; }
   70%, 100% { transform: scale(var(--tk-pulse-scale, 1.75)); opacity: 0; }
 }
+@keyframes tk-nav-in {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
 @keyframes tk-sheet-up {
   from { transform: translateY(104%); }
   to   { transform: translateY(0); }

@@ -10,6 +10,12 @@ import {
   TKAvatar,
   TKBadge,
   TKButton,
+  TKCardCell,
+  useNav,
+  TKFrame,
+  TKNavPanel,
+  TKNavStack,
+  TKSheet,
   TKCell,
   TKDialog,
   TKIcon,
@@ -92,6 +98,64 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
       </div>
       {children}
     </section>
+  );
+}
+
+function BackPriorityDemo({ onPressBack, backVisible }: { onPressBack: () => void; backVisible: boolean }) {
+  const [pushed, setPushed] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  return (
+    <div data-demo-back-priority style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <TKFrame height={210}>
+        <TKNavStack initial="list" backButton={false} testId="bp-stack" onStackChange={(s) => setPushed(s.length > 1)}>
+          <TKNavPanel id="list">
+            <BPList />
+          </TKNavPanel>
+          <TKNavPanel id="details">
+            <BPDetails onOpenSheet={() => setSheetOpen(true)} />
+          </TKNavPanel>
+        </TKNavStack>
+        <TKSheet open={sheetOpen} onClose={() => setSheetOpen(false)} title="Filters" testId="bp-sheet">
+          <div style={{ fontSize: "var(--tk-fz-sub)", color: "var(--tk-text-2)", paddingBottom: 10 }}>
+            While this sheet is open it owns the Back press.
+          </div>
+        </TKSheet>
+      </TKFrame>
+      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <TKButton size="sm" variant="surface" onClick={onPressBack} testId="bp-press-back">
+          Press native Back
+        </TKButton>
+        <span style={{ fontSize: "var(--tk-fz-caption)", color: "var(--tk-text-3)" }}>
+          {sheetOpen ? "→ closes the sheet" : pushed ? "→ pops the stack" : backVisible ? "→ host handles it" : "queue is empty"}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function BPList() {
+  const nav = useNav();
+  return (
+    <div style={{ padding: 10 }}>
+      <TKListGroup>
+        <TKCell icon="document" title="Open details" chevron onClick={() => nav.push("details")} testId="bp-open-details" />
+      </TKListGroup>
+    </div>
+  );
+}
+
+function BPDetails({ onOpenSheet }: { onOpenSheet: () => void }) {
+  const nav = useNav();
+  return (
+    <div style={{ padding: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+      <TKCardCell title="Details screen" subtitle="depth 2 — Back pops to the list" before={<TKAvatar initials="D" size={32} />} />
+      <TKButton size="sm" variant="tonal" onClick={onOpenSheet} testId="bp-open-sheet">
+        Open sheet
+      </TKButton>
+      <TKButton size="sm" variant="plain" onClick={() => nav.pop()}>
+        Pop
+      </TKButton>
+    </div>
   );
 }
 
@@ -738,6 +802,15 @@ function Lab({
           />
         </TKListGroup>
       ) : null}
+
+      <Section title="Back priorities · sheet beats stack">
+        <Card>
+          <div style={{ fontSize: "var(--tk-fz-caption)", color: "var(--tk-text-2)" }}>
+            The kit keeps a LIFO back-handler queue: an open sheet consumes the native Back press first; the next press pops the nav stack.
+          </div>
+          <BackPriorityDemo onPressBack={mock.clickBack} backVisible={state.back.visible} />
+        </Card>
+      </Section>
 
       <Section title="Init data · user">
         <Card>
