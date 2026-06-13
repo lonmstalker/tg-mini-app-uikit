@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { useState } from "react";
 import { describe, expect, it, vi, afterEach } from "vitest";
 import * as kit from "../src/index";
 
@@ -118,6 +119,36 @@ describe("M4.3 TKMaskedInput", () => {
     expect(input.value).toMatch(/^\+7/);
     expect(input.value).toContain("926");
   });
+
+  it("TKPhoneInput lets users change the dial code and clear the field", () => {
+    const onChange = vi.fn();
+    render(<kit.TKPhoneInput defaultCountry="+7" placeholder="phone" onChange={onChange} />);
+    const input = screen.getByPlaceholderText("phone") as HTMLInputElement;
+
+    fireEvent.change(input, { target: { value: "+1 555 123 4567" } });
+    expect(input.value).toBe("+1 (555) 123-45-67");
+    expect(onChange).toHaveBeenLastCalledWith("+1 (555) 123-45-67", "15551234567");
+
+    fireEvent.change(input, { target: { value: "" } });
+    expect(input.value).toBe("");
+    expect(onChange).toHaveBeenLastCalledWith("", "");
+  });
+
+  it("TKTimeInput keeps partial controlled input editable until a valid time is complete", () => {
+    function ControlledTime() {
+      const [time, setTime] = useState<string | null>(null);
+      return <kit.TKTimeInput placeholder="time" value={time ?? ""} onChange={setTime} />;
+    }
+
+    render(<ControlledTime />);
+    const input = screen.getByPlaceholderText("time") as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "1" } });
+    expect(input.value).toBe("1");
+    fireEvent.change(input, { target: { value: "12" } });
+    expect(input.value).toBe("12");
+    fireEvent.change(input, { target: { value: "1234" } });
+    expect(input.value).toBe("12:34");
+  });
 });
 
 /* ---------------- M4.4 TKPinInput ---------------- */
@@ -175,6 +206,30 @@ describe("M4.5 TKChipsInput", () => {
     fireEvent.change(input, { target: { value: "  " } });
     fireEvent.keyDown(input, { key: "Enter" });
     expect(onChange).not.toHaveBeenCalled();
+  });
+});
+
+/* ---------------- M4.5b TKDateInput manual entry ---------------- */
+
+describe("M4.5b TKDateInput", () => {
+  it("allows typing a known date without paging through the calendar", () => {
+    const onChange = vi.fn();
+    render(
+      <kit.TKDateInput
+        label="Birth date"
+        placeholder="DD / MM / YYYY"
+        min={new Date(1900, 0, 1)}
+        max={new Date(2026, 5, 15)}
+        onChange={onChange}
+      />,
+    );
+    const input = screen.getByLabelText("Birth date") as HTMLInputElement;
+
+    fireEvent.change(input, { target: { value: "17 / 02 / 1990" } });
+
+    expect(input.value).toBe("17 / 02 / 1990");
+    const picked = onChange.mock.lastCall![0] as Date;
+    expect([picked.getFullYear(), picked.getMonth(), picked.getDate()]).toEqual([1990, 1, 17]);
   });
 });
 

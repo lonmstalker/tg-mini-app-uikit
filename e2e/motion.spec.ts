@@ -37,7 +37,7 @@ test("bottom sheet exit keeps it mounted through tk-sheet-down", async ({ page }
   const sheet = await openGalleryOverlay(page, "Bottom sheet");
   await page.keyboard.press("Escape");
   // Still attached: the closing state swaps the keyframe and easing.
-  expect(await computedStyle(sheet, "animation-name")).toBe("tk-sheet-down");
+  await expect.poll(() => computedStyle(sheet, "animation-name")).toBe("tk-sheet-down");
   expect(await computedStyle(sheet, "animation-timing-function")).toBe(EASE);
   await expect(sheet).toBeHidden(); // unmounts after the 380ms close window
 });

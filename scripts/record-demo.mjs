@@ -92,28 +92,44 @@ async function clickRole(page, role, name) {
 }
 
 async function runScenario(page, frames) {
-  await captureFor(page, frames, 1100);
+  await captureFor(page, frames, 1000);
 
   await click(page, '[data-demo-product="mug"]');
-  await captureFor(page, frames, 1300);
+  await captureFor(page, frames, 1000);
   await page.locator("[data-demo-product-sheet]").getByRole("button", { name: /Add / }).click();
-  await captureFor(page, frames, 900);
+  await captureFor(page, frames, 700);
 
   await click(page, "[data-demo-shop-tabbar] button:nth-child(3)");
-  await captureFor(page, frames, 700);
+  await captureFor(page, frames, 600);
   await page.locator('[data-demo-decline-toggle] [role="switch"]').click();
-  await captureFor(page, frames, 600);
+  await captureFor(page, frames, 500);
   await page.locator("[data-demo-pay-button] button").click();
-  await captureFor(page, frames, 2200);
+  await captureFor(page, frames, 1700);
   await clickRole(page, "button", "Try again");
-  await captureFor(page, frames, 600);
+  await captureFor(page, frames, 500);
   await page.locator("[data-demo-pay-button] button").click();
-  await captureFor(page, frames, 2600);
+  await captureFor(page, frames, 1900);
   await clickRole(page, "button", "Done");
-  await captureFor(page, frames, 600);
+  await captureFor(page, frames, 500);
+
+  await click(page, '[data-demo-tab="stars"]');
+  await captureFor(page, frames, 700);
+  await page.locator('[data-testid="stars-pay"]').click();
+  await captureFor(page, frames, 1500);
+
+  await click(page, '[data-demo-tab="support"]');
+  await captureFor(page, frames, 700);
+  await page.getByRole("button", { name: "Refund" }).click();
+  await captureFor(page, frames, 800);
+
+  await click(page, '[data-demo-tab="feed"]');
+  await captureFor(page, frames, 700);
+  await page.getByRole("button", { name: /show hidden content/i }).click();
+  await page.getByRole("button", { name: "Like" }).first().click();
+  await captureFor(page, frames, 800);
 
   await click(page, '[data-demo-tab="platform"]');
-  await captureFor(page, frames, 1000);
+  await captureFor(page, frames, 800);
   const grabber = await page.locator("[data-demo-platform-grabber]").boundingBox();
   if (grabber) {
     const x = grabber.x + grabber.width / 2;
@@ -121,25 +137,25 @@ async function runScenario(page, frames) {
     await page.mouse.move(x, y);
     await page.mouse.down();
     await page.mouse.move(x, y - 210, { steps: 18 });
-    await captureFor(page, frames, 900);
+    await captureFor(page, frames, 700);
     await page.mouse.up();
   }
-  await captureFor(page, frames, 700);
+  await captureFor(page, frames, 500);
   await clickRole(page, "button", "Dark");
-  await captureFor(page, frames, 800);
+  await captureFor(page, frames, 600);
   await clickRole(page, "button", "Fullscreen");
-  await captureFor(page, frames, 900);
+  await captureFor(page, frames, 600);
   await clickRole(page, "button", "QR scan");
-  await captureFor(page, frames, 1000);
+  await captureFor(page, frames, 800);
 
   await click(page, '[data-demo-tab="gallery"]');
-  await captureFor(page, frames, 1000);
+  await captureFor(page, frames, 800);
   await page.locator("[data-demo-gallery-scroll]").evaluate((el) => el.scrollTo({ top: 900, behavior: "smooth" }));
-  await captureFor(page, frames, 1500);
+  await captureFor(page, frames, 1200);
   await page.locator("[data-demo-gallery-scroll]").evaluate((el) => el.scrollTo({ top: 1550, behavior: "smooth" }));
-  await captureFor(page, frames, 1500);
+  await captureFor(page, frames, 1200);
   await page.locator("[data-demo-gallery-scroll]").evaluate((el) => el.scrollTo({ top: 2250, behavior: "smooth" }));
-  await captureFor(page, frames, 1000);
+  await captureFor(page, frames, 900);
 }
 
 function resizeNearest(frame, width) {
@@ -220,7 +236,7 @@ async function main() {
   const browser = await chromium.launch();
   const frames = [];
   try {
-    const page = await browser.newPage({ viewport: { width: 1000, height: 980 }, deviceScaleFactor: 1 });
+    const page = await browser.newPage({ viewport: { width: 1000, height: 1120 }, deviceScaleFactor: 1 });
     await page.goto(server.url, { waitUntil: "load" });
     await page.locator("[data-demo-frame]").waitFor({ state: "visible" });
     await runScenario(page, frames);

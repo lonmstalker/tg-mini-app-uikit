@@ -54,6 +54,14 @@ for (const theme of ["light", "dark"] as const) {
       const root = await gotoApp(page, "platform", { dark });
       await expect(root).toHaveScreenshot(`platform-home-${theme}.png`);
     });
+
+    for (const app of ["stars", "onboarding", "settings", "support", "arcade", "feed", "wallet", "forms"] as const) {
+      test(`${app} home`, async ({ page }) => {
+        const params = app === "arcade" ? { still: "1" } : undefined;
+        const root = await gotoApp(page, app, { dark, params });
+        await expect(root).toHaveScreenshot(`${app}-home-${theme}.png`);
+      });
+    }
   });
 
   test.describe(`gallery overlays open — ${theme}`, () => {

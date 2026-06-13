@@ -3,7 +3,7 @@
 # Telegram Mini App UIKit
 
 **iOS-flavored React UI kit for Telegram Mini Apps** — design tokens, springy motion,
-production-shaped components and a full WebApp platform layer with a browser-testable Telegram mock.
+production-shaped components and a full Bot API 9.6 WebApp platform layer with a browser-testable Telegram mock.
 
 [![CI](https://github.com/lonmstalker/tg-mini-app-uikit/actions/workflows/ci.yml/badge.svg)](https://github.com/lonmstalker/tg-mini-app-uikit/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
@@ -13,23 +13,24 @@ production-shaped components and a full WebApp platform layer with a browser-tes
 
 <img src="docs/demo.gif" width="340" alt="Demo recorded from the real app: shop checkout, Platform Lab Telegram APIs, and component gallery motion" />
 
-*Five production-shaped mini-app flows plus a Telegram Platform Lab, captured from the real demo and built only with kit exports.*
+*13 example mini-apps plus a Telegram Platform Lab, captured from the real demo and built only with kit exports.*
 
 </div>
 
 ## Highlights
 
-- **Broad component surface** — typography, form primitives, buttons, inputs, selectable rows, lists, generic/domain cards, overlays, feedback, booking/commerce/game patterns and wallet-status adapters.
+- **Broad component surface** — typography, form primitives, buttons, inputs, selectable rows, lists, generic/domain cards, overlays, feedback, booking/commerce/game/chat/feed/forms patterns and wallet-status adapters.
 - **Design tokens all the way down.** One `TKProvider` re-themes the whole tree: light/dark, accent, radius scale, motion character & speed, type scale. The `telegram` flag maps every token to the user's live `--tg-theme-*` palette.
 - **Telegram platform layer.** Typed `window.Telegram.WebApp` bindings with graceful no-op fallbacks: native buttons, viewport/fullscreen/safe areas, haptics, popups, storage, links, invoice, share, QR, clipboard, permissions, home screen and device APIs — plus an injectable mock for tests and demos.
 - **Layout primitives** — `TKPage`, `TKSafeArea`, `TKBottomBar` combine `env(safe-area-inset-*)` with live Telegram insets, so notches, home bars and fullscreen chrome are handled once.
 - **Accessible by default.** Combobox select/multiselect, focus-trapped overlays with `Escape`/focus-return, visually-hidden helpers, tappable primitives, `role="slider"` with arrow keys, `prefers-reduced-motion` support.
-- **Fast & offline-friendly.** Compositor-only animations (transform/opacity), lazy images with skeleton/error states, system font stack, zero network calls at runtime.
+- **Fast & offline-friendly.** Compositor-only animations (transform/opacity), lazy images with skeleton/error states, system font stack, zero network calls at runtime and zero runtime dependencies beyond the React 18/19 peer pair.
 
 ## Why this kit
 
-- Wider than **Mark42** on component coverage and WebApp hooks, while keeping the same no-framework, tree-shakeable feel.
-- Lighter than **TelegramUI** for app teams that want an iOS-flavored system, strict TypeScript and no runtime dependency stack beyond React.
+- More Telegram-specific than **Konsta**: this kit ships invoices, Telegram storage, haptics, back priorities, safe areas, fullscreen, sensors and a browser mock as first-class APIs.
+- Lighter than **TelegramUI** for app teams that want strict TypeScript, React 19 readiness and no runtime dependency stack beyond React.
+- More focused than **VKUI** for mini apps: instead of a general social-platform design system, this repo is built around Telegram WebApp constraints, Bot API 9.6 and TMA demo flows.
 - TON-friendly without coupling: wallet UI is exposed as visual adapters, not a bundled wallet protocol.
 
 ## Quick start
@@ -39,6 +40,7 @@ npm install
 npm run dev        # demo at http://localhost:5173 (kit sources are aliased — instant HMR)
 npm run build      # builds the library (dist/ + .d.ts) and the demo
 npm run typecheck  # strict TS across both workspaces
+npm run docs:dev   # local static documentation site
 npm run record:demo # regenerates docs/demo.gif from scripted browser interactions
 ```
 
@@ -76,7 +78,8 @@ export function App() {
 ```
 
 Full guide — theming, design tokens, component inventory, conventions — in
-[`packages/uikit/README.md`](packages/uikit/README.md).
+[`docs/site/pages`](docs/site/pages) and [`packages/uikit/README.md`](packages/uikit/README.md).
+AI-oriented usage maps live in [`llms.txt`](llms.txt) and [`docs/llms-full.md`](docs/llms-full.md).
 
 ## Telegram platform layer
 
@@ -108,11 +111,19 @@ without leaving the browser.
 
 ## The demo
 
-Five example mini-apps, each written the way a real one would be — screens, state, data — using only kit components:
+13 example mini-apps, each written the way a real one would be — screens, state, data — using only kit components:
 
 - **Shop** — storefront: catalog with search/categories, product sheet, cart, payment with a decline/retry path and a receipt timeline.
 - **Booking** — appointment flow: service list → slot picker → confirm → live status timeline.
 - **Game** — gamified app: XP header, stat tiles, weekly chart, leaderboard, daily reward.
+- **Stars** — subscription paywall using Telegram Stars invoices, receipt state and confetti.
+- **Identity** — onboarding with gallery slides, contact/write-access permissions, PIN and biometrics.
+- **Storage** — cloud/device/secure storage comparison with restore after simulated restart.
+- **Support** — chat, quick replies, bot handoff through Telegram links and rating.
+- **Arcade** — fullscreen, orientation lock and motion-sensor controls.
+- **Feed** — channel cards with spoilers, blockquotes, reactions, repost and read markers.
+- **Wallet** — mock TON connect/send/history flow with no network calls.
+- **Forms** — form showcase with date, phone, tags, file upload, range slider and summary sheet.
 - **Platform** — the Telegram platform lab: mock client chrome, native buttons, fullscreen/viewport drag, safe-area visualizer, haptics, popups, storage managers, QR/clipboard/permissions/share/payment/device API events.
 - **Kit** — live gallery of every export, including loading/error/disabled, form, overlay and long-content stress states.
 
@@ -133,7 +144,8 @@ CI runs five gates on every PR; all of them run locally too:
 | Unit (vitest + Testing Library) | `npm run test:unit` | hooks, slider/stepper/OTP logic, MainButton state machine, toast eviction, the whole Telegram layer (mapping, events, fallbacks, promisified APIs), SSR `renderToString` of every export, type-level API surface |
 | E2E + a11y (Playwright) | `npm run test:e2e` | flows for all demo apps, axe WCAG A/AA scans, keyboard nav, motion, ARIA snapshots, a contrast-debt budget |
 | Visual regression | `npm run test:e2e:visual` | every gallery section + app screens in light/dark, component states (hover/focus/open/loading), token matrix and `--tg-theme-*` mode, WebKit (iOS WKWebView rendering), 320px reflow (WCAG 1.4.10), DPR 2–3, forced-colors |
-| Packaging | `npm run check:package` | zero runtime deps, publint, arethetypeswrong, size-limit budgets incl. tree-shaking |
+| Packaging | `npm run check:package` | zero runtime deps, publint, arethetypeswrong, size-limit budgets incl. tree-shaking, snippet and docs gates |
+| Documentation | `npm run docs:check && npm run docs:build` | static docs pages, AI docs, README positioning, release notes and docs workflow |
 | Typecheck + build | `npm run typecheck && npm run build` | strict TS across the workspace |
 
 Visual baselines exist for two platforms: `darwin` (local dev on macOS) and `linux`
@@ -153,7 +165,7 @@ comparison is enforced on every PR regardless of the contributor's OS.
 packages/uikit     → tg-mini-app-uikit — the library (TypeScript, design tokens, components + hooks)
 examples/demo      → demo app: five example mini-apps consuming the kit
 e2e/               → Playwright suites: design, states, tokens, flows, a11y, motion, reflow, ARIA
-docs/              → README assets
+docs/              → README assets, static documentation source, llms-full.md
 ```
 
 ## License

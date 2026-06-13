@@ -1,0 +1,56 @@
+# tg-mini-app-uikit
+
+> iOS-flavored React UI kit for Telegram Mini Apps: ~95 TK* components, full Bot API 9.6
+> platform layer with an injectable browser mock, design tokens, i18n, gestures, a screen
+> stack with swipe-back — zero runtime dependencies, React 18/19 peer.
+> This file is the compact map for AI agents writing code against the kit.
+> The full reference with props and patterns: docs/llms-full.md.
+
+## Setup
+
+- `npm i tg-mini-app-uikit` ; peer deps: react, react-dom (18 or 19).
+- `import "tg-mini-app-uikit/style.css"` once (tokens + utilities, lives in the `tk` CSS layer).
+- Wrap the app: `<TKTelegramProvider haptics><TKProvider theme="dark" telegram accent="#3390ec">…`
+  - `TKProvider` renders the `.tk` root: anchors overlays/toasts, owns the CSS variables.
+  - `telegram` flag inherits the live `--tg-theme-*` palette; `preset="material"` flattens radii.
+  - `TKTelegramProvider webApp={mock}` injects a WebApp implementation (tests, browsers).
+- Localization: `<TKLocaleProvider locale={ruLocale}>` (en default, `ru` shipped, any `Partial<TKLocale>`).
+
+## Component map (all exports start with TK)
+
+- Actions: TKButton (polymorphic `as="a" href`, `loading`), TKIconButton (size sm|md|lg, `badge`), TKMainButton (promise-driven idle→loading→success), TKInlineButtons, TKTappable, TKSpinner.
+- Forms: TKInput (password toggle, maxLength counter, prefix/suffix), TKTextarea, TKSelect (searchable, option groups), TKMultiselect (selectAll), TKChipsInput, TKMaskedInput (`#`-masks) / TKPhoneInput / TKTimeInput, TKCalendar + TKDateInput (single/range, min/max, disabledDates, Intl), TKPinInput (keypad + biometrics key), TKOTP, TKFileInput (dropZone, progress, preview), TKCheckbox (indeterminate), TKRadioGroup, TKSwitch, TKSlider (range + marks), TKStepper (hold-to-repeat, editable), TKRating (readonly, allowHalf), TKSearch, TKSelectable, TKFormField.
+- Display: TKText/TKTitle/TKCaption, TKBadge, TKDot, TKCounter (max → "99+"), TKAvatar (status dot) / TKAvatarStack, TKImage (srcSet, blur-up placeholderSrc) / TKImg, TKSpoiler, TKBlockquote, TKGallery (scroll-snap carousel), TKIcon (77 names in TK_ICON_NAMES).
+- Lists: TKListGroup, TKCell (polymorphic, toggle/badge/chevron), TKAccordion (lazy), TKInfiniteList, TKVirtualList (fixed row height), TKSwipeCell (leading/trailing actions, full swipe).
+- Navigation: TKNavStack/TKNavPanel/useNav (push/pop/replace/popTo, swipe-back edge|anywhere, state preserved), TKHeader (large, collapsing), TKTabbar, TKSegmented, TKCategoryTabs, TKSteps, TKPageDots.
+- Overlays: TKSheet (snapPoints, sheetRef close/snapTo, dismissible, swipe-to-close), TKDialog (onConfirm on Enter), TKActionSheet, TKPopper (arrow, autoFlip), TKTooltip, TKToastProvider/useTKToast (position top|bottom, action), TKFrame.
+- Layout: TKPage (scroll context for collapsing headers), TKSafeArea, TKBottomBar.
+- Patterns: TKMessages/TKMessageBubble/TKWriteBar (chat), TKOnboardingTooltip (coach marks + storage adapter), TKConfetti (reduced-motion safe), TKPullToRefresh, TKSlotPicker, TKPaymentSummary, TKXPHeader, TKLeaderboard, TKWalletConnectButton/TKWalletStatusCell, TKEmptyState, TKSkeleton*/TKProgress/TKRing/TKBars/TKTimeline, cards (TKCard, TKCardCell, TKCardChip, TKProductCardA/B, TKBannerCard, TKBookingCard, TKStatTile).
+
+## Platform hooks (Bot API 9.6, all degrade to no-ops outside Telegram)
+
+useWebApp, useTelegramTheme, useViewport, useSafeArea, useMainButton/useSecondaryButton,
+useBackButton + useBackIntercept/useBackDispatcher (LIFO back queue: open sheets intercept
+before nav stacks), useSettingsButton, useHaptics + useOptionalHaptics (provider-gated),
+useTelegramPopup, useCloudStorage/useDeviceStorage/useSecureStorage, useInitData, useInvoice,
+useShare, useClipboard, useQrScanner, useBiometrics, useLocation, useMotionSensors,
+useFullscreen, useOrientationLock, useHomeScreen, useEmojiStatus, useContactRequest,
+useWriteAccess, useChatRequest, useDownloadFile, useDataTransport, useTelegramLinks,
+useTelegramColors, useClosingConfirmation, useActivity, useKeyboard (visualViewport),
+useHideKeyboard, useTelegramEvent.
+
+## Conventions agents must follow
+
+- Controlled/uncontrolled: every stateful component takes `value`/`defaultValue` + `onChange`.
+- `testId` prop → `data-testid` on every component root.
+- Options are `TKOption[]`: plain strings or `{ value, label?, icon?, disabled? }`; TKSelect also accepts `{ label, options }` groups.
+- Refs: forwardRef everywhere meaningful; inputs forward to the native `<input>` (react-hook-form ready).
+- Strings: never hardcode user-facing text in kit overrides — pass props or extend the locale.
+- Animations: transform/opacity only; respect tokens (`--tk-ms`, reduced-motion collapses them).
+- Anti-patterns: do not wrap TKSheet in your own portal (it anchors to the TKProvider root); do not use number sizes for TKIconButton (deprecated); do not reimplement back handling — use useBackIntercept.
+
+## Testing
+
+- The repo demo ships `createMockTelegram()` (examples/demo/src/telegram/mock.ts) — a full
+  in-browser WebApp mock (buttons, invoices, storages, sensors, biometrics) injectable via
+  `TKTelegramProvider webApp=`. For e2e of consumer apps see the sibling project tg-mini-app-testkit.

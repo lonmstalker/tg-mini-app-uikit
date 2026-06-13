@@ -42,5 +42,6 @@ run("publint", "npx publint packages/uikit --strict");
 run("arethetypeswrong", "npx attw --pack packages/uikit --entrypoints . --format table");
 run("size-limit", "npx size-limit");
 run("gallery snippets", "node scripts/check-snippets.mjs");
+run("docs gate", "node scripts/check-docs.mjs");
 
 console.log("\n✓ packaging gates passed");

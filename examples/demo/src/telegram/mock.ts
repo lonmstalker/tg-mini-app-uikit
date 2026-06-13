@@ -1,16 +1,21 @@
-import type {
-  TelegramBiometricManager,
-  TelegramCloudStorage,
-  TelegramDeviceOrientation,
-  TelegramDeviceStorage,
-  TelegramMainButton,
-  TelegramPopupParams,
-  TelegramSafeAreaInset,
-  TelegramSecureStorage,
-  TelegramSimpleButton,
-  TelegramThemeParams,
-  TelegramWebApp,
-} from "tg-mini-app-uikit";
+import type { TelegramPopupParams, TelegramWebApp } from "tg-mini-app-uikit";
+import { fireClicks, makeBigButton, makeSmallButton } from "./mock/buttons";
+import { makeBiometricManager } from "./mock/biometrics";
+import { makeSensor, syncSensor } from "./mock/sensors";
+import { makeSecureStorage, makeStorage } from "./mock/storage";
+import { CHROME, CLOUD_PREFIX, CUTOUTS, DEVICE_PREFIX, THEMES, ZERO, resolveMockColors } from "./mock/theme";
+import type { MockTelegram, MockTelegramState } from "./mock/types";
+
+export type {
+  MockButtonState,
+  MockPopupState,
+  MockSensorKey,
+  MockSensorState,
+  MockSensorValues,
+  MockTelegram,
+  MockTelegramState,
+} from "./mock/types";
+export { resolveMockColors } from "./mock/theme";
 
 /*
  * In-memory implementation of the Telegram WebApp API. The demo injects it
@@ -19,165 +24,6 @@ import type {
  * the real `window.Telegram.WebApp` — and the Platform Lab renders the
  * "client side" (chrome, buttons, popups) that Telegram would render.
  */
-
-export interface MockButtonState {
-  visible: boolean;
-  text: string;
-  active: boolean;
-  progress: boolean;
-  color?: string;
-  textColor?: string;
-  hasShineEffect?: boolean;
-  position?: "left" | "right" | "top" | "bottom";
-  iconCustomEmojiId?: string;
-}
-
-export interface MockSensorValues {
-  x?: number;
-  y?: number;
-  z?: number;
-  alpha?: number;
-  beta?: number;
-  gamma?: number;
-}
-
-export interface MockSensorState {
-  isStarted: boolean;
-  refreshRate: number | null;
-  /** DeviceOrientation only — whether absolute tracking was requested. */
-  absolute?: boolean;
-  values: MockSensorValues;
-}
-
-export type MockSensorKey = "accelerometer" | "deviceOrientation" | "gyroscope";
-
-export interface MockPopupState {
-  params: TelegramPopupParams;
-  callback?: (buttonId?: string) => void;
-}
-
-export interface MockTelegramState {
-  colorScheme: "light" | "dark";
-  themeParams: TelegramThemeParams;
-  /** Raw values passed to `set*Color` (keyword or #hex); null = client default. */
-  headerColor: string | null;
-  backgroundColor: string | null;
-  bottomBarColor: string | null;
-  isExpanded: boolean;
-  isFullscreen: boolean;
-  isActive: boolean;
-  viewportHeight: number;
-  viewportStableHeight: number;
-  maxHeight: number;
-  safeAreaInset: TelegramSafeAreaInset;
-  contentSafeAreaInset: TelegramSafeAreaInset;
-  main: MockButtonState;
-  secondary: MockButtonState;
-  back: { visible: boolean };
-  settings: { visible: boolean };
-  haptic: { kind: string; seq: number } | null;
-  popup: MockPopupState | null;
-  closingConfirmation: boolean;
-  verticalSwipes: boolean;
-  orientationLocked: boolean;
-  sensors: Record<MockSensorKey, MockSensorState>;
-  homeScreenStatus: string;
-  closed: boolean;
-  log: { id: number; text: string }[];
-}
-
-export interface MockTelegram {
-  webApp: TelegramWebApp;
-  getState: () => MockTelegramState;
-  subscribe: (listener: () => void) => () => void;
-  /** Host controls — what the Telegram client itself would do. */
-  setColorScheme: (scheme: "light" | "dark") => void;
-  setDeviceCutouts: (on: boolean) => void;
-  setChromeInset: (on: boolean) => void;
-  setViewportBounds: (maxHeight: number) => void;
-  collapse: () => void;
-  /** Live height while the user drags the grabber; `viewportStableHeight` stays put. */
-  dragViewport: (height: number) => void;
-  /** Snap to expanded/collapsed when the drag ends. */
-  endViewportDrag: () => void;
-  clickMain: () => void;
-  clickSecondary: () => void;
-  clickBack: () => void;
-  clickSettings: () => void;
-  resolvePopup: (buttonId?: string) => void;
-  relaunch: () => void;
-}
-
-const ZERO: TelegramSafeAreaInset = { top: 0, bottom: 0, left: 0, right: 0 };
-const CUTOUTS: TelegramSafeAreaInset = { top: 59, bottom: 34, left: 0, right: 0 };
-const CHROME: TelegramSafeAreaInset = { top: 46, bottom: 0, left: 0, right: 0 };
-
-const THEMES: Record<"light" | "dark", TelegramThemeParams> = {
-  light: {
-    bg_color: "#ffffff",
-    secondary_bg_color: "#eef1f6",
-    section_bg_color: "#ffffff",
-    section_separator_color: "#e3e7ee",
-    header_bg_color: "#ffffff",
-    bottom_bar_bg_color: "#f2f4f8",
-    text_color: "#131c26",
-    subtitle_text_color: "#57636f",
-    section_header_text_color: "#707579",
-    hint_color: "#646e79",
-    link_color: "#3390ec",
-    accent_text_color: "#3390ec",
-    button_color: "#3390ec",
-    button_text_color: "#ffffff",
-    destructive_text_color: "#e5484d",
-  },
-  dark: {
-    bg_color: "#17212b",
-    secondary_bg_color: "#0e1621",
-    section_bg_color: "#17212b",
-    section_separator_color: "#202c39",
-    header_bg_color: "#17212b",
-    bottom_bar_bg_color: "#202c39",
-    text_color: "#f3f6f9",
-    subtitle_text_color: "#aebbc9",
-    section_header_text_color: "#788797",
-    hint_color: "#95a3b2",
-    link_color: "#3390ec",
-    accent_text_color: "#3390ec",
-    button_color: "#3390ec",
-    button_text_color: "#ffffff",
-    destructive_text_color: "#ff6166",
-  },
-};
-
-const CLOUD_PREFIX = "tg-demo-cloud:";
-const DEVICE_PREFIX = "tg-demo-device:";
-const SECURE_PREFIX = "tg-demo-secure:";
-
-/** Deterministic sensor readings — static so e2e assertions never race a ticker. */
-const SENSOR_READINGS: Record<MockSensorKey, MockSensorValues> = {
-  accelerometer: { x: 0.12, y: 9.77, z: 0.34 }, // m/s², gravity on y
-  deviceOrientation: { alpha: 0.66, beta: 0.18, gamma: -0.05 }, // radians
-  gyroscope: { x: 0.01, y: 0.02, z: 0 }, // rad/s
-};
-
-/** Resolves the stored `set*Color` values (keyword, #hex or client default) against the theme. */
-export function resolveMockColors(
-  state: Pick<MockTelegramState, "themeParams" | "headerColor" | "backgroundColor" | "bottomBarColor">,
-): { header: string; background: string; bottomBar: string } {
-  const tp = state.themeParams;
-  const resolve = (raw: string | null, fallback?: string): string => {
-    if (raw === null) return fallback ?? "#ffffff";
-    if (raw === "bg_color") return tp.bg_color ?? fallback ?? "#ffffff";
-    if (raw === "secondary_bg_color") return tp.secondary_bg_color ?? fallback ?? "#ffffff";
-    if (raw === "bottom_bar_bg_color") return tp.bottom_bar_bg_color ?? fallback ?? "#ffffff";
-    return raw;
-  };
-  return {
-    header: resolve(state.headerColor, tp.header_bg_color),
-    background: resolve(state.backgroundColor, tp.bg_color),
-    bottomBar: resolve(state.bottomBarColor, tp.bottom_bar_bg_color),
-  };
-}
 
 export function createMockTelegram(init?: { colorScheme?: "light" | "dark" }): MockTelegram {
   const collapsedOf = (max: number) => Math.round(max * 0.62);
@@ -231,18 +77,6 @@ export function createMockTelegram(init?: { colorScheme?: "light" | "dark" }): M
     if (!quiet) log(`event · ${event}`);
     handlers.get(event)?.forEach((h) => h(payload));
   };
-
-  const syncSensor = (target: TelegramDeviceOrientation, s: MockSensorState) => {
-    target.isStarted = s.isStarted;
-    target.x = s.values.x;
-    target.y = s.values.y;
-    target.z = s.values.z;
-    target.alpha = s.values.alpha;
-    target.beta = s.values.beta;
-    target.gamma = s.values.gamma;
-    if (s.absolute != null) target.absolute = s.absolute;
-  };
-
   /* Mirrors the mutable state into the flat WebApp fields the hooks read. */
   const syncWebApp = () => {
     webApp.colorScheme = state.colorScheme;
@@ -288,104 +122,16 @@ export function createMockTelegram(init?: { colorScheme?: "light" | "dark" }): M
     notify();
   };
 
-  const makeBigButton = (key: "main" | "secondary", label: string): TelegramMainButton => {
-    const clicks = new Set<() => void>();
-    const patch = (p: Partial<MockButtonState>, what: string) => {
-      log(`${label}.${what}`);
-      commit({ [key]: { ...state[key], ...p } } as Partial<MockTelegramState>);
-    };
-    const button: TelegramMainButton = {
-      setText: (text) => patch({ text }, `setText("${text}")`),
-      show: () => patch({ visible: true }, "show()"),
-      hide: () => patch({ visible: false }, "hide()"),
-      enable: () => patch({ active: true }, "enable()"),
-      disable: () => patch({ active: false }, "disable()"),
-      showProgress: () => patch({ progress: true }, "showProgress()"),
-      hideProgress: () => patch({ progress: false }, "hideProgress()"),
-      setParams: (params) => {
-        const shine = params.has_shine_effect ?? params.hasShineEffect;
-        const icon = params.icon_custom_emoji_id ?? params.iconCustomEmojiId;
-        patch(
-          {
-            ...(params.text != null ? { text: params.text } : {}),
-            ...(params.color != null ? { color: params.color } : {}),
-            ...(params.text_color != null ? { textColor: params.text_color } : {}),
-            ...(params.is_visible != null ? { visible: params.is_visible } : {}),
-            ...(params.is_active != null ? { active: params.is_active } : {}),
-            ...(shine != null ? { hasShineEffect: shine } : {}),
-            ...(params.position != null ? { position: params.position } : {}),
-            ...(icon != null ? { iconCustomEmojiId: icon } : {}),
-          },
-          "setParams(…)",
-        );
-      },
-      onClick: (h) => clicks.add(h),
-      offClick: (h) => clicks.delete(h),
-    };
-    return Object.assign(button, { __clicks: clicks });
-  };
+  const buttonCtx = { log, getState: () => state, commit };
+  const mainButton = makeBigButton("main", "MainButton", buttonCtx);
+  const secondaryButton = makeBigButton("secondary", "SecondaryButton", buttonCtx);
+  const backButton = makeSmallButton("back", "BackButton", buttonCtx);
+  const settingsButton = makeSmallButton("settings", "SettingsButton", buttonCtx);
 
-  const makeSmallButton = (key: "back" | "settings", label: string): TelegramSimpleButton => {
-    const clicks = new Set<() => void>();
-    const button: TelegramSimpleButton = {
-      show: () => {
-        log(`${label}.show()`);
-        commit({ [key]: { visible: true } } as Partial<MockTelegramState>);
-      },
-      hide: () => {
-        log(`${label}.hide()`);
-        commit({ [key]: { visible: false } } as Partial<MockTelegramState>);
-      },
-      onClick: (h) => clicks.add(h),
-      offClick: (h) => clicks.delete(h),
-    };
-    return Object.assign(button, { __clicks: clicks });
-  };
-
-  const mainButton = makeBigButton("main", "MainButton");
-  const secondaryButton = makeBigButton("secondary", "SecondaryButton");
-  const backButton = makeSmallButton("back", "BackButton");
-  const settingsButton = makeSmallButton("settings", "SettingsButton");
-
-  const fireClicks = (button: object) => {
-    (button as { __clicks: Set<() => void> }).__clicks.forEach((h) => h());
-  };
-
-  /* One factory for all three motion sensors; `need_absolute` matters only
-   * for DeviceOrientation, exactly like in the real client. */
-  const makeSensor = (key: MockSensorKey, label: string): TelegramDeviceOrientation => ({
-    start: (params, cb) => {
-      const absolute = key === "deviceOrientation" && !!params?.need_absolute;
-      log(`${label}.start(${params?.refresh_rate ?? "default"}${absolute ? ", absolute" : ""})`);
-      commit(
-        {
-          sensors: {
-            ...state.sensors,
-            [key]: {
-              isStarted: true,
-              refreshRate: params?.refresh_rate ?? null,
-              ...(key === "deviceOrientation" ? { absolute } : {}),
-              values: SENSOR_READINGS[key],
-            },
-          },
-        },
-        [`${key}Started`, `${key}Changed`],
-      );
-      cb?.(true);
-    },
-    stop: (cb) => {
-      log(`${label}.stop()`);
-      commit(
-        { sensors: { ...state.sensors, [key]: { ...state.sensors[key], isStarted: false } } },
-        [`${key}Stopped`],
-      );
-      cb?.(true);
-    },
-  });
-
-  const accelerometerSensor = makeSensor("accelerometer", "Accelerometer");
-  const deviceOrientationSensor = makeSensor("deviceOrientation", "DeviceOrientation");
-  const gyroscopeSensor = makeSensor("gyroscope", "Gyroscope");
+  const sensorCtx = { log, getState: () => state, commit };
+  const accelerometerSensor = makeSensor("accelerometer", "Accelerometer", sensorCtx);
+  const deviceOrientationSensor = makeSensor("deviceOrientation", "DeviceOrientation", sensorCtx);
+  const gyroscopeSensor = makeSensor("gyroscope", "Gyroscope", sensorCtx);
 
   const haptic = (kind: string) => {
     log(`haptic · ${kind}`);
@@ -403,93 +149,9 @@ export function createMockTelegram(init?: { colorScheme?: "light" | "dark" }): M
     commit({ closed: true });
   };
 
-  const makeStorage = (prefix: string, label: string): TelegramCloudStorage & TelegramDeviceStorage => ({
-    setItem: (key, value, cb) => {
-      localStorage.setItem(prefix + key, value);
-      log(`${label}.setItem("${key}")`);
-      notify();
-      cb?.(null, true);
-    },
-    getItem: (key, cb) => {
-      log(`${label}.getItem("${key}")`);
-      notify();
-      cb(null, localStorage.getItem(prefix + key));
-    },
-    getItems: (keys, cb) => {
-      log(`${label}.getItems(${keys.length})`);
-      cb(null, Object.fromEntries(keys.map((key) => [key, localStorage.getItem(prefix + key)])));
-    },
-    removeItem: (key, cb) => {
-      localStorage.removeItem(prefix + key);
-      log(`${label}.removeItem("${key}")`);
-      notify();
-      cb?.(null, true);
-    },
-    removeItems: (keys, cb) => {
-      keys.forEach((key) => localStorage.removeItem(prefix + key));
-      log(`${label}.removeItems(${keys.length})`);
-      notify();
-      cb?.(null, true);
-    },
-    getKeys: (cb) => {
-      const keys: string[] = [];
-      for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
-        if (k?.startsWith(prefix)) keys.push(k.slice(prefix.length));
-      }
-      cb(null, keys);
-    },
-    clear: (cb) => {
-      const keys: string[] = [];
-      for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
-        if (k?.startsWith(prefix)) keys.push(k);
-      }
-      keys.forEach((key) => localStorage.removeItem(key));
-      log(`${label}.clear()`);
-      notify();
-      cb?.(null, true);
-    },
-  });
-
-  const secureStorage: TelegramSecureStorage = {
-    ...makeStorage(SECURE_PREFIX, "SecureStorage"),
-    restoreItem: (key, cb) => {
-      log(`SecureStorage.restoreItem("${key}")`);
-      cb?.(null, localStorage.getItem(SECURE_PREFIX + key));
-    },
-  };
-
-  const biometricManager: TelegramBiometricManager = {
-    isInited: true,
-    isBiometricAvailable: true,
-    biometricType: "face",
-    isAccessRequested: true,
-    isAccessGranted: true,
-    isBiometricTokenSaved: false,
-    deviceId: "demo-device-01",
-    init: (cb) => {
-      log("BiometricManager.init()");
-      dispatch("biometricManagerUpdated");
-      cb?.();
-    },
-    requestAccess: (_params, cb) => {
-      log("BiometricManager.requestAccess()");
-      cb?.(true);
-    },
-    authenticate: (_params, cb) => {
-      log("BiometricManager.authenticate()");
-      dispatch("biometricAuthRequested", { isAuthenticated: true, biometricToken: "demo-token" });
-      cb?.(true, "demo-token");
-    },
-    updateBiometricToken: (token, cb) => {
-      log("BiometricManager.updateBiometricToken()");
-      biometricManager.isBiometricTokenSaved = !!token;
-      dispatch("biometricTokenUpdated", { isUpdated: true });
-      cb?.(true);
-    },
-    openSettings: () => log("BiometricManager.openSettings()"),
-  };
+  const storageCtx = { log, notify };
+  const secureStorage = makeSecureStorage(storageCtx);
+  const biometricManager = makeBiometricManager({ log, dispatch });
 
   const webApp: TelegramWebApp = {
     version: "9.6",
@@ -527,8 +189,8 @@ export function createMockTelegram(init?: { colorScheme?: "light" | "dark" }): M
       notificationOccurred: (type) => haptic(`notification · ${type}`),
       selectionChanged: () => haptic("selection"),
     },
-    CloudStorage: makeStorage(CLOUD_PREFIX, "CloudStorage"),
-    DeviceStorage: makeStorage(DEVICE_PREFIX, "DeviceStorage"),
+    CloudStorage: makeStorage(CLOUD_PREFIX, "CloudStorage", storageCtx),
+    DeviceStorage: makeStorage(DEVICE_PREFIX, "DeviceStorage", storageCtx),
     SecureStorage: secureStorage,
     BiometricManager: biometricManager,
     LocationManager: {

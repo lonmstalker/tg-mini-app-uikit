@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { TKLocaleProvider, TKProvider, ruLocale, type TKLocale, type TelegramWebApp } from "tg-mini-app-uikit";
 import { createMockTelegram } from "../telegram/mock";
 import { DeviceFrame, FRAME_HEIGHT, FRAME_WIDTH } from "./DeviceFrame";
@@ -10,8 +10,29 @@ import { BookingApp } from "../apps/booking/BookingApp";
 import { GameApp } from "../apps/game/GameApp";
 import { PlatformApp } from "../apps/platform/PlatformApp";
 import { GalleryApp } from "../apps/gallery/GalleryApp";
+import { StarsApp } from "../apps/stars/StarsApp";
+import { OnboardingApp } from "../apps/onboarding/OnboardingApp";
+import { SettingsApp } from "../apps/settings/SettingsApp";
+import { SupportApp } from "../apps/support/SupportApp";
+import { ArcadeApp } from "../apps/arcade/ArcadeApp";
+import { FeedApp } from "../apps/feed/FeedApp";
+import { WalletApp } from "../apps/wallet/WalletApp";
+import { FormsApp } from "../apps/forms/FormsApp";
 
-type AppKey = "shop" | "booking" | "game" | "platform" | "gallery";
+type AppKey =
+  | "shop"
+  | "booking"
+  | "game"
+  | "platform"
+  | "gallery"
+  | "stars"
+  | "onboarding"
+  | "settings"
+  | "support"
+  | "arcade"
+  | "feed"
+  | "wallet"
+  | "forms";
 
 /** Demo Arabic dictionary — exercises RTL + a custom partial locale. */
 const arLocale: Partial<TKLocale> = {
@@ -40,6 +61,14 @@ const NAV: { key: AppKey; label: string }[] = [
   { key: "shop", label: "Shop" },
   { key: "booking", label: "Booking" },
   { key: "game", label: "Game" },
+  { key: "stars", label: "Stars" },
+  { key: "onboarding", label: "Identity" },
+  { key: "support", label: "Support" },
+  { key: "feed", label: "Feed" },
+  { key: "wallet", label: "Wallet" },
+  { key: "forms", label: "Forms" },
+  { key: "arcade", label: "Arcade" },
+  { key: "settings", label: "Storage" },
   { key: "platform", label: "Platform" },
   { key: "gallery", label: "Kit" },
 ];
@@ -49,22 +78,64 @@ const font: CSSProperties = {
 };
 
 function NavPill({ active, onSelect }: { active: AppKey; onSelect: (key: AppKey) => void }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const activeTab = scrollRef.current?.querySelector<HTMLElement>(`[data-demo-tab="${active}"]`);
+    activeTab?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+  }, [active]);
+
+  const scrollPage = (direction: -1 | 1) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollBy({ left: direction * Math.min(el.clientWidth * 0.8, 320), behavior: "smooth" });
+  };
+
   return (
     <div
-      data-demo-nav
       style={{
         display: "flex",
+        alignItems: "center",
         gap: 4,
-        padding: 4,
-        borderRadius: 999,
-        background: "rgba(24, 28, 34, .85)",
-        backdropFilter: "blur(12px)",
-        WebkitBackdropFilter: "blur(12px)",
-        boxShadow: "0 8px 24px rgba(0,0,0,.28), inset 0 0 0 1px rgba(255,255,255,.06)",
+        minWidth: 0,
+        maxWidth: "100%",
         ...font,
       }}
     >
-      {NAV.map(({ key, label }) => (
+      <button
+        type="button"
+        aria-label="Previous demos"
+        onClick={() => scrollPage(-1)}
+        style={navArrowStyle}
+      >
+        ‹
+      </button>
+      <div
+        ref={scrollRef}
+        data-demo-nav-scroll
+        style={{
+          minWidth: 0,
+          overflowX: "auto",
+          overscrollBehaviorX: "contain",
+          scrollbarWidth: "none",
+          borderRadius: 999,
+        }}
+      >
+        <div
+          data-demo-nav
+          style={{
+            display: "flex",
+            width: "max-content",
+            gap: 4,
+            padding: 4,
+            borderRadius: 999,
+            background: "rgba(24, 28, 34, .85)",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+            boxShadow: "0 8px 24px rgba(0,0,0,.28), inset 0 0 0 1px rgba(255,255,255,.06)",
+          }}
+        >
+          {NAV.map(({ key, label }) => (
         <button
           type="button"
           key={key}
@@ -85,10 +156,39 @@ function NavPill({ active, onSelect }: { active: AppKey; onSelect: (key: AppKey)
         >
           {label}
         </button>
-      ))}
+          ))}
+        </div>
+      </div>
+      <button
+        type="button"
+        aria-label="Next demos"
+        onClick={() => scrollPage(1)}
+        style={navArrowStyle}
+      >
+        ›
+      </button>
     </div>
   );
 }
+
+const navArrowStyle: CSSProperties = {
+  width: 30,
+  height: 30,
+  border: "none",
+  borderRadius: 999,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  flex: "0 0 auto",
+  background: "rgba(24, 28, 34, .85)",
+  color: "rgba(255,255,255,.82)",
+  boxShadow: "inset 0 0 0 1px rgba(255,255,255,.08)",
+  cursor: "pointer",
+  fontFamily: "inherit",
+  fontSize: 21,
+  lineHeight: 1,
+  padding: 0,
+};
 
 /**
  * Boot state from the URL so demos and e2e tests can deep-link:
@@ -219,6 +319,14 @@ export function Shell() {
         {app === "game" ? <GameApp /> : null}
         {app === "platform" ? <PlatformApp shell={shell} /> : null}
         {app === "gallery" ? <GalleryApp /> : null}
+        {app === "stars" ? <StarsApp /> : null}
+        {app === "onboarding" ? <OnboardingApp /> : null}
+        {app === "settings" ? <SettingsApp /> : null}
+        {app === "support" ? <SupportApp /> : null}
+        {app === "arcade" ? <ArcadeApp /> : null}
+        {app === "feed" ? <FeedApp /> : null}
+        {app === "wallet" ? <WalletApp /> : null}
+        {app === "forms" ? <FormsApp /> : null}
       </TKLocaleProvider>
     </TKProvider>
   );
@@ -242,7 +350,7 @@ export function Shell() {
           }}
         >
           {/* On phones narrower than the pill (320px-class) it scrolls instead of overflowing. */}
-          <div style={{ maxWidth: "calc(100vw - 12px)", overflowX: "auto", pointerEvents: "auto", borderRadius: 999 }}>
+          <div style={{ width: "calc(100vw - 12px)", pointerEvents: "auto" }}>
             <NavPill active={app} onSelect={setApp} />
           </div>
         </div>
@@ -262,15 +370,17 @@ export function Shell() {
         }}
       >
         <div>
-          <div style={{ color: "#fff", fontSize: 15, fontWeight: 700, letterSpacing: "-.01em" }}>
+          <div style={{ color: "#fff", fontSize: 15, fontWeight: 700 }}>
             Telegram Mini App UIKit
           </div>
           <div style={{ color: "rgba(255,255,255,.45)", fontSize: 12.5, marginTop: 2 }}>
             Example projects built entirely from the kit
           </div>
         </div>
-        <NavPill active={app} onSelect={setApp} />
-        <div style={{ width: 220 }} />
+        <div style={{ flex: "1 1 680px", minWidth: 0, display: "flex", justifyContent: "center" }}>
+          <NavPill active={app} onSelect={setApp} />
+        </div>
+        <div style={{ flex: "1 0 220px", maxWidth: 220 }} />
       </header>
 
       <main

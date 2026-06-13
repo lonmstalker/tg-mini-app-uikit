@@ -1,6 +1,19 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
-export type DemoApp = "shop" | "booking" | "game" | "platform" | "gallery";
+export type DemoApp =
+  | "shop"
+  | "booking"
+  | "game"
+  | "platform"
+  | "gallery"
+  | "stars"
+  | "onboarding"
+  | "settings"
+  | "support"
+  | "arcade"
+  | "feed"
+  | "wallet"
+  | "forms";
 
 /** All gallery section anchors, in DOM order (slug = title before the first "·"). */
 export const GALLERY_SECTIONS = [

@@ -7,10 +7,8 @@ import {
   TKCategoryTabs,
   TKCell,
   TKCounter,
-  TKDialog,
   TKEmptyState,
   TKIconButton,
-  TKImage,
   TKInput,
   TKListGroup,
   TKMainButton,
@@ -18,16 +16,15 @@ import {
   TKProductCardA,
   TKProductCardB,
   TKSearch,
-  TKSheet,
   TKSkeletonCard,
   TKStepper,
   TKTabbar,
-  TKTimeline,
   TKToastProvider,
   useCloudStorage,
   useTKToast,
 } from "tg-mini-app-uikit";
 import { CATEGORIES, PRODUCTS, fmt, type Product } from "./data";
+import { ShopOverlays, type ShopReceipt } from "./overlays";
 import { bootScreen, demoDelay } from "../../shell/boot";
 import type { ShellApi } from "../../shell/types";
 
@@ -66,7 +63,7 @@ function ShopInner({ shell }: { shell: ShellApi }) {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [failPayment, setFailPayment] = useState(false);
   const [payErrorOpen, setPayErrorOpen] = useState(false);
-  const [receipt, setReceipt] = useState<{ items: number; total: number } | null>(null);
+  const [receipt, setReceipt] = useState<ShopReceipt | null>(null);
   const [promoCode, setPromoCode] = useState("");
   const [promoApplied, setPromoApplied] = useState(false);
   const [promoError, setPromoError] = useState<string | null>(null);
@@ -435,118 +432,31 @@ function ShopInner({ shell }: { shell: ShellApi }) {
         <div style={{ height: 16, background: "var(--tk-glass)" }} />
       </div>
 
-      {/* Product details — bottom sheet */}
-      <TKSheet open={sheetProduct !== null} onClose={() => setSheetProduct(null)} title={sheetProduct?.title}>
-        {sheetProduct ? (
-          <div data-demo-product-sheet style={{ display: "flex", flexDirection: "column", gap: 14, paddingBottom: 8 }}>
-            <TKImage src={sheetProduct.photo} alt={sheetProduct.title} ratio="1.6 / 1" fallbackLabel={sheetProduct.img} />
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-                <span style={{ fontSize: "var(--tk-fz-title2)", fontWeight: 700 }}>{fmt(sheetProduct.price)}</span>
-                {sheetProduct.oldPrice ? (
-                  <span style={{ fontSize: "var(--tk-fz-sub)", color: "var(--tk-text-3)", textDecoration: "line-through" }}>
-                    {fmt(sheetProduct.oldPrice)}
-                  </span>
-                ) : null}
-              </div>
-              <TKStepper value={qty} min={1} max={stockOf(sheetProduct)} onChange={setQty} />
-            </div>
-            <div style={{ fontSize: "var(--tk-fz-sub)", color: "var(--tk-text-2)" }}>
-              ★ {sheetProduct.rating} · {sheetProduct.reviews} reviews — hand-made, ships in 2 days.
-              {sheetProduct.stock != null ? ` Only ${sheetProduct.stock} left in stock.` : ""}
-            </div>
-            <TKButton
-              full
-              icon="cart"
-              onClick={() => {
-                add(sheetProduct, qty);
-                setSheetProduct(null);
-              }}
-            >
-              Add {qty} to cart · {fmt(sheetProduct.price * qty)}
-            </TKButton>
-          </div>
-        ) : null}
-      </TKSheet>
-
-      {/* Payment failure — error path with a retry */}
-      <div data-demo-payment-error>
-        <TKDialog
-          open={payErrorOpen}
-          onClose={() => setPayErrorOpen(false)}
-          icon="card"
-          tone="red"
-          title="Payment declined"
-          text="Your bank rejected the charge. No money was taken — try again or use another method."
-          actions={
-            <>
-              <TKButton variant="tonal" onClick={() => setPayErrorOpen(false)}>
-                Cancel
-              </TKButton>
-              <TKButton
-                onClick={() => {
-                  setFailPayment(false);
-                  setPayErrorOpen(false);
-                  toast.show({ icon: "check", color: "var(--tk-green)", text: "Decline test disabled — pay again" });
-                }}
-              >
-                Try again
-              </TKButton>
-            </>
-          }
-        />
-      </div>
-
-      {/* Receipt — success path */}
-      <TKSheet open={receipt !== null} onClose={() => setReceipt(null)} title="Order confirmed">
-        {receipt ? (
-          <div data-demo-receipt style={{ display: "flex", flexDirection: "column", gap: 14, paddingBottom: 8 }}>
-            <TKPaymentSummary
-              rows={[
-                { label: `Items (${receipt.items})`, value: fmt(receipt.total - 3.5) },
-                { label: "Delivery", value: fmt(3.5) },
-                { label: "Paid", value: fmt(receipt.total), total: true },
-              ]}
-            />
-            <TKTimeline
-              steps={[
-                { label: "Payment confirmed", time: "now", status: "done" },
-                { label: "Packing your order", time: "~15 min", status: "active" },
-                { label: "Courier on the way", status: "pending" },
-                { label: "Delivered", status: "pending" },
-              ]}
-            />
-            <TKButton full onClick={() => setReceipt(null)}>
-              Done
-            </TKButton>
-          </div>
-        ) : null}
-      </TKSheet>
-
-      {/* Destructive confirmation — dialog */}
-      <TKDialog
-        open={deleteOpen}
-        onClose={() => setDeleteOpen(false)}
-        icon="trash"
-        tone="red"
-        title="Delete account?"
-        text="This will erase your data and order history. This action can't be undone."
-        actions={
-          <>
-            <TKButton variant="tonal" onClick={() => setDeleteOpen(false)}>
-              Cancel
-            </TKButton>
-            <TKButton
-              variant="destructive"
-              onClick={() => {
-                setDeleteOpen(false);
-                toast.error("Account scheduled for deletion");
-              }}
-            >
-              Delete
-            </TKButton>
-          </>
-        }
+      <ShopOverlays
+        product={sheetProduct}
+        qty={qty}
+        receipt={receipt}
+        deleteOpen={deleteOpen}
+        paymentErrorOpen={payErrorOpen}
+        stockOf={stockOf}
+        onQtyChange={setQty}
+        onProductClose={() => setSheetProduct(null)}
+        onAddProduct={(product, count) => {
+          add(product, count);
+          setSheetProduct(null);
+        }}
+        onReceiptClose={() => setReceipt(null)}
+        onDeleteClose={() => setDeleteOpen(false)}
+        onDeleteAccount={() => {
+          setDeleteOpen(false);
+          toast.error("Account scheduled for deletion");
+        }}
+        onPaymentErrorClose={() => setPayErrorOpen(false)}
+        onPaymentRetry={() => {
+          setFailPayment(false);
+          setPayErrorOpen(false);
+          toast.show({ icon: "check", color: "var(--tk-green)", text: "Decline test disabled — pay again" });
+        }}
       />
     </div>
   );
