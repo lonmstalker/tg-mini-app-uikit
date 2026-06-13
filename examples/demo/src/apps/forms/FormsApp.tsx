@@ -62,6 +62,7 @@ const INITIAL: FormState = {
 
 /* Budget marks for the slider */
 const BUDGET_MARKS = [0, 500, 1000, 1500, 2000, 3000];
+const ENABLE_EXACT_BUDGET_EDITOR = true;
 
 /* ------------------------------------------------------------------ */
 /* Inner form component (needs toast context)                           */
@@ -179,13 +180,13 @@ function FormsInner() {
             <TKDateInput
               label="Birth date"
               placeholder="DD / MM / YYYY"
-            value={form.date}
-            onChange={(d) => patch("date", d)}
-            min={new Date(1900, 0, 1)}
-            max={today}
-            error={errors.date}
-            testId="forms-date"
-          />
+              value={form.date}
+              onChange={(d) => patch("date", d)}
+              min={new Date(1900, 0, 1)}
+              max={today}
+              error={errors.date}
+              testId="forms-date"
+            />
           </div>
 
           {/* Time */}
@@ -220,6 +221,7 @@ function FormsInner() {
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, margin: "0 14px" }}>
               <span
+                data-testid="forms-budget-label"
                 style={{
                   fontSize: "var(--tk-fz-caption)",
                   fontWeight: 600,
@@ -230,19 +232,36 @@ function FormsInner() {
               >
                 Budget range (USD)
               </span>
-              <TKButton
-                ref={helpRef}
-                type="button"
-                size="sm"
-                variant="surface"
-                pill
-                onClick={() => setHelpOpen((open) => !open)}
-                testId="forms-help"
-              >
-                ?
-              </TKButton>
-              <TKPopper open={helpOpen} anchorRef={helpRef} placement="bottom" arrow onClose={() => setHelpOpen(false)} testId="forms-help-popover">
-                <div style={{ maxWidth: 220, fontSize: "var(--tk-fz-caption)", color: "var(--tk-text-2)", lineHeight: 1.35 }}>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                <TKButton
+                  ref={helpRef}
+                  type="button"
+                  aria-label="Budget help"
+                  size="sm"
+                  variant="surface"
+                  pill
+                  onClick={() => setHelpOpen((open) => !open)}
+                  testId="forms-help"
+                  style={{ width: 30, height: 28, padding: 0, flex: "0 0 30px" }}
+                >
+                  ?
+                </TKButton>
+                {ENABLE_EXACT_BUDGET_EDITOR ? (
+                  <TKButton
+                    type="button"
+                    aria-label="Exact budget values"
+                    size="sm"
+                    variant="surface"
+                    pill
+                    icon="edit"
+                    onClick={openBudgetEditor}
+                    testId="forms-budget-exact"
+                    style={{ width: 30, height: 28, padding: 0, flex: "0 0 30px" }}
+                  />
+                ) : null}
+              </div>
+              <TKPopper open={helpOpen} anchorRef={helpRef} placement="left" arrow onClose={() => setHelpOpen(false)} testId="forms-help-popover">
+                <div style={{ width: 210, fontSize: "var(--tk-fz-caption)", color: "var(--tk-text-2)", lineHeight: 1.35 }}>
                   Use the slider for quick ranges. Open exact values for uncommon amounts.
                 </div>
               </TKPopper>
@@ -268,11 +287,6 @@ function FormsInner() {
             >
               ${form.budget[0].toLocaleString()} – ${form.budget[1].toLocaleString()}
             </span>
-            <div style={{ display: "flex", justifyContent: "center" }}>
-              <TKButton type="button" size="sm" variant="surface" onClick={openBudgetEditor} testId="forms-budget-exact">
-                Exact values
-              </TKButton>
-            </div>
           </div>
 
           {/* License checkbox */}
@@ -343,34 +357,36 @@ function FormsInner() {
           </div>
         </TKSheet>
 
-        <TKSheet
-          open={budgetOpen}
-          onClose={() => setBudgetOpen(false)}
-          title="Exact budget"
-          testId="forms-budget-sheet"
-        >
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <TKInput
-              label="Minimum"
-              type="number"
-              inputMode="numeric"
-              value={budgetDraft[0]}
-              onChange={(value) => setBudgetDraft((prev) => [value, prev[1]])}
-              testId="forms-budget-min"
-            />
-            <TKInput
-              label="Maximum"
-              type="number"
-              inputMode="numeric"
-              value={budgetDraft[1]}
-              onChange={(value) => setBudgetDraft((prev) => [prev[0], value])}
-              testId="forms-budget-max"
-            />
-            <TKButton full onClick={applyBudgetDraft} testId="forms-budget-apply">
-              Apply
-            </TKButton>
-          </div>
-        </TKSheet>
+        {ENABLE_EXACT_BUDGET_EDITOR ? (
+          <TKSheet
+            open={budgetOpen}
+            onClose={() => setBudgetOpen(false)}
+            title="Exact budget"
+            testId="forms-budget-sheet"
+          >
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <TKInput
+                label="Minimum"
+                type="number"
+                inputMode="numeric"
+                value={budgetDraft[0]}
+                onChange={(value) => setBudgetDraft((prev) => [value, prev[1]])}
+                testId="forms-budget-min"
+              />
+              <TKInput
+                label="Maximum"
+                type="number"
+                inputMode="numeric"
+                value={budgetDraft[1]}
+                onChange={(value) => setBudgetDraft((prev) => [prev[0], value])}
+                testId="forms-budget-max"
+              />
+              <TKButton full onClick={applyBudgetDraft} testId="forms-budget-apply">
+                Apply
+              </TKButton>
+            </div>
+          </TKSheet>
+        ) : null}
       </div>
     </TKProvider>
   );

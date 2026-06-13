@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from "react";
+import { createPortal } from "react-dom";
 import { tkZ } from "../internal/dom";
 
 /* ---------------- Anchored popper / tooltip ---------------- */
@@ -25,12 +26,53 @@ const FLIP: Record<TKPopperPlacement, TKPopperPlacement> = { top: "bottom", bott
 /** Minimum room a popper needs on its side before auto-flip kicks in, px. */
 const FLIP_MIN = 140;
 
+interface PopperLayout {
+  root: HTMLElement;
+  useFixed: boolean;
+  rootWidth: number;
+  rootHeight: number;
+  anchorX: number;
+  anchorY: number;
+  anchorWidth: number;
+  anchorHeight: number;
+}
+
+const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), Math.max(min, max));
+
 export function TKPopper({ open, anchorRef, children, placement: preferred = "bottom", offset = 8, onClose, arrow, autoFlip = true, testId, style }: TKPopperProps) {
-  const [rect, setRect] = useState<DOMRect | null>(null);
+  const [layout, setLayout] = useState<PopperLayout | null>(null);
+  const [popperSize, setPopperSize] = useState({ width: 220, height: 80 });
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!open) return;
-    const sync = () => setRect(anchorRef.current?.getBoundingClientRect() ?? null);
+    const sync = () => {
+      const anchor = anchorRef.current;
+      if (!anchor || typeof document === "undefined") {
+        setLayout(null);
+        return;
+      }
+      const root = anchor.closest<HTMLElement>(".tk") ?? document.body;
+      const anchorRect = anchor.getBoundingClientRect();
+      const useFixed = root === document.body;
+      const rootRect = useFixed
+        ? ({ left: 0, top: 0, width: window.innerWidth, height: window.innerHeight } as DOMRect)
+        : root.getBoundingClientRect();
+      const rootWidth = useFixed ? window.innerWidth : root.offsetWidth;
+      const rootHeight = useFixed ? window.innerHeight : root.offsetHeight;
+      const scaleX = useFixed ? 1 : rootRect.width / rootWidth || 1;
+      const scaleY = useFixed ? 1 : rootRect.height / rootHeight || 1;
+
+      setLayout({
+        root,
+        useFixed,
+        rootWidth,
+        rootHeight,
+        anchorX: (anchorRect.left - rootRect.left) / scaleX,
+        anchorY: (anchorRect.top - rootRect.top) / scaleY,
+        anchorWidth: anchorRect.width / scaleX,
+        anchorHeight: anchorRect.height / scaleY,
+      });
+    };
     sync();
     window.addEventListener("resize", sync);
     window.addEventListener("scroll", sync, true);
@@ -39,6 +81,13 @@ export function TKPopper({ open, anchorRef, children, placement: preferred = "bo
       window.removeEventListener("scroll", sync, true);
     };
   }, [anchorRef, open]);
+  useLayoutEffect(() => {
+    if (!open || !ref.current) return;
+    const next = { width: ref.current.offsetWidth, height: ref.current.offsetHeight };
+    if (next.width > 0 && next.height > 0 && (next.width !== popperSize.width || next.height !== popperSize.height)) {
+      setPopperSize(next);
+    }
+  }, [children, layout, open, popperSize.height, popperSize.width]);
   useEffect(() => {
     if (!open) return;
     const close = (e: globalThis.PointerEvent) => {
@@ -57,26 +106,35 @@ export function TKPopper({ open, anchorRef, children, placement: preferred = "bo
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose, open]);
-  if (!open || !rect) return null;
+  if (!open || !layout) return null;
   const room: Record<TKPopperPlacement, number> = {
-    top: rect.top,
-    bottom: (typeof window !== "undefined" ? window.innerHeight : 0) - rect.bottom,
-    left: rect.left,
-    right: (typeof window !== "undefined" ? window.innerWidth : 0) - rect.right,
+    top: layout.anchorY,
+    bottom: layout.rootHeight - (layout.anchorY + layout.anchorHeight),
+    left: layout.anchorX,
+    right: layout.rootWidth - (layout.anchorX + layout.anchorWidth),
   };
   const placement =
     autoFlip && room[preferred] < FLIP_MIN && room[FLIP[preferred]] > room[preferred] ? FLIP[preferred] : preferred;
-  const x = placement === "left" ? rect.left : placement === "right" ? rect.right : rect.left + rect.width / 2;
-  const y = placement === "top" ? rect.top : placement === "bottom" ? rect.bottom : rect.top + rect.height / 2;
-  const transform =
+  const anchorCenterX = layout.anchorX + layout.anchorWidth / 2;
+  const anchorCenterY = layout.anchorY + layout.anchorHeight / 2;
+  const margin = 8;
+  const maxLeft = layout.rootWidth - popperSize.width - margin;
+  const maxTop = layout.rootHeight - popperSize.height - margin;
+  const left =
+    placement === "left"
+      ? clamp(layout.anchorX - popperSize.width - offset, margin, maxLeft)
+      : placement === "right"
+        ? clamp(layout.anchorX + layout.anchorWidth + offset, margin, maxLeft)
+        : clamp(anchorCenterX - popperSize.width / 2, margin, maxLeft);
+  const top =
     placement === "top"
-      ? "translate(-50%, calc(-100% - var(--tk-popper-offset)))"
+      ? clamp(layout.anchorY - popperSize.height - offset, margin, maxTop)
       : placement === "bottom"
-        ? "translate(-50%, var(--tk-popper-offset))"
-        : placement === "left"
-          ? "translate(calc(-100% - var(--tk-popper-offset)), -50%)"
-          : "translate(var(--tk-popper-offset), -50%)";
-  return (
+        ? clamp(layout.anchorY + layout.anchorHeight + offset, margin, maxTop)
+        : clamp(anchorCenterY - popperSize.height / 2, margin, maxTop);
+  const arrowLeft = clamp(anchorCenterX - left - 6, 10, popperSize.width - 22);
+  const arrowTop = clamp(anchorCenterY - top - 6, 10, popperSize.height - 22);
+  const node = (
     <div
       ref={ref}
       data-testid={testId}
@@ -84,12 +142,11 @@ export function TKPopper({ open, anchorRef, children, placement: preferred = "bo
       style={
         {
           "--tk-popper-offset": `${offset}px`,
-          position: "fixed",
-          left: x,
-          top: y,
+          position: layout.useFixed ? "fixed" : "absolute",
+          left,
+          top,
           zIndex: tkZ.popper,
-          maxWidth: "min(320px, calc(100vw - 28px))",
-          transform,
+          maxWidth: `min(320px, calc(100% - ${margin * 2}px))`,
           background: "var(--tk-surface)",
           borderRadius: "var(--tk-r-md)",
           boxShadow: "var(--tk-shadow-lg)",
@@ -110,18 +167,19 @@ export function TKPopper({ open, anchorRef, children, placement: preferred = "bo
             background: "var(--tk-surface)",
             transform: "rotate(45deg)",
             ...(placement === "top"
-              ? { bottom: -5, left: "50%", marginLeft: -6, boxShadow: "3px 3px 6px -3px rgba(0,0,0,.18)" }
+              ? { bottom: -5, left: arrowLeft, boxShadow: "3px 3px 6px -3px rgba(0,0,0,.18)" }
               : placement === "bottom"
-                ? { top: -5, left: "50%", marginLeft: -6 }
+                ? { top: -5, left: arrowLeft }
                 : placement === "left"
-                  ? { right: -5, top: "50%", marginTop: -6 }
-                  : { left: -5, top: "50%", marginTop: -6 }),
+                  ? { right: -5, top: arrowTop }
+                  : { left: -5, top: arrowTop }),
           }}
         />
       ) : null}
       {children}
     </div>
   );
+  return createPortal(node, layout.root);
 }
 
 export interface TKTooltipProps {

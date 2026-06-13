@@ -97,15 +97,19 @@ function explicitDialCode(text: string, fallback: string): string | null {
 }
 
 function formatPhoneValue(text: string, defaultDial: string, numberMask: string): { formatted: string; raw: string } {
+  const trimmed = text.trim();
+  const startsWithDialPrefix = trimmed.startsWith("+");
   const digits = text.replace(/\D/g, "");
-  if (!digits) return { formatted: "", raw: "" };
+  if (!digits) return startsWithDialPrefix ? { formatted: "+", raw: "" } : { formatted: "", raw: "" };
 
   const explicitDial = explicitDialCode(text, defaultDial);
   const dial = explicitDial ?? defaultDial;
   const capacity = maskCapacity(numberMask);
   const national = (explicitDial == null ? digits : digits.slice(dial.length)).slice(0, capacity);
   const number = tkApplyMask(numberMask, national);
-  const formatted = number ? `+${dial} ${number}` : `+${dial}`;
+  const afterDial = startsWithDialPrefix ? trimmed.slice(1 + dial.length) : "";
+  const hasDialSeparator = explicitDial != null && /^\D/.test(afterDial);
+  const formatted = number ? `+${dial} ${number}` : hasDialSeparator ? `+${dial} ` : `+${dial}`;
   return { formatted, raw: `${dial}${national}` };
 }
 

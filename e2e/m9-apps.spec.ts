@@ -54,7 +54,7 @@ test("demo switcher stays contained above identity steps", async ({ page }) => {
     };
   });
 
-  expect(geometry.stepTop).toBeGreaterThanOrEqual(geometry.navBottom + 6);
+  expect(geometry.stepTop).toBeGreaterThanOrEqual(geometry.navBottom + 24);
   expect(geometry.scrollWidth).toBeLessThanOrEqual(geometry.viewportWidth);
 });
 
@@ -75,6 +75,87 @@ test("desktop demo switcher scroll does not move the device frame", async ({ pag
 
   expect(scrollWidth).toBeLessThanOrEqual(1200);
   expect(Math.abs((after?.x ?? 0) - (before?.x ?? 0))).toBeLessThan(1);
+});
+
+test("platform demo expands without horizontal page drift", async ({ page }) => {
+  await page.setViewportSize({ width: 1200, height: 900 });
+  const root = await gotoApp(page, "platform");
+
+  const before = await page.evaluate(() => ({
+    scrollX: window.scrollX,
+    shellLeft: document.querySelector<HTMLElement>("[data-demo-shell]")!.getBoundingClientRect().left,
+    stageLeft: document.querySelector<HTMLElement>("[data-demo-stage]")!.getBoundingClientRect().left,
+    scrollWidth: document.documentElement.scrollWidth,
+    viewportWidth: window.innerWidth,
+  }));
+
+  await root.getByRole("button", { name: "Expand", exact: true }).click();
+
+  await expect
+    .poll(async () =>
+      page.evaluate(() => {
+        const sheet = document.querySelector<HTMLElement>("[data-demo-platform-sheet]")!.getBoundingClientRect();
+        const chat = document.querySelector<HTMLElement>("[data-demo-platform-sheet]")!.parentElement!.getBoundingClientRect();
+        return Math.max(Math.abs(sheet.top - chat.top), Math.abs(sheet.height - chat.height));
+      }),
+    )
+    .toBeLessThanOrEqual(2);
+
+  const after = await page.evaluate(() => ({
+    scrollX: window.scrollX,
+    shellLeft: document.querySelector<HTMLElement>("[data-demo-shell]")!.getBoundingClientRect().left,
+    stageLeft: document.querySelector<HTMLElement>("[data-demo-stage]")!.getBoundingClientRect().left,
+    scrollWidth: document.documentElement.scrollWidth,
+    viewportWidth: window.innerWidth,
+  }));
+
+  expect(before.scrollX).toBe(0);
+  expect(after.scrollX).toBe(0);
+  expect(after.scrollWidth).toBeLessThanOrEqual(after.viewportWidth);
+  expect(Math.abs(after.shellLeft - before.shellLeft)).toBeLessThan(1);
+  expect(Math.abs(after.stageLeft - before.stageLeft)).toBeLessThan(1);
+});
+
+test("phone chrome does not cover identity and support first content", async ({ page }) => {
+  await page.setViewportSize({ width: 1200, height: 900 });
+  const identity = await gotoApp(page, "onboarding");
+  await expect(identity.getByTestId("onb-welcome-content")).toBeVisible();
+
+  const identityTop = await page.evaluate(() => {
+    const frame = document.querySelector<HTMLElement>("[data-demo-frame]")!.getBoundingClientRect();
+    const welcome = document.querySelector<HTMLElement>('[data-demo-app="onboarding"] [data-testid="onb-welcome-content"]')!.getBoundingClientRect();
+    return welcome.top - frame.top;
+  });
+  expect(identityTop).toBeGreaterThanOrEqual(55);
+
+  const support = await gotoApp(page, "support");
+  await expect(support.getByTestId("support-first-content")).toBeVisible();
+
+  const supportTop = await page.evaluate(() => {
+    const frame = document.querySelector<HTMLElement>("[data-demo-frame]")!.getBoundingClientRect();
+    const quickReplies = document.querySelector<HTMLElement>('[data-demo-app="support"] [data-testid="support-first-content"]')!.getBoundingClientRect();
+    return quickReplies.top - frame.top;
+  });
+  expect(supportTop).toBeGreaterThanOrEqual(55);
+});
+
+test("demo switcher arrow icons stay inside their controls", async ({ page }) => {
+  await page.setViewportSize({ width: 1000, height: 800 });
+  await page.goto("/?app=forms");
+
+  for (const name of ["Previous demos", "Next demos"]) {
+    const button = page.getByRole("button", { name });
+    const icon = button.locator("svg");
+    await expect(icon).toBeVisible();
+    const boxes = await Promise.all([button.boundingBox(), icon.boundingBox()]);
+    const [buttonBox, iconBox] = boxes;
+    expect(buttonBox).not.toBeNull();
+    expect(iconBox).not.toBeNull();
+    expect(iconBox!.x).toBeGreaterThanOrEqual(buttonBox!.x);
+    expect(iconBox!.x + iconBox!.width).toBeLessThanOrEqual(buttonBox!.x + buttonBox!.width);
+    expect(iconBox!.y).toBeGreaterThanOrEqual(buttonBox!.y);
+    expect(iconBox!.y + iconBox!.height).toBeLessThanOrEqual(buttonBox!.y + buttonBox!.height);
+  }
 });
 
 test("settings restore: save, restart and restore from cloud storage", async ({ page }) => {
@@ -153,8 +234,10 @@ test("forms showcase: validation failure and summary sheet", async ({ page }) =>
   await expect(root.getByTestId("forms-name")).toContainText("Name is required");
 
   await root.getByTestId("forms-name").locator("input").fill("Anna");
-  await root.getByTestId("forms-phone").locator("input").fill("+1 555 123 4567");
+  await root.getByTestId("forms-phone").locator("input").pressSequentially("+1 555 123 4567");
   await expect(root.getByTestId("forms-phone").locator("input")).toHaveValue("+1 (555) 123-45-67");
+  await root.getByTestId("forms-date").locator("input").fill("33:33");
+  await expect(root.getByTestId("forms-date")).toContainText("Enter a valid date");
   await root.getByTestId("forms-date").click();
   await page.getByLabel("Year").selectOption("1990");
   await page.getByLabel("Month", { exact: true }).selectOption("1");
@@ -162,7 +245,34 @@ test("forms showcase: validation failure and summary sheet", async ({ page }) =>
   await expect(root.getByTestId("forms-date").locator("input")).toHaveValue(/1990/);
   await root.getByTestId("forms-time").locator("input").fill("1234");
   await expect(root.getByTestId("forms-time").locator("input")).toHaveValue("12:34");
+  await root.getByTestId("forms-help").click();
+  await expect(page.getByTestId("forms-help-popover")).toContainText("quick ranges");
+  const helpGeometry = await page.evaluate(() => {
+    const frame = document.querySelector<HTMLElement>("[data-demo-frame]")?.getBoundingClientRect();
+    const popover = document.querySelector<HTMLElement>('[data-testid="forms-help-popover"]')!.getBoundingClientRect();
+    const bounds = frame ?? ({ left: 0, right: window.innerWidth } as DOMRect);
+    return {
+      left: popover.left,
+      right: popover.right,
+      frameLeft: bounds.left,
+      frameRight: bounds.right,
+    };
+  });
+  expect(helpGeometry.left).toBeGreaterThanOrEqual(helpGeometry.frameLeft + 6);
+  expect(helpGeometry.right).toBeLessThanOrEqual(helpGeometry.frameRight - 6);
   await root.getByTestId("forms-budget-exact").click();
+  const exactGeometry = await page.evaluate(() => {
+    const label = document.querySelector<HTMLElement>('[data-testid="forms-budget-label"]')!.getBoundingClientRect();
+    const trigger = document.querySelector<HTMLElement>('[data-testid="forms-budget-exact"]')!.getBoundingClientRect();
+    return {
+      labelTop: label.top,
+      labelBottom: label.bottom,
+      triggerTop: trigger.top,
+      triggerBottom: trigger.bottom,
+    };
+  });
+  expect(exactGeometry.triggerTop).toBeLessThanOrEqual(exactGeometry.labelBottom + 8);
+  expect(exactGeometry.triggerBottom).toBeGreaterThanOrEqual(exactGeometry.labelTop - 8);
   await page.getByTestId("forms-budget-min").locator("input").fill("1888");
   await page.getByTestId("forms-budget-apply").click();
   await expect(root.getByTestId("forms-budget-value")).toContainText("$1,888");

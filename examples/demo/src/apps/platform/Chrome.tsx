@@ -82,7 +82,7 @@ export function Chrome({
   useEffect(() => {
     const el = chatRef.current;
     if (!el) return;
-    const sync = () => mock.setViewportBounds(Math.round(el.getBoundingClientRect().height));
+    const sync = () => mock.setViewportBounds(el.clientHeight);
     sync();
     const ro = new ResizeObserver(sync);
     ro.observe(el);

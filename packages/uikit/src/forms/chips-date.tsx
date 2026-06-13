@@ -41,6 +41,13 @@ function parseDateInput(text: string): Date | null {
   return date;
 }
 
+function shouldValidateDateInput(text: string): boolean {
+  const trimmed = text.trim();
+  if (!trimmed) return false;
+  if (/[^0-9\s./-]/.test(trimmed)) return true;
+  return trimmed.replace(/\D/g, "").length >= 8;
+}
+
 function yearRange(min?: Date, max?: Date): number[] {
   const now = new Date().getFullYear();
   const first = min?.getFullYear() ?? now - 100;
@@ -205,6 +212,8 @@ export interface TKDateInputProps {
   disabled?: boolean;
   hint?: ReactNode;
   error?: ReactNode;
+  /** Message shown when manual entry is not a real allowed date. */
+  invalidText?: ReactNode;
   testId?: string;
 }
 
@@ -224,6 +233,7 @@ export function TKDateInput({
   disabled,
   hint,
   error,
+  invalidText = "Enter a valid date",
   testId,
 }: TKDateInputProps) {
   const [date, setDate] = useControllable<Date | null>(value, defaultValue, onChange);
@@ -235,6 +245,7 @@ export function TKDateInput({
   const initialMonth = startOfMonth(date ?? defaultValue ?? max ?? min ?? new Date());
   const [visibleMonth, setVisibleMonth] = useState(initialMonth);
   const [draft, setDraft] = useState(date ? fmt.format(date) : "");
+  const [manualError, setManualError] = useState<ReactNode>(null);
   const manualChangeRef = useRef(false);
 
   useEffect(() => {
@@ -247,6 +258,7 @@ export function TKDateInput({
       return;
     }
     setDraft(date ? fmt.format(date) : "");
+    setManualError(null);
   }, [date, fmt]);
 
   const setMonthPart = (year: number, month: number) => {
@@ -256,16 +268,27 @@ export function TKDateInput({
   const handleDraftChange = (next: string) => {
     setDraft(next);
     if (!next.trim()) {
+      setManualError(null);
       manualChangeRef.current = true;
       setDate(null);
       return;
     }
     const parsed = parseDateInput(next);
-    if (!parsed || !isAllowedDate(parsed, min, max, disabledDates) || sameDate(parsed, date)) return;
+    if (!parsed || !isAllowedDate(parsed, min, max, disabledDates)) {
+      if (shouldValidateDateInput(next)) {
+        setManualError(invalidText);
+        manualChangeRef.current = true;
+        setDate(null);
+      }
+      return;
+    }
+    setManualError(null);
+    if (sameDate(parsed, date)) return;
     manualChangeRef.current = true;
     setVisibleMonth(startOfMonth(parsed));
     setDate(parsed);
   };
+  const fieldError = error ?? manualError;
 
   return (
     <div data-testid={testId}>
@@ -278,58 +301,40 @@ export function TKDateInput({
           onChange={handleDraftChange}
           disabled={disabled}
           hint={hint}
-          error={error}
+          error={fieldError}
         />
       </div>
       <TKSheet open={open} onClose={() => setOpen(false)} title={sheetTitle ?? label}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 92px", gap: 8, marginBottom: 10 }}>
-          <select
-            aria-label="Month"
+          <DatePartSelect
+            ariaLabel="Month"
             value={visibleMonth.getMonth()}
-            onChange={(e) => setMonthPart(visibleMonth.getFullYear(), Number(e.target.value))}
-            style={{
-              height: 40,
-              border: "none",
-              borderRadius: "var(--tk-r-md)",
-              background: "var(--tk-surface-2)",
-              color: "var(--tk-text)",
-              font: "inherit",
-              padding: "0 10px",
-              textTransform: "capitalize",
-            }}
+            onChange={(next) => setMonthPart(visibleMonth.getFullYear(), Number(next))}
           >
             {Array.from({ length: 12 }, (_, month) => (
               <option key={month} value={month}>
                 {monthFmt.format(new Date(2026, month, 1))}
               </option>
             ))}
-          </select>
-          <select
-            aria-label="Year"
+          </DatePartSelect>
+          <DatePartSelect
+            ariaLabel="Year"
             value={visibleMonth.getFullYear()}
-            onChange={(e) => setMonthPart(Number(e.target.value), visibleMonth.getMonth())}
-            style={{
-              height: 40,
-              border: "none",
-              borderRadius: "var(--tk-r-md)",
-              background: "var(--tk-surface-2)",
-              color: "var(--tk-text)",
-              font: "inherit",
-              padding: "0 10px",
-            }}
+            onChange={(next) => setMonthPart(Number(next), visibleMonth.getMonth())}
           >
             {years.map((year) => (
               <option key={year} value={year}>
                 {year}
               </option>
             ))}
-          </select>
+          </DatePartSelect>
         </div>
         <TKCalendar
           month={visibleMonth}
           onMonthChange={setVisibleMonth}
           value={date}
           onChange={(d) => {
+            setManualError(null);
             setDate(d);
             setDraft(fmt.format(d));
             setOpen(false);
@@ -343,5 +348,56 @@ export function TKDateInput({
         />
       </TKSheet>
     </div>
+  );
+}
+
+function DatePartSelect({
+  ariaLabel,
+  value,
+  onChange,
+  children,
+}: {
+  ariaLabel: string;
+  value: string | number;
+  onChange: (value: string) => void;
+  children: ReactNode;
+}) {
+  return (
+    <span style={{ position: "relative", display: "block", minWidth: 0 }}>
+      <select
+        aria-label={ariaLabel}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        style={{
+          appearance: "none",
+          WebkitAppearance: "none",
+          width: "100%",
+          height: 40,
+          border: "none",
+          borderRadius: "var(--tk-r-md)",
+          background: "var(--tk-surface-2)",
+          color: "var(--tk-text)",
+          font: "inherit",
+          padding: "0 34px 0 10px",
+          textTransform: ariaLabel === "Month" ? "capitalize" : undefined,
+        }}
+      >
+        {children}
+      </select>
+      <span
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          right: 11,
+          top: "50%",
+          transform: "translateY(-50%)",
+          display: "inline-flex",
+          color: "var(--tk-text-3)",
+          pointerEvents: "none",
+        }}
+      >
+        <TKIcon name="chevronDown" size={15} />
+      </span>
+    </span>
   );
 }

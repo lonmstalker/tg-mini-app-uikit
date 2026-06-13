@@ -15,5 +15,15 @@ export default defineConfig({
     css: true,
     setupFiles: ["./test/setup.ts"],
     include: ["test/**/*.test.{ts,tsx}"],
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "json-summary"],
+      thresholds: {
+        statements: 90,
+        functions: 90,
+        lines: 90,
+        branches: 75,
+      },
+    },
   },
 });

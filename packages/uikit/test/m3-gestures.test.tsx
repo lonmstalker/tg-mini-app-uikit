@@ -258,7 +258,7 @@ describe("M3.8 TKPopper arrow and auto-flip", () => {
         Hi
       </kit.TKPopper>,
     );
-    // flipped: positioned above the anchor (translates by -100%)
-    expect(screen.getByTestId("pop").style.transform).toContain("-100%");
+    // flipped: positioned above the anchor rather than below it
+    expect(Number.parseFloat(screen.getByTestId("pop").style.top)).toBeLessThan(window.innerHeight - 30);
   });
 });

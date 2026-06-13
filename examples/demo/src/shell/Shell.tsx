@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { TKLocaleProvider, TKProvider, ruLocale, type TKLocale, type TelegramWebApp } from "tg-mini-app-uikit";
+import { TKIcon, TKLocaleProvider, TKProvider, ruLocale, type TKLocale, type TelegramWebApp } from "tg-mini-app-uikit";
 import { createMockTelegram } from "../telegram/mock";
 import { DeviceFrame, FRAME_HEIGHT, FRAME_WIDTH } from "./DeviceFrame";
 import { TweaksPanel } from "./TweaksPanel";
@@ -81,8 +81,12 @@ function NavPill({ active, onSelect }: { active: AppKey; onSelect: (key: AppKey)
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const activeTab = scrollRef.current?.querySelector<HTMLElement>(`[data-demo-tab="${active}"]`);
-    activeTab?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+    const scroller = scrollRef.current;
+    const activeTab = scroller?.querySelector<HTMLElement>(`[data-demo-tab="${active}"]`);
+    if (!scroller || !activeTab) return;
+
+    const centeredLeft = activeTab.offsetLeft - (scroller.clientWidth - activeTab.offsetWidth) / 2;
+    scroller.scrollTo({ left: Math.max(0, centeredLeft), behavior: "auto" });
   }, [active]);
 
   const scrollPage = (direction: -1 | 1) => {
@@ -98,6 +102,7 @@ function NavPill({ active, onSelect }: { active: AppKey; onSelect: (key: AppKey)
         alignItems: "center",
         gap: 4,
         minWidth: 0,
+        width: "100%",
         maxWidth: "100%",
         ...font,
       }}
@@ -108,13 +113,15 @@ function NavPill({ active, onSelect }: { active: AppKey; onSelect: (key: AppKey)
         onClick={() => scrollPage(-1)}
         style={navArrowStyle}
       >
-        ‹
+        <TKIcon name="chevronLeft" size={18} strokeWidth={2.4} />
       </button>
       <div
         ref={scrollRef}
         data-demo-nav-scroll
         style={{
+          flex: "1 1 auto",
           minWidth: 0,
+          maxWidth: "100%",
           overflowX: "auto",
           overscrollBehaviorX: "contain",
           scrollbarWidth: "none",
@@ -136,26 +143,26 @@ function NavPill({ active, onSelect }: { active: AppKey; onSelect: (key: AppKey)
           }}
         >
           {NAV.map(({ key, label }) => (
-        <button
-          type="button"
-          key={key}
-          data-demo-tab={key}
-          onClick={() => onSelect(key)}
-          style={{
-            padding: "6px 14px",
-            borderRadius: 999,
-            border: "none",
-            cursor: "pointer",
-            fontSize: 13,
-            fontWeight: 600,
-            fontFamily: "inherit",
-            color: active === key ? "#11151a" : "rgba(255,255,255,.72)",
-            background: active === key ? "#ffffff" : "transparent",
-            transition: "color .15s ease, background .15s ease",
-          }}
-        >
-          {label}
-        </button>
+            <button
+              type="button"
+              key={key}
+              data-demo-tab={key}
+              onClick={() => onSelect(key)}
+              style={{
+                padding: "6px 14px",
+                borderRadius: 999,
+                border: "none",
+                cursor: "pointer",
+                fontSize: 13,
+                fontWeight: 600,
+                fontFamily: "inherit",
+                color: active === key ? "#11151a" : "rgba(255,255,255,.72)",
+                background: active === key ? "#ffffff" : "transparent",
+                transition: "color .15s ease, background .15s ease",
+              }}
+            >
+              {label}
+            </button>
           ))}
         </div>
       </div>
@@ -165,15 +172,15 @@ function NavPill({ active, onSelect }: { active: AppKey; onSelect: (key: AppKey)
         onClick={() => scrollPage(1)}
         style={navArrowStyle}
       >
-        ›
+        <TKIcon name="chevronRight" size={18} strokeWidth={2.4} />
       </button>
     </div>
   );
 }
 
 const navArrowStyle: CSSProperties = {
-  width: 30,
-  height: 30,
+  width: 32,
+  height: 32,
   border: "none",
   borderRadius: 999,
   display: "inline-flex",
@@ -185,9 +192,9 @@ const navArrowStyle: CSSProperties = {
   boxShadow: "inset 0 0 0 1px rgba(255,255,255,.08)",
   cursor: "pointer",
   fontFamily: "inherit",
-  fontSize: 21,
-  lineHeight: 1,
+  lineHeight: 0,
   padding: 0,
+  overflow: "hidden",
 };
 
 /**
@@ -335,7 +342,7 @@ export function Shell() {
     // Real-device mode: the example app takes the whole viewport, like an
     // actual Telegram mini app. The switcher floats on top.
     return (
-      <div data-demo-shell style={{ height: "100dvh", position: "relative", ...font }}>
+      <div data-demo-shell style={{ width: "100%", height: "100dvh", overflowX: "hidden", position: "relative", ...font }}>
         {screen}
         <div
           style={{
@@ -359,28 +366,31 @@ export function Shell() {
   }
 
   return (
-    <div data-demo-shell style={{ minHeight: "100vh", display: "flex", flexDirection: "column", ...font }}>
+    <div
+      data-demo-shell
+      style={{ width: "100%", minHeight: "100vh", overflowX: "hidden", display: "flex", flexDirection: "column", ...font }}
+    >
       <header
         style={{
-          display: "flex",
+          display: "grid",
+          gridTemplateColumns: "minmax(170px, 240px) minmax(0, 1fr) minmax(0, 220px)",
           alignItems: "center",
-          justifyContent: "space-between",
           gap: 20,
           padding: "18px 28px 6px",
         }}
       >
-        <div>
+        <div style={{ minWidth: 0 }}>
           <div style={{ color: "#fff", fontSize: 15, fontWeight: 700 }}>
             Telegram Mini App UIKit
           </div>
-          <div style={{ color: "rgba(255,255,255,.45)", fontSize: 12.5, marginTop: 2 }}>
+          <div style={{ color: "rgba(255,255,255,.45)", fontSize: 12.5, marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
             Example projects built entirely from the kit
           </div>
         </div>
-        <div style={{ flex: "1 1 680px", minWidth: 0, display: "flex", justifyContent: "center" }}>
+        <div style={{ minWidth: 0, display: "flex", justifyContent: "center", overflow: "hidden" }}>
           <NavPill active={app} onSelect={setApp} />
         </div>
-        <div style={{ flex: "1 0 220px", maxWidth: 220 }} />
+        <div />
       </header>
 
       <main

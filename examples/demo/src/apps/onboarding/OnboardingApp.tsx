@@ -23,6 +23,7 @@ import { createMockTelegram } from "../../telegram/mock";
 /*  Wizard step indices                                                 */
 /* ------------------------------------------------------------------ */
 const STEP_COUNT = 5; // 0 Welcome, 1 Contact, 2 WriteAccess, 3 PIN, 4 Done
+const DEMO_PHONE_SAFE_TOP = 58;
 
 /* ------------------------------------------------------------------ */
 /*  Step 0 — Welcome gallery                                           */
@@ -52,7 +53,7 @@ function SlideCard({ emoji, title, text }: { emoji: string; title: string; text:
 
 function WelcomeStep({ onContinue }: { onContinue: () => void }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+    <div data-testid="onb-welcome-content" style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <TKGallery dots height={220}>
         <SlideCard emoji="👋" title="Welcome" text="Set up your identity in just a few steps." />
         <SlideCard emoji="🔒" title="Private & Secure" text="Your data stays on Telegram — zero servers." />
@@ -427,14 +428,16 @@ export function OnboardingApp() {
           padding={16}
           header={
             step > 0 ? (
-              <div style={{ padding: "58px 16px 0" }}>
+              <div style={{ padding: "82px 16px 0" }}>
                 <TKSteps
                   steps={stepLabels}
                   current={step}
                   testId="onb-steps"
                 />
               </div>
-            ) : null
+            ) : (
+              <div data-testid="onb-safe-top" style={{ height: DEMO_PHONE_SAFE_TOP }} />
+            )
           }
         >
           {step === 0 ? <WelcomeStep onContinue={next} /> : null}

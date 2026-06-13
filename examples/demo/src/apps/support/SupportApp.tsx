@@ -18,6 +18,7 @@ const START_MESSAGES: TKMessage[] = [
   { id: "m1", text: "Hi. I am the demo support bot.", time: "09:41" },
   { id: "m2", out: true, text: "I need help with an order.", time: "09:42", status: "read" },
 ];
+const DEMO_PHONE_SAFE_TOP = 58;
 
 function SupportInner() {
   const links = useTelegramLinks();
@@ -40,16 +41,23 @@ function SupportInner() {
 
   return (
     <div data-demo-app="support" style={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <TKPage padding={16} gap={14} style={{ flex: 1 }}>
-        <TKListGroup title="Quick replies">
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", padding: "12px 14px" }}>
-            {["Refund", "Delivery", "Subscription"].map((item) => (
-              <TKChip key={item} onClick={() => send(item)}>
-                {item}
-              </TKChip>
-            ))}
-          </div>
-        </TKListGroup>
+      <TKPage
+        padding={16}
+        gap={14}
+        header={<div data-testid="support-safe-top" style={{ height: DEMO_PHONE_SAFE_TOP }} />}
+        style={{ flex: 1 }}
+      >
+        <div data-testid="support-first-content">
+          <TKListGroup title="Quick replies">
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", padding: "12px 14px" }}>
+              {["Refund", "Delivery", "Subscription"].map((item) => (
+                <TKChip key={item} onClick={() => send(item)}>
+                  {item}
+                </TKChip>
+              ))}
+            </div>
+          </TKListGroup>
+        </div>
 
         <TKMessages messages={messages} testId="support-messages" />
 

@@ -102,7 +102,7 @@ export function TKIcon({ name, size = 22, strokeWidth = 2, style, className, fil
     <svg
       data-testid={testId}
       className={className}
-      style={style}
+      style={{ display: "block", flexShrink: 0, ...style }}
       width={size}
       height={size}
       viewBox="0 0 24 24"

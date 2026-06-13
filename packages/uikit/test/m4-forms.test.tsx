@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { describe, expect, it, vi, afterEach } from "vitest";
 import * as kit from "../src/index";
@@ -134,6 +135,18 @@ describe("M4.3 TKMaskedInput", () => {
     expect(onChange).toHaveBeenLastCalledWith("", "");
   });
 
+  it("TKPhoneInput keeps a manually typed non-default dial code", async () => {
+    const onChange = vi.fn();
+    const user = userEvent.setup();
+    render(<kit.TKPhoneInput defaultCountry="+7" placeholder="phone" onChange={onChange} />);
+    const input = screen.getByPlaceholderText("phone") as HTMLInputElement;
+
+    await user.type(input, "+1 555 123 4567");
+
+    expect(input.value).toBe("+1 (555) 123-45-67");
+    expect(onChange).toHaveBeenLastCalledWith("+1 (555) 123-45-67", "15551234567");
+  });
+
   it("TKTimeInput keeps partial controlled input editable until a valid time is complete", () => {
     function ControlledTime() {
       const [time, setTime] = useState<string | null>(null);
@@ -230,6 +243,25 @@ describe("M4.5b TKDateInput", () => {
     expect(input.value).toBe("17 / 02 / 1990");
     const picked = onChange.mock.lastCall![0] as Date;
     expect([picked.getFullYear(), picked.getMonth(), picked.getDate()]).toEqual([1990, 1, 17]);
+  });
+
+  it("marks invalid manual dates instead of accepting arbitrary text", () => {
+    const onChange = vi.fn();
+    render(
+      <kit.TKDateInput
+        label="Birth date"
+        placeholder="DD / MM / YYYY"
+        min={new Date(1900, 0, 1)}
+        max={new Date(2026, 5, 15)}
+        onChange={onChange}
+      />,
+    );
+    const input = screen.getByLabelText("Birth date") as HTMLInputElement;
+
+    fireEvent.change(input, { target: { value: "33:33" } });
+
+    expect(screen.getByText("Enter a valid date")).toBeInTheDocument();
+    expect(onChange).toHaveBeenLastCalledWith(null);
   });
 });
 
