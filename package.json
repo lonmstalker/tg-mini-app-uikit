@@ -8,6 +8,8 @@
   "scripts": {
     "build": "npm run build -w tg-mini-app-uikit && npm run build -w tg-mini-app-uikit-demo",
     "dev": "npm run dev -w tg-mini-app-uikit-demo",
+    "stories": "npm run stories -w tg-mini-app-uikit-demo",
+    "stories:build": "npm run stories:build -w tg-mini-app-uikit-demo",
     "record:demo": "node scripts/record-demo.mjs",
     "docs:build": "node scripts/build-docs.mjs",
     "docs:dev": "node scripts/serve-docs.mjs",
@@ -22,7 +24,8 @@
     "test:e2e:update:linux": "scripts/update-linux-snapshots.sh",
     "check:package": "node scripts/check-package.mjs",
     "typecheck": "npm run typecheck -w tg-mini-app-uikit && npm run typecheck -w tg-mini-app-uikit-demo",
-    "check:snippets": "node scripts/check-snippets.mjs"
+    "check:snippets": "node scripts/check-snippets.mjs",
+    "check:stories": "node scripts/check-stories-coverage.mjs"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.3",

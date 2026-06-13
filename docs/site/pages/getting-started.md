@@ -30,4 +30,12 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:5173/?app=gallery` for the component gallery or jump to product flows with `?app=stars`, `?app=support`, `?app=feed`, `?app=wallet`, `?app=forms`, `?app=arcade`, `?app=onboarding` and `?app=settings`.
+Open `http://localhost:5173` for product flows with `?app=stars`, `?app=support`, `?app=feed`, `?app=wallet`, `?app=forms`, `?app=arcade`, `?app=onboarding` and `?app=settings`.
+
+For isolated component inspection, run the standard component explorer:
+
+```bash
+npm run stories
+```
+
+The explorer runs at `http://localhost:6006`, covers every public `TK*` value export and exposes global controls for theme, accent, roundness, locale, RTL, density, motion and preset. Story files live in `examples/demo/stories`, next to `src`, while the legacy `?app=gallery` route remains available for internal e2e regression coverage.

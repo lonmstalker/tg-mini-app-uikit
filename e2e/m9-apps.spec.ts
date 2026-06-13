@@ -239,12 +239,17 @@ test("forms showcase: validation failure and summary sheet", async ({ page }) =>
   await root.getByTestId("forms-date").locator("input").fill("33:33");
   await expect(root.getByTestId("forms-date")).toContainText("Enter a valid date");
   await root.getByTestId("forms-date").click();
-  await page.getByLabel("Year").selectOption("1990");
-  await page.getByLabel("Month", { exact: true }).selectOption("1");
+  await page.getByRole("button", { name: "Year", exact: true }).click();
+  await page.getByRole("option", { name: "1990" }).click();
+  await page.getByRole("button", { name: "Month", exact: true }).click();
+  await page.getByRole("option", { name: "February", exact: true }).click();
   await page.getByRole("button", { name: "February 17, 1990" }).click();
   await expect(root.getByTestId("forms-date").locator("input")).toHaveValue(/1990/);
   await root.getByTestId("forms-time").locator("input").fill("1234");
   await expect(root.getByTestId("forms-time").locator("input")).toHaveValue("12:34");
+  // Invalid time can no longer be typed — digits clamp to a real time.
+  await root.getByTestId("forms-time").locator("input").fill("9999");
+  await expect(root.getByTestId("forms-time").locator("input")).not.toHaveValue("99:99");
   await root.getByTestId("forms-help").click();
   await expect(page.getByTestId("forms-help-popover")).toContainText("quick ranges");
   const helpGeometry = await page.evaluate(() => {

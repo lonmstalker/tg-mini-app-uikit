@@ -138,17 +138,26 @@ export function TKChipsInput({ value, defaultValue = [], onChange, placeholder, 
             }}
           >
             {tag}
-            <span
-              role="button"
-              aria-label={`${tag} ×`}
+            <button
+              type="button"
+              aria-label={`Remove ${tag}`}
+              disabled={disabled}
               onClick={(e) => {
                 e.stopPropagation();
                 setTags(tags.filter((t) => t !== tag));
               }}
-              style={{ display: "inline-flex", cursor: "pointer", opacity: 0.7 }}
+              style={{
+                display: "inline-flex",
+                border: "none",
+                background: "transparent",
+                color: "inherit",
+                cursor: disabled ? "default" : "pointer",
+                opacity: 0.7,
+                padding: 0,
+              }}
             >
               <TKIcon name="close" size={12} strokeWidth={2.6} />
-            </span>
+            </button>
           </span>
         ))}
         <input
@@ -246,6 +255,7 @@ export function TKDateInput({
   const [visibleMonth, setVisibleMonth] = useState(initialMonth);
   const [draft, setDraft] = useState(date ? fmt.format(date) : "");
   const [manualError, setManualError] = useState<ReactNode>(null);
+  const [picker, setPicker] = useState<"none" | "month" | "year">("none");
   const manualChangeRef = useRef(false);
 
   useEffect(() => {
@@ -304,100 +314,215 @@ export function TKDateInput({
           error={fieldError}
         />
       </div>
-      <TKSheet open={open} onClose={() => setOpen(false)} title={sheetTitle ?? label}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 92px", gap: 8, marginBottom: 10 }}>
-          <DatePartSelect
+      <TKSheet
+        open={open}
+        onClose={() => {
+          setPicker("none");
+          setOpen(false);
+        }}
+        title={sheetTitle ?? label}
+      >
+        {/* Month / year triggers open an in-sheet listbox instead of a native
+            `<select>`, whose OS popup balloons to full-screen on long lists. */}
+        <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+          <DatePartTrigger
             ariaLabel="Month"
-            value={visibleMonth.getMonth()}
-            onChange={(next) => setMonthPart(visibleMonth.getFullYear(), Number(next))}
+            expanded={picker === "month"}
+            capitalize
+            grow
+            onClick={() => setPicker((p) => (p === "month" ? "none" : "month"))}
           >
-            {Array.from({ length: 12 }, (_, month) => (
-              <option key={month} value={month}>
-                {monthFmt.format(new Date(2026, month, 1))}
-              </option>
-            ))}
-          </DatePartSelect>
-          <DatePartSelect
+            {monthFmt.format(visibleMonth)}
+          </DatePartTrigger>
+          <DatePartTrigger
             ariaLabel="Year"
-            value={visibleMonth.getFullYear()}
-            onChange={(next) => setMonthPart(Number(next), visibleMonth.getMonth())}
+            expanded={picker === "year"}
+            width={104}
+            onClick={() => setPicker((p) => (p === "year" ? "none" : "year"))}
           >
-            {years.map((year) => (
-              <option key={year} value={year}>
-                {year}
-              </option>
-            ))}
-          </DatePartSelect>
+            {visibleMonth.getFullYear()}
+          </DatePartTrigger>
         </div>
-        <TKCalendar
-          month={visibleMonth}
-          onMonthChange={setVisibleMonth}
-          value={date}
-          onChange={(d) => {
-            setManualError(null);
-            setDate(d);
-            setDraft(fmt.format(d));
-            setOpen(false);
-          }}
-          min={min}
-          max={max}
-          disabledDates={disabledDates}
-          weekStartsOn={weekStartsOn}
-          lang={lang}
-          style={{ boxShadow: "none", padding: 0 }}
-        />
+        {picker === "year" ? (
+          <DatePartList
+            ariaLabel="Year"
+            columns={4}
+            autoScroll
+            options={years.map((year) => ({ value: year, label: String(year), selected: year === visibleMonth.getFullYear() }))}
+            onPick={(year) => {
+              setMonthPart(year, visibleMonth.getMonth());
+              setPicker("none");
+            }}
+          />
+        ) : picker === "month" ? (
+          <DatePartList
+            ariaLabel="Month"
+            columns={3}
+            capitalize
+            options={Array.from({ length: 12 }, (_, month) => ({
+              value: month,
+              label: monthFmt.format(new Date(2026, month, 1)),
+              selected: month === visibleMonth.getMonth(),
+            }))}
+            onPick={(month) => {
+              setMonthPart(visibleMonth.getFullYear(), month);
+              setPicker("none");
+            }}
+          />
+        ) : (
+          <TKCalendar
+            month={visibleMonth}
+            onMonthChange={setVisibleMonth}
+            value={date}
+            onChange={(d) => {
+              setManualError(null);
+              setDate(d);
+              setDraft(fmt.format(d));
+              setOpen(false);
+            }}
+            min={min}
+            max={max}
+            disabledDates={disabledDates}
+            weekStartsOn={weekStartsOn}
+            lang={lang}
+            partSelectors={false}
+            style={{ boxShadow: "none", padding: 0 }}
+          />
+        )}
       </TKSheet>
     </div>
   );
 }
 
-function DatePartSelect({
+function DatePartTrigger({
   ariaLabel,
-  value,
-  onChange,
+  expanded,
+  capitalize,
+  grow,
+  width,
+  onClick,
   children,
 }: {
   ariaLabel: string;
-  value: string | number;
-  onChange: (value: string) => void;
+  expanded: boolean;
+  capitalize?: boolean;
+  grow?: boolean;
+  width?: number;
+  onClick: () => void;
   children: ReactNode;
 }) {
   return (
-    <span style={{ position: "relative", display: "block", minWidth: 0 }}>
-      <select
-        aria-label={ariaLabel}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        style={{
-          appearance: "none",
-          WebkitAppearance: "none",
-          width: "100%",
-          height: 40,
-          border: "none",
-          borderRadius: "var(--tk-r-md)",
-          background: "var(--tk-surface-2)",
-          color: "var(--tk-text)",
-          font: "inherit",
-          padding: "0 34px 0 10px",
-          textTransform: ariaLabel === "Month" ? "capitalize" : undefined,
-        }}
-      >
-        {children}
-      </select>
+    <button
+      type="button"
+      aria-label={ariaLabel}
+      aria-expanded={expanded}
+      onClick={onClick}
+      style={{
+        flex: grow ? "1 1 auto" : undefined,
+        width,
+        minWidth: 0,
+        height: 40,
+        border: "none",
+        borderRadius: "var(--tk-r-md)",
+        background: "var(--tk-surface-2)",
+        color: "var(--tk-text)",
+        font: "inherit",
+        padding: "0 10px 0 12px",
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 8,
+        cursor: "pointer",
+        textTransform: capitalize ? "capitalize" : undefined,
+        boxShadow: expanded ? "inset 0 0 0 1.5px var(--tk-accent)" : "none",
+        transition: "box-shadow var(--tk-t2) var(--tk-ease)",
+      }}
+    >
+      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{children}</span>
       <span
         aria-hidden="true"
         style={{
-          position: "absolute",
-          right: 11,
-          top: "50%",
-          transform: "translateY(-50%)",
           display: "inline-flex",
           color: "var(--tk-text-3)",
-          pointerEvents: "none",
+          transform: expanded ? "rotate(180deg)" : "none",
+          transition: "transform var(--tk-t2) var(--tk-ease)",
         }}
       >
         <TKIcon name="chevronDown" size={15} />
       </span>
-    </span>
+    </button>
+  );
+}
+
+interface DatePartOption {
+  value: number;
+  label: string;
+  selected: boolean;
+}
+
+function DatePartList({
+  ariaLabel,
+  options,
+  onPick,
+  columns,
+  capitalize,
+  autoScroll,
+}: {
+  ariaLabel: string;
+  options: DatePartOption[];
+  onPick: (value: number) => void;
+  columns: number;
+  capitalize?: boolean;
+  autoScroll?: boolean;
+}) {
+  const listRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!autoScroll) return;
+    const selected = listRef.current?.querySelector<HTMLElement>('[aria-selected="true"]');
+    // `scrollIntoView` is absent in jsdom — guard so unit tests don't throw.
+    selected?.scrollIntoView?.({ block: "center" });
+  }, [autoScroll]);
+  return (
+    <div
+      ref={listRef}
+      role="listbox"
+      aria-label={ariaLabel}
+      style={{
+        maxHeight: 256,
+        overflowY: "auto",
+        overscrollBehavior: "contain",
+        display: "grid",
+        gridTemplateColumns: `repeat(${columns}, 1fr)`,
+        gap: 6,
+        padding: 2,
+        scrollbarWidth: "thin",
+      }}
+    >
+      {options.map((o) => (
+        <button
+          key={o.value}
+          type="button"
+          role="option"
+          aria-selected={o.selected}
+          onClick={() => onPick(o.value)}
+          className="tk-press"
+          style={{
+            height: 44,
+            border: "none",
+            borderRadius: "var(--tk-r-md)",
+            cursor: "pointer",
+            fontFamily: "inherit",
+            fontSize: "var(--tk-fz-sub)",
+            fontWeight: o.selected ? 700 : 500,
+            fontVariantNumeric: "tabular-nums",
+            textTransform: capitalize ? "capitalize" : undefined,
+            background: o.selected ? "var(--tk-accent)" : "var(--tk-surface-2)",
+            color: o.selected ? "var(--tk-on-accent)" : "var(--tk-text)",
+          }}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
   );
 }

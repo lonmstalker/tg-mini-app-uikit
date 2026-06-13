@@ -11,9 +11,9 @@ production-shaped components and a full Bot API 9.6 WebApp platform layer with a
 [![React](https://img.shields.io/badge/React-18%20·%2019-61DAFB?logo=react&logoColor=black)](packages/uikit/package.json)
 [![Runtime deps](https://img.shields.io/badge/runtime%20deps-zero-success)](packages/uikit/package.json)
 
-<img src="docs/demo.gif" width="340" alt="Demo recorded from the real app: shop checkout, Platform Lab Telegram APIs, and component gallery motion" />
+<img src="docs/demo.gif" width="340" alt="Demo recorded from the real app: shop checkout, Platform Lab Telegram APIs, and component explorer motion" />
 
-*13 example mini-apps plus a Telegram Platform Lab, captured from the real demo and built only with kit exports.*
+*12 example mini-apps, a Telegram Platform Lab and a Storybook component explorer, all built only with kit exports.*
 
 </div>
 
@@ -38,6 +38,7 @@ production-shaped components and a full Bot API 9.6 WebApp platform layer with a
 ```bash
 npm install
 npm run dev        # demo at http://localhost:5173 (kit sources are aliased — instant HMR)
+npm run stories    # Storybook component explorer at http://localhost:6006
 npm run build      # builds the library (dist/ + .d.ts) and the demo
 npm run typecheck  # strict TS across both workspaces
 npm run docs:dev   # local static documentation site
@@ -111,7 +112,7 @@ without leaving the browser.
 
 ## The demo
 
-13 example mini-apps, each written the way a real one would be — screens, state, data — using only kit components:
+12 example mini-apps, each written the way a real one would be — screens, state, data — using only kit components:
 
 - **Shop** — storefront: catalog with search/categories, product sheet, cart, payment with a decline/retry path and a receipt timeline.
 - **Booking** — appointment flow: service list → slot picker → confirm → live status timeline.
@@ -125,25 +126,26 @@ without leaving the browser.
 - **Wallet** — mock TON connect/send/history flow with no network calls.
 - **Forms** — form showcase with date, phone, tags, file upload, range slider and summary sheet.
 - **Platform** — the Telegram platform lab: mock client chrome, native buttons, fullscreen/viewport drag, safe-area visualizer, haptics, popups, storage managers, QR/clipboard/permissions/share/payment/device API events.
-- **Kit** — live gallery of every export, including loading/error/disabled, form, overlay and long-content stress states.
 
 On desktop the active app runs inside an iPhone frame next to a **Tweaks** panel (itself built from the kit): theme, accent, roundness, motion and type scale — every knob maps to a design token and restyles the apps live. On narrow screens the app takes over the whole viewport, like a real mini app.
+For isolated component work, run `npm run stories`: Storybook shows every public `TK*` value export with theme, accent, roundness, locale, RTL, density, motion and preset controls. Stories live in `examples/demo/stories`, next to `src`, while the old `?app=gallery` route remains available as an internal regression fixture for e2e coverage.
 
 ### What the demo proves
 
-- Components are not just isolated screenshots: commerce, booking, game and gallery flows keep real state.
+- Components are not just isolated screenshots: commerce, booking and game flows keep real state, while Storybook stories cover the isolated component surface.
 - The Telegram layer is testable: `<TKTelegramProvider webApp={mock}>` drives native buttons, client chrome, events and fallbacks in a normal browser.
 - The README animation is regenerated from scripted browser interactions, not hand-picked screenshots.
 
 ## Testing
 
-CI runs five gates on every PR; all of them run locally too:
+CI runs these gates on every PR; all of them run locally too:
 
 | Gate | Command | What it covers |
 | --- | --- | --- |
 | Unit (vitest + Testing Library) | `npm run test:unit` | hooks, slider/stepper/OTP logic, MainButton state machine, toast eviction, the whole Telegram layer (mapping, events, fallbacks, promisified APIs), SSR `renderToString` of every export, type-level API surface |
 | E2E + a11y (Playwright) | `npm run test:e2e` | flows for all demo apps, axe WCAG A/AA scans, keyboard nav, motion, ARIA snapshots, a contrast-debt budget |
 | Visual regression | `npm run test:e2e:visual` | every gallery section + app screens in light/dark, component states (hover/focus/open/loading), token matrix and `--tg-theme-*` mode, WebKit (iOS WKWebView rendering), 320px reflow (WCAG 1.4.10), DPR 2–3, forced-colors |
+| Component explorer | `npm run check:stories && npm run stories:build` | every public `TK*` value export is represented in Storybook stories, and the static explorer compiles |
 | Packaging | `npm run check:package` | zero runtime deps, publint, arethetypeswrong, size-limit budgets incl. tree-shaking, snippet and docs gates |
 | Documentation | `npm run docs:check && npm run docs:build` | static docs pages, AI docs, README positioning, release notes and docs workflow |
 | Typecheck + build | `npm run typecheck && npm run build` | strict TS across the workspace |
@@ -163,7 +165,7 @@ comparison is enforced on every PR regardless of the contributor's OS.
 
 ```
 packages/uikit     → tg-mini-app-uikit — the library (TypeScript, design tokens, components + hooks)
-examples/demo      → demo app: five example mini-apps consuming the kit
+examples/demo      → demo apps plus Storybook stories consuming the kit from source
 e2e/               → Playwright suites: design, states, tokens, flows, a11y, motion, reflow, ARIA
 docs/              → README assets, static documentation source, llms-full.md
 ```

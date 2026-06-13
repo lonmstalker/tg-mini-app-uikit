@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    name: typecheck & build (node ${{ matrix.node }})
+    name: typecheck, build & stories (node ${{ matrix.node }})
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -21,7 +21,9 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
+      - run: npm run check:stories
       - run: npm run build
+      - run: npm run stories:build
 
   unit:
     name: unit (vitest)

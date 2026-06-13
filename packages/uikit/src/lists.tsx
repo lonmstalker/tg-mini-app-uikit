@@ -7,6 +7,7 @@ import {
   type CSSProperties,
   type ElementType,
   type ForwardedRef,
+  type KeyboardEvent,
   type ReactElement,
   type ReactNode,
 } from "react";
@@ -114,12 +115,22 @@ function TKCellImpl(
   const Tag = as ?? "div";
   const [hover, setHover] = useState(false);
   const hasToggle = toggle !== undefined || defaultToggle !== undefined;
+  const actionable = Boolean(onClick) && Tag !== "a" && !hasToggle;
+  const activateFromKeyboard = (event: KeyboardEvent<HTMLElement>) => {
+    if (!actionable) return;
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    onClick?.();
+  };
   return (
     <Tag
       {...rest}
       ref={ref as never}
       data-testid={testId}
+      role={actionable ? "button" : undefined}
+      tabIndex={actionable ? 0 : undefined}
       onClick={onClick}
+      onKeyDown={activateFromKeyboard}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       style={{
@@ -183,13 +194,19 @@ function TKCellImpl(
         <span style={{ fontSize: "var(--tk-fz-body)", color: "var(--tk-text-2)", flexShrink: 0 }}>{value}</span>
       ) : null}
       {hasToggle ? (
-        <TKSwitch
-          small
-          ariaLabel={typeof title === "string" ? title : undefined}
-          checked={toggle}
-          defaultChecked={defaultToggle}
-          onChange={onToggle}
-        />
+        <span
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+          style={{ display: "inline-flex" }}
+        >
+          <TKSwitch
+            small
+            ariaLabel={typeof title === "string" ? title : undefined}
+            checked={toggle}
+            defaultChecked={defaultToggle}
+            onChange={onToggle}
+          />
+        </span>
       ) : null}
       {after}
       {chevron ? (

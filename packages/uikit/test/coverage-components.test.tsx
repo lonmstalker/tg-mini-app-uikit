@@ -144,6 +144,59 @@ describe("coverage-backed component behaviours", () => {
     expect(input).toHaveValue("");
   });
 
+  it("TKSearch can expand from a compact idle width on focus", async () => {
+    const user = userEvent.setup();
+    render(<kit.TKSearch placeholder="Find" expandOnFocus collapsedWidth={180} expandedWidth={360} testId="search" />);
+
+    const root = screen.getByTestId("search");
+    expect(root).toHaveAttribute("data-tk-search-expand", "true");
+    expect(root).toHaveStyle({ "--tk-search-collapsed": "180px", "--tk-search-expanded": "360px" });
+
+    await user.click(screen.getByPlaceholderText("Find"));
+    expect(screen.getByPlaceholderText("Find")).toHaveFocus();
+  });
+
+  it("field inputs expose descriptions and a named clear action", async () => {
+    const user = userEvent.setup();
+    render(<kit.TKInput label="Email" defaultValue="bad" error="Enter a valid email" prefix={<span data-testid="email-prefix">@</span>} />);
+
+    const input = screen.getByLabelText("Email");
+    expect(input).toHaveAttribute("aria-invalid", "true");
+    expect(input).toHaveAccessibleDescription("Enter a valid email");
+
+    fireEvent.mouseDown(screen.getByTestId("email-prefix"));
+    expect(input).toHaveFocus();
+
+    await user.click(screen.getByRole("button", { name: "Clear Email" }));
+    expect(input).toHaveValue("");
+  });
+
+  it("TKSearch keeps the hidden cancel action out of the accessibility flow", async () => {
+    const user = userEvent.setup();
+    render(<kit.TKSearch placeholder="Find" cancelLabel="Close" />);
+
+    const hiddenCancel = screen.getByText("Close").closest("button")!;
+    expect(hiddenCancel).toHaveAttribute("aria-hidden", "true");
+    expect(hiddenCancel).toHaveAttribute("tabindex", "-1");
+
+    await user.click(screen.getByPlaceholderText("Find"));
+    const visibleCancel = screen.getByRole("button", { name: "Close" });
+    expect(visibleCancel).not.toHaveAttribute("aria-hidden");
+    expect(visibleCancel).not.toHaveAttribute("tabindex", "-1");
+  });
+
+  it("TKChipsInput removes tags through a keyboard-accessible button", async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(<kit.TKChipsInput label="Skills" defaultValue={["React"]} onChange={onChange} />);
+
+    const remove = screen.getByRole("button", { name: "Remove React" });
+    remove.focus();
+    await user.keyboard("{Enter}");
+
+    expect(onChange).toHaveBeenLastCalledWith([]);
+  });
+
   it("TKSelect supports search, disabled options and keyboard selection", async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
@@ -221,6 +274,32 @@ describe("coverage-backed component behaviours", () => {
     expect(onCell).toHaveBeenCalledOnce();
     expect(onChip).toHaveBeenCalledOnce();
     expect(screen.getByRole("link", { name: "Link cell" })).toHaveAttribute("href", "#target");
+  });
+
+  it("TKCell exposes simple clickable rows as keyboard actions", () => {
+    const onCell = vi.fn();
+    render(<kit.TKCell title="Profile" subtitle="Open settings" onClick={onCell} />);
+
+    const row = screen.getByRole("button", { name: /Profile/ });
+    fireEvent.keyDown(row, { key: "Enter" });
+    fireEvent.keyDown(row, { key: " " });
+
+    expect(onCell).toHaveBeenCalledTimes(2);
+  });
+
+  it("TKCell keeps switch rows out of nested-interactive keyboard semantics", () => {
+    const onCell = vi.fn();
+    const onToggle = vi.fn();
+    render(<kit.TKCell title="Notifications" subtitle="Daily digest" onClick={onCell} defaultToggle onToggle={onToggle} testId="notifications-row" />);
+
+    const row = screen.getByTestId("notifications-row");
+    expect(row).not.toHaveAttribute("role", "button");
+
+    fireEvent.click(row);
+    expect(onCell).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByRole("switch", { name: "Notifications" }));
+    expect(onToggle).toHaveBeenLastCalledWith(false);
+    expect(onCell).toHaveBeenCalledTimes(1);
   });
 
   it("product cards handle add, click, favorite, badges and rich metadata", async () => {
@@ -403,8 +482,10 @@ describe("coverage-backed component behaviours", () => {
     );
 
     await user.click(screen.getByDisplayValue("06/10/2026"));
-    fireEvent.change(screen.getByLabelText("Year"), { target: { value: "1990" } });
-    fireEvent.change(screen.getByLabelText("Month"), { target: { value: "0" } });
+    await user.click(screen.getByRole("button", { name: "Year" }));
+    await user.click(screen.getByRole("option", { name: "1990" }));
+    await user.click(screen.getByRole("button", { name: "Month" }));
+    await user.click(screen.getByRole("option", { name: "January" }));
     await user.click(screen.getByRole("button", { name: "January 5, 1990" }));
 
     const picked = onChange.mock.lastCall![0] as Date;
@@ -492,8 +573,8 @@ describe("coverage-backed component behaviours", () => {
     Object.defineProperty(grab, "setPointerCapture", { value: vi.fn(), configurable: true });
 
     fireEvent.pointerDown(grab, { clientY: 220, clientX: 10, pointerId: 1, timeStamp: 0 });
-    fireEvent.pointerMove(grab, { clientY: 20, clientX: 10, pointerId: 1, timeStamp: 20 });
-    fireEvent.pointerUp(grab, { clientY: 20, clientX: 10, pointerId: 1, timeStamp: 40 });
+    fireEvent.pointerMove(grab, { clientY: 0, clientX: 10, pointerId: 1, timeStamp: 20 });
+    fireEvent.pointerUp(grab, { clientY: 0, clientX: 10, pointerId: 1, timeStamp: 40 });
     expect(sheetRef.current?.snapIndex).toBe(1);
 
     fireEvent.pointerDown(grab, { clientY: 20, clientX: 10, pointerId: 2, timeStamp: 100 });

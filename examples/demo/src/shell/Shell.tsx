@@ -70,8 +70,23 @@ const NAV: { key: AppKey; label: string }[] = [
   { key: "arcade", label: "Arcade" },
   { key: "settings", label: "Storage" },
   { key: "platform", label: "Platform" },
-  { key: "gallery", label: "Kit" },
 ];
+
+const APP_KEYS = new Set<AppKey>([
+  "shop",
+  "booking",
+  "game",
+  "platform",
+  "gallery",
+  "stars",
+  "onboarding",
+  "settings",
+  "support",
+  "arcade",
+  "feed",
+  "wallet",
+  "forms",
+]);
 
 const font: CSSProperties = {
   fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif",
@@ -222,7 +237,7 @@ function bootParams(): {
   const accentRaw = params.get("accent");
   const accent = accentRaw ? (accentRaw.startsWith("#") ? accentRaw : `#${accentRaw}`) : undefined;
   return {
-    app: app && NAV.some((n) => n.key === app) ? app : "shop",
+    app: app && APP_KEYS.has(app) ? app : "shop",
     dark: params.get("dark") === "1",
     locale: localeRaw === "ru" || localeRaw === "ar" ? localeRaw : "en",
     // `?locale=ar` is an RTL language — flips the document like `?rtl=1`

@@ -138,18 +138,20 @@ export function TKAvatar({ initials = "", size = 40, tone, src, alt = "", status
             position: "absolute",
             right: 0,
             bottom: 0,
-            width: Math.max(8, size * 0.26),
-            height: Math.max(8, size * 0.26),
+            width: Math.max(9, size * 0.24),
+            height: Math.max(9, size * 0.24),
             borderRadius: "50%",
             background: status === "online" ? "var(--tk-green)" : "var(--tk-text-3)",
-            boxShadow: "0 0 0 2px var(--tk-surface)",
+            border: "2px solid var(--tk-surface)",
+            boxSizing: "border-box",
+            transform: "translate(20%, 20%)",
           }}
         />
       ) : (
         <span data-tk-avatar-status style={{ position: "absolute", right: -2, bottom: -2 }}>{status}</span>
       );
     return (
-      <span data-testid={testId} style={{ position: "relative", display: "inline-flex", flexShrink: 0 }}>
+      <span data-testid={testId} style={{ position: "relative", display: "inline-flex", width: size, height: size, flexShrink: 0 }}>
         <TKAvatar initials={initials} size={size} tone={tone} src={src} alt={alt} />
         {dot}
       </span>

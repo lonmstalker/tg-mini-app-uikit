@@ -56,6 +56,11 @@ export function TKPinInput({ length = 4, onComplete, error, onBiometricRequest, 
     fontWeight: 600,
     color: "var(--tk-text)",
     cursor: "pointer",
+    // Centre the contents: digit glyphs *and* the block-level icon keys
+    // (biometrics, backspace), which otherwise hug the left edge.
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
   };
 
   return (

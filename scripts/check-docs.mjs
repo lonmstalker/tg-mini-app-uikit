@@ -45,7 +45,8 @@ mustContain("package.json", [
 ]);
 
 mustContain("README.md", [
-  "13 example mini-apps",
+  "12 example mini-apps",
+  "Storybook component explorer",
   "Bot API 9.6",
   "zero runtime dependencies",
   "React 19",

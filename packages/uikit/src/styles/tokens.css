@@ -269,6 +269,15 @@
   animation: tk-pulse calc(1800ms / var(--tk-ms)) var(--tk-ease) infinite;
 }
 
+[data-tk-search-expand="true"] {
+  width: var(--tk-search-collapsed);
+}
+
+[data-tk-search-expand="true"]:focus-within,
+[data-tk-search-expand="true"][data-tk-search-filled="true"] {
+  width: var(--tk-search-expanded);
+}
+
 /* striped image placeholder */
 .tk-img-ph {
   display: flex;

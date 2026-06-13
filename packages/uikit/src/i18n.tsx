@@ -15,6 +15,8 @@ export interface TKLocale {
   cancel: string;
   /** TKSheet close button aria label. */
   close: string;
+  /** Generic clear action. */
+  clear: string;
   /** TKMultiselect placeholder. */
   selectOptions: string;
   /** TKFileInput button label. */
@@ -87,6 +89,7 @@ export const enLocale: TKLocale = {
   back: "Back",
   cancel: "Cancel",
   close: "Close",
+  clear: "Clear",
   selectOptions: "Select options",
   chooseFile: "Choose file",
   noFileSelected: "No file selected",
@@ -132,6 +135,7 @@ export const ruLocale: TKLocale = {
   back: "Назад",
   cancel: "Отмена",
   close: "Закрыть",
+  clear: "Очистить",
   selectOptions: "Выберите варианты",
   chooseFile: "Выберите файл",
   noFileSelected: "Файл не выбран",

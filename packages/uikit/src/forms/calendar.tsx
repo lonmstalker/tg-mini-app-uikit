@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 import { TKIconButton } from "../buttons";
+import { TKIcon } from "../icons";
 import { useTKLocale } from "../i18n";
 import { useControllable } from "../internal/useControllable";
 
@@ -29,6 +30,8 @@ export interface TKCalendarProps {
   weekStartsOn?: 0 | 1;
   /** BCP-47 locale for month/weekday names (Intl). Defaults to the document language. */
   lang?: string;
+  /** Clickable month/year selectors in the calendar header. */
+  partSelectors?: boolean;
   testId?: string;
   style?: CSSProperties;
 }
@@ -53,6 +56,13 @@ function addMonths(d: Date, n: number): Date {
   return next;
 }
 
+function calendarYearRange(anchor: Date, min?: Date, max?: Date): number[] {
+  const center = anchor.getFullYear();
+  const first = min?.getFullYear() ?? center - 50;
+  const last = max?.getFullYear() ?? center + 20;
+  return Array.from({ length: Math.max(1, last - first + 1) }, (_, i) => first + i);
+}
+
 function documentLang(): string {
   if (typeof document !== "undefined" && document.documentElement.lang) return document.documentElement.lang;
   return "en";
@@ -75,6 +85,7 @@ export function TKCalendar({
   disabledDates,
   weekStartsOn = 1,
   lang,
+  partSelectors = true,
   testId,
   style,
 }: TKCalendarProps) {
@@ -90,6 +101,7 @@ export function TKCalendar({
   const initialMonth = defaultMonth ?? (mode === "range" ? selectedRange?.[0] : selected) ?? new Date();
   const [visibleMonth, setVisibleMonth] = useControllable<Date>(month, startOfDay(initialMonth), onMonthChange);
   const [focusDate, setFocusDate] = useState<Date | null>(null);
+  const [picker, setPicker] = useState<"none" | "month" | "year">("none");
   const gridRef = useRef<HTMLDivElement>(null);
 
   const fmtDay = useMemo(
@@ -97,7 +109,9 @@ export function TKCalendar({
     [resolvedLang],
   );
   const fmtMonth = useMemo(() => new Intl.DateTimeFormat(resolvedLang, { month: "long", year: "numeric" }), [resolvedLang]);
+  const fmtMonthName = useMemo(() => new Intl.DateTimeFormat(resolvedLang, { month: "long" }), [resolvedLang]);
   const fmtWeekday = useMemo(() => new Intl.DateTimeFormat(resolvedLang, { weekday: "short" }), [resolvedLang]);
+  const years = useMemo(() => calendarYearRange(visibleMonth, min, max), [max, min, visibleMonth]);
 
   const isDisabled = (d: Date): boolean => {
     if (min && startOfDay(d) < startOfDay(min)) return true;
@@ -135,6 +149,12 @@ export function TKCalendar({
       setPendingStart(null);
       setSelectedRange([a, b]);
     }
+  };
+
+  const setMonthPart = (year: number, monthIndex: number) => {
+    setPicker("none");
+    setFocusDate(null);
+    setVisibleMonth(new Date(year, monthIndex, 1));
   };
 
   const moveFocus = (from: Date, e: KeyboardEvent) => {
@@ -187,13 +207,74 @@ export function TKCalendar({
   return (
     <div data-testid={testId} style={{ background: "var(--tk-surface)", borderRadius: "var(--tk-r-lg)", boxShadow: "var(--tk-shadow-sm)", padding: 12, ...style }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-        <TKIconButton icon="chevronLeft" size="sm" variant="plain" label={locale.prevMonth} onClick={() => setVisibleMonth(addMonths(visibleMonth, -1))} />
-        <span style={{ fontWeight: 700, fontSize: "var(--tk-fz-body)", textTransform: "capitalize" }}>
-          {fmtMonth.format(visibleMonth)}
-        </span>
-        <TKIconButton icon="chevronRight" size="sm" variant="plain" label={locale.nextMonth} onClick={() => setVisibleMonth(addMonths(visibleMonth, 1))} />
+        <TKIconButton
+          icon="chevronLeft"
+          size="sm"
+          variant="plain"
+          label={locale.prevMonth}
+          onClick={() => {
+            setPicker("none");
+            setVisibleMonth(addMonths(visibleMonth, -1));
+          }}
+        />
+        {partSelectors ? (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, minWidth: 0, flex: "1 1 auto" }}>
+            <CalendarPartTrigger
+              ariaLabel="Month"
+              expanded={picker === "month"}
+              capitalize
+              grow
+              onClick={() => setPicker((p) => (p === "month" ? "none" : "month"))}
+            >
+              {fmtMonthName.format(visibleMonth)}
+            </CalendarPartTrigger>
+            <CalendarPartTrigger
+              ariaLabel="Year"
+              expanded={picker === "year"}
+              width={86}
+              onClick={() => setPicker((p) => (p === "year" ? "none" : "year"))}
+            >
+              {visibleMonth.getFullYear()}
+            </CalendarPartTrigger>
+          </div>
+        ) : (
+          <span style={{ fontWeight: 700, fontSize: "var(--tk-fz-body)", textTransform: "capitalize" }}>
+            {fmtMonth.format(visibleMonth)}
+          </span>
+        )}
+        <TKIconButton
+          icon="chevronRight"
+          size="sm"
+          variant="plain"
+          label={locale.nextMonth}
+          onClick={() => {
+            setPicker("none");
+            setVisibleMonth(addMonths(visibleMonth, 1));
+          }}
+        />
       </div>
-      <div ref={gridRef} role="grid" aria-label={fmtMonth.format(visibleMonth)}>
+      {picker === "year" ? (
+        <CalendarPartList
+          ariaLabel="Year"
+          columns={4}
+          autoScroll
+          options={years.map((year) => ({ value: year, label: String(year), selected: year === visibleMonth.getFullYear() }))}
+          onPick={(year) => setMonthPart(year, visibleMonth.getMonth())}
+        />
+      ) : picker === "month" ? (
+        <CalendarPartList
+          ariaLabel="Month"
+          columns={3}
+          capitalize
+          options={Array.from({ length: 12 }, (_, monthIndex) => ({
+            value: monthIndex,
+            label: fmtMonthName.format(new Date(2026, monthIndex, 1)),
+            selected: monthIndex === visibleMonth.getMonth(),
+          }))}
+          onPick={(monthIndex) => setMonthPart(visibleMonth.getFullYear(), monthIndex)}
+        />
+      ) : (
+        <div ref={gridRef} role="grid" aria-label={fmtMonth.format(visibleMonth)}>
         <div role="row" style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", marginBottom: 4 }}>
           {weekdayLabels.map((w) => (
             <span
@@ -260,7 +341,141 @@ export function TKCalendar({
             })}
           </div>
         ))}
-      </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CalendarPartTrigger({
+  ariaLabel,
+  expanded,
+  capitalize,
+  grow,
+  width,
+  onClick,
+  children,
+}: {
+  ariaLabel: string;
+  expanded: boolean;
+  capitalize?: boolean;
+  grow?: boolean;
+  width?: number;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={ariaLabel}
+      aria-expanded={expanded}
+      onClick={onClick}
+      style={{
+        flex: grow ? "1 1 auto" : undefined,
+        width,
+        minWidth: 0,
+        height: 34,
+        border: "none",
+        borderRadius: "var(--tk-r-md)",
+        background: "var(--tk-surface-2)",
+        color: "var(--tk-text)",
+        font: "inherit",
+        fontWeight: 700,
+        padding: "0 8px 0 10px",
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 6,
+        cursor: "pointer",
+        textTransform: capitalize ? "capitalize" : undefined,
+        boxShadow: expanded ? "inset 0 0 0 1.5px var(--tk-accent)" : "none",
+        transition: "box-shadow var(--tk-t2) var(--tk-ease)",
+      }}
+    >
+      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{children}</span>
+      <span
+        aria-hidden="true"
+        style={{
+          display: "inline-flex",
+          color: "var(--tk-text-3)",
+          transform: expanded ? "rotate(180deg)" : "none",
+          transition: "transform var(--tk-t2) var(--tk-ease)",
+        }}
+      >
+        <TKIcon name="chevronDown" size={15} />
+      </span>
+    </button>
+  );
+}
+
+interface CalendarPartOption {
+  value: number;
+  label: string;
+  selected: boolean;
+}
+
+function CalendarPartList({
+  ariaLabel,
+  options,
+  onPick,
+  columns,
+  capitalize,
+  autoScroll,
+}: {
+  ariaLabel: string;
+  options: CalendarPartOption[];
+  onPick: (value: number) => void;
+  columns: number;
+  capitalize?: boolean;
+  autoScroll?: boolean;
+}) {
+  const listRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!autoScroll) return;
+    const selected = listRef.current?.querySelector<HTMLElement>('[aria-selected="true"]');
+    selected?.scrollIntoView?.({ block: "center" });
+  }, [autoScroll]);
+  return (
+    <div
+      ref={listRef}
+      role="listbox"
+      aria-label={ariaLabel}
+      style={{
+        maxHeight: 286,
+        overflowY: "auto",
+        overscrollBehavior: "contain",
+        display: "grid",
+        gridTemplateColumns: `repeat(${columns}, 1fr)`,
+        gap: 6,
+        padding: 2,
+        scrollbarWidth: "thin",
+      }}
+    >
+      {options.map((o) => (
+        <button
+          key={o.value}
+          type="button"
+          role="option"
+          aria-selected={o.selected}
+          onClick={() => onPick(o.value)}
+          className="tk-press"
+          style={{
+            height: 40,
+            border: "none",
+            borderRadius: "var(--tk-r-md)",
+            cursor: "pointer",
+            fontFamily: "inherit",
+            fontSize: "var(--tk-fz-sub)",
+            fontWeight: o.selected ? 700 : 500,
+            fontVariantNumeric: "tabular-nums",
+            textTransform: capitalize ? "capitalize" : undefined,
+            background: o.selected ? "var(--tk-accent)" : "var(--tk-surface-2)",
+            color: o.selected ? "var(--tk-on-accent)" : "var(--tk-text)",
+          }}
+        >
+          {o.label}
+        </button>
+      ))}
     </div>
   );
 }

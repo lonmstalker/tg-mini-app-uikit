@@ -11,6 +11,24 @@ describe("M5.1 icon set", () => {
       expect(kit.TK_ICON_NAMES, `missing icon: ${name}`).toContain(name);
     }
   });
+
+  it("renders every registered icon as a non-empty 24px svg", () => {
+    render(
+      <div>
+        {kit.TK_ICON_NAMES.map((name) => (
+          <kit.TKIcon key={name} name={name} testId={`icon-${name}`} />
+        ))}
+      </div>,
+    );
+
+    for (const name of kit.TK_ICON_NAMES) {
+      const icon = screen.getByTestId(`icon-${name}`);
+      expect(icon.tagName.toLowerCase()).toBe("svg");
+      expect(icon).toHaveAttribute("viewBox", "0 0 24 24");
+      expect(icon).toHaveAttribute("aria-hidden", "true");
+      expect(icon.childElementCount, `empty icon: ${name}`).toBeGreaterThan(0);
+    }
+  });
 });
 
 /* ---------------- M5.2 avatar stack & status ---------------- */

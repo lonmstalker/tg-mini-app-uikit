@@ -73,26 +73,23 @@ export const TKInput = /* @__PURE__ */ forwardRef<HTMLInputElement, TKInputProps
   const [val, setVal] = useControllable(value, defaultValue, onChange);
   const [focus, setFocus] = useState(false);
   const [reveal, setReveal] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const autoId = useId();
+  const inputId = id ?? autoId;
+  const describedBy = hint || error ? `${inputId}-description` : undefined;
+  const clearLabel = typeof label === "string" ? `${locale.clear} ${label}` : locale.clear;
   const isPassword = type === "password";
   const borderColor = error ? "var(--tk-red)" : focus ? "var(--tk-accent)" : "transparent";
   return (
-    <label data-testid={testId} style={{ display: "block", opacity: disabled ? 0.55 : 1 }}>
-      {label ? (
-        <div
-          style={{
-            fontSize: "var(--tk-fz-caption)",
-            fontWeight: 600,
-            letterSpacing: ".04em",
-            textTransform: "uppercase",
-            color: focus ? "var(--tk-accent)" : "var(--tk-text-2)",
-            margin: "0 14px 6px",
-            transition: "color var(--tk-t2) var(--tk-ease)",
-          }}
-        >
-          {label}
-        </div>
-      ) : null}
+    <TKFormField label={label} hint={hint} error={error} htmlFor={inputId} describedBy={describedBy} disabled={disabled} testId={testId}>
       <div
+        onMouseDown={(event) => {
+          if (disabled) return;
+          const target = event.target as HTMLElement;
+          if (target === inputRef.current || target.closest("button,a,input,textarea,select,[role='button'],[role='switch']")) return;
+          event.preventDefault();
+          inputRef.current?.focus();
+        }}
         style={{
           display: "flex",
           alignItems: "center",
@@ -118,8 +115,8 @@ export const TKInput = /* @__PURE__ */ forwardRef<HTMLInputElement, TKInputProps
         ) : null}
         {prefix}
         <input
-          ref={ref}
-          id={id}
+          ref={mergeRefs(inputRef, ref)}
+          id={inputId}
           type={isPassword && reveal ? "text" : type}
           name={name}
           value={val}
@@ -128,6 +125,8 @@ export const TKInput = /* @__PURE__ */ forwardRef<HTMLInputElement, TKInputProps
           autoFocus={autoFocus}
           maxLength={maxLength}
           inputMode={inputMode}
+          aria-describedby={describedBy}
+          aria-invalid={!!error}
           onChange={(e) => setVal(e.target.value)}
           onFocus={(e) => {
             setFocus(true);
@@ -152,6 +151,7 @@ export const TKInput = /* @__PURE__ */ forwardRef<HTMLInputElement, TKInputProps
         {clearable && val ? (
           <button
             type="button"
+            aria-label={clearLabel}
             className="tk-pop"
             onClick={(e) => {
               e.preventDefault();
@@ -201,18 +201,7 @@ export const TKInput = /* @__PURE__ */ forwardRef<HTMLInputElement, TKInputProps
           {val.length}/{maxLength}
         </div>
       ) : null}
-      {hint || error ? (
-        <div
-          style={{
-            fontSize: "var(--tk-fz-caption)",
-            color: error ? "var(--tk-red)" : "var(--tk-text-2)",
-            margin: "6px 14px 0",
-          }}
-        >
-          {error || hint}
-        </div>
-      ) : null}
-    </label>
+    </TKFormField>
   );
 });
 

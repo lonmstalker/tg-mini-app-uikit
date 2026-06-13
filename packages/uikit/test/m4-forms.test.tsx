@@ -19,6 +19,19 @@ describe("M4.1 TKCalendar", () => {
     expect(headers[0]).toContain("пн");
   });
 
+  it("opens month and year selectors from the standalone calendar header", async () => {
+    const user = userEvent.setup();
+    render(<kit.TKCalendar defaultMonth={june} min={new Date(1980, 0, 1)} max={new Date(2026, 11, 31)} />);
+
+    await user.click(screen.getByRole("button", { name: "Month" }));
+    await user.click(screen.getByRole("option", { name: "January" }));
+    expect(screen.getByRole("grid", { name: "January 2026" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Year" }));
+    await user.click(screen.getByRole("option", { name: "1990" }));
+    expect(screen.getByRole("grid", { name: "January 1990" })).toBeInTheDocument();
+  });
+
   it("selects a single date and reports it", () => {
     const onChange = vi.fn();
     render(<kit.TKCalendar defaultMonth={june} onChange={onChange} />);
@@ -161,6 +174,34 @@ describe("M4.3 TKMaskedInput", () => {
     expect(input.value).toBe("12");
     fireEvent.change(input, { target: { value: "1234" } });
     expect(input.value).toBe("12:34");
+  });
+
+  it("TKTimeInput clamps impossible digits to a real time (no 99:99)", () => {
+    const onChange = vi.fn();
+    render(<kit.TKTimeInput placeholder="time" onChange={onChange} />);
+    const input = screen.getByPlaceholderText("time") as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "9999" } });
+    expect(input.value).not.toBe("99:99");
+    expect(input.value).toMatch(/^([01]\d|2[0-3]):[0-5]\d$/);
+    expect(onChange).toHaveBeenLastCalledWith(expect.stringMatching(/^([01]\d|2[0-3]):[0-5]\d$/));
+  });
+
+  it("TKTimeInput caps the hour at 23 in 24h mode", () => {
+    render(<kit.TKTimeInput placeholder="time" />);
+    const input = screen.getByPlaceholderText("time") as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "2530" } });
+    expect(input.value).toBe("23:30");
+  });
+
+  it("TKTimeInput hour12 emits canonical 24h via the AM/PM toggle", () => {
+    const onChange = vi.fn();
+    render(<kit.TKTimeInput placeholder="time" hour12 onChange={onChange} />);
+    const input = screen.getByPlaceholderText("time") as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "0130" } });
+    expect(input.value).toBe("01:30");
+    expect(onChange).toHaveBeenLastCalledWith("01:30"); // AM by default
+    fireEvent.click(screen.getByRole("button", { name: "PM" }));
+    expect(onChange).toHaveBeenLastCalledWith("13:30");
   });
 });
 

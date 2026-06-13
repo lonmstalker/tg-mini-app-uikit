@@ -1,4 +1,4 @@
-import { forwardRef, useRef, useState, type ReactNode } from "react";
+import { forwardRef, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { TKIcon } from "../icons";
 import { useControllable } from "../internal/useControllable";
 import { mergeRefs } from "../internal/dom";
@@ -195,18 +195,54 @@ export interface TKSearchProps {
   onChange?: (value: string) => void;
   onCancel?: () => void;
   cancelLabel?: string;
+  /** Animate from a compact search field to the available width on focus. */
+  expandOnFocus?: boolean;
+  /** Compact width used while `expandOnFocus` is enabled and the field is idle. */
+  collapsedWidth?: number | string;
+  /** Expanded width used while `expandOnFocus` is enabled and the field is focused or filled. */
+  expandedWidth?: number | string;
   testId?: string;
 }
 
 export const TKSearch = /* @__PURE__ */ forwardRef<HTMLInputElement, TKSearchProps>(function TKSearch(
-  { placeholder, value, defaultValue = "", onChange, onCancel, cancelLabel, testId },
+  {
+    placeholder,
+    value,
+    defaultValue = "",
+    onChange,
+    onCancel,
+    cancelLabel,
+    expandOnFocus,
+    collapsedWidth = 260,
+    expandedWidth = "100%",
+    testId,
+  },
   ref,
 ) {
   const locale = useTKLocale();
   const [val, setVal] = useControllable(value, defaultValue, onChange);
   const [focus, setFocus] = useState(false);
+  const showCancel = focus || !!val;
+  const expandStyle = expandOnFocus
+    ? ({
+        "--tk-search-collapsed": typeof collapsedWidth === "number" ? `${collapsedWidth}px` : collapsedWidth,
+        "--tk-search-expanded": typeof expandedWidth === "number" ? `${expandedWidth}px` : expandedWidth,
+      } as CSSProperties)
+    : undefined;
   return (
-    <div data-testid={testId} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+    <div
+      data-testid={testId}
+      data-tk-search-expand={expandOnFocus || undefined}
+      data-tk-search-filled={!!val || undefined}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        maxWidth: "100%",
+        transition: expandOnFocus ? "width var(--tk-t3) var(--tk-ease)" : undefined,
+        ...expandStyle,
+      }}
+    >
       <div
         style={{
           display: "flex",
@@ -246,6 +282,8 @@ export const TKSearch = /* @__PURE__ */ forwardRef<HTMLInputElement, TKSearchPro
       </div>
       <button
         type="button"
+        aria-hidden={showCancel ? undefined : true}
+        tabIndex={showCancel ? undefined : -1}
         onClick={() => {
           setVal("");
           setFocus(false);
@@ -259,8 +297,8 @@ export const TKSearch = /* @__PURE__ */ forwardRef<HTMLInputElement, TKSearchPro
           fontFamily: "inherit",
           cursor: "pointer",
           padding: 0,
-          maxWidth: focus || val ? 70 : 0,
-          opacity: focus || val ? 1 : 0,
+          maxWidth: showCancel ? 70 : 0,
+          opacity: showCancel ? 1 : 0,
           overflow: "hidden",
           transition: "max-width var(--tk-t3) var(--tk-ease), opacity var(--tk-t2) var(--tk-ease)",
           whiteSpace: "nowrap",

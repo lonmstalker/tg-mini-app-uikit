@@ -217,9 +217,10 @@ export function GalleryBasics({
           <TKCalendar mode="range" defaultMonth={new Date(2026, 5, 1)} defaultRange={[new Date(2026, 5, 9), new Date(2026, 5, 13)]} testId="demo-calendar" />
           <TKDateInput label="Appointment" placeholder="Pick a date" defaultValue={new Date(2026, 5, 18)} testId="demo-date-input" />
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            <TKTimeInput label="Time" placeholder="hh:mm" defaultValue="0930" />
-            <TKPhoneInput label="Phone" placeholder="+7 (___) ___-__-__" />
+            <TKTimeInput label="Time · 24h" placeholder="hh:mm" defaultValue="0930" testId="demo-time-24h" />
+            <TKTimeInput label="Time · 12h" placeholder="hh:mm" hour12 defaultValue="14:15" testId="demo-time-12h" />
           </div>
+          <TKPhoneInput label="Phone" placeholder="+7 (___) ___-__-__" />
           <TKChipsInput label="Tags" placeholder="Add a tag…" defaultValue={["design", "react"]} testId="demo-chips-input" />
           <TKSelect label="City (searchable, groups)" searchable options={[
             { label: "Europe", options: ["Lisbon", "Berlin", "Belgrade"] },

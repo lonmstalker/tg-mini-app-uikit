@@ -1,6 +1,6 @@
 # tg-mini-app-uikit
 
-> iOS-flavored React UI kit for Telegram Mini Apps: ~95 TK* components, full Bot API 9.6
+> iOS-flavored React UI kit for Telegram Mini Apps: 100+ TK* components, full Bot API 9.6
 > platform layer with an injectable browser mock, design tokens, i18n, gestures, a screen
 > stack with swipe-back — zero runtime dependencies, React 18/19 peer.
 > This file is the compact map for AI agents writing code against the kit.
@@ -9,6 +9,7 @@
 ## Setup
 
 - `npm i tg-mini-app-uikit` ; peer deps: react, react-dom (18 or 19).
+- Local explorer: `npm run stories` starts Storybook; `npm run check:stories && npm run stories:build` verifies TK* story coverage and static compilation.
 - `import "tg-mini-app-uikit/style.css"` once (tokens + utilities, lives in the `tk` CSS layer).
 - Wrap the app: `<TKTelegramProvider haptics><TKProvider theme="dark" telegram accent="#3390ec">…`
   - `TKProvider` renders the `.tk` root: anchors overlays/toasts, owns the CSS variables.

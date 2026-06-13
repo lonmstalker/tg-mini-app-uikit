@@ -17,5 +17,5 @@
       "tg-mini-app-uikit": ["../../packages/uikit/src/index.ts"]
     }
   },
-  "include": ["src", "../../packages/uikit/src"]
+  "include": ["src", "stories", ".storybook", "../../packages/uikit/src"]
 }
