@@ -3,7 +3,7 @@ import * as kit from "../src/index";
 import type { TKMainButtonProps, TKMainButtonStatus } from "../src/buttons";
 import type { TKSliderProps } from "../src/controls";
 import type { TKSelectProps } from "../src/inputs";
-import type { TKOption, TKOptionItem } from "../src/options";
+import type { TKOption, TKOptionGroup, TKOptionItem } from "../src/options";
 import type { TKNativeButtonParams } from "../src/telegram";
 
 describe("public API surface", () => {
@@ -26,8 +26,8 @@ describe("public API surface", () => {
     expect(kit.tkOptionItem({ value: "ru", label: "Русский" })).toEqual({ value: "ru", label: "Русский" });
   });
 
-  it("selection components take TKOption[]", () => {
-    expectTypeOf<TKSelectProps["options"]>().toEqualTypeOf<TKOption[]>();
+  it("selection components take options (TKSelect also accepts groups)", () => {
+    expectTypeOf<TKSelectProps["options"]>().toEqualTypeOf<Array<TKOption | TKOptionGroup>>();
   });
 
   it("TKSlider value and onChange are numeric", () => {

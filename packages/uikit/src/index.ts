@@ -11,6 +11,7 @@ export * from "./icons";
 export * from "./buttons";
 export * from "./controls";
 export * from "./inputs";
+export * from "./forms";
 export * from "./display";
 export * from "./navigation";
 export * from "./lists";

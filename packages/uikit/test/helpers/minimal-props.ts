@@ -35,4 +35,6 @@ export const MINIMAL_PROPS: Record<string, Record<string, unknown>> = {
   TKPaymentSummary: { rows: [{ label: "Total", value: "$10", total: true }] },
   TKLeaderboard: { rows: [{ rank: 1, initials: "AK", name: "Anna", points: 120 }] },
   TKSlotPicker: { days: [{ label: "Mon", date: 12 }], slots: ["10:00", "11:00"] },
+  TKMaskedInput: { mask: "##-##" },
+  TKPullToRefresh: { onRefresh: () => {} },
 };

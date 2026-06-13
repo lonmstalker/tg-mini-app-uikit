@@ -11,6 +11,7 @@ export const GALLERY_SECTIONS = [
   "steps",
   "inputs",
   "form-primitives",
+  "forms-2-0",
   "composition-primitives",
   "otp",
   "chips",

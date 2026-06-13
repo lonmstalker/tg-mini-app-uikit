@@ -69,6 +69,8 @@ export interface TKLocale {
   /** TKPinInput keypad. */
   backspace: string;
   biometrics: string;
+  /** TKStepper editable value field aria label. */
+  quantity: string;
   /** TKProgress default aria label. */
   progress: string;
 }
@@ -109,6 +111,7 @@ export const enLocale: TKLocale = {
   nextMonth: "Next month",
   backspace: "Backspace",
   biometrics: "Unlock with biometrics",
+  quantity: "Quantity",
   progress: "Progress",
 };
 
@@ -149,6 +152,7 @@ export const ruLocale: TKLocale = {
   nextMonth: "Следующий месяц",
   backspace: "Удалить символ",
   biometrics: "Войти по биометрии",
+  quantity: "Количество",
   progress: "Прогресс",
 };
 

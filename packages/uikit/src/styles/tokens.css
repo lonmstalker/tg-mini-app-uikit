@@ -181,6 +181,7 @@
   .tk-pop    { animation: tk-pop var(--tk-t2) var(--tk-spring) both; }
   .tk-pop-lg { animation: tk-pop var(--tk-t3) var(--tk-spring) both; }
   .tk-rise   { animation: tk-rise var(--tk-t3) var(--tk-ease) both; }
+  .tk-shake  { animation: tk-shake calc(360ms / var(--tk-ms)) var(--tk-ease); }
 }
 
 @keyframes tk-pop {
@@ -192,6 +193,12 @@
   100% { transform: translateY(0);    opacity: 1; }
 }
 @keyframes tk-spin { to { transform: rotate(360deg); } }
+/* compositor-only: error shake (TKPinInput) */
+@keyframes tk-shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-7px); }
+  40%, 80% { transform: translateX(7px); }
+}
 /* compositor-only: the gradient pseudo slides, nothing repaints */
 @keyframes tk-shimmer {
   0%   { transform: translateX(-90%); }

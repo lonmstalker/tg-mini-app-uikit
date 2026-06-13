@@ -10,15 +10,18 @@ import {
   TKBottomBar,
   TKButton,
   TKCaption,
+  TKCalendar,
   TKCategoryTabs,
   TKCard,
   TKCardCell,
   TKCardChip,
   TKCell,
   TKCheckbox,
+  TKChipsInput,
   TKChip,
   TKChipGroup,
   TKCounter,
+  TKDateInput,
   TKDialog,
   TKDot,
   TKEmptyState,
@@ -38,6 +41,8 @@ import {
   TKMultiselect,
   TKOTP,
   TKPage,
+  TKPhoneInput,
+  TKPinInput,
   TKPageDots,
   TKPaymentSummary,
   TKPopper,
@@ -68,6 +73,7 @@ import {
   TKSteps,
   TKSwitch,
   TKTabbar,
+  TKTimeInput,
   TKTappable,
   TKText,
   TKTextarea,
@@ -269,6 +275,8 @@ function GalleryInner() {
   const [snapSheetOpen, setSnapSheetOpen] = useState(false);
   const [ptrCount, setPtrCount] = useState(0);
   const [rows, setRows] = useState(["Flat white", "Cinnamon bun", "Filter brew"]);
+  const [pinStatus, setPinStatus] = useState("");
+  const [priceRange, setPriceRange] = useState<[number, number]>([20, 70]);
 
   return (
     <div data-demo-app="gallery" style={{ height: "100%", display: "flex", flexDirection: "column" }}>
@@ -385,6 +393,38 @@ function GalleryInner() {
             </div>
           </TKFormField>
           <TKFileInput label="Receipt attachment" accept="image/*,.pdf" multiple />
+        </Section>
+
+        <Section title="Forms 2.0 · calendar, masks, pin, tags">
+          <TKCalendar mode="range" defaultMonth={new Date(2026, 5, 1)} defaultRange={[new Date(2026, 5, 9), new Date(2026, 5, 13)]} testId="demo-calendar" />
+          <TKDateInput label="Appointment" placeholder="Pick a date" defaultValue={new Date(2026, 5, 18)} testId="demo-date-input" />
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            <TKTimeInput label="Time" placeholder="hh:mm" defaultValue="0930" />
+            <TKPhoneInput label="Phone" placeholder="+7 (___) ___-__-__" />
+          </div>
+          <TKChipsInput label="Tags" placeholder="Add a tag…" defaultValue={["design", "react"]} testId="demo-chips-input" />
+          <TKSelect label="City (searchable, groups)" searchable options={[
+            { label: "Europe", options: ["Lisbon", "Berlin", "Belgrade"] },
+            { label: "Asia", options: ["Tokyo", "Seoul"] },
+          ]} testId="demo-search-select" />
+          <TKMultiselect label="Toppings" selectAll options={["Cinnamon", "Caramel", "Oat milk"]} testId="demo-selectall" />
+          <div>
+            <TKCaption uppercase>Price range · {priceRange[0]}–{priceRange[1]}</TKCaption>
+            <TKSlider range label="Price" defaultRange={[20, 70]} marks={[0, 25, 50, 75, 100]} onRangeChange={setPriceRange} />
+          </div>
+          <TKInput label="Password" type="password" placeholder="Enter password" maxLength={24} defaultValue="hunter2" />
+          <div style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
+            <TKCheckbox indeterminate label="Partially selected" />
+            <TKStepper editable defaultValue={4} max={50} />
+            <TKRating readonly allowHalf defaultValue={3.5} />
+          </div>
+          <TKFileInput label="Attachment" dropZone progress={64} testId="demo-dropzone" />
+          <TKCard padding={16}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <TKCaption uppercase>PIN · on-screen keypad {pinStatus ? `· ${pinStatus}` : ""}</TKCaption>
+              <TKPinInput length={4} onComplete={(pin) => setPinStatus(`entered ${pin}`)} onBiometricRequest={() => setPinStatus("biometrics")} testId="demo-pin" />
+            </div>
+          </TKCard>
         </Section>
 
         <Section title="Composition primitives" lazy={false}>

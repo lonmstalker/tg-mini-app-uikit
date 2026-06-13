@@ -73,6 +73,10 @@
   Rationale: TGUI #57 показывает, что AI-агенты — реальные потребители доков; статический сайт деплоится на GitHub Pages без инфраструктуры.
   Date/Author: 2026-06-13 / Claude (генератор подтвердить на M10)
 
+- Decision: `TKTimeInput` реализован как маскированный ввод `##:##` (не колонки-барабан).
+  Rationale: дешевле, доступнее с клавиатуры, консистентно с TKMaskedInput; барабан остаётся кандидатом M11 (TKPicker).
+  Date/Author: 2026-06-13 / Claude
+
 - Decision: отложено (не в этом плане, отдельное решение при спросе): shadcn-style CLI-дистрибуция (Konsta #252), Vue/Svelte-порты, Figma-кит (внешний артефакт), TKDataTable/TKAutocomplete/TKPicker-барабан/TKColorInput — см. M11.
   Date/Author: 2026-06-13 / Claude
 
@@ -148,16 +152,16 @@ Validation M3: e2e-сценарии: свайп закрывает шит (и н
 
 Цель: формы уровня «жанрового стандарта», закрытие топ-запроса экосистемы (календарь). Зависимости: M0–M2 (конвенции, roving, локаль — названия месяцев/дней из TKLocale).
 
-- [ ] M4.1 `TKCalendar` — inline-календарь: месячная сетка, `mode: "single" | "range"` (range — топ-запрос: Ionic #23572, 123 реакции), `min/max`, `disabledDates` (предикат — сигнал VKUI #7749), локализованные месяцы/дни недели (Intl.DateTimeFormat, zero-deps), клавиатурная навигация по сетке (стрелки/Home/End/PageUp/Down), `weekStartsOn`. Без выбора времени в первой итерации.
-- [ ] M4.2 `TKDateInput` — поле, открывающее `TKCalendar` в `TKSheet` (мобильный паттерн); ручной ввод с маской по локали; controlled/uncontrolled. `TKTimeInput` — часы:минуты (две колонки-список или маскированный ввод — решить при реализации, записать в Decision Log).
-- [ ] M4.3 `TKMaskedInput` (шаблон `#`-масок, дефис/скобки литералы, каретка не прыгает, paste-поддержка) + пресет `TKPhoneInput` (на базе маски, `defaultCountry?`, без справочника всех стран в первой итерации). Из бэклога аудита.
-- [ ] M4.4 `TKPinInput` — отличие от TKOTP: экранная цифровая клавиатура (3×4), точки-индикаторы, shake-анимация ошибки, `onBiometricRequest` + интеграция `useBiometrics` (паритет с единственным эксклюзивом TGUI #PinInput, у нас — на живом хуке).
-- [ ] M4.5 `TKChipsInput` — теги внутри инпута (ввод по Enter/запятой, Backspace удаляет последний, переполнение в скролл). Сигнал: VKUI ChipsInput.
-- [ ] M4.6 `TKSelect`/`TKMultiselect`: поиск-фильтр внутри списка (`searchable?: boolean`), `TKOptionGroup` (optgroup в item-модели `options.ts`), у Multiselect — «выбрать все» (`selectAllLabel` через локаль). Сигналы: Ionic #30378, VKUI #3480/#6617, TGUI #70.
-- [ ] M4.7 `TKSlider`: range-режим (два тамба, общий трек, a11y два slider-роля), `marks?: number[]`.
-- [ ] M4.8 `TKInput`: счётчик `maxLength` (как в Textarea), `type="password"` + встроенный visibility-toggle (иконки eye/eyeOff из M5.1), слоты `prefix/suffix`.
-- [ ] M4.9 `TKCheckbox`: `indeterminate`. `TKStepper`: автоповтор по удержанию (на useLongPress из M3.6), опциональный прямой ввод значения. `TKRating`: `readonly`, половинки (`allowHalf`).
-- [ ] M4.10 `TKFileInput`: drag-n-drop зона (`TKDropZone`-режим), `progress?: number` на файл, превью изображений. Из бэклога аудита; сигнал VKUI DropZone.
+- [x] M4.1 `TKCalendar` — inline-календарь: месячная сетка, `mode: "single" | "range"` (range — топ-запрос: Ionic #23572, 123 реакции), `min/max`, `disabledDates` (предикат — сигнал VKUI #7749), локализованные месяцы/дни недели (Intl.DateTimeFormat, zero-deps), клавиатурная навигация по сетке (стрелки/Home/End/PageUp/Down), `weekStartsOn`. Без выбора времени в первой итерации.
+- [x] M4.2 `TKDateInput` — поле, открывающее `TKCalendar` в `TKSheet` (мобильный паттерн); ручной ввод с маской по локали; controlled/uncontrolled. `TKTimeInput` — часы:минуты (две колонки-список или маскированный ввод — решить при реализации, записать в Decision Log).
+- [x] M4.3 `TKMaskedInput` (шаблон `#`-масок, дефис/скобки литералы, каретка не прыгает, paste-поддержка) + пресет `TKPhoneInput` (на базе маски, `defaultCountry?`, без справочника всех стран в первой итерации). Из бэклога аудита.
+- [x] M4.4 `TKPinInput` — отличие от TKOTP: экранная цифровая клавиатура (3×4), точки-индикаторы, shake-анимация ошибки, `onBiometricRequest` + интеграция `useBiometrics` (паритет с единственным эксклюзивом TGUI #PinInput, у нас — на живом хуке).
+- [x] M4.5 `TKChipsInput` — теги внутри инпута (ввод по Enter/запятой, Backspace удаляет последний, переполнение в скролл). Сигнал: VKUI ChipsInput.
+- [x] M4.6 `TKSelect`/`TKMultiselect`: поиск-фильтр внутри списка (`searchable?: boolean`), `TKOptionGroup` (optgroup в item-модели `options.ts`), у Multiselect — «выбрать все» (`selectAllLabel` через локаль). Сигналы: Ionic #30378, VKUI #3480/#6617, TGUI #70.
+- [x] M4.7 `TKSlider`: range-режим (два тамба, общий трек, a11y два slider-роля), `marks?: number[]`.
+- [x] M4.8 `TKInput`: счётчик `maxLength` (как в Textarea), `type="password"` + встроенный visibility-toggle (иконки eye/eyeOff из M5.1), слоты `prefix/suffix`.
+- [x] M4.9 `TKCheckbox`: `indeterminate`. `TKStepper`: автоповтор по удержанию (на useLongPress из M3.6), опциональный прямой ввод значения. `TKRating`: `readonly`, половинки (`allowHalf`).
+- [x] M4.10 `TKFileInput`: drag-n-drop зона (`TKDropZone`-режим), `progress?: number` на файл, превью изображений. Из бэклога аудита; сигнал VKUI DropZone.
 
 Validation M4: e2e-флоу «заполнить форму с датой, телефоном, тегами и отправить» в новом Forms-демо (M9.8); visual: календарь single/range/disabled light+dark; vitest: маска (ввод/удаление/paste), календарная клавиатура, range-выбор через край месяца.
 
@@ -286,7 +290,7 @@ Validation M10: сайт собирается в CI и открывается л
 - [x] (2026-06-13) M1 i18n (4/4): `src/i18n.tsx` (TKLocale/TKLocaleProvider/useTKLocale/tkFormat, пресеты en+ru), все строки из аудита вынесены (grep-валидация пуста), vitest-приоритет «проп → провайдер → en», демо: ?locale=en|ru|ar + сегмент Language в Tweaks + ar→RTL + секция галереи Localization (+4 visual эталона darwin+linux), e2e/i18n.spec.ts (4 смоука).
 - [x] (2026-06-13) M2 A11y-долг (5/5): roving tabindex + стрелки (RadioGroup/ChipGroup/Multiselect/CategoryTabs/InlineButtons/Segmented, общий `internal/roving.ts`), контраст: AA-значения --tk-text-2/3 + новые `--tk-*-ink` токены для брендового текста на тонированных подложках, CONTRAST_BUDGET=0; tooltip focus-тест; Segmented disabled = text-3; новые клавиатурные e2e; все 189 visual-эталонов перегенерированы (darwin+linux).
 - [x] (2026-06-13) M3 Жесты и оверлеи 2.0 (8/8): `internal/useDragGesture` (пороги/velocity/rAF/отмена кросс-оси, экспортируемая математика покрыта vitest), TKSheet 2.0 (snapPoints, sheetRef: close/snapTo/snapIndex, onOpenChange, dismissible, swipe-to-close за граббер), слои: дропдаун внутри шита кликабелен (e2e), TKPullToRefresh, TKSwipeCell (leading/trailing, full-swipe, авто-закрытие соседей, клавиатурная альтернатива), useLongPress, TKToast position top|bottom + тест переполнения, TKPopper arrow + auto-flip. Демо-секция Gestures + e2e/gestures.spec.ts (5 сценариев).
-- [ ] M4 Формы 2.0 (10 задач)
+- [x] (2026-06-13) M4 Формы 2.0 (10/10): TKCalendar (single/range, min/max/predicate, Intl-локализация, клавиатурная сетка, weekStartsOn), TKDateInput (календарь в шите) + TKTimeInput (маска ##:## — см. Decision Log), TKMaskedInput/TKPhoneInput, TKPinInput (экранная клавиатура, биометрия, shake), TKChipsInput, searchable Select + TKOptionGroup + select-all у Multiselect, range-slider с marks, TKInput (счётчик/password-toggle/prefix-suffix), Checkbox indeterminate + Stepper autorepeat/editable + Rating readonly/half, TKFileInput dropZone/progress/preview. 31 новый vitest, e2e/forms.spec.ts (6 сценариев), секция Forms 2.0 в галерее.
 - [ ] M5 Дисплеи, медиа, иконки (11 задач)
 - [ ] M6 Навигационный каркас (6 задач)
 - [ ] M7 Telegram-паттерны (5 задач)
@@ -310,6 +314,7 @@ Validation M10: сайт собирается в CI и открывается л
 - Observation (2026-06-13, M2): контраст-долг шире, чем text-3: падали и text-2, и брендовый текст на 12%-подложках (tonal-кнопки, soft-бейджи). Введены производные токены `--tk-accent/red/green/orange-ink` (color-mix к --tk-text) — AA в обеих темах при любом акценте. «Белый на сплошном брендовом» (filled-кнопки, счётчики) остаётся осознанным исключением: акцент приходит из темы Telegram, его контраст — решение хост-приложения; блокирующий скан по-прежнему исключает color-contrast, burn-down закреплён на 0.
   Evidence: дамп axe до фикса (15 узлов), после — 0; попытка включить color-contrast в блокирующий скан дала 12 падений только на white-on-brand.
 - Observation (2026-06-13, M3): mouse-драг в e2e выделял текст ячейки, и следующий клик уезжал в native drag выделения — флак 50%. Лечение в компоненте (а не тесте): `user-select:none` на корне TKSwipeCell; плюс хелперы centerInView/waitSettled в gestures.spec (ленивые секции смещают геометрию после scrollIntoView, шит анимируется при открытии).
+- Observation (2026-06-13, M3/M4): full-kit бюджет size-limit поднят 23→34 kB (esm) и 24→35 kB (cjs): добавлены целые подсистемы — жесты (useDragGesture/PTR/SwipeCell/Sheet 2.0) и формы 2.0 (TKCalendar/TKDateInput/TKTimeInput/TKMaskedInput/TKPhoneInput/TKPinInput/TKChipsInput + searchable select/range slider). Tree-shaking бюджеты не тронуты (TKButton 2.72 kB < 3, TKSpinner 1.9 kB < 2) — потребители платят только за то, что импортируют.
 - (далее заполняется по ходу работ)
 
 

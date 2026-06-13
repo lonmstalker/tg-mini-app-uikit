@@ -10,7 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import { TKIcon, type TKIconName } from "./icons";
-import { tkOptionItem, type TKOption } from "./options";
+import { tkFlattenOptions, tkOptionItem, type TKOption, type TKOptionGroup } from "./options";
 import { useControllable } from "./internal/useControllable";
 import { mergeRefs, tkZ } from "./internal/dom";
 import { useTKLocale } from "./i18n";
@@ -35,6 +35,13 @@ export interface TKInputProps {
   id?: string;
   onFocus?: (e: FocusEvent<HTMLInputElement>) => void;
   onBlur?: (e: FocusEvent<HTMLInputElement>) => void;
+  /** Shows a `n/maxLength` counter under the field. */
+  maxLength?: number;
+  /** Leading slot inside the field (before the input). */
+  prefix?: ReactNode;
+  /** Trailing slot inside the field (after the clear button). */
+  suffix?: ReactNode;
+  inputMode?: "none" | "text" | "tel" | "url" | "email" | "numeric" | "decimal" | "search";
   testId?: string;
 }
 
@@ -56,12 +63,19 @@ export const TKInput = /* @__PURE__ */ forwardRef<HTMLInputElement, TKInputProps
     id,
     onFocus,
     onBlur,
+    maxLength,
+    prefix,
+    suffix,
+    inputMode,
     testId,
   },
   ref,
 ) {
+  const locale = useTKLocale();
   const [val, setVal] = useControllable(value, defaultValue, onChange);
   const [focus, setFocus] = useState(false);
+  const [reveal, setReveal] = useState(false);
+  const isPassword = type === "password";
   const borderColor = error ? "var(--tk-red)" : focus ? "var(--tk-accent)" : "transparent";
   return (
     <label data-testid={testId} style={{ display: "block", opacity: disabled ? 0.55 : 1 }}>
@@ -104,15 +118,18 @@ export const TKInput = /* @__PURE__ */ forwardRef<HTMLInputElement, TKInputProps
             <TKIcon name={icon} size={19} />
           </span>
         ) : null}
+        {prefix}
         <input
           ref={ref}
           id={id}
-          type={type}
+          type={isPassword && reveal ? "text" : type}
           name={name}
           value={val}
           placeholder={placeholder}
           disabled={disabled}
           autoFocus={autoFocus}
+          maxLength={maxLength}
+          inputMode={inputMode}
           onChange={(e) => setVal(e.target.value)}
           onFocus={(e) => {
             setFocus(true);
@@ -159,7 +176,33 @@ export const TKInput = /* @__PURE__ */ forwardRef<HTMLInputElement, TKInputProps
             <TKIcon name="close" size={11} strokeWidth={2.6} />
           </button>
         ) : null}
+        {isPassword ? (
+          <button
+            type="button"
+            aria-label={reveal ? locale.hidePassword : locale.showPassword}
+            onClick={(e) => {
+              e.preventDefault();
+              setReveal(!reveal);
+            }}
+            style={{
+              display: "inline-flex",
+              border: "none",
+              background: "transparent",
+              color: "var(--tk-text-2)",
+              cursor: "pointer",
+              padding: 0,
+            }}
+          >
+            <TKIcon name={reveal ? "eyeOff" : "eye"} size={18} />
+          </button>
+        ) : null}
+        {suffix}
       </div>
+      {maxLength ? (
+        <div style={{ textAlign: "right", fontSize: "var(--tk-fz-caption)", color: "var(--tk-text-3)", margin: "4px 14px 0" }}>
+          {val.length}/{maxLength}
+        </div>
+      ) : null}
       {hint || error ? (
         <div
           style={{
@@ -444,6 +487,10 @@ export interface TKMultiselectProps {
   defaultValue?: string[];
   onChange?: (value: string[]) => void;
   placeholder?: ReactNode;
+  /** Adds a "select all" row on top of the list. */
+  selectAll?: boolean;
+  /** Custom label of the "select all" row (defaults to the locale). */
+  selectAllLabel?: ReactNode;
   disabled?: boolean;
   hint?: ReactNode;
   error?: ReactNode;
@@ -458,6 +505,8 @@ export const TKMultiselect = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKMul
     defaultValue = [],
     onChange,
     placeholder,
+    selectAll,
+    selectAllLabel,
     disabled,
     hint,
     error,
@@ -629,6 +678,37 @@ export const TKMultiselect = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKMul
             transition: `transform var(--tk-t2) var(--tk-spring), opacity var(--tk-t2) var(--tk-ease), visibility 0s linear ${open ? "0s" : "var(--tk-t2)"}`,
           }}
         >
+          {selectAll ? (
+            <button
+              type="button"
+              role="option"
+              aria-selected={items.filter((i) => !i.disabled).every((i) => selected.includes(i.value))}
+              tabIndex={-1}
+              onClick={() => {
+                const enabled = items.filter((i) => !i.disabled).map((i) => i.value);
+                const allOn = enabled.every((v) => selected.includes(v));
+                setSelected(allOn ? [] : enabled);
+              }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                width: "100%",
+                padding: "10px",
+                border: "none",
+                borderBottom: "0.5px solid var(--tk-sep)",
+                borderRadius: "var(--tk-r-sm) var(--tk-r-sm) 0 0",
+                background: "transparent",
+                color: "var(--tk-accent-ink)",
+                fontSize: "var(--tk-fz-sub)",
+                fontWeight: 700,
+                fontFamily: "inherit",
+                cursor: "pointer",
+              }}
+            >
+              {selectAllLabel ?? locale.selectAll}
+            </button>
+          ) : null}
           {items.map((item, i) => {
             const isSelected = selected.includes(item.value);
             return (
@@ -698,6 +778,12 @@ export interface TKFileInputProps {
   buttonLabel?: ReactNode;
   emptyLabel?: ReactNode;
   onFilesChange?: (files: File[]) => void;
+  /** Accept files dropped onto the row (drag-n-drop zone). */
+  dropZone?: boolean;
+  /** Upload progress 0–100; renders a progress bar under the row. */
+  progress?: number;
+  /** Image preview of the first selected image file (default true). */
+  preview?: boolean;
   testId?: string;
 }
 
@@ -712,6 +798,9 @@ export const TKFileInput = /* @__PURE__ */ forwardRef<HTMLInputElement, TKFileIn
     buttonLabel,
     emptyLabel,
     onFilesChange,
+    dropZone,
+    progress,
+    preview = true,
     testId,
   },
   forwardedRef,
@@ -719,9 +808,14 @@ export const TKFileInput = /* @__PURE__ */ forwardRef<HTMLInputElement, TKFileIn
   const locale = useTKLocale();
   const ref = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<File[]>([]);
+  const [dragOver, setDragOver] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const commit = (next: File[]) => {
     setFiles(next);
     onFilesChange?.(next);
+    if (previewUrl && typeof URL.revokeObjectURL === "function") URL.revokeObjectURL(previewUrl);
+    const img = preview ? next.find((f) => f.type.startsWith("image/")) : undefined;
+    setPreviewUrl(img && typeof URL.createObjectURL === "function" ? URL.createObjectURL(img) : null);
   };
   return (
     <TKFormField label={label} hint={hint} error={error} disabled={disabled} testId={testId}>
@@ -731,6 +825,26 @@ export const TKFileInput = /* @__PURE__ */ forwardRef<HTMLInputElement, TKFileIn
         aria-disabled={disabled}
         className="tk-press tk-press-soft"
         onClick={() => !disabled && ref.current?.click()}
+        onDragOver={
+          dropZone
+            ? (event) => {
+                event.preventDefault();
+                setDragOver(true);
+              }
+            : undefined
+        }
+        onDragLeave={dropZone ? () => setDragOver(false) : undefined}
+        onDrop={
+          dropZone
+            ? (event) => {
+                event.preventDefault();
+                setDragOver(false);
+                if (disabled) return;
+                const dropped = Array.from(event.dataTransfer?.files ?? []);
+                if (dropped.length) commit(multiple ? dropped : dropped.slice(0, 1));
+              }
+            : undefined
+        }
         onKeyDown={(event) => {
           if (disabled) return;
           if (event.key === "Enter" || event.key === " ") {
@@ -745,8 +859,15 @@ export const TKFileInput = /* @__PURE__ */ forwardRef<HTMLInputElement, TKFileIn
           minHeight: 58,
           padding: "10px 14px",
           borderRadius: "var(--tk-r-md)",
-          background: "var(--tk-surface)",
-          boxShadow: error ? "inset 0 0 0 1.5px var(--tk-red)" : "var(--tk-shadow-sm)",
+          background: dragOver ? "var(--tk-accent-06)" : "var(--tk-surface)",
+          boxShadow: error
+            ? "inset 0 0 0 1.5px var(--tk-red)"
+            : dragOver
+              ? "inset 0 0 0 1.5px var(--tk-accent), var(--tk-ring)"
+              : dropZone
+                ? "inset 0 0 0 1.5px var(--tk-accent-20)"
+                : "var(--tk-shadow-sm)",
+          transition: "background var(--tk-t1) var(--tk-ease), box-shadow var(--tk-t1) var(--tk-ease)",
           cursor: disabled ? "default" : "pointer",
         }}
       >
@@ -794,7 +915,34 @@ export const TKFileInput = /* @__PURE__ */ forwardRef<HTMLInputElement, TKFileIn
             {files.length ? files.map((file) => file.name).join(", ") : (emptyLabel ?? locale.noFileSelected)}
           </span>
         </span>
+        {previewUrl ? (
+          <img
+            src={previewUrl}
+            alt=""
+            style={{ width: 42, height: 42, objectFit: "cover", borderRadius: "var(--tk-r-sm)", flexShrink: 0 }}
+          />
+        ) : null}
       </div>
+      {progress != null ? (
+        <div
+          role="progressbar"
+          aria-valuenow={Math.round(progress)}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label={locale.progress}
+          style={{ height: 5, borderRadius: 3, background: "var(--tk-surface-3)", overflow: "hidden", margin: "0 2px" }}
+        >
+          <div
+            style={{
+              height: "100%",
+              width: `${Math.min(100, Math.max(0, progress))}%`,
+              borderRadius: 3,
+              background: "var(--tk-accent-grad)",
+              transition: "width var(--tk-t2) var(--tk-ease)",
+            }}
+          />
+        </div>
+      ) : null}
     </TKFormField>
   );
 });
@@ -889,21 +1037,29 @@ export const TKSearch = /* @__PURE__ */ forwardRef<HTMLInputElement, TKSearchPro
 
 export interface TKSelectProps {
   label?: ReactNode;
-  options: TKOption[];
+  /** Flat options or labeled groups (`TKOptionGroup`). */
+  options: Array<TKOption | TKOptionGroup>;
   value?: string;
   defaultValue?: string;
   onChange?: (value: string) => void;
   placeholder?: ReactNode;
+  /** Adds a filter input on top of the option list. */
+  searchable?: boolean;
   disabled?: boolean;
   testId?: string;
 }
 
 export const TKSelect = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKSelectProps>(function TKSelect(
-  { label, options, value, defaultValue, onChange, placeholder, disabled, testId },
+  { label, options, value, defaultValue, onChange, placeholder, searchable, disabled, testId },
   forwardedRef,
 ) {
-  const items = options.map(tkOptionItem);
-  const firstEnabled = items.find((item) => !item.disabled);
+  const locale = useTKLocale();
+  const allItems = tkFlattenOptions(options);
+  const [query, setQuery] = useState("");
+  const items = query
+    ? allItems.filter((item) => String(typeof item.label === "string" ? item.label : item.value).toLowerCase().includes(query.toLowerCase()))
+    : allItems;
+  const firstEnabled = allItems.find((item) => !item.disabled);
   const [val, setVal] = useControllable(value, defaultValue ?? firstEnabled?.value ?? "", onChange);
   const [open, setOpenRaw] = useState(false);
   const [active, setActive] = useState(-1);
@@ -913,10 +1069,11 @@ export const TKSelect = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKSelectPr
   const labelId = label ? `${id}-label` : undefined;
 
   const selectedIndex = items.findIndex((item) => item.value === val);
-  const selected = items[selectedIndex];
+  const selected = allItems.find((item) => item.value === val);
 
   const setOpen = (next: boolean) => {
     setOpenRaw(next);
+    setQuery("");
     setActive(next ? (selectedIndex >= 0 ? selectedIndex : items.findIndex((item) => !item.disabled)) : -1);
   };
 
@@ -1054,12 +1211,69 @@ export const TKSelect = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKSelectPr
           opacity: open ? 1 : 0,
           pointerEvents: open ? "auto" : "none",
           transition: "transform var(--tk-t2) var(--tk-spring), opacity var(--tk-t2) var(--tk-ease)",
+          maxHeight: 280,
+          overflowY: "auto",
         }}
       >
+        {searchable && open ? (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 7,
+              padding: "7px 9px",
+              marginBottom: 4,
+              borderRadius: "var(--tk-r-sm)",
+              background: "var(--tk-surface-2)",
+            }}
+          >
+            <span style={{ display: "inline-flex", color: "var(--tk-text-3)" }}>
+              <TKIcon name="search" size={15} />
+            </span>
+            <input
+              value={query}
+              placeholder={locale.search}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setActive(-1);
+              }}
+              onKeyDown={(e) => {
+                // arrows/enter fall through to the combobox contract
+                if (e.key === "ArrowDown" || e.key === "ArrowUp" || e.key === "Enter" || e.key === "Escape") return;
+                e.stopPropagation();
+              }}
+              style={{
+                flex: 1,
+                minWidth: 0,
+                border: "none",
+                outline: "none",
+                background: "transparent",
+                font: "inherit",
+                fontSize: "var(--tk-fz-sub)",
+                color: "var(--tk-text)",
+                boxShadow: "none",
+              }}
+            />
+          </div>
+        ) : null}
         {items.map((item, i) => (
+          <span key={item.value} style={{ display: "contents" }}>
+            {item.group != null && (i === 0 || items[i - 1].group !== item.group) ? (
+              <div
+                style={{
+                  padding: "7px 10px 3px",
+                  fontSize: "var(--tk-fz-caption2)",
+                  fontWeight: 700,
+                  letterSpacing: ".05em",
+                  textTransform: "uppercase",
+                  color: "var(--tk-text-3)",
+                }}
+              >
+                {item.group}
+              </div>
+            ) : null}
           <button
             type="button"
-            key={item.value}
             id={`${id}-opt-${i}`}
             role="option"
             aria-selected={item.value === val}
@@ -1095,6 +1309,7 @@ export const TKSelect = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKSelectPr
               </span>
             ) : null}
           </button>
+          </span>
         ))}
       </div>
     </div>

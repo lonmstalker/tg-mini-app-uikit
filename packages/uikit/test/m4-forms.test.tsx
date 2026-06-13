@@ -55,11 +55,11 @@ describe("M4.1 TKCalendar", () => {
         disabledDates={(d) => d.getDay() === 0}
       />,
     );
-    expect(screen.getByRole("button", { name: /June 3/ })).toBeDisabled();
-    expect(screen.getByRole("button", { name: /June 26/ })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "June 3, 2026" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "June 26, 2026" })).toBeDisabled();
     // June 7 2026 is a Sunday
-    expect(screen.getByRole("button", { name: /June 7/ })).toBeDisabled();
-    expect(screen.getByRole("button", { name: /June 10/ })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "June 7, 2026" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "June 10, 2026" })).toBeEnabled();
   });
 
   it("keyboard: arrows move by day/week, PageDown jumps a month, Enter picks", () => {
@@ -168,7 +168,8 @@ describe("M4.5 TKChipsInput", () => {
   it("does not add duplicates or empty tags", () => {
     const onChange = vi.fn();
     render(<kit.TKChipsInput defaultValue={["x"]} onChange={onChange} placeholder="tags" />);
-    const input = screen.getByPlaceholderText("tags");
+    // the placeholder hides once tags exist — grab the editor input directly
+    const input = screen.getByRole("textbox");
     fireEvent.change(input, { target: { value: "x" } });
     fireEvent.keyDown(input, { key: "Enter" });
     fireEvent.change(input, { target: { value: "  " } });
