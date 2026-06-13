@@ -1,0 +1,82 @@
+[
+  {
+    "query": "add a new TKToast-like notification surface",
+    "should_trigger": true,
+    "reason": "Reusable feedback component."
+  },
+  {
+    "query": "we need a hook for Telegram fullscreen events",
+    "should_trigger": true,
+    "reason": "Telegram runtime hook/provider surface."
+  },
+  {
+    "query": "add a date range picker to the uikit",
+    "should_trigger": true,
+    "reason": "Reusable form control."
+  },
+  {
+    "query": "create a reusable transaction card pattern",
+    "should_trigger": true,
+    "reason": "Reusable pattern/template."
+  },
+  {
+    "query": "add semantic token support for warning surfaces",
+    "should_trigger": true,
+    "reason": "Design token and CSS variable work."
+  },
+  {
+    "query": "review this new component before exporting it",
+    "should_trigger": true,
+    "reason": "Review of reusable public API."
+  },
+  {
+    "query": "add Storybook and tests for this new control",
+    "should_trigger": true,
+    "reason": "Stories/tests for reusable UIKit surface."
+  },
+  {
+    "query": "make a new bottom-sheet-like overlay",
+    "should_trigger": true,
+    "reason": "Reusable overlay/floating surface."
+  },
+  {
+    "query": "can u add nav stack safe area support pls",
+    "should_trigger": true,
+    "reason": "Navigation/layout plus Telegram safe-area behavior."
+  },
+  {
+    "query": "fix a typo in the README",
+    "should_trigger": false,
+    "reason": "Generic docs typo, not reusable UIKit behavior."
+  },
+  {
+    "query": "change demo product names only",
+    "should_trigger": false,
+    "reason": "One-off demo content."
+  },
+  {
+    "query": "bump Playwright version",
+    "should_trigger": false,
+    "reason": "Package infrastructure, not UIKit behavior."
+  },
+  {
+    "query": "update package-lock after npm install",
+    "should_trigger": false,
+    "reason": "Generated dependency lockfile maintenance."
+  },
+  {
+    "query": "write business logic for a shop checkout page that is not reusable",
+    "should_trigger": false,
+    "reason": "Application business logic, not reusable design-system API."
+  },
+  {
+    "query": "regenerate visual snapshots",
+    "should_trigger": false,
+    "reason": "Generated baseline output without reusable behavior change."
+  },
+  {
+    "query": "make the Storybook landing copy friendlier",
+    "should_trigger": false,
+    "reason": "Copy-only demo change unless it documents reusable API."
+  }
+]

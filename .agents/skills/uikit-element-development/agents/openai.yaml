@@ -1,0 +1,6 @@
+interface:
+  display_name: "UIKit Element Development"
+  short_description: "Workflow for adding reusable tg-mini-app-uikit elements."
+  default_prompt: "Use $uikit-element-development when adding, changing, or reviewing a reusable tg-mini-app-uikit element."
+policy:
+  allow_implicit_invocation: true
