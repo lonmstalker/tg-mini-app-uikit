@@ -7,7 +7,7 @@ export default defineConfig({
     alias: [
       {
         find: "tg-mini-app-uikit/style.css",
-        replacement: new URL("./src/styles/tokens.css", import.meta.url).pathname,
+        replacement: new URL("./src/tokens/tokens.css", import.meta.url).pathname,
       },
       // The demo Telegram mock imports types from the package name;
       // resolve it to the sources so tests never depend on a built dist/.

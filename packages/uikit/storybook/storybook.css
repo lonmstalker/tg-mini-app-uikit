@@ -1,0 +1,32 @@
+.tk-story-root {
+  min-height: 100vh;
+  padding: var(--tk-story-pad);
+  background: var(--tk-bg);
+  color: var(--tk-text);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+}
+
+.tk-story-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--tk-story-gap);
+  max-width: 760px;
+}
+
+.tk-story-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.tk-story-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: var(--tk-story-gap);
+  max-width: 760px;
+}
+
+.tk-story-narrow {
+  width: min(100%, 390px);
+}

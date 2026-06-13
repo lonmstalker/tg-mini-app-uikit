@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import { TKMainButton } from "../src/buttons";
+import { TKMainButton } from "../src/atoms/buttons";
 
 function deferred<T>() {
   let resolve!: (value: T) => void;

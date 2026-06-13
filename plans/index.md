@@ -40,7 +40,7 @@ Inventory was generated from:
 
 - `packages/uikit/src`
 - `packages/uikit/test`
-- `examples/demo/stories`
+- `packages/uikit/storybook`
 - `docs/site/pages`
 - `e2e`
 - `packages/uikit/test/__snapshots__/api-surface.test.ts.snap`

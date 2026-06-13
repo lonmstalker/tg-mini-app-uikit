@@ -41,11 +41,10 @@ mustContain("package.json", [
   '"docs:build"',
   '"docs:dev"',
   '"docs:check"',
-  '"docs:lighthouse"',
 ]);
 
 mustContain("README.md", [
-  "12 example mini-apps",
+  "Package-local Storybook",
   "Storybook component explorer",
   "Bot API 9.6",
   "zero runtime dependencies",
@@ -63,7 +62,7 @@ mustContain("docs/llms-full.md", [
   "Component inventory",
   "Telegram platform hooks",
   "Do not",
-  "M9 demo patterns",
+  "Reusable pattern examples",
 ]);
 
 mustContain("docs/site/pages/recipes.md", [
@@ -74,7 +73,7 @@ mustContain("docs/site/pages/recipes.md", [
   "tg-mini-app-testkit",
 ]);
 
-mustContain(".github/workflows/docs.yml", ["npm run docs:build", "npm run docs:lighthouse"]);
+mustContain(".github/workflows/docs.yml", ["npm run docs:check", "npm run docs:build"]);
 
 mustContain("CHANGELOG.md", ["0.2.0", "forwardRef", "TKLocaleProvider", "breaking"]);
 mustContain("packages/uikit/package.json", ['"version": "0.2.0"']);

@@ -1,11 +1,11 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import { TKChip } from "../src/controls";
-import { TKBars, TKRing } from "../src/feedback";
-import { TKOTP } from "../src/inputs";
-import { TKSteps, TKTabbar } from "../src/navigation";
-import { TKTooltip } from "../src/overlays";
+import { TKChip } from "../src/atoms/controls";
+import { TKBars, TKRing } from "../src/composites/feedback";
+import { TKOTP } from "../src/atoms/inputs";
+import { TKSteps, TKTabbar } from "../src/composites/navigation";
+import { TKTooltip } from "../src/composites/overlays";
 
 describe("accessibility semantics", () => {
   it("A11Y-RING-001 exposes progressbar semantics when TKRing represents progress", () => {

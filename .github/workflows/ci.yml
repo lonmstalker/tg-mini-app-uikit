@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    name: typecheck, build & stories (node ${{ matrix.node }})
+    name: typecheck, build & storybook (node ${{ matrix.node }})
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -53,9 +53,7 @@ jobs:
   e2e:
     name: e2e (playwright)
     runs-on: ubuntu-latest
-    # The same image scripts/update-linux-snapshots.sh uses to generate the
-    # Linux baselines — identical fonts and rasterization, so the pixel
-    # comparison is enabled on CI.
+    # Runs package-local Storybook smoke coverage for implemented element stories.
     container:
       image: mcr.microsoft.com/playwright:v1.60.0-noble
     steps:

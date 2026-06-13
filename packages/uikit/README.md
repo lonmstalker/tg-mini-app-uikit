@@ -93,7 +93,7 @@ export function App() {
 Beyond theming, the kit ships a typed platform layer over `window.Telegram.WebApp`.
 Every hook no-ops (or falls back to a browser equivalent) outside Telegram, and all
 of them read the WebApp from `<TKTelegramProvider webApp={…}>` when present — inject
-a mock there in tests and demos:
+a mock there in package tests and Storybook stories:
 
 ```tsx
 import { useMainButton, useBackButton, useViewport, useHaptics } from "tg-mini-app-uikit";
@@ -149,7 +149,7 @@ Tokens without a Telegram counterpart (`--tk-surface-2/3`, `--tk-green`, `--tk-o
 
 ## Design tokens
 
-Defined in [`src/styles/tokens.css`](src/styles/tokens.css), themed via `[data-theme]`.
+Defined in [`src/tokens/tokens.css`](src/tokens/tokens.css), themed via `[data-theme]`.
 
 - **Color** — `--tk-bg`, `--tk-surface(-2/-3)`, `--tk-text(-2/-3)`, `--tk-sep`, `--tk-accent` + derivatives (`-06/-12/-20/-35`, gradient, focus ring), `--tk-green/red/orange` (+ `-12` soft variants), `--tk-glass`, `--tk-scrim`, `--tk-shadow-sm/md/lg`.
 - **Type** — SF-style modular scale from one base size: `caption2 ×0.69 · caption ×0.76 · footnote ×0.82 · sub ×0.88 · body ×1 · title3 ×1.18 · title2 ×1.38 · title1 ×1.65 · large ×2.05`. Weights: 700 titles, 600 emphasis, 400 text.
@@ -208,6 +208,6 @@ Selection components (`TKSelect`, `TKSegmented`, `TKRadioGroup`, `TKChipGroup`,
 | Bot API 8-9.6 extras | `useHomeScreen`, `useEmojiStatus`, `useDownloadFile` | unsupported/download anchor |
 | Device APIs | `useBiometrics`, `useLocation`, `useMotionSensors`, `useVerticalSwipes`, `useOrientationLock` | unsupported |
 
-The demo's Platform tab injects a full in-memory mock through
+The package-local Storybook and e2e specs inject an in-memory mock through
 `<TKTelegramProvider webApp={mock.webApp}>`, so these hooks can be developed and
 smoke-tested in a normal browser.

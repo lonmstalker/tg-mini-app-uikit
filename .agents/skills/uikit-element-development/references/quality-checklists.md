@@ -6,7 +6,7 @@ Use these checklists when a reusable UIKit element is non-trivial, public, state
 
 - Classify the change as token, CSS variable, primitive, atom, composite, overlay, form control, navigation/layout, pattern/template, Telegram runtime hook/provider/adapter, utility, docs/story/test-only, or unknown/future type.
 - Decide whether it is public API, internal infrastructure, or demo/docs support for reusable API.
-- Search for the closest analog in `packages/uikit/src`, `packages/uikit/test`, `examples/demo/stories`, and `docs/site/pages`.
+- Search for the closest analog in `packages/uikit/src`, `packages/uikit/test`, `packages/uikit/storybook/<category>`, and `docs/site/pages`. Atoms use `packages/uikit/storybook/atoms`.
 - Prefer extending an existing reusable surface when that is safer than adding a new one.
 
 ## 2. API/contract checklist
@@ -22,7 +22,7 @@ Use these checklists when a reusable UIKit element is non-trivial, public, state
 
 - Prefer semantic `--tk-*` variables and existing spacing/radius/shadow/z-index/motion scales.
 - Add shared variables to `packages/uikit/src/styles/tokens.css`; keep truly local implementation vars local.
-- `--tk-sep` is the base separator token; avoid accidental `--tk-separator` drift except where preserving the compatibility alias.
+- `--tk-sep` is the base separator token; avoid accidental `--tk-separator` drift except where an existing alias is intentionally kept.
 - Avoid raw hex/rgb/hsl values in components when a token exists.
 - Avoid raw `px` values for shared spacing/radius when a token fits; local geometry may justify fixed values.
 - Support light, dark, Telegram `--tg-theme-*`, and high-contrast/reduced-motion contexts as relevant.
@@ -62,6 +62,7 @@ Use these checklists when a reusable UIKit element is non-trivial, public, state
 ## 7. Testing checklist
 
 - Add contract/unit tests for pure logic, props, tokens, exports, and state transitions.
+- For every source-changing element slice, add or update unit test evidence, Storybook evidence, and e2e evidence before marking the element implemented.
 - Add component interaction tests for clicks, typing, keyboard, focus, async, disabled/loading/error states.
 - Add SSR import/render tests when code touches browser globals, portals, effects, or Telegram APIs.
 - Add Telegram mock tests for runtime hooks/providers/adapters.
@@ -72,8 +73,8 @@ Use these checklists when a reusable UIKit element is non-trivial, public, state
 
 ## 8. Storybook/docs checklist
 
-- Add or update a Storybook story for each visual reusable public surface.
-- Keep stories in `examples/demo/stories` and follow local category/helper patterns.
+- Add or update a Storybook story for each reusable public surface.
+- Keep stories in `packages/uikit/storybook/<category>` and follow package-local category/helper patterns. Atoms use `packages/uikit/storybook/atoms`.
 - Document public API, runtime behavior, theming, and fallback behavior in `docs/site/pages` when relevant.
 - Ensure docs examples are supported by tests or implementation facts.
 - Do not add one-off demo data as if it were reusable API.
@@ -97,7 +98,7 @@ Use these checklists when a reusable UIKit element is non-trivial, public, state
 
 ## 11. Common gotchas in this repo
 
-- `--tk-sep` is canonical; `--tk-separator` exists as a compatibility alias and should not become the new source of truth.
+- `--tk-sep` is canonical; `--tk-separator` exists as an alias and should not become the new source of truth.
 - Some component-local CSS variables are legitimate, but new shared semantic variables belong in `tokens.css`.
 - `isVersionAtLeast` exists, but many Telegram hooks use feature detection; be explicit about the chosen strategy for new runtime APIs.
 - `SecureStorage` browser fallback is a developer fallback, not secure storage.

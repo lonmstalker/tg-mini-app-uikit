@@ -16,5 +16,5 @@
       "tg-mini-app-uikit": ["./src/index.ts"]
     }
   },
-  "include": ["src", "test", "vitest.config.ts"]
+  "include": ["src", "test", "storybook", "vitest.config.ts"]
 }

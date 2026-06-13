@@ -1,6 +1,6 @@
 import { act, renderHook } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { createMockTelegram } from "../../../examples/demo/src/telegram/mock";
+import { createMockTelegram } from "./support/telegram/mock";
 import {
   useBackButton,
   useCloudStorage,
@@ -14,7 +14,7 @@ import {
   useTelegramTheme,
   useViewport,
   type TKNativeButtonParams,
-} from "../src/telegram";
+} from "../src/foundation/telegram";
 import { wrapperFor } from "./helpers/telegram";
 
 /* ---------------- useMainButton / useSecondaryButton mapping ---------------- */

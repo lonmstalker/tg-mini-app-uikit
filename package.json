@@ -2,30 +2,24 @@
   "name": "tg-mini-app-uikit-workspace",
   "private": true,
   "workspaces": [
-    "packages/*",
-    "examples/*"
+    "packages/*"
   ],
   "scripts": {
-    "build": "npm run build -w tg-mini-app-uikit && npm run build -w tg-mini-app-uikit-demo",
-    "dev": "npm run dev -w tg-mini-app-uikit-demo",
-    "stories": "npm run stories -w tg-mini-app-uikit-demo",
-    "stories:build": "npm run stories:build -w tg-mini-app-uikit-demo",
-    "record:demo": "node scripts/record-demo.mjs",
+    "build": "npm run build -w tg-mini-app-uikit",
+    "stories": "npm run stories -w tg-mini-app-uikit",
+    "stories:build": "npm run stories:build -w tg-mini-app-uikit",
     "docs:build": "node scripts/build-docs.mjs",
     "docs:dev": "node scripts/serve-docs.mjs",
     "docs:check": "node scripts/check-docs.mjs",
-    "docs:lighthouse": "node scripts/lighthouse-smoke.mjs",
     "test:e2e": "playwright test",
     "test:unit": "npm run test -w tg-mini-app-uikit",
     "test:coverage": "npm run test:coverage -w tg-mini-app-uikit",
     "test:e2e:ui": "playwright test --ui",
-    "test:e2e:visual": "playwright test --project=visual --project=visual-webkit --project=narrow-320 --project=visual-dpr2 --project=visual-dpr3",
     "test:e2e:update": "playwright test --update-snapshots",
-    "test:e2e:update:linux": "scripts/update-linux-snapshots.sh",
     "check:package": "node scripts/check-package.mjs",
-    "typecheck": "npm run typecheck -w tg-mini-app-uikit && npm run typecheck -w tg-mini-app-uikit-demo",
-    "check:snippets": "node scripts/check-snippets.mjs",
-    "check:stories": "node scripts/check-stories-coverage.mjs"
+    "typecheck": "npm run typecheck -w tg-mini-app-uikit",
+    "check:stories": "node scripts/check-stories-coverage.mjs",
+    "doctor": "npx react-doctor@latest"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.3",
@@ -37,6 +31,7 @@
     "playwright": "1.60.0",
     "pngjs": "^7.0.0",
     "publint": "^0.3.21",
+    "react-doctor": "^0.5.4",
     "size-limit": "^12.1.0",
     "tailwindcss": "^4.3.1"
   }

@@ -33,7 +33,9 @@
     "build": "vite build && tsc -p tsconfig.build.json && node scripts/postbuild-types.mjs",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "stories": "storybook dev -c storybook/.storybook -p 6006 --host 127.0.0.1 --exact-port --no-open",
+    "stories:build": "storybook build -c storybook/.storybook -o storybook-static"
   },
   "peerDependencies": {
     "react": "^18.0.0 || ^19.0.0",
@@ -43,6 +45,9 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
+    "@storybook/addon-a11y": "^10.4.4",
+    "@storybook/addon-docs": "^10.4.4",
+    "@storybook/react-vite": "^10.4.4",
     "@types/node": "^25.9.3",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",

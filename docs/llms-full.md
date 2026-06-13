@@ -20,7 +20,7 @@ Patterns: `TKMessages`, `TKMessageBubble`, `TKWriteBar`, `TKOnboardingTooltip`, 
 
 Hooks cover Bot API 9.6 and degrade to safe browser fallbacks: `useWebApp`, `useTelegramTheme`, `useViewport`, `useSafeArea`, `useMainButton`, `useSecondaryButton`, `useBackButton`, `useBackIntercept`, `useBackDispatcher`, `useSettingsButton`, `useHaptics`, `useOptionalHaptics`, `useTelegramPopup`, `useCloudStorage`, `useDeviceStorage`, `useSecureStorage`, `useInitData`, `useInvoice`, `useShare`, `useClipboard`, `useQrScanner`, `useBiometrics`, `useLocation`, `useMotionSensors`, `useFullscreen`, `useOrientationLock`, `useHomeScreen`, `useEmojiStatus`, `useContactRequest`, `useWriteAccess`, `useChatRequest`, `useDownloadFile`, `useDataTransport`, `useTelegramLinks`, `useTelegramColors`, `useClosingConfirmation`, `useActivity`, `useKeyboard`, `useHideKeyboard`, `useTelegramEvent`.
 
-## M9 demo patterns
+## Reusable pattern examples
 
 - Stars checkout: `TKCardChip`, `TKPaymentSummary`, `useInvoice`, receipt state, `TKConfetti`.
 - Identity onboarding: `TKGallery`, `TKPageDots`, contact/write-access requests, `TKPinInput`, `useBiometrics`, emoji status.

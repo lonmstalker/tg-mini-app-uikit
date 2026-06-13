@@ -8,7 +8,7 @@ Components: `TKInput`, `TKTextarea`, `TKFormField`, `TKSearch`, `TKSelect`, `TKM
 
 Required cases:
 - Unit: controlled/uncontrolled values, disabled state, hints/errors via `aria-describedby`, clear/password/counter behavior, mask truncation, invalid date/time, file preview cleanup, search cancel/expand, chip add/remove.
-- Integration: date input sheet with month/year selectors, min/max/disabled dates, select/multiselect in constrained surfaces, form validation states in demo sections.
+- Integration: date input sheet with month/year selectors, min/max/disabled dates, select/multiselect in constrained surfaces, form validation states in package-local Storybook sections.
 - A11y: combobox/listbox names and keyboard flow, calendar grid keyboard, file row as button, OTP/PIN accessible labels, hidden actions outside tab order.
 - Visual/e2e: focus/error/disabled/progress/preview, RTL, narrow viewport, long labels, high text scale.
 
@@ -89,7 +89,7 @@ Best files to extend: `packages/uikit/test/m7-patterns.test.tsx`, `packages/uiki
 ## Current Additions
 
 This pass added regression coverage for:
-- Storybook docs generation and deterministic dev server script in `scripts/check-stories-coverage.mjs`.
+- Storybook docs generation and deterministic package-local dev server script in `scripts/check-stories-coverage.mjs`.
 - `TKInput` label/description/invalid/clear-button accessibility.
 - `TKSearch` hidden cancel button accessibility.
 - `TKChipsInput` keyboard-removable chips.

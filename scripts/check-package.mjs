@@ -41,7 +41,6 @@ run("publint", "npx publint packages/uikit --strict");
 // `./style.css` is a styles-only entrypoint — no JS/types to analyze there.
 run("arethetypeswrong", "npx attw --pack packages/uikit --entrypoints . --format table");
 run("size-limit", "npx size-limit");
-run("gallery snippets", "node scripts/check-snippets.mjs");
 run("docs gate", "node scripts/check-docs.mjs");
 
 console.log("\n✓ packaging gates passed");

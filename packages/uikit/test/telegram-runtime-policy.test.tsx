@@ -1,7 +1,7 @@
 import { render, renderHook } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { createMockTelegram } from "../../../examples/demo/src/telegram/mock";
-import { getTelegramWebApp, TKTelegramProvider, useTelegramEvent, useWebApp } from "../src/telegram";
+import { createMockTelegram } from "./support/telegram/mock";
+import { getTelegramWebApp, TKTelegramProvider, useTelegramEvent, useWebApp } from "../src/foundation/telegram";
 import { wrapperFor } from "./helpers/telegram";
 
 describe("Telegram runtime policy", () => {

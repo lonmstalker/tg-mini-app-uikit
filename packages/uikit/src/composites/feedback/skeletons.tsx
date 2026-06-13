@@ -1,0 +1,90 @@
+import { type CSSProperties } from "react";
+
+/* ---------------- Skeletons ---------------- */
+
+export interface TKSkeletonProps {
+  width?: number | string;
+  height?: number | string;
+  radius?: number | string;
+  style?: CSSProperties;
+  testId?: string;
+}
+
+export function TKSkeleton({ width, height = 13, radius, style, testId }: TKSkeletonProps) {
+  return <div className="tk-skel" data-testid={testId} style={{ width, height, borderRadius: radius, ...style }} />;
+}
+
+export interface TKSkeletonCardProps {
+  testId?: string;
+}
+
+export function TKSkeletonCard({ testId }: TKSkeletonCardProps = {}) {
+  return (
+    <div
+      data-testid={testId}
+      style={{
+        background: "var(--tk-surface)",
+        borderRadius: "var(--tk-r-lg)",
+        padding: 10,
+        boxShadow: "var(--tk-shadow-sm)",
+        display: "flex",
+        flexDirection: "column",
+        gap: 10,
+      }}
+    >
+      <div className="tk-skel" style={{ aspectRatio: "1.4 / 1", borderRadius: "var(--tk-r-md)" }} />
+      <div className="tk-skel" style={{ height: 13, width: "72%" }} />
+      <div className="tk-skel" style={{ height: 13, width: "45%" }} />
+    </div>
+  );
+}
+
+export function TKSkeletonList({ rows = 3, testId }: { rows?: number; testId?: string }) {
+  return (
+    <div
+      data-testid={testId}
+      style={{
+        background: "var(--tk-surface)",
+        borderRadius: "var(--tk-r-md)",
+        boxShadow: "var(--tk-shadow-sm)",
+        overflow: "hidden",
+      }}
+    >
+      {Array.from({ length: rows }).map((_, i) => (
+        <div
+          key={i}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            padding: "12px 14px",
+            borderTop: i ? "0.5px solid var(--tk-sep)" : "none",
+          }}
+        >
+          <div className="tk-skel" style={{ width: 38, height: 38, borderRadius: "50%", flexShrink: 0 }} />
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 7 }}>
+            <div className="tk-skel" style={{ height: 12, width: `${68 - (i % 3) * 12}%` }} />
+            <div className="tk-skel" style={{ height: 10, width: `${40 + (i % 3) * 10}%` }} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export interface TKSkeletonTextProps {
+  /** Number of text lines (default 3); the last one renders shorter. */
+  lines?: number;
+  testId?: string;
+  style?: CSSProperties;
+}
+
+export function TKSkeletonText({ lines = 3, testId, style }: TKSkeletonTextProps) {
+  return (
+    <div data-testid={testId} style={{ display: "flex", flexDirection: "column", gap: 8, ...style }}>
+      {Array.from({ length: lines }).map((_, i) => (
+        <div key={i} className="tk-skel" style={{ height: 12, width: i === lines - 1 ? "62%" : "100%" }} />
+      ))}
+    </div>
+  );
+}

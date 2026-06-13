@@ -1,6 +1,6 @@
 ---
 name: uikit-element-development
-description: Use when adding, changing, or reviewing any reusable UIKit/design-system element in tg-mini-app-uikit, including tokens, CSS variables, primitives, atoms, composite components, overlays, forms, navigation, layouts, patterns/templates, Telegram Mini Apps runtime hooks/providers/adapters, examples/demo surfaces, stories, docs, tests, exports, or future element types. Use it for new public or internal reusable UI surfaces. Do not use it for unrelated app business logic, one-off demo content, or generated build artifacts unless they affect reusable UIKit behavior.
+description: Use when adding, changing, or reviewing any reusable UIKit/design-system element in tg-mini-app-uikit, including tokens, CSS variables, primitives, atoms, composite components, overlays, forms, navigation, layouts, patterns/templates, Telegram Mini Apps runtime hooks/providers/adapters, package-local Storybook surfaces, docs, tests, exports, or future element types. Use it for new public or internal reusable UI surfaces. Do not use it for unrelated app business logic, one-off demo content, or generated build artifacts unless they affect reusable UIKit behavior.
 ---
 
 # Purpose
@@ -35,7 +35,7 @@ Do not use this skill for one-off demo-only content unless it becomes reusable, 
    Establish the API before implementation: public vs internal; component/hook/type names; props/types; controlled/uncontrolled behavior if stateful; events/callbacks; default behavior; disabled/loading/error/readonly states where applicable; SSR behavior; non-Telegram fallback behavior; and whether it should be exported from the package root.
 
 4. Implement with project conventions.
-   Keep changes in the relevant repo areas: `packages/uikit/src`, `packages/uikit/src/styles/tokens.css`, `packages/uikit/src/telegram`, `packages/uikit/test`, `examples/demo/stories`, `docs/site/pages`, and package barrel exports.
+   Keep changes in the relevant repo areas: `packages/uikit/src`, `packages/uikit/src/styles/tokens.css`, `packages/uikit/src/telegram`, `packages/uikit/test`, `packages/uikit/storybook/<category>`, `docs/site/pages`, and package barrel exports. Atoms must use `packages/uikit/storybook/atoms`.
 
 5. Style through tokens.
    Prefer semantic `--tk-*` variables and the existing spacing, radius, shadow, z-index, and motion scales. Avoid raw hex/rgb/hsl/px values unless local geometry requires them, and explain why. Support light, dark, Telegram theme variables, reduced motion, and stable layout without avoidable shifts.
@@ -47,10 +47,10 @@ Do not use this skill for one-off demo-only content unless it becomes reusable, 
    Prefer semantic HTML. Use ARIA only when needed. Provide an accessible name for every interactive element, keyboard support, visible unclipped focus, logical focus management for overlays, label/description/error wiring for fields, mobile-suitable target size, status announcements where needed, and no information conveyed only by color, tooltip, icon, or animation.
 
 8. Add tests appropriate to the element.
-   Use the minimal relevant set: unit/contract tests; component interaction tests; SSR import/render tests where applicable; Telegram mock tests for runtime surfaces; keyboard/focus tests for interactive elements; a11y tests where existing infra supports them; e2e/visual tests only when the repo already has a pattern and the change warrants it; and package API snapshot/export updates when public exports change.
+   Every source-changing element slice must add or update unit test evidence, Storybook evidence, and e2e evidence before it can be marked implemented. Use the minimal relevant set beyond that: unit/contract tests; component interaction tests; SSR import/render tests where applicable; Telegram mock tests for runtime surfaces; keyboard/focus tests for interactive elements; a11y tests where existing infra supports them; and package API snapshot/export updates when public exports change.
 
-9. Add Storybook/docs/examples.
-   Add a story for every visual reusable public surface. Add docs for public API or runtime behavior. Add examples only when they demonstrate reusable patterns. Do not make docs claims that tests do not support.
+9. Add Storybook/docs.
+   Add a package-local story for every reusable public surface. Keep atom stories under `packages/uikit/storybook/atoms`. Add docs for public API or runtime behavior. Do not use `examples` as an evidence surface. Do not make docs claims that tests do not support.
 
 10. Validate.
     Inspect package scripts before claiming coverage. Run the narrowest useful commands first, then broader checks when needed. Default commands for this repo, if still present:
@@ -58,7 +58,7 @@ Do not use this skill for one-off demo-only content unless it becomes reusable, 
     - `npm run test:unit`
     - `npm run check:stories`
     - `npm run build -w tg-mini-app-uikit`
-    - `npm run stories:build -w tg-mini-app-uikit-demo`
+    - `npm run stories:build -w tg-mini-app-uikit`
     - `npm run check:package`
     Do not run snapshot update commands unless explicitly asked.
 
@@ -98,7 +98,7 @@ Do not use this skill for one-off demo-only content unless it becomes reusable, 
 - Are helper/error/tooltip descriptions wired correctly?
 - Does the element respect safe area, viewport, and reduced motion where relevant?
 - Are tests aligned with the risk of the element?
-- Are stories/docs/examples updated?
+- Are unit tests, Storybook, e2e evidence, and docs updated?
 - If public API changed, are exports, API snapshot, docs, and package checks updated?
 - Did I avoid generated files and unrelated refactors?
 - Did validation pass, or did I document failures honestly?

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { afterEach, vi } from "vitest";
-import { TKTelegramProvider, type TelegramWebApp } from "../../src/telegram";
+import { TKTelegramProvider, type TelegramWebApp } from "../../src/foundation/telegram";
 
 export function wrapperFor(webApp: TelegramWebApp | undefined) {
   return function Wrapper({ children }: { children: ReactNode }) {

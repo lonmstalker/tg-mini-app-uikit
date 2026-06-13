@@ -1,0 +1,175 @@
+import {
+  forwardRef,
+  useState,
+  type ElementType,
+  type ForwardedRef,
+  type KeyboardEvent,
+  type ReactElement,
+  type ReactNode,
+} from "react";
+import { TKSwitch } from "../../atoms/controls";
+import { TKBadge } from "../../atoms/display";
+import { TKIcon, type TKIconName } from "../../atoms/icons";
+import type { TKPolymorphicProps } from "../../internal/polymorphic";
+
+/* ---------------- Cell ---------------- */
+
+export interface TKCellOwnProps {
+  icon?: TKIconName;
+  iconBg?: string;
+  title: ReactNode;
+  subtitle?: ReactNode;
+  value?: ReactNode;
+  chevron?: boolean;
+  badge?: ReactNode;
+  danger?: boolean;
+  onClick?: () => void;
+  /** Controlled state of the trailing switch. */
+  toggle?: boolean;
+  defaultToggle?: boolean;
+  onToggle?: (on: boolean) => void;
+  /** Free-form trailing content (steppers, custom icons, ...). */
+  after?: ReactNode;
+  testId?: string;
+}
+
+export type TKCellProps<T extends ElementType = "div"> = TKPolymorphicProps<T, TKCellOwnProps>;
+
+function TKCellImpl(
+  {
+    as,
+    icon,
+    iconBg = "var(--tk-accent)",
+    title,
+    subtitle,
+    value,
+    chevron,
+    badge,
+    danger,
+    onClick,
+    toggle,
+    defaultToggle,
+    onToggle,
+    after,
+    testId,
+    ...rest
+  }: TKCellOwnProps & { as?: ElementType } & Record<string, unknown>,
+  ref: ForwardedRef<HTMLElement>,
+) {
+  const Tag = as ?? "div";
+  const [hover, setHover] = useState(false);
+  const hasToggle = toggle !== undefined || defaultToggle !== undefined;
+  const actionable = Boolean(onClick) && Tag !== "a" && !hasToggle;
+  const activateFromKeyboard = (event: KeyboardEvent<HTMLElement>) => {
+    if (!actionable) return;
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    onClick?.();
+  };
+  return (
+    <Tag
+      {...rest}
+      ref={ref as never}
+      data-testid={testId}
+      role={actionable ? "button" : undefined}
+      tabIndex={actionable ? 0 : undefined}
+      onClick={onClick}
+      onKeyDown={activateFromKeyboard}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        padding: "11px 14px",
+        cursor: onClick || Tag === "a" ? "pointer" : "default",
+        color: "inherit",
+        textDecoration: "none",
+        background: hover && (onClick || chevron) ? "var(--tk-surface-2)" : "transparent",
+        transition: "background var(--tk-t1) var(--tk-ease)",
+      }}
+    >
+      {icon ? (
+        <span
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: 30,
+            height: 30,
+            borderRadius: "var(--tk-r-xs)",
+            background: iconBg,
+            color: "#fff",
+            flexShrink: 0,
+          }}
+        >
+          <TKIcon name={icon} size={17} strokeWidth={2.1} />
+        </span>
+      ) : null}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div
+          style={{
+            fontSize: "var(--tk-fz-body)",
+            fontWeight: 500,
+            color: danger ? "var(--tk-red)" : "var(--tk-text)",
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          }}
+        >
+          {title}
+        </div>
+        {subtitle ? (
+          <div
+            style={{
+              fontSize: "var(--tk-fz-caption)",
+              color: "var(--tk-text-2)",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
+          >
+            {subtitle}
+          </div>
+        ) : null}
+      </div>
+      {badge ? <TKBadge tone="red">{badge}</TKBadge> : null}
+      {value ? (
+        <span style={{ fontSize: "var(--tk-fz-body)", color: "var(--tk-text-2)", flexShrink: 0 }}>{value}</span>
+      ) : null}
+      {hasToggle ? (
+        <span
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
+          style={{ display: "inline-flex" }}
+        >
+          <TKSwitch
+            small
+            ariaLabel={typeof title === "string" ? title : undefined}
+            checked={toggle}
+            defaultChecked={defaultToggle}
+            onChange={onToggle}
+          />
+        </span>
+      ) : null}
+      {after}
+      {chevron ? (
+        <span
+          style={{
+            display: "inline-flex",
+            color: "var(--tk-text-3)",
+            transform: hover ? "translateX(2px)" : "none",
+            transition: "transform var(--tk-t2) var(--tk-spring)",
+          }}
+        >
+          <TKIcon name="chevronRight" size={16} strokeWidth={2.4} />
+        </span>
+      ) : null}
+    </Tag>
+  );
+}
+
+/** Settings-style row; `<TKCell as="a" href="...">` renders a link row. */
+export const TKCell = /* @__PURE__ */ forwardRef(TKCellImpl as never) as unknown as <T extends ElementType = "div">(
+  props: TKCellProps<T> & { ref?: ForwardedRef<HTMLElement> },
+) => ReactElement;

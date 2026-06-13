@@ -1,10 +1,10 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
 import * as kit from "../src/index";
-import type { TKMainButtonProps, TKMainButtonStatus } from "../src/buttons";
-import type { TKSliderProps } from "../src/controls";
-import type { TKSelectProps } from "../src/inputs";
-import type { TKOption, TKOptionGroup, TKOptionItem } from "../src/options";
-import type { TKNativeButtonParams } from "../src/telegram";
+import type { TKMainButtonProps, TKMainButtonStatus } from "../src/atoms/buttons";
+import type { TKSliderProps } from "../src/atoms/controls";
+import type { TKSelectProps } from "../src/atoms/inputs";
+import type { TKOption, TKOptionGroup, TKOptionItem } from "../src/foundation/options";
+import type { TKNativeButtonParams } from "../src/foundation/telegram";
 
 describe("public API surface", () => {
   it("keeps the set of named exports stable", () => {

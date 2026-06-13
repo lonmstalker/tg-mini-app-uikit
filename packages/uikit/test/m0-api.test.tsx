@@ -166,7 +166,7 @@ describe("M0.4 TKButton loading & TKIconButton sizes", () => {
     expect(btn.textContent).toContain("Pay");
   });
 
-  it("TKIconButton supports size variants sm|md|lg and legacy numbers", () => {
+  it("TKIconButton supports size variants sm|md|lg and deprecated numeric sizes", () => {
     const { rerender } = render(<kit.TKIconButton icon="check" label="act" size="sm" testId="ib" />);
     expect(screen.getByTestId("ib").style.width).toBe("32px");
     rerender(<kit.TKIconButton icon="check" label="act" size="lg" testId="ib" />);
@@ -220,7 +220,7 @@ describe("M0.5 testId renders data-testid", () => {
 /* ---------------- M0.6 / M0.7 tokens ---------------- */
 
 describe("M0.6/M0.7 token scales and @layer", () => {
-  const css = readFileSync(resolve(__dirname, "../src/styles/tokens.css"), "utf8");
+  const css = readFileSync(resolve(__dirname, "../src/tokens/tokens.css"), "utf8");
 
   it("defines the spacing scale --tk-sp-1..8", () => {
     for (let i = 1; i <= 8; i++) expect(css).toContain(`--tk-sp-${i}:`);
@@ -236,10 +236,20 @@ describe("M0.6/M0.7 token scales and @layer", () => {
     expect(css).toMatch(/@layer tk\s*\{/);
   });
 
-  it.each(["overlays.tsx", "inputs.tsx"])("%s uses the z-index scale instead of magic numbers", (file) => {
+  it.each([
+    "composites/overlays.tsx",
+    "atoms/inputs.tsx",
+    "atoms/inputs/choices.tsx",
+    "atoms/inputs/file-search.tsx",
+    "atoms/inputs/select.tsx",
+    "atoms/inputs/select-otp.tsx",
+  ])(
+    "%s uses the z-index scale instead of magic numbers",
+    (file) => {
     const src = readFileSync(resolve(__dirname, `../src/${file}`), "utf8");
     expect(src).not.toMatch(/zIndex:\s*(10|11|12|20|30|40)\b/);
-  });
+    },
+  );
 });
 
 /* ---------------- M0.8 Escape / Enter in overlays ---------------- */

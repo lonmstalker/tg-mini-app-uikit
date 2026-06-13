@@ -3,9 +3,9 @@ import userEvent from "@testing-library/user-event";
 import { createRef } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import * as kit from "../src/index";
-import { useNav } from "../src/nav";
-import { createStorageApi } from "../src/telegram/storage";
-import { useClosingConfirmation, useSettingsButton, useTelegramPopup, type TelegramWebApp } from "../src/telegram";
+import { useNav } from "../src/composites/nav";
+import { createStorageApi } from "../src/foundation/telegram/storage";
+import { useClosingConfirmation, useSettingsButton, useTelegramPopup, type TelegramWebApp } from "../src/foundation/telegram";
 import { wrapperFor } from "./helpers/telegram";
 
 afterEach(() => {
@@ -103,7 +103,7 @@ describe("coverage-backed infrastructure behaviours", () => {
     await expect(failing.restore?.("x")).rejects.toThrow("restore");
   });
 
-  it("native button hooks cover legacy setters, settings button and closing confirmation", () => {
+  it("native button hooks cover setter methods, settings button and closing confirmation", () => {
     const mainCalls: string[] = [];
     const clickHandlers = new Set<() => void>();
     const webApp: TelegramWebApp = {

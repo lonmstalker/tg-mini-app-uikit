@@ -4,7 +4,7 @@
 
 - `theme="light" | "dark"` chooses the base palette.
 - `telegram` maps tokens to live `--tg-theme-*` values when the Telegram client provides them.
-- `accent`, `roundness`, `fontSize`, `motion` and `motionSpeed` are runtime knobs used by the demo Tweaks panel.
+- `accent`, `roundness`, `fontSize`, `motion` and `motionSpeed` are runtime knobs exposed by the package-local Storybook controls.
 - `preset="ios" | "material"` changes the feel without forking components.
 
 Use `TKLocaleProvider` for app strings. The bundled default is English, `ruLocale` is shipped, and apps can pass any `Partial<TKLocale>`.
@@ -21,7 +21,7 @@ All new motion should stay on transform or opacity and must respect reduced-moti
 
 ## Token contract
 
-The public stylesheet is `tg-mini-app-uikit/style.css`. It declares semantic CSS custom properties in `packages/uikit/src/styles/tokens.css`; components read those variables instead of hard-coded theme values.
+The public stylesheet is `tg-mini-app-uikit/style.css`. It declares semantic CSS custom properties in `packages/uikit/src/tokens/tokens.css`; components read those variables instead of hard-coded theme values.
 
 Core groups:
 
@@ -36,4 +36,4 @@ Core groups:
 
 When `TKProvider telegram` is enabled, semantic tokens can map to Telegram theme variables such as `--tg-theme-button-color`, `--tg-theme-secondary-bg-color`, `--tg-theme-section-bg-color`, `--tg-theme-text-color`, `--tg-theme-subtitle-text-color`, `--tg-theme-hint-color`, `--tg-theme-section-separator-color`, `--tg-theme-destructive-text-color`, and `--tg-theme-button-text-color`.
 
-`--tk-sep` is the canonical separator token. `--tk-separator` is kept as a compatibility alias for existing stories and downstream CSS.
+`--tk-sep` is the canonical separator token. New code should not introduce `--tk-separator`.

@@ -8,20 +8,19 @@ The platform layer wraps `window.Telegram.WebApp` in typed hooks that degrade sa
 - Permissions and identity: `useContactRequest`, `useWriteAccess`, `useBiometrics`, `useLocation`, `useEmojiStatus`, `useHomeScreen`.
 - Storage: `useCloudStorage`, `useDeviceStorage`, `useSecureStorage`.
 
-For tests and demos, inject a client:
+For tests, inject a WebApp-like client:
 
 ```tsx
 import { TKTelegramProvider } from "tg-mini-app-uikit";
-import { createMockTelegram } from "../telegram/mock";
 
-const mock = createMockTelegram();
+const mock = createWebAppTestDouble();
 
 <TKTelegramProvider webApp={mock.webApp}>
   <App />
 </TKTelegramProvider>
 ```
 
-The Platform Lab in the demo renders the mock client chrome and event log, so invoices, QR, biometrics and sensors can be tested in a normal browser.
+The package-local Storybook stories and e2e specs exercise mocked runtime states in a normal browser, including native buttons, storage, capability gates and browser fallbacks.
 
 ## Runtime Policy
 

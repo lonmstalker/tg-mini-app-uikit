@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 const testDir = dirname(fileURLToPath(import.meta.url));
 const packageRoot = resolve(testDir, "..");
 const repoRoot = resolve(packageRoot, "../..");
-const tokensPath = join(packageRoot, "src/styles/tokens.css");
+const tokensPath = join(packageRoot, "src/tokens/tokens.css");
 const tokensCss = readFileSync(tokensPath, "utf8");
 
 const declarationPattern = /(--tk-[\w-]+)\s*:/g;
@@ -159,7 +159,7 @@ describe("design token contract", () => {
   it("TOK-CONTRACT-011 has no undeclared --tk references outside intentional local variables", () => {
     const files = [
       ...collectFiles(join(packageRoot, "src")),
-      ...collectFiles(join(repoRoot, "examples/demo/stories")),
+      ...collectFiles(join(packageRoot, "storybook")),
       ...collectFiles(join(repoRoot, "docs/site/pages")),
     ];
 

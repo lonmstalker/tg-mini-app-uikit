@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import { TKSlider, TKStepper } from "../src/controls";
+import { TKSlider, TKStepper } from "../src/atoms/controls";
 
 describe("TKSlider", () => {
   const getSlider = (name = "Volume") => screen.getByRole("slider", { name });

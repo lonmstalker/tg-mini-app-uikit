@@ -7,10 +7,11 @@ This harness governs the future reorganization of `packages/uikit/src` into toke
 ## Scope Guard
 
 - Source reorganization tasks are governed by `plans/**`.
-- Do not move components, delete demo files, edit tests, update snapshots, or modify package exports while creating this harness.
-- Future execution may change `packages/uikit/src`, `packages/uikit/test`, `examples/demo/stories`, `docs/site/pages`, and e2e specs only when a checked task in `plans/plan.md` explicitly calls for it.
-- `examples/demo` may be deleted only in a later dedicated task after stories and visual evidence are migrated or replaced.
-- Current public import compatibility is not required, but every breaking change must update API tests, API snapshots, docs, and the relevant component plan entry.
+- Do not move components, edit tests, update snapshots, or modify package exports while creating this harness.
+- Future execution may change `packages/uikit/src`, `packages/uikit/test`, `packages/uikit/storybook`, `docs/site/pages`, and e2e specs only when a checked task in `plans/plan.md` explicitly calls for it.
+- `examples` is not an evidence surface. Storybook evidence must live inside the package under `packages/uikit/storybook/<category>`; atoms use `packages/uikit/storybook/atoms`.
+- Old source deep-path import surfaces must not be preserved. Every breaking change must update API tests, API snapshots, docs, and the relevant component plan entry.
+- Every source-changing element slice must add or update all three artifacts before it can be marked implemented: unit test, Storybook story, and e2e test.
 
 ## Required Skills
 
@@ -31,7 +32,9 @@ For every source-changing component task:
 3. Implement the smallest code change that can pass.
 4. Run the narrow command and record the pass.
 5. Run the category regression command.
-6. Refactor only while tests stay green.
+6. Add or update the element Storybook entry under `packages/uikit/storybook/<category>`.
+7. Add or update the element e2e coverage that exercises the Storybook story or the production surface.
+8. Refactor only while tests stay green.
 
 Documentation-only edits such as this harness do not require RED/GREEN production-code cycles, but they must still be verified with doc-specific commands.
 
@@ -71,6 +74,7 @@ Every source entry in `components-*.md` must keep this shape:
 - UIKit checklist: [ ] classification [ ] API contract [ ] tokens [ ] accessibility [ ] Telegram runtime [ ] state machine [ ] testing [ ] docs/stories [ ] packaging [ ] performance
 - TDD checklist: failing test name: blank; RED command: blank; expected failure: blank; GREEN command: blank; regression command: blank
 - Visual checklist: [ ] light [ ] dark [ ] Telegram theme [ ] narrow/mobile [ ] RTL/locale where relevant [ ] reduced motion [ ] no overlap [ ] stable layout
+- Artifact checklist: [ ] unit test [ ] Storybook [ ] e2e test
 - Reviewer-only yes/no questions:
   - Code: [ ] Да [ ] Нет - Does the implementation match the planned API and category boundary?
   - Visual: [ ] Да [ ] Нет - Does the visual result pass `impeccable` review and local visual evidence?

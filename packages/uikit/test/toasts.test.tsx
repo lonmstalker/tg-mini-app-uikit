@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import { TKToastProvider, useTKToast, type TKToastOptions } from "../src/overlays";
+import { TKToastProvider, useTKToast, type TKToastOptions } from "../src/composites/overlays";
 
 function ShowButton({ toast, name }: { toast: TKToastOptions; name: string }) {
   const api = useTKToast();

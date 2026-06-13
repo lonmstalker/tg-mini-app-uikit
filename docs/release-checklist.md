@@ -6,7 +6,7 @@ Use this checklist after the automated gates in `plans.md` pass or when preparin
 
 Required automation:
 
-- Chromium for functional Playwright flows, accessibility, ARIA snapshots, keyboard behavior, motion, platform mock behavior, and demo app smoke tests.
+- Chromium for functional Playwright flows, accessibility, ARIA snapshots, keyboard behavior, motion, platform mock behavior, and Storybook smoke tests.
 - Reduced-motion Chromium project for `prefers-reduced-motion`.
 - Visual Chromium for core visual snapshots.
 - Visual WebKit for iOS Telegram WKWebView-sensitive rendering such as font rasterization, shadows, glass, and backdrop filters.
@@ -17,7 +17,7 @@ Firefox is not required in the release gate right now. Add a non-visual Firefox 
 
 ## Manual Telegram client smoke
 
-Run this manual smoke before releases that touch Telegram runtime hooks, safe-area/viewport behavior, native buttons, haptics, storage, permissions, payments/share/link flows, or demo platform examples. For docs-only and test-only patch releases, record why manual Telegram smoke was skipped.
+Run this manual smoke before releases that touch Telegram runtime hooks, safe-area/viewport behavior, native buttons, haptics, storage, permissions, payments/share/link flows, or Storybook runtime examples. For docs-only and test-only patch releases, record why manual Telegram smoke was skipped.
 
 Recommended platforms:
 

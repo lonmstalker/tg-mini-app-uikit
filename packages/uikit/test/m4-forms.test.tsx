@@ -51,7 +51,7 @@ describe("M4.1 TKCalendar", () => {
     expect(end.getDate()).toBe(14);
   });
 
-  it("range picked backwards is normalized", () => {
+  it("range picked in reverse order is normalized", () => {
     const onRangeChange = vi.fn();
     render(<kit.TKCalendar mode="range" defaultMonth={june} onRangeChange={onRangeChange} />);
     fireEvent.click(screen.getByRole("button", { name: /June 14/ }));

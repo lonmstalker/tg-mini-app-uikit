@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Post-build fixes for the emitted type declarations:
- * 1. tsc preserves the side-effect `import "./styles/tokens.css"` in
+ * 1. tsc preserves the side-effect `import "./tokens/tokens.css"` in
  *    dist/index.d.ts, but the bundled stylesheet lives at dist/style.css —
  *    the dangling import breaks node16 type resolution (attw
  *    InternalResolutionError). Styles are consumed via the
@@ -26,7 +26,7 @@ const addJsExt = (spec) => (/\.[cm]?js$/.test(spec) ? spec : `${spec}.js`);
 
 for (const file of dtsFiles) {
   let text = readFileSync(file, "utf8");
-  text = text.replace(/^import\s+"\.\/styles\/tokens\.css";\s*\n/m, "");
+  text = text.replace(/^import\s+"\.\/tokens\/tokens\.css";\s*\n/m, "");
   // `from "./x"` / `from "../x"` and dynamic `import("./x")`
   text = text.replace(/(from\s+")(\.\.?\/[^"]+)(")/g, (_, a, spec, z) => a + addJsExt(spec) + z);
   text = text.replace(/(import\(")(\.\.?\/[^"]+)("\))/g, (_, a, spec, z) => a + addJsExt(spec) + z);

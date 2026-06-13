@@ -19,7 +19,7 @@ Use a restrained product interface: tinted neutral surfaces, one primary Telegra
 - For new token work, prefer OKLCH reasoning and avoid pure black or pure white as new design decisions.
 - Keep the default strategy restrained: neutral surfaces and one accent used for primary actions, selected states, focus, and state indicators.
 - Preserve state vocabulary: success, warning, error, info, disabled, selected, loading, unsupported.
-- `--tk-sep` is the canonical separator token; `--tk-separator` is compatibility only.
+- `--tk-sep` is the canonical separator token; do not introduce `--tk-separator` in new work.
 
 ## Typography
 

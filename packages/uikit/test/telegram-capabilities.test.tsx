@@ -1,6 +1,6 @@
 import { act, renderHook } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { createMockTelegram } from "../../../examples/demo/src/telegram/mock";
+import { createMockTelegram } from "./support/telegram/mock";
 import {
   useActivity,
   useBiometrics,
@@ -35,7 +35,7 @@ import {
   useWebApp,
   useWriteAccess,
   type TelegramWebApp,
-} from "../src/telegram";
+} from "../src/foundation/telegram";
 import { wrapperFor } from "./helpers/telegram";
 
 /* ---------------- Capability gates ---------------- */
