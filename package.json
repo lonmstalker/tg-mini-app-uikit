@@ -28,10 +28,12 @@
     "@axe-core/playwright": "^4.10.2",
     "@playwright/test": "1.60.0",
     "@size-limit/preset-small-lib": "^12.1.0",
+    "@tailwindcss/vite": "^4.3.1",
     "gifenc": "^1.0.3",
     "playwright": "1.60.0",
     "pngjs": "^7.0.0",
     "publint": "^0.3.21",
-    "size-limit": "^12.1.0"
+    "size-limit": "^12.1.0",
+    "tailwindcss": "^4.3.1"
   }
 }
