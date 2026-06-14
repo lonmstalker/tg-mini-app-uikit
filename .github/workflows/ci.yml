@@ -35,6 +35,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      # tokens-contract tests assert against the built CSS entrypoint (dist/style.css).
+      - run: npm run build -w tg-mini-app-uikit
       - run: npm run test:unit
 
   package:
