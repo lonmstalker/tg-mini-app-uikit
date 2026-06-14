@@ -1,0 +1,4 @@
+interface:
+  display_name: "Designer"
+  short_description: "Product design and UX strategy (Telegram Mini App-aware)"
+  default_prompt: "Use $designer to turn this product idea into UX direction and implementation handoff notes. In tg-mini-app-uikit, apply Telegram Mini App constraints (safe areas, native buttons, keyboard, gestures, theming)."

@@ -10,3 +10,4 @@ playwright-report/
 blob-report/
 coverage/
 examples/demo/build/
+packages/uikit/storybook-static/
