@@ -129,15 +129,15 @@ describe("M2.3 keyboard-accessible popovers", () => {
         <button type="button">target</button>
       </kit.TKTooltip>,
     );
-    const tooltip = screen.getByRole("tooltip", { hidden: true });
     const target = screen.getByRole("button", { name: "target" });
-    expect(tooltip.style.opacity).toBe("0");
-    expect(tooltip).toHaveAttribute("aria-hidden", "true");
+    // The tooltip is portaled (not an always-rendered hidden child), so it only
+    // exists in the DOM while open — escaping any overflow:hidden ancestor.
+    expect(screen.queryByRole("tooltip")).toBeNull();
     fireEvent.focus(target);
-    expect(tooltip.style.opacity).toBe("1");
+    const tooltip = screen.getByRole("tooltip");
+    expect(tooltip).toHaveTextContent("hint");
     expect(target).toHaveAttribute("aria-describedby", tooltip.id);
     fireEvent.blur(target);
-    expect(tooltip.style.opacity).toBe("0");
-    expect(tooltip).toHaveAttribute("aria-hidden", "true");
+    expect(screen.queryByRole("tooltip")).toBeNull();
   });
 });

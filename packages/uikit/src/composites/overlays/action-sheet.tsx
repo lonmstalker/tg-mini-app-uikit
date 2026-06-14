@@ -3,6 +3,7 @@ import { TKIcon, type TKIconName } from "../../atoms/icons";
 import { mergeRefs } from "../../internal/dom";
 import { useScrollLock } from "../../internal/useScrollLock";
 import { useOverlayLayer } from "../../internal/useOverlayLayer";
+import { useVerticalSwipeGuard } from "../../internal/useVerticalSwipeGuard";
 import { useTKLocale } from "../../foundation/i18n";
 import { useBackIntercept } from "../../foundation/telegram";
 import { Scrim, useMountTransition, useOverlayA11y } from "./shared";
@@ -36,6 +37,9 @@ export const TKActionSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKAction
   useOverlayA11y(mounted && !closing, ref, onClose);
   // lock page scroll while the action sheet is mounted (covers the close anim)
   useScrollLock(mounted);
+  // disable Telegram's swipe-down-to-minimize so a downward swipe over this
+  // bottom-anchored sheet dismisses nothing instead of collapsing the Mini App
+  useVerticalSwipeGuard(mounted);
   // stack above any overlay opened before this one (scrim covers it too)
   const layer = useOverlayLayer(mounted);
   useBackIntercept(mounted && !closing && !!onClose, () => onClose?.());

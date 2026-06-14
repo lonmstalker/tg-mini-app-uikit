@@ -12,7 +12,7 @@ import {
   type ReactNode,
 } from "react";
 import { tkShouldCommit, useDragGesture } from "../internal/useDragGesture";
-import { useBackButton, useBackIntercept } from "../foundation/telegram";
+import { useBackIntercept } from "../foundation/telegram";
 
 export interface TKNavApi {
   push: (panel: string, params?: unknown) => void;
@@ -98,19 +98,35 @@ export function TKNavStack({
 
   const stackRef = useRef(stack);
   stackRef.current = stack;
+  // Last navigation direction, read during render to pick the slide animation.
+  // A push enters from the right (tk-nav-in); a pop must NOT replay that — the
+  // revealed panel instead transitions from its -30% "under" offset back to 0,
+  // so going back slides in from the left like the platform expects.
+  const dirRef = useRef<"push" | "pop">("push");
 
   const api = useMemo<TKNavApi>(() => {
     const top = stack[stack.length - 1];
     return {
-      push: (panel, params) => commit([...stackRef.current, { panel, params, key: keyRef.current++ }]),
-      pop: () => {
-        if (stackRef.current.length > 1) commit(stackRef.current.slice(0, -1));
+      push: (panel, params) => {
+        dirRef.current = "push";
+        commit([...stackRef.current, { panel, params, key: keyRef.current++ }]);
       },
-      replace: (panel, params) =>
-        commit([...stackRef.current.slice(0, -1), { panel, params, key: keyRef.current++ }]),
+      pop: () => {
+        if (stackRef.current.length > 1) {
+          dirRef.current = "pop";
+          commit(stackRef.current.slice(0, -1));
+        }
+      },
+      replace: (panel, params) => {
+        dirRef.current = "push";
+        commit([...stackRef.current.slice(0, -1), { panel, params, key: keyRef.current++ }]);
+      },
       popTo: (panel) => {
         const index = stackRef.current.findIndex((entry) => entry.panel === panel);
-        if (index >= 0) commit(stackRef.current.slice(0, index + 1));
+        if (index >= 0) {
+          dirRef.current = "pop";
+          commit(stackRef.current.slice(0, index + 1));
+        }
       },
       depth: stack.length,
       activePanel: top.panel,
@@ -118,11 +134,10 @@ export function TKNavStack({
     };
   }, [commit, stack]);
 
-  // Telegram Back button: visible while the stack is deep; the provider's
-  // back queue lets open overlays (sheets, dialogs) intercept first.
-  useBackIntercept(stack.length > 1, api.pop);
-  // visibility only: the provider already routes clicks through the queue
-  useBackButton(undefined, backButton && stack.length > 1);
+  // Telegram Back button: intercept while the stack is deep; the provider's
+  // back queue lets open overlays (sheets, dialogs) intercept first, and shows
+  // the native button when `backButton` is on (the provider owns visibility).
+  useBackIntercept(stack.length > 1, api.pop, backButton);
 
   const panels = useMemo(() => {
     const map = new Map<string, ReactElement<TKNavPanelProps>>();
@@ -191,7 +206,11 @@ export function TKNavStack({
                     : undefined,
                 transition: dragging ? "none" : "transform var(--tk-t2) var(--tk-ease)",
                 zIndex: index,
-                ...(top && index > 0 && !dragging && !dragX ? { animation: "tk-nav-in var(--tk-t2) var(--tk-ease) both" } : null),
+                // Only the forward push enters from the right. On pop the revealed
+                // panel rides its -30%→0 transform transition in from the left.
+                ...(top && index > 0 && !dragging && !dragX && dirRef.current === "push"
+                  ? { animation: "tk-nav-in var(--tk-t2) var(--tk-ease) both" }
+                  : null),
               }}
             >
               <TKNavContext.Provider

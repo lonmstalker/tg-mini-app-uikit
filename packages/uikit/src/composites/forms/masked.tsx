@@ -309,7 +309,12 @@ const TKPhoneCountryField = /* @__PURE__ */ forwardRef<HTMLInputElement, TKPhone
     const next = options[index];
     if (!next) return;
     const trimmed = digits.slice(0, maskCapacity(numberMask ?? next.mask));
-    if (value === undefined) setInternal({ country: next, digits: trimmed });
+    // Always record the explicitly-picked country, even in controlled mode: it
+    // feeds `parse(value, preferred)` as the preferred country, so picking a
+    // country that shares a dial code (RU↔KZ +7, two +1 NANP countries) sticks
+    // instead of reverting to the previous same-dial country on the next render.
+    // Only the uncontrolled path owns `digits`; controlled keeps it from `value`.
+    setInternal((s) => ({ country: next, digits: value === undefined ? trimmed : s.digits }));
     emit(next, trimmed);
   };
 

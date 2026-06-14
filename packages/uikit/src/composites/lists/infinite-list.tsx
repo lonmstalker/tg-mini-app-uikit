@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, type CSSProperties, type ReactNode } from "react";
+import { Children, useCallback, useEffect, useRef, type CSSProperties, type ReactNode } from "react";
 
 /* ---------------- Infinite list ---------------- */
 
@@ -47,6 +47,13 @@ export function TKInfiniteList({
     loadRef.current();
   }, []);
 
+  // Re-arm whenever the appended content changes too, not only on a `loading`
+  // transition. Without this, an integrator who never wires the optional
+  // `loading` prop and whose page is short enough to leave the sentinel inside
+  // the rootMargin would load page 1 and then silently stall: the persistent
+  // observer never re-fires for an unchanged "still visible" state.
+  const childCount = Children.count(children);
+
   // Persistent observer for scroll-driven loading. Re-arms the guard whenever
   // the sentinel scrolls out of view so a later re-entry can load again.
   useEffect(() => {
@@ -84,7 +91,7 @@ export function TKInfiniteList({
     );
     io.observe(node);
     return () => io.disconnect();
-  }, [loading, hasMore, margin, maybeLoad]);
+  }, [loading, hasMore, margin, maybeLoad, childCount]);
 
   return (
     <div data-testid={testId} style={style}>

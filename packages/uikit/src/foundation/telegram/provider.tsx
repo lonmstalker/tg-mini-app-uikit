@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { TelegramEventMap, TelegramEventName, TelegramWebApp } from "./types";
 
 /* ---------------- Provider & access ---------------- */
@@ -19,20 +19,57 @@ const TKTelegramContext = /* @__PURE__ */ createContext<TelegramWebApp | undefin
  */
 type BackHandler = () => void;
 const backQueue: BackHandler[] = [];
+// How many active interceptors want the native Back button visible. Overlays
+// (sheets, dialogs, action sheets) and the nav stack bump this so the provider
+// can show the button whenever something is listening — otherwise Telegram's
+// Back press/edge-swipe is never delivered to the queue and instead closes the
+// whole Mini App.
+let backButtonWant = 0;
+const backButtonListeners = new Set<() => void>();
+function notifyBackButton(): void {
+  for (const listener of backButtonListeners) listener();
+}
 
-/** Registers `handler` as the top back interceptor while `active` is true. */
-export function useBackIntercept(active: boolean, handler: BackHandler): void {
+/** True while at least one active interceptor wants the native Back button shown. */
+function backButtonWanted(): boolean {
+  return backButtonWant > 0;
+}
+
+/** Subscribe to changes in `backButtonWanted()`; returns an unsubscribe. */
+function subscribeBackButton(listener: () => void): () => void {
+  backButtonListeners.add(listener);
+  return () => {
+    backButtonListeners.delete(listener);
+  };
+}
+
+/**
+ * Registers `handler` as the top back interceptor while `active` is true.
+ * `showNativeButton` (default true) also asks the provider to reveal the native
+ * Telegram Back button while active, so the back press routes here instead of
+ * closing the app — pass false for consumers that own button visibility some
+ * other way (e.g. a nav stack honoring its own `backButton` prop).
+ */
+export function useBackIntercept(active: boolean, handler: BackHandler, showNativeButton = true): void {
   const ref = useRef(handler);
   ref.current = handler;
   useEffect(() => {
     if (!active) return;
     const entry: BackHandler = () => ref.current();
     backQueue.push(entry);
+    if (showNativeButton) {
+      backButtonWant += 1;
+      notifyBackButton();
+    }
     return () => {
       const i = backQueue.indexOf(entry);
       if (i >= 0) backQueue.splice(i, 1);
+      if (showNativeButton) {
+        backButtonWant = Math.max(0, backButtonWant - 1);
+        notifyBackButton();
+      }
     };
-  }, [active]);
+  }, [active, showNativeButton]);
 }
 
 /**
@@ -114,6 +151,21 @@ export function TKTelegramProvider({ webApp, signalReady = true, haptics = false
       btn.offClick?.(handler);
     };
   }, [wa]);
+  // Drive the native Back button's visibility from the queue: show it whenever
+  // an interceptor (overlay or nav stack) is listening, hide it otherwise, so
+  // the Back press/edge-swipe reaches the queue rather than closing the app.
+  const [backVisible, setBackVisible] = useState(backButtonWanted);
+  useEffect(() => {
+    const sync = () => setBackVisible(backButtonWanted());
+    sync();
+    return subscribeBackButton(sync);
+  }, []);
+  useEffect(() => {
+    const btn = wa?.BackButton;
+    if (!btn) return;
+    if (backVisible) btn.show?.();
+    else btn.hide?.();
+  }, [wa, backVisible]);
   return (
     <TKTelegramContext.Provider value={wa}>
       <TKHapticsContext.Provider value={haptics}>{children}</TKHapticsContext.Provider>

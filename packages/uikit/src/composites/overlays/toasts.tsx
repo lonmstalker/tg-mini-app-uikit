@@ -79,7 +79,7 @@ export function TKToastProvider({ children, offset = 14, duration = 2400, max = 
           position: "absolute",
           left: 14,
           right: 14,
-          top: position === "top" ? offset : undefined,
+          top: position === "top" ? `calc(${offset}px + var(--tk-safe-top))` : undefined,
           bottom: position === "bottom" ? `calc(${offset}px + var(--tk-safe-bottom))` : undefined,
           display: "flex",
           flexDirection: "column",

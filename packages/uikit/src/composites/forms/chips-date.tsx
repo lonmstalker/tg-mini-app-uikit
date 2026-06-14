@@ -253,8 +253,23 @@ export function TKChipsInput({ value, defaultValue = [], onChange, placeholder, 
           disabled={disabled}
           onChange={(e) => {
             const next = e.target.value;
-            if (next.endsWith(",")) commit(next.slice(0, -1));
-            else setDraft(next);
+            // Split on every comma, not just a trailing one, so pasting or typing
+            // "red, green, blue" commits three chips and keeps the last segment as
+            // the live draft (instead of one malformed comma-laden tag). All
+            // complete segments are added in a single setTags so the batched
+            // updates don't clobber one another, de-duping against existing tags.
+            if (next.includes(",")) {
+              const parts = next.split(",");
+              const additions: string[] = [];
+              for (const part of parts.slice(0, -1)) {
+                const tag = part.trim();
+                if (tag && !tags.includes(tag) && !additions.includes(tag)) additions.push(tag);
+              }
+              if (additions.length) setTags([...tags, ...additions]);
+              setDraft(parts[parts.length - 1].trimStart());
+            } else {
+              setDraft(next);
+            }
           }}
           onKeyDown={(e) => {
             if (e.key === "Enter") {

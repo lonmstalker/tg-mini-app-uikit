@@ -96,6 +96,9 @@ describe("accessibility semantics", () => {
     expect(trigger).toHaveAttribute("aria-describedby", tooltip.id);
 
     fireEvent.keyDown(document, { key: "Escape" });
-    expect(tooltip).toHaveAttribute("aria-hidden", "true");
+    // Escape dismisses the portaled tooltip (removed from the DOM) and drops the
+    // trigger's description link.
+    expect(screen.queryByRole("tooltip")).toBeNull();
+    expect(trigger).not.toHaveAttribute("aria-describedby");
   });
 });

@@ -28,12 +28,28 @@ export function TKGallery({ children, onPageChange, dots = true, gap = 10, edgeI
   const slides = Children.toArray(children);
   const [page, setPage] = useState(0);
   const trackRef = useRef<HTMLDivElement>(null);
+  // A programmatic smooth scroll (dot tap, arrow key) fires a burst of native
+  // scroll events as it crosses each slide. Without this guard syncPage would
+  // emit onPageChange for every intermediate slide the user never landed on
+  // (and re-emit the destination). While a programmatic scroll is in flight we
+  // suppress those intermediate reports and settle once the target is reached;
+  // any user-initiated scroll (pointer/touch/wheel) clears the guard at once.
+  const programmaticRef = useRef(false);
+  const targetRef = useRef(0);
+  const endProgrammatic = () => {
+    programmaticRef.current = false;
+  };
 
   const syncPage = () => {
     const el = trackRef.current;
     if (!el) return;
     const width = el.clientWidth || 1;
     const next = Math.round(el.scrollLeft / width);
+    if (programmaticRef.current) {
+      // Ignore intermediate frames; the destination was already reported eagerly.
+      if (next === targetRef.current) programmaticRef.current = false;
+      return;
+    }
     if (next !== page) {
       setPage(next);
       onPageChange?.(next);
@@ -47,9 +63,14 @@ export function TKGallery({ children, onPageChange, dots = true, gap = 10, edgeI
     // honor the OS "reduce motion" setting — jump instead of animate
     const reduce =
       typeof window !== "undefined" && !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    // Only the smooth path produces a multi-slide scroll burst worth guarding.
+    programmaticRef.current = !reduce && clamped !== page;
+    targetRef.current = clamped;
     el.scrollTo({ left: clamped * el.clientWidth, behavior: reduce ? "auto" : "smooth" });
-    setPage(clamped);
-    onPageChange?.(clamped);
+    if (clamped !== page) {
+      setPage(clamped);
+      onPageChange?.(clamped);
+    }
   };
 
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
@@ -71,6 +92,12 @@ export function TKGallery({ children, onPageChange, dots = true, gap = 10, edgeI
         tabIndex={0}
         onScroll={syncPage}
         onKeyDown={onKeyDown}
+        // A real user gesture overrides any in-flight programmatic scroll, so
+        // resume reporting page changes immediately instead of waiting for the
+        // (now-cancelled) target.
+        onPointerDown={endProgrammatic}
+        onTouchStart={endProgrammatic}
+        onWheel={endProgrammatic}
         style={{
           display: "flex",
           gap,

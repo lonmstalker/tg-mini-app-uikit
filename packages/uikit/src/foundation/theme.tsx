@@ -2,10 +2,12 @@ import {
   createContext,
   useContext,
   useEffect,
+  useRef,
   type CSSProperties,
   type ReactNode,
 } from "react";
 import { useTelegramEvent, useWebApp } from "./telegram/provider";
+import { useSafeArea } from "./telegram/layout";
 import type { TelegramThemeParams } from "./telegram/types";
 
 export type TKTheme = "light" | "dark";
@@ -119,9 +121,28 @@ export function TKProvider({
     if (telegram) applyTelegramThemeVars(wa?.themeParams);
   }, [telegram, wa]);
   useTelegramEvent("themeChanged", telegram ? () => applyTelegramThemeVars(wa?.themeParams) : undefined);
+  // Bridge Telegram's JS safe-area insets onto the `--tk-safe-*` vars on this
+  // root. The tokens default them to `env(safe-area-inset-*)`, but inside the
+  // Telegram webview `env()` is frequently 0 while the real inset is exposed
+  // only via JS (safeAreaInset / contentSafeAreaInset). `max(env, jsPx)` keeps
+  // whichever is larger, so bottom overlays (sheet, action sheet, toast) clear
+  // the home indicator / header even when `env()` reports nothing — matching
+  // what TKHeader/TKTabbar/tkSafePad already do per-component.
+  const rootRef = useRef<HTMLDivElement>(null);
+  const { inset, contentInset } = useSafeArea();
+  useEffect(() => {
+    const node = rootRef.current;
+    if (!node) return;
+    const px = (edge: "top" | "bottom" | "left" | "right") =>
+      (inset[edge] ?? 0) + (contentInset[edge] ?? 0);
+    for (const edge of ["top", "bottom", "left", "right"] as const) {
+      node.style.setProperty(`--tk-safe-${edge}`, `max(env(safe-area-inset-${edge}, 0px), ${px(edge)}px)`);
+    }
+  }, [inset, contentInset]);
   return (
     <TKThemeContext.Provider value={{ theme, accent, roundness, motionSpeed, motion, fontSize }}>
       <div
+        ref={rootRef}
         className={["tk", telegram ? "tk-tg" : "", className ?? ""].filter(Boolean).join(" ")}
         data-theme={theme}
         data-testid={testId}

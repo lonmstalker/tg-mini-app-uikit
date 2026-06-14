@@ -1,5 +1,5 @@
 import { useState, type CSSProperties, type ReactNode } from "react";
-import { useSafeArea } from "../../foundation/telegram";
+import { useKeyboard, useSafeArea } from "../../foundation/telegram";
 import { TKPageScrollContext } from "../../internal/pageScroll";
 import { tkSafePad } from "./safe-area";
 
@@ -45,13 +45,19 @@ export function TKPage({
   const { inset, contentInset } = useSafeArea();
   const top = inset.top + contentInset.top;
   const bottom = inset.bottom + contentInset.bottom;
+  const keyboard = useKeyboard();
   const [scrollTop, setScrollTop] = useState(0);
   return (
     <div
       className={className}
       data-testid={testId}
       style={{
-        height: "100%",
+        // Shrink the page by the keyboard overlap so the pinned footer (and its
+        // primary action) rises above the on-screen keyboard instead of sitting
+        // behind it. `keyboard.height` is the overlap the layout viewport does
+        // not already account for, so this is correct whether the client resizes
+        // the layout viewport (Android) or only the visual one (iOS WebView).
+        height: keyboard.visible ? `calc(100% - ${keyboard.height}px)` : "100%",
         display: "flex",
         flexDirection: "column",
         // The header (e.g. TKHeader) reserves the top inset itself; padding here

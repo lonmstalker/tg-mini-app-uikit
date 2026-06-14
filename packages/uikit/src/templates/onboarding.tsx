@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode, type RefObject } from "react";
+import { useEffect, useReducer, useState, type ReactNode, type RefObject } from "react";
 import { TKButton } from "../atoms/buttons";
 import { TKPopper } from "../composites/overlays";
 import { useTKLocale } from "../foundation/i18n";
@@ -62,10 +62,40 @@ export function TKOnboardingTooltip({
     };
   }, [storage, storageKey]);
 
+  // Scroll the target into view when the STEP changes only. `steps` is left out
+  // of the deps on purpose: consumers pass it as an inline array, so keying on
+  // its identity would re-run this on every parent render and yank the page back
+  // to center, fighting the user's own scroll.
   useEffect(() => {
     if (status !== "open") return;
     steps[index]?.target.current?.scrollIntoView?.({ block: "center", behavior: "instant" as ScrollBehavior });
-  }, [index, status, steps]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [index, status]);
+
+  // The scrim cutout is measured from the target's viewport rect at render time,
+  // so re-render on scroll/resize to keep the spotlight glued to the target —
+  // otherwise the hole freezes while the TKPopper bubble (which has its own
+  // reflow listeners) follows, and the two visibly desync.
+  const [, bumpRect] = useReducer((n: number) => n + 1, 0);
+  useEffect(() => {
+    if (status !== "open") return;
+    let pending = false;
+    const onReflow = () => {
+      if (pending) return;
+      pending = true;
+      const raf = typeof requestAnimationFrame === "function" ? requestAnimationFrame : (cb: FrameRequestCallback) => cb(0);
+      raf(() => {
+        pending = false;
+        bumpRect();
+      });
+    };
+    window.addEventListener("resize", onReflow, { passive: true });
+    window.addEventListener("scroll", onReflow, { passive: true, capture: true });
+    return () => {
+      window.removeEventListener("resize", onReflow);
+      window.removeEventListener("scroll", onReflow, true);
+    };
+  }, [status]);
 
   const finish = () => {
     setStatus("done");

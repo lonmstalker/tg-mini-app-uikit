@@ -36,6 +36,8 @@ export interface TKPopperProps {
    * popover that traps focus.
    */
   role?: "tooltip" | "menu" | "dialog";
+  /** Forwarded to the popper surface so an anchor can `aria-describedby` it. */
+  id?: string;
   testId?: string;
   style?: CSSProperties;
 }
@@ -58,7 +60,7 @@ interface PopperLayout {
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), Math.max(min, max));
 
-export function TKPopper({ open, anchorRef, children, placement: preferred = "bottom", offset = 8, onClose, arrow, autoFlip = true, role = "tooltip", testId, style }: TKPopperProps) {
+export function TKPopper({ open, anchorRef, children, placement: preferred = "bottom", offset = 8, onClose, arrow, autoFlip = true, role = "tooltip", id, testId, style }: TKPopperProps) {
   const [layout, setLayout] = useState<PopperLayout | null>(null);
   const [popperSize, setPopperSize] = useState({ width: 220, height: 80 });
   const ref = useRef<HTMLDivElement>(null);
@@ -183,6 +185,7 @@ export function TKPopper({ open, anchorRef, children, placement: preferred = "bo
   const node = (
     <div
       ref={ref}
+      id={id}
       data-testid={testId}
       role={role}
       style={
@@ -248,30 +251,13 @@ export function TKTooltip({ children, content, placement = "top", disabled, test
       longPressRef.current = 0;
     }
   };
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: globalThis.KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
-    };
-    // touch users open via long-press; a tap anywhere else dismisses it
-    const onOutside = (e: globalThis.PointerEvent) => {
-      if (e.pointerType === "mouse") return;
-      if (wrapRef.current?.contains(e.target as Node)) return;
-      setOpen(false);
-    };
-    document.addEventListener("keydown", onKey);
-    document.addEventListener("pointerdown", onOutside);
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.removeEventListener("pointerdown", onOutside);
-    };
-  }, [open]);
   useEffect(() => clearLongPress, []);
 
+  const shown = open && !disabled;
   const describedChildren = isValidElement(children)
     ? cloneElement(children as ReactElement<{ "aria-describedby"?: string }>, {
         "aria-describedby":
-          open && !disabled
+          shown
             ? [
                 (children.props as { "aria-describedby"?: string })["aria-describedby"],
                 id,
@@ -304,21 +290,21 @@ export function TKTooltip({ children, content, placement = "top", disabled, test
         if (e.pointerType === "mouse") return;
         clearLongPress();
       }}
-      style={{ position: "relative", display: "inline-flex", ...style }}
+      style={{ display: "inline-flex", ...style }}
     >
       {describedChildren}
-      <span
-        id={id}
+      {/* Portaled through TKPopper so the label escapes any `overflow:hidden`
+          ancestor (cards, list rows, TKFrame) and stays inside the safe area,
+          instead of being clipped like an absolutely-positioned child would. */}
+      <TKPopper
+        open={shown}
+        anchorRef={wrapRef}
+        placement={placement}
+        offset={7}
         role="tooltip"
-        aria-hidden={!open}
+        id={id}
+        onClose={() => setOpen(false)}
         style={{
-          position: "absolute",
-          left: "50%",
-          top: placement === "bottom" ? "calc(100% + 7px)" : undefined,
-          bottom: placement === "top" ? "calc(100% + 7px)" : undefined,
-          zIndex: tkZ.tooltip,
-          transform: open ? "translateX(-50%) scale(1)" : "translateX(-50%) scale(.96)",
-          transformOrigin: placement === "top" ? "bottom center" : "top center",
           minWidth: "max-content",
           maxWidth: 220,
           padding: "7px 9px",
@@ -331,12 +317,10 @@ export function TKTooltip({ children, content, placement = "top", disabled, test
           fontSize: "var(--tk-fz-caption)",
           fontWeight: 600,
           pointerEvents: "none",
-          opacity: open ? 1 : 0,
-          transition: "opacity var(--tk-t2) var(--tk-ease), transform var(--tk-t2) var(--tk-spring)",
         }}
       >
         {content}
-      </span>
+      </TKPopper>
     </span>
   );
 }

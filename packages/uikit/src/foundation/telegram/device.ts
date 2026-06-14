@@ -29,6 +29,7 @@ export function useKeyboard(threshold = 80): TKKeyboardState {
   useEffect(() => {
     const vv = typeof window !== "undefined" ? window.visualViewport : undefined;
     if (!vv) return;
+    tkKbConsumers += 1;
     const sync = () => {
       const covered = Math.max(0, window.innerHeight - vv.height - (vv.offsetTop ?? 0));
       setState((prev) => {
@@ -36,7 +37,7 @@ export function useKeyboard(threshold = 80): TKKeyboardState {
         return prev.visible === next.visible && prev.height === next.height ? prev : next;
       });
       // recipe hook: `.tk-kb-open` lets CSS lift bottom bars above the keyboard
-      document.querySelectorAll(".tk").forEach((el) => el.classList.toggle("tk-kb-open", covered > threshold));
+      tkSetKeyboardOpenClass(covered > threshold);
     };
     sync();
     vv.addEventListener("resize", sync);
@@ -44,9 +45,26 @@ export function useKeyboard(threshold = 80): TKKeyboardState {
     return () => {
       vv.removeEventListener("resize", sync);
       vv.removeEventListener("scroll", sync);
+      tkKbConsumers -= 1;
+      // Clear the global class once the LAST keyboard consumer unmounts, so a
+      // screen that navigates away while the keyboard is still up doesn't leave
+      // `.tk-kb-open` stuck on and lift the next screen by a phantom keyboard.
+      if (tkKbConsumers <= 0) {
+        tkKbConsumers = 0;
+        tkSetKeyboardOpenClass(false);
+      }
     };
   }, [threshold]);
   return state;
+}
+
+// Process-wide because the class is toggled on every `.tk` root; ref-counted so
+// concurrent consumers don't fight and the class is cleared only once they have
+// all unmounted.
+let tkKbConsumers = 0;
+function tkSetKeyboardOpenClass(open: boolean): void {
+  if (typeof document === "undefined") return;
+  document.querySelectorAll(".tk").forEach((el) => el.classList.toggle("tk-kb-open", open));
 }
 
 export function useHideKeyboard(): { hide: () => boolean; isSupported: boolean } {

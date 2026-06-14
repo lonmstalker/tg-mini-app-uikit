@@ -3,6 +3,7 @@ import { TKIcon, type TKIconName } from "../../atoms/icons";
 import { mergeRefs } from "../../internal/dom";
 import { useScrollLock } from "../../internal/useScrollLock";
 import { useOverlayLayer } from "../../internal/useOverlayLayer";
+import { useVerticalSwipeGuard } from "../../internal/useVerticalSwipeGuard";
 import { Scrim, useMountTransition, useOverlayA11y } from "./shared";
 import { useBackIntercept } from "../../foundation/telegram";
 
@@ -74,6 +75,9 @@ export const TKDialog = /* @__PURE__ */ forwardRef<HTMLDivElement, TKDialogProps
   useOverlayA11y(mounted && !closing, ref, onClose, onConfirm);
   // lock page scroll while the dialog is mounted (covers the closing animation)
   useScrollLock(mounted);
+  // disable Telegram's swipe-down-to-minimize so a downward swipe over the
+  // dialog/scrim dismisses nothing instead of collapsing the whole Mini App
+  useVerticalSwipeGuard(mounted);
   // stack above any overlay opened before this one (scrim covers it too)
   const layer = useOverlayLayer(mounted);
   const keyboardCenter = useViewportCenter(mounted && !closing);
