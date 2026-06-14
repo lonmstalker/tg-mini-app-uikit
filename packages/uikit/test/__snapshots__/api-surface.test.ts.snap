@@ -78,6 +78,7 @@ exports[`public API surface > keeps the set of named exports stable 1`] = `
   "TKSkeleton",
   "TKSkeletonCard",
   "TKSkeletonList",
+  "TKSkeletonTable",
   "TKSkeletonText",
   "TKSlider",
   "TKSlotPicker",

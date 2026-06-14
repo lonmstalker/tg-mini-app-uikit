@@ -4,6 +4,24 @@ import { TKSheet } from "../overlays";
 import { TKIcon } from "../../atoms/icons";
 import { useControllable } from "../../internal/useControllable";
 import { TKCalendar } from "./calendar";
+import { TKNativeField } from "./native-input";
+
+function pad2(n: number): string {
+  return String(n).padStart(2, "0");
+}
+
+/** `Date` → `yyyy-mm-dd` for a native date input. */
+function toISODate(d: Date): string {
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+}
+
+/** `yyyy-mm-dd` → `Date` (local), or null when malformed. */
+function fromISODate(s: string): Date | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+  if (!m) return null;
+  const date = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  return Number.isNaN(date.getTime()) ? null : date;
+}
 
 function documentLang(): string {
   if (typeof document !== "undefined" && document.documentElement.lang) return document.documentElement.lang;
@@ -223,11 +241,37 @@ export interface TKDateInputProps {
   error?: ReactNode;
   /** Message shown when manual entry is not a real allowed date. */
   invalidText?: ReactNode;
+  /** Use the OS-native `<input type="date">` picker instead of the sheet calendar. */
+  native?: boolean;
   testId?: string;
 }
 
+/** Date field: native `<input type="date">` or the in-sheet `TKCalendar`. */
+export function TKDateInput(props: TKDateInputProps) {
+  return props.native ? <NativeDateInput {...props} /> : <SheetDateInput {...props} />;
+}
+
+function NativeDateInput({ value, defaultValue = null, onChange, label, min, max, disabled, hint, error, testId }: TKDateInputProps) {
+  const [date, setDate] = useControllable<Date | null>(value, defaultValue, onChange);
+  return (
+    <TKNativeField
+      type="date"
+      icon="calendar"
+      value={date ? toISODate(date) : ""}
+      min={min ? toISODate(min) : undefined}
+      max={max ? toISODate(max) : undefined}
+      onChange={(next) => setDate(next ? fromISODate(next) : null)}
+      label={label}
+      hint={hint}
+      error={error}
+      disabled={disabled}
+      testId={testId}
+    />
+  );
+}
+
 /** Date field that opens a `TKCalendar` inside a bottom sheet (mobile pattern). */
-export function TKDateInput({
+function SheetDateInput({
   value,
   defaultValue = null,
   onChange,

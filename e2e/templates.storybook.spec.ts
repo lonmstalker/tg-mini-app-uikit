@@ -2,8 +2,12 @@ import { expect, test } from "@playwright/test";
 
 const templateStories = [
   { id: "templates-commerce--booking-checkout", text: "Book slot" },
+  { id: "templates-cards--product-cards", text: "Travel tripod" },
+  { id: "templates-cards--promotional-cards", text: "Weekend bonus" },
   { id: "templates-wallet--wallet-states", role: "button", name: "Connect wallet" },
   { id: "templates-gamification--progress-and-leaderboard", text: "Anna" },
+  { id: "templates-chat--support-thread", text: "Support chat" },
+  { id: "templates-chat--bubble-states", testId: "chat-bubble-incoming" },
   { id: "templates-onboarding--coach-mark", testId: "onboarding-tooltip" },
   { id: "templates-onboarding--confetti-burst", testId: "template-confetti" },
 ] as const;

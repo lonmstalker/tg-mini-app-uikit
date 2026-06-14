@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { TKFrame, TKGallery } from "tg-mini-app-uikit";
-import { Section } from "../story-helpers";
+import { TKGallery } from "tg-mini-app-uikit";
+import { AppScreen } from "../story-helpers";
 
 const meta = {
   title: "Composites/Carousel",
@@ -18,10 +18,11 @@ export default meta;
 type Story = StoryObj;
 
 export const ProductSlides = {
+  parameters: { fullBleed: true },
   render: () => (
-    <TKFrame height={420}>
-      <Section>
-        <TKGallery height={240} testId="carousel-story">
+    <AppScreen>
+      <div style={{ fontWeight: 700 }}>Featured</div>
+      <TKGallery height={240} testId="carousel-story">
           {["Matte case", "Compact stand", "Travel strap"].map((title, index) => (
             <div
               key={title}
@@ -40,7 +41,6 @@ export const ProductSlides = {
             </div>
           ))}
         </TKGallery>
-      </Section>
-    </TKFrame>
+    </AppScreen>
   ),
 } satisfies Story;

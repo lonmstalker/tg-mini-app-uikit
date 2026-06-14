@@ -22,6 +22,7 @@ export * from "./composites/overlays";
 export * from "./composites/gestures";
 export * from "./composites/feedback";
 export * from "./templates/patterns";
-export * from "./composites/chat";
+export * from "./templates/cards";
+export * from "./templates/chat";
 export * from "./templates/onboarding";
 export * from "./templates/confetti";

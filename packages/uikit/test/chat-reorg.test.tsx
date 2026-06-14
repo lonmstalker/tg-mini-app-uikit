@@ -1,19 +1,19 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import * as kit from "../src";
-import { TKMessageBubble, TKMessages, TKWriteBar } from "../src/composites/chat";
-import { TKMessageBubble as ModuleTKMessageBubble } from "../src/composites/chat/message-bubble";
-import { TKMessages as ModuleTKMessages } from "../src/composites/chat/messages";
-import { TKWriteBar as ModuleTKWriteBar } from "../src/composites/chat/write-bar";
+import { TKMessageBubble, TKMessages, TKWriteBar } from "../src/templates/chat";
+import { TKMessageBubble as ModuleTKMessageBubble } from "../src/templates/chat/message-bubble";
+import { TKMessages as ModuleTKMessages } from "../src/templates/chat/messages";
+import { TKWriteBar as ModuleTKWriteBar } from "../src/templates/chat/write-bar";
 
 describe("chat module reorganization", () => {
-  it("publishes chat composites from the composite category and root package", () => {
+  it("publishes chat templates from the template category and root package", () => {
     expect(TKMessageBubble).toBe(kit.TKMessageBubble);
     expect(TKMessages).toBe(kit.TKMessages);
     expect(TKWriteBar).toBe(kit.TKWriteBar);
   });
 
-  it("keeps chat implementation modules under the composite category", () => {
+  it("keeps chat implementation modules under the template category", () => {
     expect(ModuleTKMessageBubble).toBe(TKMessageBubble);
     expect(ModuleTKMessages).toBe(TKMessages);
     expect(ModuleTKWriteBar).toBe(TKWriteBar);

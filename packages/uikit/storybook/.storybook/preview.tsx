@@ -11,6 +11,7 @@ import {
   type TKThemePreset,
 } from "tg-mini-app-uikit";
 import { createMockTelegram } from "../../test/support/telegram/mock";
+import { PhoneFrame } from "../story-helpers";
 import "../../src/tokens/tokens.css";
 import "../storybook.css";
 
@@ -139,6 +140,18 @@ const preview: Preview = {
         dynamicTitle: true,
       },
     },
+    device: {
+      defaultValue: "phone",
+      toolbar: {
+        title: "Device",
+        icon: "tablet",
+        items: [
+          { value: "phone", title: "Phone frame" },
+          { value: "off", title: "No frame" },
+        ],
+        dynamicTitle: true,
+      },
+    },
   },
   decorators: [
     (Story, context) => {
@@ -152,16 +165,32 @@ const preview: Preview = {
         density?: "compact" | "comfortable";
         motion?: "springy" | "smooth";
         preset?: TKThemePreset;
+        device?: "phone" | "off";
       };
       const theme = globals.theme ?? "light";
       const dir = globals.rtl === "rtl" ? "rtl" : "ltr";
       const locale = globals.locale === "ru" ? ruLocale : enLocale;
       const telegram = useMemo(() => createMockTelegram({ colorScheme: theme }), [theme]);
+      // Stories opt out of the phone frame with `parameters: { phone: false }`,
+      // and render edge-to-edge (app-shell screens) with `parameters: { fullBleed: true }`.
+      const params = context.parameters as { phone?: boolean; fullBleed?: boolean };
+      const inPhone = (globals.device ?? "phone") === "phone" && params.phone !== false;
+      const fullBleed = params.fullBleed === true;
 
       useEffect(() => {
         document.documentElement.dir = dir;
         document.documentElement.lang = globals.locale ?? "en";
       }, [dir, globals.locale]);
+
+      const root = fullBleed ? (
+        <div className="tk-story-fullbleed" style={{ minHeight: inPhone ? 0 : "100vh", flex: inPhone ? 1 : undefined } as CSSProperties}>
+          <Story />
+        </div>
+      ) : (
+        <StoryRoot density={globals.density ?? "comfortable"} inPhone={inPhone}>
+          <Story />
+        </StoryRoot>
+      );
 
       return (
         <TKTelegramProvider webApp={telegram.webApp}>
@@ -174,11 +203,7 @@ const preview: Preview = {
             preset={globals.preset ?? "ios"}
           >
             <TKLocaleProvider locale={locale}>
-              <TKToastProvider>
-                <StoryRoot density={globals.density ?? "comfortable"}>
-                  <Story />
-                </StoryRoot>
-              </TKToastProvider>
+              <TKToastProvider>{inPhone ? <PhoneFrame>{root}</PhoneFrame> : root}</TKToastProvider>
             </TKLocaleProvider>
           </TKProvider>
         </TKTelegramProvider>
@@ -187,7 +212,7 @@ const preview: Preview = {
   ],
 };
 
-function StoryRoot({ density, children }: { density: "compact" | "comfortable"; children: ReactNode }) {
+function StoryRoot({ density, inPhone, children }: { density: "compact" | "comfortable"; inPhone?: boolean; children: ReactNode }) {
   return (
     <div
       className="tk-story-root"
@@ -195,7 +220,11 @@ function StoryRoot({ density, children }: { density: "compact" | "comfortable"; 
       style={
         {
           "--tk-story-gap": density === "compact" ? "10px" : "16px",
-          "--tk-story-pad": density === "compact" ? "16px" : "28px",
+          "--tk-story-pad": inPhone ? "18px" : density === "compact" ? "16px" : "28px",
+          minHeight: inPhone ? 0 : "100vh",
+          flex: inPhone ? 1 : undefined,
+          overflowY: inPhone ? "auto" : undefined,
+          WebkitOverflowScrolling: inPhone ? "touch" : undefined,
         } as CSSProperties
       }
     >

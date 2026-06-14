@@ -164,6 +164,7 @@ const currentCompositeExports = [
   "TKSkeleton",
   "TKSkeletonCard",
   "TKSkeletonList",
+  "TKSkeletonTable",
   "TKSkeletonText",
   "TKTimeInput",
   "TKTimeline",

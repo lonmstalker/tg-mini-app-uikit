@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { TKButton, TKCell, TKFrame, TKListGroup, TKNavPanel, TKNavStack, useNav } from "tg-mini-app-uikit";
-import { Narrow, Section } from "../story-helpers";
+import { TKButton, TKCell, TKListGroup, TKNavPanel, TKNavStack, useNav } from "tg-mini-app-uikit";
+import { Narrow, Screen, Section } from "../story-helpers";
 
 const meta = {
   title: "Composites/Nav",
@@ -48,9 +48,10 @@ function DetailsPanel() {
 }
 
 export const StackFlow = {
+  parameters: { fullBleed: true },
   render: () => (
-    <TKFrame height={440}>
-      <TKNavStack initial="inbox" swipeBack="edge" testId="nav-story-stack">
+    <Screen>
+      <TKNavStack initial="inbox" swipeBack="edge" testId="nav-story-stack" style={{ flex: 1, minHeight: 0 }}>
         <TKNavPanel id="inbox">
           <InboxPanel />
         </TKNavPanel>
@@ -58,6 +59,6 @@ export const StackFlow = {
           <DetailsPanel />
         </TKNavPanel>
       </TKNavStack>
-    </TKFrame>
+    </Screen>
   ),
 } satisfies Story;

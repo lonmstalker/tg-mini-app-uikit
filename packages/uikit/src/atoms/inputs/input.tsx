@@ -30,8 +30,17 @@ export interface TKInputProps {
   /** Trailing slot inside the field (after the clear button). */
   suffix?: ReactNode;
   inputMode?: "none" | "text" | "tel" | "url" | "email" | "numeric" | "decimal" | "search";
+  /**
+   * Validates the value when the field loses focus (and live afterwards).
+   * Return a message to show it as an error, or `undefined`/`null` when valid.
+   * `type="email"` gets a built-in format check unless you pass your own.
+   */
+  validate?: (value: string) => ReactNode;
   testId?: string;
 }
+
+// Pragmatic UI-level email shape: a local part, an @, and a dotted domain.
+const TK_EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export const TKInput = /* @__PURE__ */ forwardRef<HTMLInputElement, TKInputProps>(function TKInput(
   {
@@ -55,6 +64,7 @@ export const TKInput = /* @__PURE__ */ forwardRef<HTMLInputElement, TKInputProps
     prefix,
     suffix,
     inputMode,
+    validate,
     testId,
   },
   ref,
@@ -63,15 +73,22 @@ export const TKInput = /* @__PURE__ */ forwardRef<HTMLInputElement, TKInputProps
   const [val, setVal] = useControllable(value, defaultValue, onChange);
   const [focus, setFocus] = useState(false);
   const [reveal, setReveal] = useState(false);
+  const [touched, setTouched] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const autoId = useId();
   const inputId = id ?? autoId;
-  const describedBy = hint || error ? `${inputId}-description` : undefined;
-  const clearLabel = typeof label === "string" ? `${locale.clear} ${label}` : locale.clear;
   const isPassword = type === "password";
-  const borderColor = error ? "var(--tk-red)" : focus ? "var(--tk-accent)" : "transparent";
+  const validator =
+    validate ?? (type === "email" ? (v: string) => (v && !TK_EMAIL_RE.test(v) ? locale.invalidEmail : undefined) : undefined);
+  // Validate only once the field has been touched, so a pristine field never shows red.
+  const validationError = touched && validator ? validator(val) : undefined;
+  const shownError = error ?? validationError;
+  const resolvedInputMode = inputMode ?? (type === "email" ? "email" : undefined);
+  const describedBy = hint || shownError ? `${inputId}-description` : undefined;
+  const clearLabel = typeof label === "string" ? `${locale.clear} ${label}` : locale.clear;
+  const borderColor = shownError ? "var(--tk-red)" : focus ? "var(--tk-accent)" : "transparent";
   return (
-    <TKFormField label={label} hint={hint} error={error} htmlFor={inputId} describedBy={describedBy} disabled={disabled} testId={testId}>
+    <TKFormField label={label} hint={hint} error={shownError} htmlFor={inputId} describedBy={describedBy} disabled={disabled} testId={testId}>
       <div
         onMouseDown={(event) => {
           if (disabled) return;
@@ -114,9 +131,9 @@ export const TKInput = /* @__PURE__ */ forwardRef<HTMLInputElement, TKInputProps
           disabled={disabled}
           autoFocus={autoFocus}
           maxLength={maxLength}
-          inputMode={inputMode}
+          inputMode={resolvedInputMode}
           aria-describedby={describedBy}
-          aria-invalid={!!error}
+          aria-invalid={!!shownError}
           onChange={(e) => setVal(e.target.value)}
           onFocus={(e) => {
             setFocus(true);
@@ -124,6 +141,7 @@ export const TKInput = /* @__PURE__ */ forwardRef<HTMLInputElement, TKInputProps
           }}
           onBlur={(e) => {
             setFocus(false);
+            setTouched(true);
             onBlur?.(e);
           }}
           style={{

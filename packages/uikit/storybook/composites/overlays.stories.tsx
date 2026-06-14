@@ -4,7 +4,6 @@ import {
   TKActionSheet,
   TKButton,
   TKDialog,
-  TKFrame,
   TKPopper,
   TKSheet,
   TKToastProvider,
@@ -29,8 +28,10 @@ export default meta;
 type Story = StoryObj;
 
 export const ModalSurfaces = {
+  // Overlays fill the device screen (backdrop, centered dialog, bottom sheet) like a real app.
+  parameters: { fullBleed: true },
   render: () => (
-    <TKFrame height={420}>
+    <>
       <TKDialog
         open
         title="Confirm payout"
@@ -51,23 +52,22 @@ export const ModalSurfaces = {
           </Narrow>
         </Section>
       </TKSheet>
-    </TKFrame>
+    </>
   ),
 } satisfies Story;
 
 export const ActionSheet = {
+  parameters: { fullBleed: true },
   render: () => (
-    <TKFrame height={360}>
-      <TKActionSheet
-        open
-        items={[
-          { icon: "share", label: "Share receipt" },
-          { icon: "copy", label: "Copy transaction ID" },
-          { icon: "trash", label: "Delete draft", danger: true },
-        ]}
-        cancelLabel="Close"
-      />
-    </TKFrame>
+    <TKActionSheet
+      open
+      items={[
+        { icon: "share", label: "Share receipt" },
+        { icon: "copy", label: "Copy transaction ID" },
+        { icon: "trash", label: "Delete draft", danger: true },
+      ]}
+      cancelLabel="Close"
+    />
   ),
 } satisfies Story;
 
@@ -115,13 +115,13 @@ function ToastPreview() {
 }
 
 export const Toasts = {
+  parameters: { fullBleed: true },
   render: () => (
-    <TKFrame height={240}>
-      <TKToastProvider duration={6000}>
-        <Section style={{ padding: 16 }}>
-          <ToastPreview />
-        </Section>
-      </TKToastProvider>
-    </TKFrame>
+    // Long duration so the demo toast stays visible while the story is open.
+    <TKToastProvider duration={100000}>
+      <Section style={{ padding: 16 }}>
+        <ToastPreview />
+      </Section>
+    </TKToastProvider>
   ),
 } satisfies Story;

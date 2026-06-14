@@ -29,4 +29,128 @@
 
 .tk-story-narrow {
   width: min(100%, 390px);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Edge-to-edge app-shell stories (header/tabbar/nav fill the device). */
+.tk-story-fullbleed {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--tk-bg);
+  color: var(--tk-text);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+}
+
+.tk-story-screen {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.tk-story-screenscroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ---- Phone device mock (Mini App framing) ---- */
+.tk-phone-stage {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+  padding: 24px 8px;
+  background: var(--tk-bg);
+}
+
+.tk-phone {
+  width: min(414px, 100% - 8px);
+  background: #0a0a0b;
+  border-radius: 46px;
+  padding: 10px;
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.3), inset 0 0 0 2px rgba(255, 255, 255, 0.06);
+}
+
+.tk-phone-screen {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  /* Fixed device height — content scrolls INSIDE the screen, the phone never grows. */
+  height: min(780px, calc(100dvh - 44px));
+  border-radius: 38px;
+  overflow: hidden;
+  background: var(--tk-bg);
+  color: var(--tk-text);
+}
+
+.tk-phone-statusbar {
+  position: relative;
+  z-index: 2;
+  flex-shrink: 0;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 26px 0 30px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.tk-phone-time {
+  letter-spacing: 0.02em;
+}
+
+.tk-phone-island {
+  position: absolute;
+  top: 9px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 108px;
+  height: 30px;
+  border-radius: 16px;
+  background: #000;
+}
+
+.tk-phone-status-icons {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tk-phone-content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  /* Overlays (sheets/dialogs/toasts) anchor here — the Mini App viewport between
+     the status bar and the home indicator — so they respect the safe area. */
+  position: relative;
+}
+
+.tk-phone-home {
+  position: relative;
+  flex-shrink: 0;
+  height: 24px;
+}
+
+.tk-phone-home::after {
+  content: "";
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 134px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--tk-text);
+  opacity: 0.85;
 }

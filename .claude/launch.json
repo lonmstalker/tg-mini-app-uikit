@@ -6,6 +6,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev", "-w", "tg-mini-app-uikit-demo", "--", "--port", "5180", "--strictPort"],
       "port": 5180
+    },
+    {
+      "name": "stories",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "stories", "-w", "tg-mini-app-uikit"],
+      "port": 6006
     }
   ]
 }

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { TKFrame, TKWalletConnectButton, TKWalletStatusCell } from "tg-mini-app-uikit";
-import { Narrow, Section } from "../story-helpers";
+import { TKWalletConnectButton, TKWalletStatusCell } from "tg-mini-app-uikit";
+import { AppScreen } from "../story-helpers";
 
 const meta = {
   title: "Templates/Wallet",
@@ -18,15 +18,12 @@ export default meta;
 type Story = StoryObj;
 
 export const WalletStates = {
+  parameters: { fullBleed: true },
   render: () => (
-    <TKFrame height={360}>
-      <Section>
-        <Narrow>
-          <TKWalletConnectButton />
-          <TKWalletConnectButton connected walletName="Tonkeeper" address="EQB0...9Kz" />
-          <TKWalletStatusCell connected walletName="Wallet" address="EQB0...9Kz" />
-        </Narrow>
-      </Section>
-    </TKFrame>
+    <AppScreen>
+      <TKWalletConnectButton />
+      <TKWalletConnectButton connected walletName="Tonkeeper" address="EQB0...9Kz" />
+      <TKWalletStatusCell connected walletName="Wallet" address="EQB0...9Kz" />
+    </AppScreen>
   ),
 } satisfies Story;

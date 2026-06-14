@@ -19,11 +19,19 @@ import { tkZ } from "../../internal/dom";
 export interface TKFrameProps {
   children?: ReactNode;
   height?: number | string;
+  /**
+   * Inner padding so embedded content clears the frame's rounded border
+   * instead of being clipped by `overflow: hidden`. `true` applies a 16px
+   * gutter; pass a number for a custom one. Leave unset for edge-to-edge
+   * overlay/page demos that fill the frame themselves.
+   */
+  pad?: number | boolean;
   testId?: string;
   style?: CSSProperties;
 }
 
-export function TKFrame({ children, height = 520, testId, style }: TKFrameProps) {
+export function TKFrame({ children, height = 520, pad, testId, style }: TKFrameProps) {
+  const padding = pad === true ? 16 : pad || undefined;
   return (
     <div
       data-testid={testId}
@@ -31,6 +39,7 @@ export function TKFrame({ children, height = 520, testId, style }: TKFrameProps)
         position: "relative",
         overflow: "hidden",
         height,
+        padding,
         borderRadius: "var(--tk-r-xl)",
         background: "var(--tk-bg)",
         boxShadow: "inset 0 0 0 1px var(--tk-sep)",

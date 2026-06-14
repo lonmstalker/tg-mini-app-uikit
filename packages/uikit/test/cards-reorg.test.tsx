@@ -1,22 +1,14 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import * as kit from "../src";
-import {
-  TKBannerCard,
-  TKBookingCard,
-  TKCard,
-  TKCardCell,
-  TKCardChip,
-  TKProductCardA,
-  TKProductCardB,
-  TKStatTile,
-} from "../src/composites/cards";
+import { TKCard, TKCardCell, TKCardChip } from "../src/composites/cards";
+import { TKBannerCard, TKBookingCard, TKProductCardA, TKProductCardB, TKStatTile } from "../src/templates/cards";
 import { TKCard as ModuleTKCard } from "../src/composites/cards/primitives";
-import { TKProductCardA as ModuleTKProductCardA } from "../src/composites/cards/product";
-import { TKBannerCard as ModuleTKBannerCard } from "../src/composites/cards/promotional";
+import { TKProductCardA as ModuleTKProductCardA } from "../src/templates/cards/product";
+import { TKBannerCard as ModuleTKBannerCard } from "../src/templates/cards/promotional";
 
 describe("cards module reorganization", () => {
-  it("publishes card composites from the composite category and root package", () => {
+  it("publishes card primitives and card templates from the root package", () => {
     expect(TKBannerCard).toBe(kit.TKBannerCard);
     expect(TKBookingCard).toBe(kit.TKBookingCard);
     expect(TKCard).toBe(kit.TKCard);
@@ -27,7 +19,7 @@ describe("cards module reorganization", () => {
     expect(TKStatTile).toBe(kit.TKStatTile);
   });
 
-  it("keeps card implementation modules under the composite category", () => {
+  it("keeps card primitives composite while product/promo cards live under templates", () => {
     expect(ModuleTKCard).toBe(TKCard);
     expect(ModuleTKProductCardA).toBe(TKProductCardA);
     expect(ModuleTKBannerCard).toBe(TKBannerCard);

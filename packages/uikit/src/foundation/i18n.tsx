@@ -82,6 +82,10 @@ export interface TKLocale {
   skip: string;
   /** TKProgress default aria label. */
   progress: string;
+  /** TKInput built-in `type="email"` validation message. */
+  invalidEmail: string;
+  /** TKPhoneInput country-code selector aria label. */
+  countryCode: string;
 }
 
 export const enLocale: TKLocale = {
@@ -127,6 +131,8 @@ export const enLocale: TKLocale = {
   next: "Next",
   skip: "Skip",
   progress: "Progress",
+  invalidEmail: "Enter a valid email address",
+  countryCode: "Country code",
 };
 
 /** Ready-made Russian preset. */
@@ -173,6 +179,8 @@ export const ruLocale: TKLocale = {
   next: "Далее",
   skip: "Пропустить",
   progress: "Прогресс",
+  invalidEmail: "Введите корректный email",
+  countryCode: "Код страны",
 };
 
 const TKLocaleContext = /* @__PURE__ */ createContext<TKLocale>(enLocale);

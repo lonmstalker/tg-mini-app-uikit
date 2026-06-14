@@ -72,6 +72,61 @@ export function TKSkeletonList({ rows = 3, testId }: { rows?: number; testId?: s
   );
 }
 
+export interface TKSkeletonTableProps {
+  /** Body rows (default 4). */
+  rows?: number;
+  /** Columns per row (default 3). */
+  columns?: number;
+  /** Render a stronger header row (default true). */
+  header?: boolean;
+  testId?: string;
+  style?: CSSProperties;
+}
+
+/** Placeholder for a loading data table: a header row plus body rows of cells. */
+export function TKSkeletonTable({ rows = 4, columns = 3, header = true, testId, style }: TKSkeletonTableProps) {
+  const cols = Math.max(1, columns);
+  // The first column is wider (label-like), the rest share the remaining space.
+  const template = `minmax(0, 1.6fr) ${Array.from({ length: cols - 1 }, () => "minmax(0, 1fr)").join(" ")}`.trim();
+  return (
+    <div
+      data-testid={testId}
+      style={{
+        background: "var(--tk-surface)",
+        borderRadius: "var(--tk-r-md)",
+        boxShadow: "var(--tk-shadow-sm)",
+        overflow: "hidden",
+        ...style,
+      }}
+    >
+      {header ? (
+        <div style={{ display: "grid", gridTemplateColumns: template, gap: 12, padding: "12px 14px", background: "var(--tk-surface-2)" }}>
+          {Array.from({ length: cols }).map((_, c) => (
+            <div key={c} className="tk-skel" style={{ height: 11, width: c === 0 ? "60%" : "44%" }} />
+          ))}
+        </div>
+      ) : null}
+      {Array.from({ length: rows }).map((_, r) => (
+        <div
+          key={r}
+          style={{
+            display: "grid",
+            gridTemplateColumns: template,
+            gap: 12,
+            alignItems: "center",
+            padding: "13px 14px",
+            borderTop: r || header ? "0.5px solid var(--tk-sep)" : "none",
+          }}
+        >
+          {Array.from({ length: cols }).map((_, c) => (
+            <div key={c} className="tk-skel" style={{ height: 12, width: `${[82, 56, 68, 48][(r + c) % 4]}%` }} />
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export interface TKSkeletonTextProps {
   /** Number of text lines (default 3); the last one renders shorter. */
   lines?: number;

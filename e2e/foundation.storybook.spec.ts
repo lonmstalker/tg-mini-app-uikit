@@ -5,6 +5,8 @@ const foundationStories = [
   { id: "foundation-i18n--localized-controls", role: "button", name: "Готово" },
   { id: "foundation-options--grouped-options", role: "combobox", name: "City" },
   { id: "foundation-telegram--runtime-provider", text: "Telegram runtime vtest" },
+  { id: "foundation-layout--page-shell", text: "Order summary" },
+  { id: "foundation-layout--safe-area", role: "button", name: "Pinned action" },
 ] as const;
 
 test.describe("foundation Storybook stories", () => {
