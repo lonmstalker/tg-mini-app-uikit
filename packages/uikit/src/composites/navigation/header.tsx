@@ -1,6 +1,7 @@
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { TKIcon } from "../../atoms/icons";
 import { useTKLocale } from "../../foundation/i18n";
+import { useSafeArea } from "../../foundation/telegram";
 import { usePageScrollTop } from "../../internal/pageScroll";
 
 export interface TKHeaderProps {
@@ -18,18 +19,32 @@ export interface TKHeaderProps {
 export function TKHeader({ title, subtitle, large, collapsing, back = true, onBack, actions, testId }: TKHeaderProps) {
   const locale = useTKLocale();
   const scrollTop = usePageScrollTop();
-  const collapsed = !!collapsing && large === true && scrollTop > 28;
+  const { inset, contentInset } = useSafeArea();
+  const safeTop = inset.top + contentInset.top;
+  // Hysteresis: collapse past 36px, expand back under 20px, hold in between so
+  // the large title does not dither when scrollTop hovers around the threshold.
+  const [collapsed, setCollapsed] = useState(false);
+  const collapsible = !!collapsing && large === true;
+  useEffect(() => {
+    if (!collapsible) return;
+    setCollapsed((prev) => (scrollTop > 36 ? true : scrollTop < 20 ? false : prev));
+  }, [collapsible, scrollTop]);
+  const isCollapsed = collapsible && collapsed;
 
   return (
     <div
       data-testid={testId}
-      data-collapsed={collapsing ? collapsed : undefined}
+      data-collapsed={collapsing ? isCollapsed : undefined}
       style={{
         display: "flex",
         flexDirection: "column",
         gap: 2,
         padding: large ? "14px 16px 12px" : "0 16px",
+        // Reserve the top device cutout / Telegram chrome so the bar reads
+        // correctly when used as a sticky/fixed element under the status bar.
+        paddingTop: `calc(${large ? 14 : 0}px + max(var(--tk-safe-top), ${safeTop}px))`,
         height: large ? undefined : 52,
+        boxSizing: "border-box",
         justifyContent: "center",
         background: "var(--tk-glass)",
         backdropFilter: "blur(14px)",
@@ -56,13 +71,13 @@ export function TKHeader({ title, subtitle, large, collapsing, back = true, onBa
             <TKIcon name="chevronLeft" size={24} strokeWidth={2.3} />
           </button>
         ) : null}
-        {!large || collapsed ? (
+        {!large || isCollapsed ? (
           <div
             style={{
               flex: 1,
               textAlign: "center",
               marginRight: back ? 18 : 0,
-              opacity: large && !collapsed ? 0 : 1,
+              opacity: large && !isCollapsed ? 0 : 1,
               transition: "opacity var(--tk-t2) var(--tk-ease)",
             }}
           >
@@ -80,11 +95,11 @@ export function TKHeader({ title, subtitle, large, collapsing, back = true, onBa
         <div
           style={{
             display: "grid",
-            gridTemplateRows: collapsed ? "0fr" : "1fr",
+            gridTemplateRows: isCollapsed ? "0fr" : "1fr",
             transition: "grid-template-rows var(--tk-t2) var(--tk-ease)",
           }}
         >
-          <div style={{ overflow: "hidden", opacity: collapsed ? 0 : 1, transition: "opacity var(--tk-t2) var(--tk-ease)" }}>
+          <div style={{ overflow: "hidden", opacity: isCollapsed ? 0 : 1, transition: "opacity var(--tk-t2) var(--tk-ease)" }}>
             <div style={{ fontSize: "var(--tk-fz-title1)", fontWeight: 700, letterSpacing: 0 }}>{title}</div>
             {subtitle ? (
               <div style={{ fontSize: "var(--tk-fz-sub)", color: "var(--tk-text-2)" }}>{subtitle}</div>

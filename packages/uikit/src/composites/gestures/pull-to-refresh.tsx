@@ -3,6 +3,7 @@ import { TKSpinner } from "../../atoms/buttons";
 import { TKIcon } from "../../atoms/icons";
 import { useOptionalHaptics } from "../../foundation/telegram";
 import { useDragGesture } from "../../internal/useDragGesture";
+import { useVerticalSwipeGuard } from "../../internal/useVerticalSwipeGuard";
 
 /* ---------------- Pull to refresh ---------------- */
 
@@ -27,14 +28,28 @@ export function TKPullToRefresh({ children, onRefresh, threshold = 72, disabled,
   const scrollRef = useRef<HTMLDivElement>(null);
   const armedRef = useRef(false);
   const haptics = useOptionalHaptics();
+  // The pull is a top-edge swipe-down — exactly Telegram's minimize gesture. Mute
+  // it while pulling/refreshing so the gesture refreshes instead of collapsing
+  // the app.
+  useVerticalSwipeGuard(pull > 0 || refreshing);
 
   const resist = (delta: number) => Math.max(0, delta) * 0.5;
 
   const drag = useDragGesture({
     axis: "y",
+    // Higher activation distance so a fingertip nudge at the top doesn't grab
+    // the gesture; the native top-of-list scroll keeps working until the user
+    // clearly drags downward past this distance.
+    threshold: 14,
     enabled: !disabled && !refreshing,
     onMove(state) {
-      if ((scrollRef.current?.scrollTop ?? 0) > 0) return;
+      // Only pull when starting from the very top AND moving downward — an
+      // upward or mid-list drag is a scroll and must not be hijacked.
+      if ((scrollRef.current?.scrollTop ?? 0) > 0 || state.delta <= 0) {
+        if (armedRef.current) armedRef.current = false;
+        if (pull !== 0) setPull(0);
+        return;
+      }
       const next = resist(state.delta);
       const armed = next >= threshold;
       if (armed && !armedRef.current) haptics.impact("light");
@@ -42,7 +57,8 @@ export function TKPullToRefresh({ children, onRefresh, threshold = 72, disabled,
       setPull(Math.min(next, threshold * 1.6));
     },
     onEnd(state) {
-      const committed = (scrollRef.current?.scrollTop ?? 0) <= 0 && resist(state.delta) >= threshold;
+      const committed =
+        (scrollRef.current?.scrollTop ?? 0) <= 0 && state.delta > 0 && resist(state.delta) >= threshold;
       armedRef.current = false;
       if (!committed) {
         setPull(0);
@@ -50,10 +66,21 @@ export function TKPullToRefresh({ children, onRefresh, threshold = 72, disabled,
       }
       setRefreshing(true);
       setPull(threshold * 0.75);
-      Promise.resolve(onRefresh()).finally(() => {
-        setRefreshing(false);
-        setPull(0);
-      });
+      // Call onRefresh synchronously, but turn a synchronous throw into a
+      // handled rejection so it never crashes the pointerup handler or leaks an
+      // unhandled rejection; the spinner is always cleared in `finally`.
+      let result: Promise<unknown> | unknown;
+      try {
+        result = onRefresh();
+      } catch (err) {
+        result = Promise.reject(err);
+      }
+      Promise.resolve(result)
+        .catch(() => {})
+        .finally(() => {
+          setRefreshing(false);
+          setPull(0);
+        });
     },
   });
 

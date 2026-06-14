@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, type PointerEvent } from "react";
+import { useCallback, useEffect, useRef, type PointerEvent, type SyntheticEvent } from "react";
 
 /* ---------------- useLongPress ---------------- */
 
@@ -14,6 +14,8 @@ export interface TKLongPressHandlers {
   onPointerMove: (e: PointerEvent<HTMLElement>) => void;
   onPointerUp: (e: PointerEvent<HTMLElement>) => void;
   onPointerCancel: (e: PointerEvent<HTMLElement>) => void;
+  /** Suppresses the native long-press context menu / selection callout. */
+  onContextMenu: (e: SyntheticEvent<HTMLElement>) => void;
 }
 
 /**
@@ -29,13 +31,26 @@ export function useLongPress(
   const fnRef = useRef(onLongPress);
   fnRef.current = onLongPress;
 
-  useEffect(() => () => window.clearTimeout(timer.current), []);
-
   const cancel = useCallback(() => {
     window.clearTimeout(timer.current);
     timer.current = undefined;
     origin.current = null;
   }, []);
+
+  // Cancel a pending press when the surface scrolls away or loses focus, and
+  // always clear the timer on unmount.
+  useEffect(() => {
+    if (typeof window === "undefined") return () => window.clearTimeout(timer.current);
+    window.addEventListener("scroll", cancel, true);
+    window.addEventListener("blur", cancel);
+    document.addEventListener("visibilitychange", cancel);
+    return () => {
+      window.clearTimeout(timer.current);
+      window.removeEventListener("scroll", cancel, true);
+      window.removeEventListener("blur", cancel);
+      document.removeEventListener("visibilitychange", cancel);
+    };
+  }, [cancel]);
 
   return {
     onPointerDown(e) {
@@ -53,5 +68,9 @@ export function useLongPress(
     },
     onPointerUp: cancel,
     onPointerCancel: cancel,
+    onContextMenu(e) {
+      // Stop the native long-press menu/selection from racing our timer.
+      e.preventDefault();
+    },
   };
 }

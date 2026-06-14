@@ -13,7 +13,11 @@ export interface TKPageProps {
   padding?: number;
   /** Vertical gap between content children, px (default 14). */
   gap?: number;
-  /** Respect the top safe area / Telegram chrome (default true). */
+  /**
+   * Respect the top safe area / Telegram chrome (default true). Ignored when a
+   * `header` slot is present — the pinned header owns the top inset then
+   * (`TKHeader` reserves it itself), so the page does not double-pad it.
+   */
   safeTop?: boolean;
   /** Respect the bottom safe area when there is no footer (default true). */
   safeBottom?: boolean;
@@ -50,7 +54,9 @@ export function TKPage({
         height: "100%",
         display: "flex",
         flexDirection: "column",
-        paddingTop: safeTop ? tkSafePad("top", top) : undefined,
+        // The header (e.g. TKHeader) reserves the top inset itself; padding here
+        // too would stack two status-bar gaps, so only pad when there is none.
+        paddingTop: safeTop && !header ? tkSafePad("top", top) : undefined,
         ...style,
       }}
     >
@@ -63,7 +69,15 @@ export function TKPage({
         tabIndex={0}
         data-tk-page-scroll
         onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
-        style={{ flex: 1, minHeight: 0, overflowY: "auto", WebkitOverflowScrolling: "touch" }}
+        style={{
+          flex: 1,
+          minHeight: 0,
+          overflowY: "auto",
+          WebkitOverflowScrolling: "touch",
+          // Keep an overscroll at the top/bottom edge from chaining to the body,
+          // which Telegram reads as the swipe-down-to-minimize gesture.
+          overscrollBehavior: "contain",
+        }}
       >
         <div
           style={{

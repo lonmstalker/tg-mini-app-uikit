@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { tkOptionItem, type TKOption } from "../../foundation/options";
 import { useOptionalHaptics } from "../../foundation/telegram";
 import { useControllable } from "../../internal/useControllable";
@@ -23,6 +23,25 @@ export function TKSegmented({ options, value, defaultValue, onChange, full, test
   const haptics = useOptionalHaptics();
   const disabledAt = (index: number) => !!items[index]?.disabled;
   const tabbable = tkTabbableIndex(idx, n, disabledAt);
+  // Measured geometry of the active button. `null` until the first layout pass
+  // (and during SSR) — we fall back to the even-grid translate so there is no
+  // flash. Measuring offsetLeft/offsetWidth keeps the indicator aligned for any
+  // n and fractional 1fr columns where translateX(idx*100%) drifts.
+  const [rect, setRect] = useState<{ left: number; width: number } | null>(null);
+
+  useLayoutEffect(() => {
+    const measure = () => {
+      const btn = refs.current[idx];
+      if (!btn) return;
+      setRect({ left: btn.offsetLeft, width: btn.offsetWidth });
+    };
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(measure);
+    const parent = refs.current[idx]?.parentElement;
+    if (parent) ro.observe(parent);
+    return () => ro.disconnect();
+  }, [idx, n, full]);
 
   return (
     <div
@@ -42,10 +61,10 @@ export function TKSegmented({ options, value, defaultValue, onChange, full, test
           position: "absolute",
           top: 3,
           bottom: 3,
-          left: 3,
-          width: `calc((100% - 6px) / ${n})`,
-          transform: `translateX(${idx * 100}%)`,
-          transition: "transform var(--tk-t2) var(--tk-spring)",
+          ...(rect
+            ? { left: rect.left, width: rect.width, transform: "none" }
+            : { left: 3, width: `calc((100% - 6px) / ${n})`, transform: `translateX(${idx * 100}%)` }),
+          transition: "transform var(--tk-t2) var(--tk-spring), left var(--tk-t2) var(--tk-spring), width var(--tk-t2) var(--tk-spring)",
           background: "var(--tk-surface)",
           borderRadius: "calc(var(--tk-r-sm) - 3px)",
           boxShadow: "var(--tk-shadow-sm)",

@@ -136,6 +136,7 @@ describe("promisified callback APIs", () => {
 
   it("CloudStorage rejects when the callback reports an error", async () => {
     const failing: TelegramWebApp = {
+      isVersionAtLeast: () => true,
       CloudStorage: {
         setItem: (_k, _v, cb) => cb?.(new Error("set boom"), false),
         getItem: (_k, cb) => cb(new Error("get boom")),
@@ -211,6 +212,7 @@ describe("promisified callback APIs", () => {
 
   it("biometrics failure maps to AUTH_FAILED", async () => {
     const webApp: TelegramWebApp = {
+      isVersionAtLeast: () => true,
       BiometricManager: { authenticate: (_params, cb) => cb?.(false) },
     };
     const { result } = renderHook(() => useBiometrics(), { wrapper: wrapperFor(webApp) });
@@ -421,14 +423,39 @@ describe("motion sensors", () => {
     unmount();
     expect(mock.webApp.Gyroscope?.isStarted).toBe(false);
   });
+
+  it("tracks each sensor's status independently (one no longer overwrites the others)", async () => {
+    const mock = createMockTelegram();
+    const { result } = renderHook(() => useMotionSensors(), { wrapper: wrapperFor(mock.webApp) });
+
+    expect(result.current.accelerometer.status).toBe("idle");
+    expect(result.current.gyroscope.status).toBe("idle");
+    expect(result.current.deviceOrientation.status).toBe("idle");
+
+    await act(async () => {
+      await result.current.accelerometer.start(30);
+    });
+
+    expect(result.current.accelerometer.status).toBe("success");
+    // starting one sensor must not flip the others off "idle"
+    expect(result.current.gyroscope.status).toBe("idle");
+    expect(result.current.deviceOrientation.status).toBe("idle");
+  });
 });
 
 describe("expanded Telegram capabilities", () => {
   it("native share paths map failed messages and story widget links", async () => {
+    const handlers = new Map<string, (payload?: unknown) => void>();
     const shareMessage = vi.fn((_messageId: string, cb?: (ok: boolean) => void) => cb?.(false));
     const shareToStory = vi.fn();
     const { result } = renderHook(() => useShare(), {
-      wrapper: wrapperFor({ shareMessage, shareToStory }),
+      wrapper: wrapperFor({
+        shareMessage,
+        shareToStory,
+        isVersionAtLeast: () => true,
+        onEvent: (event, handler) => handlers.set(event, handler as (payload?: unknown) => void),
+        offEvent: (event) => handlers.delete(event),
+      }),
     });
 
     await act(async () => {
@@ -437,13 +464,15 @@ describe("expanded Telegram capabilities", () => {
     expect(result.current.status).toBe("error");
     expect(result.current.error).toBe("MESSAGE_SEND_FAILED");
 
+    // shareToStory is fire-and-forget: it stays pending (never optimistic
+    // success) until the shareMessageSent event resolves it.
     await act(async () => {
-      await expect(
-        result.current.shareToStory("https://example.com/story.png", {
-          text: "Story",
-          widgetLink: { url: "https://example.com", name: "Open" },
-        }),
-      ).resolves.toBe(true);
+      const pending = result.current.shareToStory("https://example.com/story.png", {
+        text: "Story",
+        widgetLink: { url: "https://example.com", name: "Open" },
+      });
+      handlers.get("shareMessageSent")?.();
+      await expect(pending).resolves.toBe(true);
     });
     expect(shareToStory).toHaveBeenCalledWith("https://example.com/story.png", {
       text: "Story",
@@ -456,6 +485,7 @@ describe("expanded Telegram capabilities", () => {
     const handlers = new Map<string, (payload?: { error?: "UNSUPPORTED" }) => void>();
     const webApp: TelegramWebApp = {
       isFullscreen: false,
+      isVersionAtLeast: () => true,
       requestFullscreen: vi.fn(function (this: TelegramWebApp) {
         this.isFullscreen = true;
         handlers.get("fullscreenChanged")?.();
@@ -648,5 +678,19 @@ describe("BottomButton params (Bot API 9.5+)", () => {
 
     expect(mock.getState().secondary.position).toBe("left");
     expect(mock.webApp.SecondaryButton?.position).toBe("left");
+  });
+
+  it("resets cleared decorative params instead of keeping them sticky", () => {
+    const mock = createMockTelegram();
+    const { rerender } = renderHook(
+      (props: { color?: string; shine?: boolean }) => useMainButton({ text: "Go", ...props }),
+      { wrapper: wrapperFor(mock.webApp), initialProps: { color: "#e53935", shine: true } as { color?: string; shine?: boolean } },
+    );
+    expect(mock.getState().main).toMatchObject({ color: "#e53935", hasShineEffect: true });
+
+    // Drop color + shine on the next render: Telegram merges params, so the
+    // hook now re-sends defaults (theme button color, shine off) to clear them.
+    rerender({});
+    expect(mock.getState().main).toMatchObject({ color: "#3390ec", hasShineEffect: false });
   });
 });

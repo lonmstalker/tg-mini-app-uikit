@@ -88,10 +88,18 @@ export function useOverlayA11y(
   closeRef.current = onClose;
   const confirmRef = useRef(onConfirm);
   confirmRef.current = onConfirm;
+  // captured once on false->true so re-running the effect (e.g. ref change)
+  // never overwrites the element we should hand focus back to
+  const restoreRef = useRef<HTMLElement | null>(null);
   useEffect(() => {
-    if (!active) return;
+    if (!active) {
+      restoreRef.current = null;
+      return;
+    }
     const node = ref.current;
-    const prev = typeof document !== "undefined" ? (document.activeElement as HTMLElement | null) : null;
+    if (!restoreRef.current && typeof document !== "undefined") {
+      restoreRef.current = document.activeElement as HTMLElement | null;
+    }
     const first = node?.querySelector<HTMLElement>(FOCUSABLE);
     (first ?? node)?.focus({ preventScroll: true });
 
@@ -131,12 +139,20 @@ export function useOverlayA11y(
     document.addEventListener("keydown", onKey, true);
     return () => {
       document.removeEventListener("keydown", onKey, true);
-      prev?.focus?.({ preventScroll: true });
+      // Only restore on the real teardown (active -> false), and only if the
+      // captured element is still in the document and not inside another live
+      // overlay that is taking over focus.
+      const prev = restoreRef.current;
+      if (!prev || typeof document === "undefined") return;
+      restoreRef.current = null;
+      if (!document.contains(prev)) return;
+      if (prev.closest?.('[aria-modal="true"]')) return;
+      prev.focus?.({ preventScroll: true });
     };
   }, [active, ref]);
 }
 
-export function Scrim({ closing, onClick }: { closing: boolean; onClick?: () => void }) {
+export function Scrim({ closing, onClick, z }: { closing: boolean; onClick?: () => void; z?: number }) {
   return (
     <div
       onClick={onClick}
@@ -144,7 +160,7 @@ export function Scrim({ closing, onClick }: { closing: boolean; onClick?: () => 
         position: "absolute",
         inset: 0,
         background: "var(--tk-scrim)",
-        zIndex: tkZ.overlay,
+        zIndex: z ?? tkZ.overlay,
         animation: `${closing ? "tk-fade-out" : "tk-fade-in"} var(--tk-t2) var(--tk-ease) both`,
       }}
     />

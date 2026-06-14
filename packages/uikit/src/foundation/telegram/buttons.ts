@@ -3,10 +3,12 @@ import type {
   TelegramMainButton,
   TelegramPopupParams,
   TelegramSimpleButton,
+  TelegramThemeParams,
   TKImpactStyle,
   TKNotificationType,
 } from "./types";
-import { useWebApp } from "./provider";
+import { useBackIntercept, useWebApp } from "./provider";
+import { TK_MIN_VERSION, tkSupports } from "./version";
 
 
 function useSimpleButton(
@@ -41,9 +43,27 @@ function useSimpleButton(
 /**
  * Native Telegram Back button. Shown while the component is mounted and
  * `visible` is true; hidden again on unmount.
+ *
+ * The provider owns the single `BackButton.onClick` and routes presses through
+ * the LIFO back-handler queue (`useBackIntercept`); this hook only registers
+ * `onBack` as the top interceptor and drives show/hide — so one back press
+ * triggers exactly one handler instead of firing a second `onClick`.
  */
 export function useBackButton(onBack?: () => void, visible: boolean = !!onBack): { isSupported: boolean } {
-  return useSimpleButton(useWebApp()?.BackButton, onBack, visible);
+  const button = useWebApp()?.BackButton;
+  useBackIntercept(visible && !!onBack, () => onBack?.());
+  useEffect(() => {
+    if (!button) return;
+    if (visible) button.show?.();
+    else button.hide?.();
+  }, [button, visible]);
+  useEffect(() => {
+    if (!button) return;
+    return () => {
+      button.hide?.();
+    };
+  }, [button]);
+  return { isSupported: !!button };
 }
 
 /** Native Settings button (the ⋯ menu item). Same lifecycle as `useBackButton`. */
@@ -79,50 +99,76 @@ function useNativeButton(
     iconCustomEmojiId,
     onClick,
   }: TKNativeButtonParams,
+  supported: boolean = !!button,
+  themeParams?: TelegramThemeParams,
 ): { isSupported: boolean } {
   const clickRef = useRef(onClick);
   clickRef.current = onClick;
+  // Tracks the last applied custom icon so we can clear it once (sending "")
+  // when the prop drops, without spamming an empty id every render.
+  const iconRef = useRef<string | undefined>(undefined);
   useEffect(() => {
-    if (!button?.onClick) return;
+    if (!supported || !button?.onClick) return;
     const h = () => clickRef.current?.();
     button.onClick(h);
     return () => {
       button.offClick?.(h);
     };
-  }, [button]);
+  }, [button, supported]);
   useEffect(() => {
-    if (!button) return;
+    if (!supported || !button) return;
     const active = !disabled && !loading;
-    if (button.setParams) {
-      const params: Parameters<NonNullable<TelegramMainButton["setParams"]>>[0] = {
-        is_visible: visible,
-        is_active: active,
-      };
-      if (text != null) params.text = text;
-      if (color != null) params.color = color;
-      if (textColor != null) params.text_color = textColor;
-      if (shine != null) params.has_shine_effect = shine;
-      if (position != null) params.position = position;
-      if (iconCustomEmojiId != null) params.icon_custom_emoji_id = iconCustomEmojiId;
-      button.setParams(params);
-    } else {
-      if (text != null) button.setText?.(text);
-      if (visible) button.show?.();
-      else button.hide?.();
-      if (active) button.enable?.();
-      else button.disable?.();
+    // unsupported-version clients throw on these — degrade to a no-op
+    try {
+      if (button.setParams) {
+        const params: Parameters<NonNullable<TelegramMainButton["setParams"]>>[0] = {
+          is_visible: visible,
+          is_active: active,
+        };
+        if (text != null) params.text = text;
+        // Telegram MERGES setParams, so a decorative field omitted on a later
+        // render keeps its previous value. Send them every sync, mapping
+        // `undefined` back to a default, so dropping `color` (red Delete →
+        // default Continue) actually resets the native button.
+        const resolvedColor = color ?? themeParams?.button_color;
+        if (resolvedColor != null) params.color = resolvedColor;
+        const resolvedTextColor = textColor ?? themeParams?.button_text_color;
+        if (resolvedTextColor != null) params.text_color = resolvedTextColor;
+        params.has_shine_effect = shine ?? false;
+        params.position = position ?? "left";
+        if (iconCustomEmojiId != null) {
+          params.icon_custom_emoji_id = iconCustomEmojiId;
+          iconRef.current = iconCustomEmojiId;
+        } else if (iconRef.current != null) {
+          params.icon_custom_emoji_id = ""; // clear a previously-applied icon
+          iconRef.current = undefined;
+        }
+        button.setParams(params);
+      } else {
+        if (text != null) button.setText?.(text);
+        if (visible) button.show?.();
+        else button.hide?.();
+        if (active) button.enable?.();
+        else button.disable?.();
+      }
+      if (loading) button.showProgress?.(false);
+      else button.hideProgress?.();
+    } catch {
+      /* native button not available on this client version */
     }
-    if (loading) button.showProgress?.(false);
-    else button.hideProgress?.();
-  }, [button, text, visible, disabled, loading, color, textColor, shine, position, iconCustomEmojiId]);
+  }, [button, supported, text, visible, disabled, loading, color, textColor, shine, position, iconCustomEmojiId, themeParams]);
   useEffect(() => {
-    if (!button) return;
+    if (!supported || !button) return;
     return () => {
-      button.hideProgress?.();
-      button.hide?.();
+      try {
+        button.hideProgress?.();
+        button.hide?.();
+      } catch {
+        /* native button not available on this client version */
+      }
     };
-  }, [button]);
-  return { isSupported: !!button };
+  }, [button, supported]);
+  return { isSupported: supported };
 }
 
 /**
@@ -135,12 +181,19 @@ function useNativeButton(
  * ```
  */
 export function useMainButton(params: TKNativeButtonParams): { isSupported: boolean } {
-  return useNativeButton(useWebApp()?.MainButton, params);
+  const wa = useWebApp();
+  return useNativeButton(wa?.MainButton, params, !!wa?.MainButton, wa?.themeParams);
 }
 
 /** Adapter for the native Secondary button (Bot API 7.10+). Same contract as `useMainButton`. */
 export function useSecondaryButton(params: TKNativeButtonParams): { isSupported: boolean } {
-  return useNativeButton(useWebApp()?.SecondaryButton, params);
+  const wa = useWebApp();
+  return useNativeButton(
+    wa?.SecondaryButton,
+    params,
+    !!wa?.SecondaryButton && tkSupports(wa, TK_MIN_VERSION.secondaryButton),
+    wa?.themeParams,
+  );
 }
 
 /* ---------------- Haptics ---------------- */

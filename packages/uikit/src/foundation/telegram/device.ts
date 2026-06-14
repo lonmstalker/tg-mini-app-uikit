@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type {
   TelegramBiometricError,
   TelegramBiometricManager,
@@ -10,6 +10,7 @@ import type {
   TKTelegramAsyncState,
 } from "./types";
 import { useWebApp } from "./provider";
+import { TK_MIN_VERSION, tkSupports } from "./version";
 
 export interface TKKeyboardState {
   /** True while the on-screen keyboard overlaps the layout. */
@@ -83,73 +84,98 @@ export function useBiometrics(): TKBiometrics {
   const wa = useWebApp();
   const manager = wa?.BiometricManager;
   const [state, setState] = useState<TKTelegramAsyncState<TelegramBiometricError>>({ status: "idle" });
-  const isSupported = !!manager;
+  const isSupported = !!manager && tkSupports(wa, TK_MIN_VERSION.biometric);
   return useMemo(
     () => ({
       manager,
       init: () => {
         setState({ status: "pending" });
         return new Promise<boolean>((resolve) => {
-          if (!manager?.init) {
+          if (!isSupported || !manager?.init) {
             setState({ status: "error", error: "UNSUPPORTED" });
             resolve(false);
             return;
           }
-          manager.init(() => {
-            setState({ status: "success" });
-            resolve(true);
-          });
+          try {
+            manager.init(() => {
+              setState({ status: "success" });
+              resolve(true);
+            });
+          } catch {
+            setState({ status: "error", error: "UNSUPPORTED" });
+            resolve(false);
+          }
         });
       },
       requestAccess: (reason) => {
         setState({ status: "pending" });
         return new Promise<boolean>((resolve) => {
-          if (!manager?.requestAccess) {
+          if (!isSupported || !manager?.requestAccess) {
             setState({ status: "error", error: "UNSUPPORTED" });
             resolve(false);
             return;
           }
-          manager.requestAccess(reason ? { reason } : undefined, (ok) => {
-            setState(ok ? { status: "success" } : { status: "error", error: "ACCESS_DENIED" });
-            resolve(!!ok);
-          });
+          try {
+            manager.requestAccess(reason ? { reason } : undefined, (ok) => {
+              setState(ok ? { status: "success" } : { status: "error", error: "ACCESS_DENIED" });
+              resolve(!!ok);
+            });
+          } catch {
+            setState({ status: "error", error: "UNSUPPORTED" });
+            resolve(false);
+          }
         });
       },
       authenticate: (reason) => {
         setState({ status: "pending" });
         return new Promise<{ ok: boolean; token?: string }>((resolve) => {
-          if (!manager?.authenticate) {
+          if (!isSupported || !manager?.authenticate) {
             setState({ status: "error", error: "UNSUPPORTED" });
             resolve({ ok: false });
             return;
           }
-          manager.authenticate(reason ? { reason } : undefined, (ok, token) => {
-            setState(ok ? { status: "success" } : { status: "error", error: "AUTH_FAILED" });
-            resolve({ ok: !!ok, token });
-          });
+          try {
+            manager.authenticate(reason ? { reason } : undefined, (ok, token) => {
+              setState(ok ? { status: "success" } : { status: "error", error: "AUTH_FAILED" });
+              resolve({ ok: !!ok, token });
+            });
+          } catch {
+            setState({ status: "error", error: "UNSUPPORTED" });
+            resolve({ ok: false });
+          }
         });
       },
       updateToken: (token) => {
         setState({ status: "pending" });
         return new Promise<boolean>((resolve) => {
-          if (!manager?.updateBiometricToken) {
+          if (!isSupported || !manager?.updateBiometricToken) {
             setState({ status: "error", error: "UNSUPPORTED" });
             resolve(false);
             return;
           }
-          manager.updateBiometricToken(token, (ok) => {
-            setState(ok ? { status: "success" } : { status: "error", error: "TOKEN_UPDATE_FAILED" });
-            resolve(!!ok);
-          });
+          try {
+            manager.updateBiometricToken(token, (ok) => {
+              setState(ok ? { status: "success" } : { status: "error", error: "TOKEN_UPDATE_FAILED" });
+              resolve(!!ok);
+            });
+          } catch {
+            setState({ status: "error", error: "UNSUPPORTED" });
+            resolve(false);
+          }
         });
       },
       openSettings: () => {
-        if (!manager?.openSettings) {
+        if (!isSupported || !manager?.openSettings) {
           setState({ status: "error", error: "UNSUPPORTED" });
           return false;
         }
-        manager.openSettings();
-        return true;
+        try {
+          manager.openSettings();
+          return true;
+        } catch {
+          setState({ status: "error", error: "UNSUPPORTED" });
+          return false;
+        }
       },
       status: isSupported ? state.status : "unsupported",
       error: isSupported ? state.error : "UNSUPPORTED",
@@ -171,45 +197,60 @@ export function useLocation(): TKLocation {
   const wa = useWebApp();
   const manager = wa?.LocationManager;
   const [state, setState] = useState<TKTelegramAsyncState<TelegramLocationError>>({ status: "idle" });
-  const isSupported = !!manager;
+  const isSupported = !!manager && tkSupports(wa, TK_MIN_VERSION.location);
   return useMemo(
     () => ({
       manager,
       init: () => {
         setState({ status: "pending" });
         return new Promise<boolean>((resolve) => {
-          if (!manager?.init) {
+          if (!isSupported || !manager?.init) {
             setState({ status: "error", error: "UNSUPPORTED" });
             resolve(false);
             return;
           }
-          manager.init(() => {
-            setState({ status: "success" });
-            resolve(true);
-          });
+          try {
+            manager.init(() => {
+              setState({ status: "success" });
+              resolve(true);
+            });
+          } catch {
+            setState({ status: "error", error: "UNSUPPORTED" });
+            resolve(false);
+          }
         });
       },
       getLocation: () => {
         setState({ status: "pending" });
         return new Promise<TelegramLocationData | null>((resolve) => {
-          if (!manager?.getLocation) {
+          if (!isSupported || !manager?.getLocation) {
             setState({ status: "error", error: "UNSUPPORTED" });
             resolve(null);
             return;
           }
-          manager.getLocation((locationData) => {
-            setState(locationData ? { status: "success" } : { status: "error", error: "LOCATION_UNAVAILABLE" });
-            resolve(locationData ?? null);
-          });
+          try {
+            manager.getLocation((locationData) => {
+              setState(locationData ? { status: "success" } : { status: "error", error: "LOCATION_UNAVAILABLE" });
+              resolve(locationData ?? null);
+            });
+          } catch {
+            setState({ status: "error", error: "UNSUPPORTED" });
+            resolve(null);
+          }
         });
       },
       openSettings: () => {
-        if (!manager?.openSettings) {
+        if (!isSupported || !manager?.openSettings) {
           setState({ status: "error", error: "UNSUPPORTED" });
           return false;
         }
-        manager.openSettings();
-        return true;
+        try {
+          manager.openSettings();
+          return true;
+        } catch {
+          setState({ status: "error", error: "UNSUPPORTED" });
+          return false;
+        }
       },
       status: isSupported ? state.status : "unsupported",
       error: isSupported ? state.error : "UNSUPPORTED",
@@ -232,14 +273,15 @@ function sensorApi<S extends TelegramMotionSensor>(
   sensor: S | undefined,
   state: TKTelegramAsyncState<TelegramMotionSensorError>,
   setState: (state: TKTelegramAsyncState<TelegramMotionSensorError>) => void,
+  supported: boolean,
 ): TKMotionSensorApi<S> {
-  const isSupported = !!sensor;
+  const isSupported = !!sensor && supported;
   return {
     sensor,
     start: (refreshRate?: number, options?: { needAbsolute?: boolean }) => {
       setState({ status: "pending" });
       return new Promise<boolean>((resolve) => {
-        if (!sensor?.start) {
+        if (!isSupported || !sensor?.start) {
           setState({ status: "error", error: "UNSUPPORTED" });
           resolve(false);
           return;
@@ -247,24 +289,34 @@ function sensorApi<S extends TelegramMotionSensor>(
         const params: { refresh_rate?: number; need_absolute?: boolean } = {};
         if (refreshRate) params.refresh_rate = refreshRate;
         if (options?.needAbsolute != null) params.need_absolute = options.needAbsolute;
-        sensor.start(Object.keys(params).length > 0 ? params : undefined, (ok) => {
-          setState(ok ? { status: "success" } : { status: "error", error: "START_FAILED" });
-          resolve(!!ok);
-        });
+        try {
+          sensor.start(Object.keys(params).length > 0 ? params : undefined, (ok) => {
+            setState(ok ? { status: "success" } : { status: "error", error: "START_FAILED" });
+            resolve(!!ok);
+          });
+        } catch {
+          setState({ status: "error", error: "UNSUPPORTED" });
+          resolve(false);
+        }
       });
     },
     stop: () => {
       setState({ status: "pending" });
       return new Promise<boolean>((resolve) => {
-        if (!sensor?.stop) {
+        if (!isSupported || !sensor?.stop) {
           setState({ status: "error", error: "UNSUPPORTED" });
           resolve(false);
           return;
         }
-        sensor.stop((ok) => {
-          setState(ok ? { status: "success" } : { status: "error", error: "STOP_FAILED" });
-          resolve(!!ok);
-        });
+        try {
+          sensor.stop((ok) => {
+            setState(ok ? { status: "success" } : { status: "error", error: "STOP_FAILED" });
+            resolve(!!ok);
+          });
+        } catch {
+          setState({ status: "error", error: "UNSUPPORTED" });
+          resolve(false);
+        }
       });
     },
     status: isSupported ? state.status : "unsupported",
@@ -273,23 +325,50 @@ function sensorApi<S extends TelegramMotionSensor>(
   };
 }
 
+type TKSensorKey = "accelerometer" | "deviceOrientation" | "gyroscope";
+type TKSensorStates = Record<TKSensorKey, TKTelegramAsyncState<TelegramMotionSensorError>>;
+
 export function useMotionSensors() {
   const wa = useWebApp();
-  const [state, setState] = useState<TKTelegramAsyncState<TelegramMotionSensorError>>({ status: "idle" });
+  // One status PER sensor — a single shared state made starting/erroring one
+  // sensor overwrite the others' status (any per-sensor spinner/badge lied).
+  const [states, setStates] = useState<TKSensorStates>(() => ({
+    accelerometer: { status: "idle" },
+    deviceOrientation: { status: "idle" },
+    gyroscope: { status: "idle" },
+  }));
+  // All three sensors are Bot API 8.0; gate on version, not method presence.
+  const supported = tkSupports(wa, TK_MIN_VERSION.sensors);
   useEffect(() => {
     return () => {
-      wa?.Accelerometer?.stop?.();
-      wa?.DeviceOrientation?.stop?.();
-      wa?.Gyroscope?.stop?.();
+      try {
+        wa?.Accelerometer?.stop?.();
+        wa?.DeviceOrientation?.stop?.();
+        wa?.Gyroscope?.stop?.();
+      } catch {
+        /* sensors not available on this client version */
+      }
     };
   }, [wa]);
+  const setAccelerometer = useCallback(
+    (s: TKTelegramAsyncState<TelegramMotionSensorError>) => setStates((p) => ({ ...p, accelerometer: s })),
+    [],
+  );
+  const setDeviceOrientation = useCallback(
+    (s: TKTelegramAsyncState<TelegramMotionSensorError>) => setStates((p) => ({ ...p, deviceOrientation: s })),
+    [],
+  );
+  const setGyroscope = useCallback(
+    (s: TKTelegramAsyncState<TelegramMotionSensorError>) => setStates((p) => ({ ...p, gyroscope: s })),
+    [],
+  );
   return useMemo(
     () => ({
-      accelerometer: sensorApi(wa?.Accelerometer, state, setState),
-      deviceOrientation: sensorApi(wa?.DeviceOrientation, state, setState),
-      gyroscope: sensorApi(wa?.Gyroscope, state, setState),
+      accelerometer: sensorApi(wa?.Accelerometer, states.accelerometer, setAccelerometer, supported),
+      deviceOrientation: sensorApi(wa?.DeviceOrientation, states.deviceOrientation, setDeviceOrientation, supported),
+      gyroscope: sensorApi(wa?.Gyroscope, states.gyroscope, setGyroscope, supported),
     }),
-    [state, wa],
+    [states, supported, wa, setAccelerometer, setDeviceOrientation, setGyroscope],
   );
 }
 

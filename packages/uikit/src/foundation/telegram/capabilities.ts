@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
   TelegramClipboardError,
   TelegramContactStatus,
@@ -12,6 +12,7 @@ import type {
 } from "./types";
 import { useTelegramEvent, useWebApp } from "./provider";
 import { createStorageApi, type TKCloudStorage } from "./storage";
+import { TK_MIN_VERSION, tkSupports } from "./version";
 
 /* ---------------- Expanded WebApp capabilities ---------------- */
 
@@ -22,11 +23,16 @@ export interface TKActivity {
 
 export function useActivity(): TKActivity {
   const wa = useWebApp();
-  const [isActive, setIsActive] = useState(wa?.isActive ?? true);
-  useEffect(() => setIsActive(wa?.isActive ?? true), [wa]);
+  // Read `isActive` lazily once; afterwards trust the activated/deactivated
+  // events. Re-reading `wa.isActive` on every ref change would clobber the
+  // accumulated state with a value Telegram only seeds at launch.
+  const [isActive, setIsActive] = useState(() => wa?.isActive ?? true);
   useTelegramEvent("activated", () => setIsActive(true));
   useTelegramEvent("deactivated", () => setIsActive(false));
-  return { isActive, isSupported: wa?.isActive != null };
+  // Activity tracking is a Bot API 8.0 feature; old clients never emit the
+  // events, so gate on version (with the field as a secondary signal).
+  const isSupported = tkSupports(wa, TK_MIN_VERSION.activity) || wa?.isActive != null;
+  return { isActive, isSupported };
 }
 
 export interface TKFullscreen {
@@ -45,24 +51,35 @@ export function useFullscreen(): TKFullscreen {
   useEffect(() => read(), [read]);
   useTelegramEvent("fullscreenChanged", read);
   useTelegramEvent("fullscreenFailed", (payload) => setLastError(payload?.error));
+  const isSupported = !!wa?.requestFullscreen && tkSupports(wa, TK_MIN_VERSION.fullscreen);
   return useMemo(
     () => ({
       isFullscreen,
       lastError,
       request: () => {
-        if (!wa?.requestFullscreen) return false;
+        if (!isSupported || !wa?.requestFullscreen) return false;
         setLastError(undefined);
-        wa.requestFullscreen();
-        return true;
+        try {
+          wa.requestFullscreen();
+          return true;
+        } catch {
+          setLastError("UNSUPPORTED");
+          return false;
+        }
       },
       exit: () => {
-        if (!wa?.exitFullscreen) return false;
-        wa.exitFullscreen();
-        return true;
+        if (!isSupported || !wa?.exitFullscreen) return false;
+        try {
+          wa.exitFullscreen();
+          return true;
+        } catch {
+          setLastError("UNSUPPORTED");
+          return false;
+        }
       },
-      isSupported: !!wa?.requestFullscreen,
+      isSupported,
     }),
-    [isFullscreen, lastError, wa],
+    [isFullscreen, isSupported, lastError, wa],
   );
 }
 
@@ -125,30 +142,45 @@ export function useTelegramColors(): TKTelegramColors {
   useEffect(() => setColors(read()), [read]);
   // Keyword colors ("bg_color", …) follow the theme, so re-read on theme flips.
   useTelegramEvent("themeChanged", () => setColors(read()));
+  const canHeader = !!wa?.setHeaderColor && tkSupports(wa, TK_MIN_VERSION.setHeaderColor);
+  const canBackground = !!wa?.setBackgroundColor && tkSupports(wa, TK_MIN_VERSION.setBackgroundColor);
+  const canBottomBar = !!wa?.setBottomBarColor && tkSupports(wa, TK_MIN_VERSION.setBottomBarColor);
   return useMemo(
     () => ({
       ...colors,
       setHeaderColor: (color) => {
-        if (!wa?.setHeaderColor) return false;
-        wa.setHeaderColor(color);
-        setColors(read());
-        return true;
+        if (!canHeader || !wa?.setHeaderColor) return false;
+        try {
+          wa.setHeaderColor(color);
+          setColors(read());
+          return true;
+        } catch {
+          return false;
+        }
       },
       setBackgroundColor: (color) => {
-        if (!wa?.setBackgroundColor) return false;
-        wa.setBackgroundColor(color);
-        setColors(read());
-        return true;
+        if (!canBackground || !wa?.setBackgroundColor) return false;
+        try {
+          wa.setBackgroundColor(color);
+          setColors(read());
+          return true;
+        } catch {
+          return false;
+        }
       },
       setBottomBarColor: (color) => {
-        if (!wa?.setBottomBarColor) return false;
-        wa.setBottomBarColor(color);
-        setColors(read());
-        return true;
+        if (!canBottomBar || !wa?.setBottomBarColor) return false;
+        try {
+          wa.setBottomBarColor(color);
+          setColors(read());
+          return true;
+        } catch {
+          return false;
+        }
       },
-      isSupported: !!(wa?.setHeaderColor || wa?.setBackgroundColor || wa?.setBottomBarColor),
+      isSupported: canHeader || canBackground || canBottomBar,
     }),
-    [colors, read, wa],
+    [canBackground, canBottomBar, canHeader, colors, read, wa],
   );
 }
 
@@ -184,30 +216,59 @@ export interface TKShare extends TKTelegramAsyncState<TelegramShareError> {
 export function useShare(): TKShare {
   const wa = useWebApp();
   const [state, setState] = useState<TKTelegramAsyncState<TelegramShareError>>({ status: "idle" });
+  const canShareMessage = !!wa?.shareMessage && tkSupports(wa, TK_MIN_VERSION.shareMessage);
+  const canShareToStory = !!wa?.shareToStory && tkSupports(wa, TK_MIN_VERSION.shareToStory);
   const isSupported =
-    !!(wa?.shareMessage || wa?.shareToStory) || (typeof navigator !== "undefined" && "share" in navigator);
+    canShareMessage || canShareToStory || (typeof navigator !== "undefined" && "share" in navigator);
+  // `shareToStory` is fire-and-forget (no callback); resolve the optimistic
+  // call through the shareMessage* events instead of assuming success.
+  const pendingStory = useRef<((ok: boolean) => void) | null>(null);
+  const settleStory = useCallback((ok: boolean, error?: TelegramShareError) => {
+    setState(ok ? { status: "success" } : { status: "error", error: error ?? "MESSAGE_SEND_FAILED" });
+    pendingStory.current?.(ok);
+    pendingStory.current = null;
+  }, []);
+  useTelegramEvent("shareMessageSent", () => settleStory(true));
+  useTelegramEvent("shareMessageFailed", (payload) => settleStory(false, payload?.error));
   return useMemo(
     () => ({
       shareMessage: (messageId) => {
         setState({ status: "pending" });
         return new Promise<boolean>((resolve) => {
-          if (!wa?.shareMessage) {
+          if (!canShareMessage || !wa?.shareMessage) {
             setState({ status: "error", error: "UNSUPPORTED" });
             resolve(false);
             return;
           }
-          wa.shareMessage(messageId, (ok) => {
-            setState(ok ? { status: "success" } : { status: "error", error: "MESSAGE_SEND_FAILED" });
-            resolve(!!ok);
-          });
+          try {
+            wa.shareMessage(messageId, (ok) => {
+              setState(ok ? { status: "success" } : { status: "error", error: "MESSAGE_SEND_FAILED" });
+              resolve(!!ok);
+            });
+          } catch {
+            setState({ status: "error", error: "UNSUPPORTED" });
+            resolve(false);
+          }
         });
       },
       shareToStory: async (mediaUrl, params) => {
         setState({ status: "pending" });
-        if (wa?.shareToStory) {
-          wa.shareToStory(mediaUrl, params?.widgetLink ? { text: params.text, widget_link: params.widgetLink } : { text: params?.text });
-          setState({ status: "success" });
-          return true;
+        if (canShareToStory && wa?.shareToStory) {
+          try {
+            wa.shareToStory(
+              mediaUrl,
+              params?.widgetLink ? { text: params.text, widget_link: params.widgetLink } : { text: params?.text },
+            );
+          } catch {
+            settleStory(false, "UNSUPPORTED");
+            return false;
+          }
+          // Leave status pending — never report a synthetic success. The
+          // shareMessageSent/shareMessageFailed events resolve this promise;
+          // if the client emits neither, the status stays neutral (pending).
+          return new Promise<boolean>((resolve) => {
+            pendingStory.current = resolve;
+          });
         }
         if (typeof navigator !== "undefined" && "share" in navigator) {
           try {
@@ -226,7 +287,7 @@ export function useShare(): TKShare {
       error: isSupported ? state.error : "UNSUPPORTED",
       isSupported,
     }),
-    [isSupported, state.error, state.status, wa],
+    [canShareMessage, canShareToStory, isSupported, settleStory, state.error, state.status, wa],
   );
 }
 
@@ -372,7 +433,19 @@ export interface TKQrScanner extends TKTelegramAsyncState<TelegramQrScannerError
 export function useQrScanner(): TKQrScanner {
   const wa = useWebApp();
   const [state, setState] = useState<TKTelegramAsyncState<TelegramQrScannerError>>({ status: "idle" });
-  const isSupported = !!wa?.showScanQrPopup;
+  const isSupported = !!wa?.showScanQrPopup && tkSupports(wa, TK_MIN_VERSION.scanQrPopup);
+  // The promise resolves when the popup closes (scanQrPopupClosed), not on the
+  // first scan — so `onText` can keep accepting scans (return falsy to stay
+  // open) while `open` still yields the last value once the user is done.
+  const pendingScan = useRef<((data: string | null) => void) | null>(null);
+  const lastScan = useRef<string | null>(null);
+  const settleScan = useCallback(() => {
+    setState((prev) => (prev.status === "pending" ? { status: "success" } : prev));
+    pendingScan.current?.(lastScan.current);
+    pendingScan.current = null;
+    lastScan.current = null;
+  }, []);
+  useTelegramEvent("scanQrPopupClosed", settleScan);
   useEffect(() => {
     return () => {
       wa?.closeScanQrPopup?.();
@@ -383,17 +456,25 @@ export function useQrScanner(): TKQrScanner {
       open: (params = {}, onText) => {
         setState({ status: "pending" });
         return new Promise<string | null>((resolve) => {
-          if (!wa?.showScanQrPopup) {
+          if (!isSupported || !wa?.showScanQrPopup) {
             setState({ status: "error", error: "UNSUPPORTED" });
             resolve(null);
             return;
           }
-          wa.showScanQrPopup(params, (data) => {
-            const shouldClose = onText?.(data);
-            setState({ status: "success" });
-            resolve(data);
-            return shouldClose;
-          });
+          lastScan.current = null;
+          pendingScan.current = resolve;
+          try {
+            wa.showScanQrPopup(params, (data) => {
+              lastScan.current = data;
+              // Default to keeping the popup open (return false); only the
+              // caller's onText can request a close by returning true.
+              return onText?.(data) ?? false;
+            });
+          } catch {
+            setState({ status: "error", error: "UNSUPPORTED" });
+            pendingScan.current = null;
+            resolve(null);
+          }
         });
       },
       close: () => {

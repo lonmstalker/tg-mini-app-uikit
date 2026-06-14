@@ -1,4 +1,4 @@
-import { Children, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { Children, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 import { TKPageDots } from "./navigation";
 
 export interface TKGalleryProps {
@@ -43,9 +43,23 @@ export function TKGallery({ children, onPageChange, dots = true, gap = 10, edgeI
   const scrollTo = (index: number) => {
     const el = trackRef.current;
     if (!el) return;
-    el.scrollTo({ left: index * el.clientWidth, behavior: "smooth" });
-    setPage(index);
-    onPageChange?.(index);
+    const clamped = Math.min(Math.max(index, 0), slides.length - 1);
+    // honor the OS "reduce motion" setting — jump instead of animate
+    const reduce =
+      typeof window !== "undefined" && !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    el.scrollTo({ left: clamped * el.clientWidth, behavior: reduce ? "auto" : "smooth" });
+    setPage(clamped);
+    onPageChange?.(clamped);
+  };
+
+  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      scrollTo(page - 1);
+    } else if (e.key === "ArrowRight") {
+      e.preventDefault();
+      scrollTo(page + 1);
+    }
   };
 
   return (
@@ -54,6 +68,7 @@ export function TKGallery({ children, onPageChange, dots = true, gap = 10, edgeI
         ref={trackRef}
         tabIndex={0}
         onScroll={syncPage}
+        onKeyDown={onKeyDown}
         style={{
           display: "flex",
           gap,

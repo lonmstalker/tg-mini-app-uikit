@@ -1,6 +1,8 @@
 import { forwardRef, useRef, type ReactNode } from "react";
 import { TKIcon, type TKIconName } from "../../atoms/icons";
-import { mergeRefs, tkZ } from "../../internal/dom";
+import { mergeRefs } from "../../internal/dom";
+import { useScrollLock } from "../../internal/useScrollLock";
+import { useOverlayLayer } from "../../internal/useOverlayLayer";
 import { useTKLocale } from "../../foundation/i18n";
 import { useBackIntercept } from "../../foundation/telegram";
 import { Scrim, useMountTransition, useOverlayA11y } from "./shared";
@@ -19,35 +21,42 @@ export interface TKActionSheetProps {
   onClose?: () => void;
   items: TKActionItem[];
   cancelLabel?: ReactNode;
+  /** Accessible name for the dialog (default `"Actions"`); localize as needed. */
+  ariaLabel?: string;
   testId?: string;
 }
 
 export const TKActionSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKActionSheetProps>(function TKActionSheet(
-  { open, onClose, items, cancelLabel, testId },
+  { open, onClose, items, cancelLabel, ariaLabel = "Actions", testId },
   forwardedRef,
 ) {
   const locale = useTKLocale();
   const { mounted, closing } = useMountTransition(open, 360);
   const ref = useRef<HTMLDivElement>(null);
   useOverlayA11y(mounted && !closing, ref, onClose);
+  // lock page scroll while the action sheet is mounted (covers the close anim)
+  useScrollLock(mounted);
+  // stack above any overlay opened before this one (scrim covers it too)
+  const layer = useOverlayLayer(mounted);
   useBackIntercept(mounted && !closing && !!onClose, () => onClose?.());
   if (!mounted) return null;
   return (
     <>
-      <Scrim closing={closing} onClick={onClose} />
+      <Scrim closing={closing} onClick={onClose} z={layer.scrimZ} />
       <div
         ref={mergeRefs(ref, forwardedRef)}
         data-testid={testId}
         role="dialog"
         aria-modal="true"
+        aria-label={ariaLabel}
         tabIndex={-1}
         style={{
           outline: "none",
           position: "absolute",
           left: 10,
           right: 10,
-          bottom: 10,
-          zIndex: tkZ.sheet,
+          bottom: "calc(10px + var(--tk-safe-bottom))",
+          zIndex: layer.panelZ,
           display: "flex",
           flexDirection: "column",
           gap: 8,

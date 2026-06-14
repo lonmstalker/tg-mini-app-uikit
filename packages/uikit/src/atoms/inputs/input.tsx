@@ -1,4 +1,4 @@
-import { forwardRef, useId, useRef, useState, type FocusEvent, type ReactNode } from "react";
+import { forwardRef, useId, useRef, useState, type ChangeEvent, type FocusEvent, type ReactNode } from "react";
 import { TKIcon, type TKIconName } from "../icons";
 import { mergeRefs } from "../../internal/dom";
 import { useControllable } from "../../internal/useControllable";
@@ -12,7 +12,12 @@ export interface TKInputProps {
   icon?: TKIconName;
   value?: string;
   defaultValue?: string;
-  onChange?: (value: string) => void;
+  /**
+   * Receives the new value. The native change event is passed as a second
+   * argument too, so callers that need DOM details (caret position via
+   * `event.target.selectionStart`, etc.) can read them without an extra ref.
+   */
+  onChange?: (value: string, event?: ChangeEvent<HTMLInputElement>) => void;
   hint?: ReactNode;
   error?: ReactNode;
   clearable?: boolean;
@@ -70,7 +75,9 @@ export const TKInput = /* @__PURE__ */ forwardRef<HTMLInputElement, TKInputProps
   ref,
 ) {
   const locale = useTKLocale();
-  const [val, setVal] = useControllable(value, defaultValue, onChange);
+  // `onChange` is invoked directly (below) so it can forward the native event;
+  // `useControllable` handles only the controlled/uncontrolled mirroring here.
+  const [val, setVal] = useControllable(value, defaultValue);
   const [focus, setFocus] = useState(false);
   const [reveal, setReveal] = useState(false);
   const [touched, setTouched] = useState(false);
@@ -134,7 +141,10 @@ export const TKInput = /* @__PURE__ */ forwardRef<HTMLInputElement, TKInputProps
           inputMode={resolvedInputMode}
           aria-describedby={describedBy}
           aria-invalid={!!shownError}
-          onChange={(e) => setVal(e.target.value)}
+          onChange={(e) => {
+            setVal(e.target.value);
+            onChange?.(e.target.value, e);
+          }}
           onFocus={(e) => {
             setFocus(true);
             onFocus?.(e);
@@ -164,6 +174,7 @@ export const TKInput = /* @__PURE__ */ forwardRef<HTMLInputElement, TKInputProps
             onClick={(e) => {
               e.preventDefault();
               setVal("");
+              onChange?.("");
             }}
             style={{
               display: "inline-flex",

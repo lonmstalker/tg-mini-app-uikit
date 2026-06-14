@@ -3,6 +3,8 @@ import { TKInput } from "../../atoms/inputs";
 import { TKSheet } from "../overlays";
 import { TKIcon } from "../../atoms/icons";
 import { useControllable } from "../../internal/useControllable";
+import { useOptionalHaptics } from "../../foundation/telegram";
+import { useTKLocale } from "../../foundation/i18n";
 import { TKCalendar } from "./calendar";
 import { TKNativeField } from "./native-input";
 
@@ -43,20 +45,54 @@ function isAllowedDate(d: Date, min?: Date, max?: Date, disabledDates?: (date: D
   return !disabledDates?.(d);
 }
 
-function parseDateInput(text: string): Date | null {
+/**
+ * Field order (day/month positions) the locale uses for a numeric date, derived
+ * from `Intl.DateTimeFormat.formatToParts` so manual entry matches what the
+ * field displays (e.g. en-US shows MM/DD/YYYY, ru-RU shows DD.MM.YYYY).
+ */
+function localeDateOrder(lang: string): { dayFirst: boolean } {
+  try {
+    const parts = new Intl.DateTimeFormat(lang, { day: "2-digit", month: "2-digit", year: "numeric" }).formatToParts(
+      new Date(2026, 0, 1),
+    );
+    const order = parts.filter((p) => p.type === "day" || p.type === "month").map((p) => p.type);
+    return { dayFirst: order[0] !== "month" };
+  } catch {
+    return { dayFirst: true };
+  }
+}
+
+/** Build a real `Date` from y/m/d, rejecting overflow (e.g. month 13, day 32). */
+function makeDate(year: number, month: number, day: number): Date | null {
+  const date = new Date(year, month - 1, day);
+  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return null;
+  return date;
+}
+
+/**
+ * Parse manual date entry. Always accepts ISO `yyyy-mm-dd`; for the
+ * two-numbers-then-year form the day/month order follows the locale (so US
+ * users typing `mm/dd/yyyy` and others typing `dd/mm/yyyy` both work), and
+ * falls back to the swapped order when the locale order is unambiguously
+ * invalid (e.g. `17/02` can only be day-first since 17 is not a month).
+ */
+function parseDateInput(text: string, lang: string): Date | null {
   const trimmed = text.trim();
   if (!trimmed) return null;
 
   const iso = trimmed.match(/^(\d{4})\D+(\d{1,2})\D+(\d{1,2})$/);
-  const parts = iso
-    ? [Number(iso[3]), Number(iso[2]), Number(iso[1])]
-    : (trimmed.match(/^(\d{1,2})\D+(\d{1,2})\D+(\d{4})$/)?.slice(1).map(Number) ?? null);
-  if (!parts) return null;
+  if (iso) return makeDate(Number(iso[1]), Number(iso[2]), Number(iso[3]));
 
-  const [day, month, year] = parts;
-  const date = new Date(year, month - 1, day);
-  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return null;
-  return date;
+  const dmy = trimmed.match(/^(\d{1,2})\D+(\d{1,2})\D+(\d{4})$/);
+  if (!dmy) return null;
+  const a = Number(dmy[1]);
+  const b = Number(dmy[2]);
+  const year = Number(dmy[3]);
+  const dayFirst = localeDateOrder(lang).dayFirst;
+  // Primary interpretation follows the locale; the secondary swaps day/month.
+  const primary = dayFirst ? makeDate(year, b, a) : makeDate(year, a, b);
+  if (primary) return primary;
+  return dayFirst ? makeDate(year, a, b) : makeDate(year, b, a);
 }
 
 function shouldValidateDateInput(text: string): boolean {
@@ -93,10 +129,30 @@ export function TKChipsInput({ value, defaultValue = [], onChange, placeholder, 
   const [draft, setDraft] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const [focus, setFocus] = useState(false);
+  // Value of the tag that just collided, flashed once so a duplicate isn't
+  // silently dropped. Cleared after the shake animation finishes.
+  const [duplicate, setDuplicate] = useState<string | null>(null);
+  const dupTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const haptics = useOptionalHaptics();
+
+  useEffect(() => () => clearTimeout(dupTimer.current), []);
+
+  const flashDuplicate = (tag: string) => {
+    haptics.notification("warning");
+    setDuplicate(tag);
+    clearTimeout(dupTimer.current);
+    dupTimer.current = setTimeout(() => setDuplicate(null), 400);
+  };
 
   const commit = (text: string) => {
     const tag = text.trim();
-    if (!tag || tags.includes(tag)) {
+    if (!tag) {
+      setDraft("");
+      return;
+    }
+    if (tags.includes(tag)) {
+      // Surface the collision (shake + haptic) instead of dropping it silently.
+      flashDuplicate(tag);
       setDraft("");
       return;
     }
@@ -139,9 +195,10 @@ export function TKChipsInput({ value, defaultValue = [], onChange, placeholder, 
           cursor: "text",
         }}
       >
-        {tags.map((tag) => (
+        {tags.map((tag, i) => (
           <span
-            key={tag}
+            key={`${tag}-${i}`}
+            className={duplicate === tag ? "tk-shake" : undefined}
             style={{
               display: "inline-flex",
               alignItems: "center",
@@ -289,6 +346,7 @@ function SheetDateInput({
   invalidText = "Enter a valid date",
   testId,
 }: TKDateInputProps) {
+  const locale = useTKLocale();
   const [date, setDate] = useControllable<Date | null>(value, defaultValue, onChange);
   const [open, setOpen] = useState(false);
   const resolvedLang = lang ?? documentLang();
@@ -302,18 +360,26 @@ function SheetDateInput({
   const [picker, setPicker] = useState<"none" | "month" | "year">("none");
   const manualChangeRef = useRef(false);
 
+  // Key the sync effects on the date's VALUE (getTime), not the Date identity:
+  // callers routinely pass `new Date(...)` inline for value/min/max, whose fresh
+  // identity every render would otherwise re-run these — yanking the calendar
+  // back to the selected month and clobbering a draft mid-edit. min/max/
+  // defaultValue are intentionally NOT dependencies; the view follows only the
+  // selected date and explicit actions.
+  const dateTime = date ? date.getTime() : null;
+
   useEffect(() => {
-    setVisibleMonth(startOfMonth(date ?? defaultValue ?? max ?? min ?? new Date()));
-  }, [date, defaultValue, max, min]);
+    if (dateTime != null) setVisibleMonth(startOfMonth(new Date(dateTime)));
+  }, [dateTime]);
 
   useEffect(() => {
     if (manualChangeRef.current) {
       manualChangeRef.current = false;
       return;
     }
-    setDraft(date ? fmt.format(date) : "");
+    setDraft(dateTime != null ? fmt.format(new Date(dateTime)) : "");
     setManualError(null);
-  }, [date, fmt]);
+  }, [dateTime, fmt]);
 
   const setMonthPart = (year: number, month: number) => {
     setVisibleMonth(startOfMonth(new Date(year, month, 1)));
@@ -327,7 +393,7 @@ function SheetDateInput({
       setDate(null);
       return;
     }
-    const parsed = parseDateInput(next);
+    const parsed = parseDateInput(next, resolvedLang);
     if (!parsed || !isAllowedDate(parsed, min, max, disabledDates)) {
       if (shouldValidateDateInput(next)) {
         setManualError(invalidText);
@@ -346,18 +412,42 @@ function SheetDateInput({
 
   return (
     <div data-testid={testId}>
-      <div onClick={() => !disabled && setOpen(true)}>
-        <TKInput
-          label={label}
-          icon="calendar"
-          placeholder={placeholder}
-          value={draft}
-          onChange={handleDraftChange}
-          disabled={disabled}
-          hint={hint}
-          error={fieldError}
-        />
-      </div>
+      {/* The field stays directly editable for manual entry; the calendar
+          opens from its own trigger button — opening the sheet on any field
+          click made manual entry unreachable on touch (a tap is the only way to
+          focus, and it would pop the sheet over the keyboard). */}
+      <TKInput
+        label={label}
+        placeholder={placeholder}
+        value={draft}
+        onChange={handleDraftChange}
+        disabled={disabled}
+        hint={hint}
+        error={fieldError}
+        suffix={
+          <button
+            type="button"
+            aria-label={locale.openCalendar}
+            aria-haspopup="dialog"
+            aria-expanded={open}
+            disabled={disabled}
+            onClick={() => !disabled && setOpen(true)}
+            className="tk-press"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              border: "none",
+              background: "transparent",
+              color: "var(--tk-text-3)",
+              cursor: disabled ? "default" : "pointer",
+              padding: 0,
+            }}
+          >
+            <TKIcon name="calendar" size={20} />
+          </button>
+        }
+      />
       <TKSheet
         open={open}
         onClose={() => {

@@ -44,6 +44,7 @@ export function TKSwipeCell({ children, leading = [], trailing = [], fullSwipe =
   const haptics = useOptionalHaptics();
   const [offset, setOffset] = useState(0);
   const [dragging, setDragging] = useState(false);
+  const [focused, setFocused] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const idRef = useRef(Symbol("swipecell"));
 
@@ -54,6 +55,17 @@ export function TKSwipeCell({ children, leading = [], trailing = [], fullSwipe =
     document.addEventListener(OPEN_EVENT, close);
     return () => document.removeEventListener(OPEN_EVENT, close);
   }, []);
+
+  // Tap anywhere outside an open row to close it (mirrors iOS Mail).
+  useEffect(() => {
+    if (offset === 0 || typeof document === "undefined") return;
+    const onDown = (e: PointerEvent) => {
+      const root = rootRef.current;
+      if (root && !root.contains(e.target as Node)) setOffset(0);
+    };
+    document.addEventListener("pointerdown", onDown);
+    return () => document.removeEventListener("pointerdown", onDown);
+  }, [offset]);
 
   const announceOpen = () => document.dispatchEvent(new CustomEvent(OPEN_EVENT, { detail: idRef.current }));
 
@@ -103,7 +115,8 @@ export function TKSwipeCell({ children, leading = [], trailing = [], fullSwipe =
           bottom: 0,
           [side === "leading" ? "left" : "right"]: 0,
           display: "flex",
-          ...(offset === 0 ? { opacity: 0 } : null),
+          // Hidden until the row is opened or a button is keyboard-focused.
+          opacity: offset === 0 && !focused ? 0 : 1,
         }}
       >
         {actions.map((action) => (
@@ -114,10 +127,8 @@ export function TKSwipeCell({ children, leading = [], trailing = [], fullSwipe =
               setOffset(0);
               action.onAction();
             }}
-            onFocus={(e) => (e.currentTarget.parentElement!.style.opacity = "1")}
-            onBlur={(e) => {
-              if (offset === 0) e.currentTarget.parentElement!.style.opacity = "0";
-            }}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
             style={{
               width: ACTION_W,
               border: "none",

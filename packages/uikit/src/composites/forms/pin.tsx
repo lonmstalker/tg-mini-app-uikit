@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { TKIcon } from "../../atoms/icons";
 import { useTKLocale } from "../../foundation/i18n";
 import { useOptionalHaptics } from "../../foundation/telegram";
@@ -22,30 +22,50 @@ export function TKPinInput({ length = 4, onComplete, error, onBiometricRequest, 
   const locale = useTKLocale();
   const haptics = useOptionalHaptics();
   const [pin, setPin] = useState("");
+  // Bumped every time error feedback fires, so the shake/haptic re-trigger even
+  // when `error` stays `true` across repeated wrong entries (a one-shot CSS
+  // animation only restarts when the element is keyed afresh).
+  const [shakeKey, setShakeKey] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
   const completeRef = useRef(onComplete);
   completeRef.current = onComplete;
+  const fieldId = useId();
+  // Holds the post-complete clear so the filled dots paint for a beat first.
+  const resetTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => () => clearTimeout(resetTimer.current), []);
 
   useEffect(() => {
     if (error) {
+      clearTimeout(resetTimer.current);
       setPin("");
+      setShakeKey((k) => k + 1);
       haptics.notification("error");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [error]);
 
+  // Commit raw digits coming from the hidden field (hardware keyboard, SMS
+  // autofill) or the on-screen pad through a single path, so both stay in sync.
+  const setDigits = (raw: string) => {
+    const next = raw.replace(/\D/g, "").slice(0, length);
+    setPin(next);
+    if (next.length === length) {
+      completeRef.current?.(next);
+      // Paint the FULL set of dots first, then clear on a later tick. Clearing
+      // in the same commit meant the last dot never lit — it read as "the last
+      // tap didn't count" even on a correct code. An `error` clears immediately.
+      clearTimeout(resetTimer.current);
+      resetTimer.current = setTimeout(() => setPin(""), PIN_FILL_HOLD_MS);
+    }
+  };
+
   const push = (digit: string) => {
-    setPin((p) => {
-      if (p.length >= length) return p;
-      const next = p + digit;
-      if (next.length === length) {
-        completeRef.current?.(next);
-        return "";
-      }
-      return next;
-    });
+    if (pin.length >= length) return;
+    setDigits(pin + digit);
   };
 
   const keyStyle: CSSProperties = {
+    minWidth: 44,
     height: 56,
     border: "none",
     borderRadius: "var(--tk-r-md)",
@@ -64,55 +84,106 @@ export function TKPinInput({ length = 4, onComplete, error, onBiometricRequest, 
   };
 
   return (
-    <div data-testid={testId} className={error ? "tk-shake" : undefined} style={{ display: "flex", flexDirection: "column", gap: 18, ...style }}>
+    <div data-testid={testId} style={{ display: "flex", flexDirection: "column", gap: 18, ...style }}>
       {title}
-      <div aria-live="polite" style={{ display: "flex", gap: 14, justifyContent: "center" }}>
-        {Array.from({ length }).map((_, i) => (
-          <span
-            key={i}
-            style={{
-              width: 14,
-              height: 14,
-              borderRadius: "50%",
-              background: i < pin.length ? "var(--tk-accent)" : "var(--tk-surface-3)",
-              boxShadow: error ? "0 0 0 2px var(--tk-red-12)" : "none",
-              transition: "background var(--tk-t1) var(--tk-ease)",
-            }}
-          />
-        ))}
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
-        {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((d) => (
-          <button key={d} type="button" className="tk-press" style={keyStyle} onClick={() => push(d)}>
-            {d}
+      {/* Real, visually-hidden input over the dots: enables SMS one-time-code
+          autofill, password managers, and hardware keyboards while the on-screen
+          pad mirrors the same value. Kept outside the keyed shake wrapper below
+          so an error re-trigger never drops the input's focus. */}
+      <input
+        ref={inputRef}
+        id={fieldId}
+        value={pin}
+        // `inputMode="none"` keeps the field usable for SMS one-time-code
+        // autofill and a hardware keyboard (it stays focusable) WITHOUT raising
+        // the OS soft keyboard over the custom pad's lower rows.
+        inputMode="none"
+        autoComplete="one-time-code"
+        maxLength={length}
+        aria-label={locale.oneTimeCode}
+        onChange={(e) => setDigits(e.target.value)}
+        style={SR_ONLY}
+      />
+      {/* `key={shakeKey}` remounts this block on every error so the one-shot
+          `tk-shake` animation re-plays even when `error` stays `true`. */}
+      <div
+        key={shakeKey}
+        className={error ? "tk-shake" : undefined}
+        style={{ display: "flex", flexDirection: "column", gap: 18 }}
+      >
+        {/* The dots are a decorative progress readout, not a text field — tapping
+            them no longer focuses the hidden input (which would raise the OS
+            keyboard over the pad). Entry goes through the on-screen pad. */}
+        <div
+          aria-live="polite"
+          aria-atomic="true"
+          style={{ display: "flex", gap: 14, justifyContent: "center" }}
+        >
+          {Array.from({ length }).map((_, i) => (
+            <span
+              key={i}
+              style={{
+                width: 14,
+                height: 14,
+                borderRadius: "50%",
+                background: i < pin.length ? "var(--tk-accent)" : "var(--tk-surface-3)",
+                boxShadow: error ? "0 0 0 2px var(--tk-red-12)" : "none",
+                transition: "background var(--tk-t1) var(--tk-ease)",
+              }}
+            />
+          ))}
+          {/* Screen-reader-only progress; the dots above are decorative. */}
+          <span style={SR_ONLY}>{`${pin.length} of ${length} entered`}</span>
+        </div>
+        <div role="group" aria-label={locale.oneTimeCode} style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+          {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((d) => (
+            <button key={d} type="button" className="tk-press" style={keyStyle} onClick={() => push(d)}>
+              {d}
+            </button>
+          ))}
+          {onBiometricRequest ? (
+            <button
+              type="button"
+              className="tk-press"
+              aria-label={locale.biometrics}
+              style={{ ...keyStyle, color: "var(--tk-accent-ink)" }}
+              onClick={onBiometricRequest}
+            >
+              <TKIcon name="fingerprint" size={24} />
+            </button>
+          ) : (
+            <span />
+          )}
+          <button type="button" className="tk-press" style={keyStyle} onClick={() => push("0")}>
+            0
           </button>
-        ))}
-        {onBiometricRequest ? (
           <button
             type="button"
             className="tk-press"
-            aria-label={locale.biometrics}
-            style={{ ...keyStyle, color: "var(--tk-accent-ink)" }}
-            onClick={onBiometricRequest}
+            aria-label={locale.backspace}
+            style={{ ...keyStyle, color: "var(--tk-text-2)" }}
+            onClick={() => setPin((p) => p.slice(0, -1))}
           >
-            <TKIcon name="fingerprint" size={24} />
+            <TKIcon name="backspace" size={22} />
           </button>
-        ) : (
-          <span />
-        )}
-        <button type="button" className="tk-press" style={keyStyle} onClick={() => push("0")}>
-          0
-        </button>
-        <button
-          type="button"
-          className="tk-press"
-          aria-label={locale.backspace}
-          style={{ ...keyStyle, color: "var(--tk-text-2)" }}
-          onClick={() => setPin((p) => p.slice(0, -1))}
-        >
-          <TKIcon name="backspace" size={22} />
-        </button>
+        </div>
       </div>
     </div>
   );
 }
+
+// How long the fully-entered dots stay lit before the field resets on success.
+const PIN_FILL_HOLD_MS = 180;
+
+// Visually hidden but readable by assistive tech.
+const SR_ONLY: CSSProperties = {
+  position: "absolute",
+  width: 1,
+  height: 1,
+  margin: -1,
+  padding: 0,
+  overflow: "hidden",
+  clip: "rect(0 0 0 0)",
+  whiteSpace: "nowrap",
+  border: 0,
+};

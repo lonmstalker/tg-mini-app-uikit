@@ -333,7 +333,9 @@ export function createMockTelegram(init?: { colorScheme?: "light" | "dark" }): M
       window.setTimeout(() => {
         const data = "tg://demo/qr-result";
         dispatch("qrTextReceived", { data });
-        cb?.(data);
+        // Real Telegram closes the popup (and fires scanQrPopupClosed) when the
+        // scan callback returns truthy; mirror that so consumers settle.
+        if (cb?.(data)) dispatch("scanQrPopupClosed");
       }, 250);
     },
     closeScanQrPopup: () => {

@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import type { TelegramDownloadError, TelegramEmojiStatusError, TelegramGenericHookError, TelegramHomeScreenStatus, TKTelegramAsyncState } from "./types";
 import { useTelegramEvent, useWebApp } from "./provider";
+import { TK_MIN_VERSION, tkSupports } from "./version";
 
 export interface TKHomeScreen {
   add: () => boolean;
@@ -14,28 +15,37 @@ export function useHomeScreen(): TKHomeScreen {
   const [status, setStatus] = useState<TelegramHomeScreenStatus | undefined>();
   useTelegramEvent("homeScreenChecked", (payload) => setStatus(payload?.status));
   useTelegramEvent("homeScreenAdded", () => setStatus("added"));
+  const isSupported = !!(wa?.addToHomeScreen || wa?.checkHomeScreenStatus) && tkSupports(wa, TK_MIN_VERSION.homeScreen);
   return useMemo(
     () => ({
       add: () => {
-        if (!wa?.addToHomeScreen) return false;
-        wa.addToHomeScreen();
-        return true;
+        if (!isSupported || !wa?.addToHomeScreen) return false;
+        try {
+          wa.addToHomeScreen();
+          return true;
+        } catch {
+          return false;
+        }
       },
       check: () =>
         new Promise<TelegramHomeScreenStatus>((resolve) => {
-          if (!wa?.checkHomeScreenStatus) {
+          if (!isSupported || !wa?.checkHomeScreenStatus) {
             resolve("unsupported");
             return;
           }
-          wa.checkHomeScreenStatus((next) => {
-            setStatus(next);
-            resolve(next);
-          });
+          try {
+            wa.checkHomeScreenStatus((next) => {
+              setStatus(next);
+              resolve(next);
+            });
+          } catch {
+            resolve("unsupported");
+          }
         }),
       status,
-      isSupported: !!(wa?.addToHomeScreen || wa?.checkHomeScreenStatus),
+      isSupported,
     }),
-    [status, wa],
+    [isSupported, status, wa],
   );
 }
 
@@ -48,35 +58,46 @@ export interface TKEmojiStatus extends TKTelegramAsyncState<TelegramEmojiStatusE
 export function useEmojiStatus(): TKEmojiStatus {
   const wa = useWebApp();
   const [state, setState] = useState<TKTelegramAsyncState<TelegramEmojiStatusError>>({ status: "idle" });
-  const isSupported = !!(wa?.setEmojiStatus || wa?.requestEmojiStatusAccess);
+  const isSupported =
+    !!(wa?.setEmojiStatus || wa?.requestEmojiStatusAccess) && tkSupports(wa, TK_MIN_VERSION.setEmojiStatus);
   return useMemo(
     () => ({
       set: (customEmojiId, params) => {
         setState({ status: "pending" });
         return new Promise<boolean>((resolve) => {
-          if (!wa?.setEmojiStatus) {
+          if (!isSupported || !wa?.setEmojiStatus) {
             setState({ status: "error", error: "UNSUPPORTED" });
             resolve(false);
             return;
           }
-          wa.setEmojiStatus(customEmojiId, params, (ok) => {
-            setState(ok ? { status: "success" } : { status: "error", error: "UNKNOWN_ERROR" });
-            resolve(!!ok);
-          });
+          try {
+            wa.setEmojiStatus(customEmojiId, params, (ok) => {
+              setState(ok ? { status: "success" } : { status: "error", error: "UNKNOWN_ERROR" });
+              resolve(!!ok);
+            });
+          } catch {
+            setState({ status: "error", error: "UNSUPPORTED" });
+            resolve(false);
+          }
         });
       },
       requestAccess: () => {
         setState({ status: "pending" });
         return new Promise<boolean>((resolve) => {
-          if (!wa?.requestEmojiStatusAccess) {
+          if (!isSupported || !wa?.requestEmojiStatusAccess) {
             setState({ status: "error", error: "UNSUPPORTED" });
             resolve(false);
             return;
           }
-          wa.requestEmojiStatusAccess((allowed) => {
-            setState(allowed ? { status: "success" } : { status: "error", error: "USER_DECLINED" });
-            resolve(!!allowed);
-          });
+          try {
+            wa.requestEmojiStatusAccess((allowed) => {
+              setState(allowed ? { status: "success" } : { status: "error", error: "USER_DECLINED" });
+              resolve(!!allowed);
+            });
+          } catch {
+            setState({ status: "error", error: "UNSUPPORTED" });
+            resolve(false);
+          }
         });
       },
       status: isSupported ? state.status : "unsupported",
@@ -93,18 +114,23 @@ export function useDownloadFile(): {
 } & TKTelegramAsyncState<TelegramDownloadError> {
   const wa = useWebApp();
   const [state, setState] = useState<TKTelegramAsyncState<TelegramDownloadError>>({ status: "idle" });
-  const isSupported = !!wa?.downloadFile;
+  const canNative = !!wa?.downloadFile && tkSupports(wa, TK_MIN_VERSION.downloadFile);
+  const isSupported = canNative;
   return useMemo(
     () => ({
       download: (params) => {
         setState({ status: "pending" });
         return new Promise<boolean>((resolve) => {
-          if (wa?.downloadFile) {
-            wa.downloadFile({ url: params.url, file_name: params.fileName }, (ok) => {
-              setState(ok ? { status: "success" } : { status: "error", error: "DOWNLOAD_FAILED" });
-              resolve(!!ok);
-            });
-            return;
+          if (canNative && wa?.downloadFile) {
+            try {
+              wa.downloadFile({ url: params.url, file_name: params.fileName }, (ok) => {
+                setState(ok ? { status: "success" } : { status: "error", error: "DOWNLOAD_FAILED" });
+                resolve(!!ok);
+              });
+              return;
+            } catch {
+              /* unsupported on this client version — fall through to DOM */
+            }
           }
           if (typeof document === "undefined") {
             setState({ status: "error", error: "UNSUPPORTED" });

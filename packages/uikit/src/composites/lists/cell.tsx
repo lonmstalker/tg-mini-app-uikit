@@ -1,6 +1,6 @@
 import {
   forwardRef,
-  useState,
+  useEffect,
   type ElementType,
   type ForwardedRef,
   type KeyboardEvent,
@@ -13,6 +13,31 @@ import { TKIcon, type TKIconName } from "../../atoms/icons";
 import type { TKPolymorphicProps } from "../../internal/polymorphic";
 
 /* ---------------- Cell ---------------- */
+
+// Press feedback lives in CSS so touch gets an :active flash that releases on
+// tap-up (the old JS mouseenter/leave background stuck after touch). Hover is
+// gated behind a real pointer; tokens.css is shared so we inject this once.
+const TK_CELL_STYLE_ID = "tk-cell-style";
+const TK_CELL_CSS = `
+.tk-cell-tap { transition: background var(--tk-t1) var(--tk-ease); }
+.tk-cell-tap:active { background: var(--tk-surface-2); }
+.tk-cell-tap .tk-cell-chevron { transition: transform var(--tk-t2) var(--tk-spring); }
+@media (hover: hover) {
+  .tk-cell-tap:hover { background: var(--tk-surface-2); }
+  .tk-cell-tap:hover .tk-cell-chevron { transform: translateX(2px); }
+}
+`;
+
+function useCellStyle() {
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    if (document.getElementById(TK_CELL_STYLE_ID)) return;
+    const el = document.createElement("style");
+    el.id = TK_CELL_STYLE_ID;
+    el.textContent = TK_CELL_CSS;
+    document.head.appendChild(el);
+  }, []);
+}
 
 export interface TKCellOwnProps {
   icon?: TKIconName;
@@ -52,14 +77,17 @@ function TKCellImpl(
     onToggle,
     after,
     testId,
+    className,
     ...rest
-  }: TKCellOwnProps & { as?: ElementType } & Record<string, unknown>,
+  }: TKCellOwnProps & { as?: ElementType; className?: string } & Record<string, unknown>,
   ref: ForwardedRef<HTMLElement>,
 ) {
+  useCellStyle();
   const Tag = as ?? "div";
-  const [hover, setHover] = useState(false);
   const hasToggle = toggle !== undefined || defaultToggle !== undefined;
   const actionable = Boolean(onClick) && Tag !== "a" && !hasToggle;
+  // Tappable surfaces (link / click / chevron) get the CSS press feedback.
+  const tappable = Boolean(onClick) || Tag === "a" || Boolean(chevron);
   const activateFromKeyboard = (event: KeyboardEvent<HTMLElement>) => {
     if (!actionable) return;
     if (event.key !== "Enter" && event.key !== " ") return;
@@ -71,12 +99,11 @@ function TKCellImpl(
       {...rest}
       ref={ref as never}
       data-testid={testId}
+      className={[tappable ? "tk-cell-tap" : "", className].filter(Boolean).join(" ") || undefined}
       role={actionable ? "button" : undefined}
       tabIndex={actionable ? 0 : undefined}
       onClick={onClick}
       onKeyDown={activateFromKeyboard}
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
       style={{
         display: "flex",
         alignItems: "center",
@@ -85,8 +112,7 @@ function TKCellImpl(
         cursor: onClick || Tag === "a" ? "pointer" : "default",
         color: "inherit",
         textDecoration: "none",
-        background: hover && (onClick || chevron) ? "var(--tk-surface-2)" : "transparent",
-        transition: "background var(--tk-t1) var(--tk-ease)",
+        background: "transparent",
       }}
     >
       {icon ? (
@@ -154,14 +180,7 @@ function TKCellImpl(
       ) : null}
       {after}
       {chevron ? (
-        <span
-          style={{
-            display: "inline-flex",
-            color: "var(--tk-text-3)",
-            transform: hover ? "translateX(2px)" : "none",
-            transition: "transform var(--tk-t2) var(--tk-spring)",
-          }}
-        >
+        <span className="tk-cell-chevron" style={{ display: "inline-flex", color: "var(--tk-text-3)" }}>
           <TKIcon name="chevronRight" size={16} strokeWidth={2.4} />
         </span>
       ) : null}

@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from "react";
 import type { TelegramInitDataUnsafe, TelegramUser } from "./types";
 import { useWebApp } from "./provider";
+import { TK_MIN_VERSION, tkSupports } from "./version";
 
 /* ---------------- Cloud storage ---------------- */
 
@@ -39,8 +40,40 @@ function getLocalStorage(): Storage | undefined {
   }
 }
 
-export function createStorageApi(storageApi: TelegramStorageApi | undefined, localPrefix: string): TKCloudStorage {
-  if (storageApi?.getItem && storageApi.setItem) {
+/* Telegram CloudStorage limits: key shape and value length. The value cap is
+   4096 CHARACTERS, not bytes — measuring bytes silently rejected multi-byte
+   text (e.g. ~2049 Cyrillic chars) that Telegram would have accepted. */
+const KEY_PATTERN = /^[A-Za-z0-9_-]{1,128}$/;
+const MAX_VALUE_CHARS = 4096;
+
+/** Length in code points (astral chars count once), matching how Telegram
+ *  measures a stored value's character length. */
+function charLength(value: string): number {
+  return [...value].length;
+}
+
+/** Throws a clear `Error` when `key`/`value` fall outside the CloudStorage limits. */
+function assertValidEntry(key: string, value?: string): void {
+  if (!KEY_PATTERN.test(key)) {
+    throw new Error(`Invalid storage key "${key}": expected /^[A-Za-z0-9_-]{1,128}$/.`);
+  }
+  if (value != null && charLength(value) > MAX_VALUE_CHARS) {
+    throw new Error(`Storage value for "${key}" exceeds ${MAX_VALUE_CHARS} characters.`);
+  }
+}
+
+/**
+ * `supported` should fold in version gating (CloudStorage needs Bot API 6.9);
+ * when false we fall back to localStorage even if the methods are present, so
+ * an old client never throws on an unsupported call. Defaults to true for
+ * DeviceStorage/SecureStorage, which are gated by method presence only.
+ */
+export function createStorageApi(
+  storageApi: TelegramStorageApi | undefined,
+  localPrefix: string,
+  supported: boolean = true,
+): TKCloudStorage {
+  if (supported && storageApi?.getItem && storageApi.setItem) {
     return {
       get: (key: string) =>
         new Promise<string | null>((resolve, reject) =>
@@ -59,9 +92,15 @@ export function createStorageApi(storageApi: TelegramStorageApi | undefined, loc
             .catch(reject);
         }),
       set: (key: string, value: string) =>
-        new Promise<void>((resolve, reject) =>
-          storageApi.setItem!(key, value, (err) => (err ? reject(err) : resolve())),
-        ),
+        new Promise<void>((resolve, reject) => {
+          try {
+            assertValidEntry(key, value);
+          } catch (err) {
+            reject(err);
+            return;
+          }
+          storageApi.setItem!(key, value, (err) => (err ? reject(err) : resolve()));
+        }),
       remove: (key: string) =>
         new Promise<void>((resolve, reject) =>
           storageApi.removeItem ? storageApi.removeItem(key, (err) => (err ? reject(err) : resolve())) : resolve(),
@@ -113,6 +152,8 @@ export function createStorageApi(storageApi: TelegramStorageApi | undefined, loc
         }),
       ),
     set: async (key: string, value: string) => {
+      // Validate first so the same input rejects in both environments.
+      assertValidEntry(key, value);
       try {
         getLocalStorage()?.setItem(localPrefix + key, value);
       } catch {
@@ -166,10 +207,14 @@ export function createStorageApi(storageApi: TelegramStorageApi | undefined, loc
 /**
  * Telegram CloudStorage promisified, with a localStorage fallback outside
  * Telegram — the persistence pattern stays identical in both environments.
+ * CloudStorage needs Bot API 6.9; older clients fall back to localStorage.
  */
 export function useCloudStorage(): TKCloudStorage {
   const wa = useWebApp();
-  return useMemo(() => createStorageApi(wa?.CloudStorage, LOCAL_PREFIX), [wa]);
+  return useMemo(
+    () => createStorageApi(wa?.CloudStorage, LOCAL_PREFIX, tkSupports(wa, TK_MIN_VERSION.cloudStorage)),
+    [wa],
+  );
 }
 
 /* ---------------- Init data & misc ---------------- */
@@ -177,12 +222,30 @@ export function useCloudStorage(): TKCloudStorage {
 export interface TKInitData {
   /** Raw query string — the only thing your backend should trust (after validating the hash). */
   raw: string | undefined;
+  /**
+   * Convenience copy of `initDataUnsafe.user`. UNVERIFIED — display only.
+   * Never use it for client-side security, authorization, or trust decisions:
+   * a malicious client can forge it. Send `raw` to your server and authorize
+   * off the user it recovers after validating the initData hash.
+   */
   user: TelegramUser | undefined;
   startParam: string | undefined;
+  /**
+   * Parsed but UNVERIFIED launch parameters. Same warning as `user`: never
+   * gate access or trust any field here on the client — validate `raw`
+   * server-side via its hash first.
+   */
   unsafe: TelegramInitDataUnsafe | undefined;
 }
 
-/** Launch parameters of the mini app (user, start_param). Display-only — validate `raw` server-side. */
+/**
+ * Launch parameters of the mini app (user, start_param).
+ *
+ * Display-only. `user`/`unsafe` are UNVERIFIED and trivially forgeable by a
+ * hostile client — do NOT use them for client-side security or authorization.
+ * The server must validate the raw `initData` via its hash and derive identity
+ * from that, never from these convenience fields.
+ */
 export function useInitData(): TKInitData {
   const wa = useWebApp();
   return useMemo(

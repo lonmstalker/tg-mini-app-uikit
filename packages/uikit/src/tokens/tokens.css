@@ -46,17 +46,22 @@
   --tk-sp-7: 32px;
   --tk-sp-8: 40px;
 
-  /* ---- z-index scale (values match the historical hardcodes) ---- */
+  /* ---- z-index scale ----
+     Overlays 10–999 are a dynamic band: useOverlayLayer hands each open
+     sheet/dialog/action-sheet an incrementing slot (scrim then panel) so a
+     stacked overlay always covers the one beneath it. Toasts, tooltips and
+     anchored poppers sit far above that band so they keep floating over every
+     modal. */
   --tk-z-base: 0;
   --tk-z-sticky: 1;
   --tk-z-header: 2;
-  --tk-z-overlay: 10;   /* scrim */
+  --tk-z-overlay: 10;   /* first overlay scrim (dynamic band base) */
   --tk-z-sheet: 11;     /* sheet / action sheet panel */
   --tk-z-dialog: 11;    /* dialog panel */
-  --tk-z-toast: 12;
-  --tk-z-tooltip: 20;
-  --tk-z-dropdown: 30;  /* select / multiselect lists */
-  --tk-z-popper: 40;
+  --tk-z-toast: 1000;
+  --tk-z-tooltip: 1010;
+  --tk-z-dropdown: 1020;  /* select / multiselect lists */
+  --tk-z-popper: 1030;
 
   /* ---- safe area (device cutouts; combine with useSafeArea for Telegram chrome) ---- */
   --tk-safe-top: env(safe-area-inset-top, 0px);
@@ -163,6 +168,15 @@
   --tk-text-3: var(--tg-theme-hint-color, #646e79);
   --tk-sep: var(--tg-theme-section-separator-color, rgba(19, 28, 38, .08));
   --tk-red: var(--tg-theme-destructive-text-color, #e5484d);
+  /* Telegram exposes no tokens for elevated fills, the blur bar or the scrim,
+     so derive them from the resolved surface/text above. This keeps bars and
+     scrims theme-correct even when `.tk-tg` is used WITHOUT a matching
+     `data-theme` (e.g. a dark client left on the light default), instead of
+     leaking the light surface-2/3/glass through. */
+  --tk-surface-2: color-mix(in srgb, var(--tk-text) 6%, var(--tk-surface));
+  --tk-surface-3: color-mix(in srgb, var(--tk-text) 12%, var(--tk-surface));
+  --tk-glass: color-mix(in srgb, var(--tk-surface) 80%, transparent);
+  --tk-scrim: color-mix(in srgb, #05080c 55%, transparent);
 }
 
 /* ============ shared micro-interaction utilities ============ */

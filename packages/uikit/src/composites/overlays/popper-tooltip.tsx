@@ -13,6 +13,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { tkZ } from "../../internal/dom";
+import { useSafeArea } from "../../foundation/telegram";
 
 /* ---------------- Anchored popper / tooltip ---------------- */
 
@@ -29,6 +30,12 @@ export interface TKPopperProps {
   arrow?: boolean;
   /** Flip to the opposite side when the preferred one has no room (default true). */
   autoFlip?: boolean;
+  /**
+   * ARIA role for the popper surface. Default `"tooltip"` (non-modal anchored
+   * content). Pass `"menu"` for an actionable list, or `"dialog"` for a modal
+   * popover that traps focus.
+   */
+  role?: "tooltip" | "menu" | "dialog";
   testId?: string;
   style?: CSSProperties;
 }
@@ -51,10 +58,13 @@ interface PopperLayout {
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), Math.max(min, max));
 
-export function TKPopper({ open, anchorRef, children, placement: preferred = "bottom", offset = 8, onClose, arrow, autoFlip = true, testId, style }: TKPopperProps) {
+export function TKPopper({ open, anchorRef, children, placement: preferred = "bottom", offset = 8, onClose, arrow, autoFlip = true, role = "tooltip", testId, style }: TKPopperProps) {
   const [layout, setLayout] = useState<PopperLayout | null>(null);
   const [popperSize, setPopperSize] = useState({ width: 220, height: 80 });
   const ref = useRef<HTMLDivElement>(null);
+  // Telegram's chrome inset lives in JS state (not just `env()`), so read it
+  // here to keep the popper out from under the header / home indicator.
+  const { inset, contentInset } = useSafeArea();
   useEffect(() => {
     if (!open) return;
     const sync = () => {
@@ -86,11 +96,26 @@ export function TKPopper({ open, anchorRef, children, placement: preferred = "bo
       });
     };
     sync();
-    window.addEventListener("resize", sync);
-    window.addEventListener("scroll", sync, true);
+    // throttle reflow to one sync per frame; resize/scroll fire in bursts
+    let pending = false;
+    const onReflow = () => {
+      if (pending) return;
+      pending = true;
+      if (typeof requestAnimationFrame === "function") {
+        requestAnimationFrame(() => {
+          pending = false;
+          sync();
+        });
+      } else {
+        pending = false;
+        sync();
+      }
+    };
+    window.addEventListener("resize", onReflow, { passive: true });
+    window.addEventListener("scroll", onReflow, { passive: true, capture: true });
     return () => {
-      window.removeEventListener("resize", sync);
-      window.removeEventListener("scroll", sync, true);
+      window.removeEventListener("resize", onReflow);
+      window.removeEventListener("scroll", onReflow, true);
     };
   }, [anchorRef, open]);
   useLayoutEffect(() => {
@@ -119,38 +144,47 @@ export function TKPopper({ open, anchorRef, children, placement: preferred = "bo
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose, open]);
   if (!open || !layout) return null;
+  // Safe-area insets (device cutouts + Telegram chrome) carve the usable box in
+  // from each edge so a flipped/clamped popper never lands under the header,
+  // the home indicator or a side notch.
+  const safeTop = inset.top + contentInset.top;
+  const safeBottom = inset.bottom + contentInset.bottom;
+  const safeLeft = inset.left + contentInset.left;
+  const safeRight = inset.right + contentInset.right;
   const room: Record<TKPopperPlacement, number> = {
-    top: layout.anchorY,
-    bottom: layout.rootHeight - (layout.anchorY + layout.anchorHeight),
-    left: layout.anchorX,
-    right: layout.rootWidth - (layout.anchorX + layout.anchorWidth),
+    top: layout.anchorY - safeTop,
+    bottom: layout.rootHeight - (layout.anchorY + layout.anchorHeight) - safeBottom,
+    left: layout.anchorX - safeLeft,
+    right: layout.rootWidth - (layout.anchorX + layout.anchorWidth) - safeRight,
   };
   const placement =
     autoFlip && room[preferred] < FLIP_MIN && room[FLIP[preferred]] > room[preferred] ? FLIP[preferred] : preferred;
   const anchorCenterX = layout.anchorX + layout.anchorWidth / 2;
   const anchorCenterY = layout.anchorY + layout.anchorHeight / 2;
   const margin = 8;
-  const maxLeft = layout.rootWidth - popperSize.width - margin;
-  const maxTop = layout.rootHeight - popperSize.height - margin;
+  const minLeft = margin + safeLeft;
+  const minTop = margin + safeTop;
+  const maxLeft = layout.rootWidth - popperSize.width - margin - safeRight;
+  const maxTop = layout.rootHeight - popperSize.height - margin - safeBottom;
   const left =
     placement === "left"
-      ? clamp(layout.anchorX - popperSize.width - offset, margin, maxLeft)
+      ? clamp(layout.anchorX - popperSize.width - offset, minLeft, maxLeft)
       : placement === "right"
-        ? clamp(layout.anchorX + layout.anchorWidth + offset, margin, maxLeft)
-        : clamp(anchorCenterX - popperSize.width / 2, margin, maxLeft);
+        ? clamp(layout.anchorX + layout.anchorWidth + offset, minLeft, maxLeft)
+        : clamp(anchorCenterX - popperSize.width / 2, minLeft, maxLeft);
   const top =
     placement === "top"
-      ? clamp(layout.anchorY - popperSize.height - offset, margin, maxTop)
+      ? clamp(layout.anchorY - popperSize.height - offset, minTop, maxTop)
       : placement === "bottom"
-        ? clamp(layout.anchorY + layout.anchorHeight + offset, margin, maxTop)
-        : clamp(anchorCenterY - popperSize.height / 2, margin, maxTop);
+        ? clamp(layout.anchorY + layout.anchorHeight + offset, minTop, maxTop)
+        : clamp(anchorCenterY - popperSize.height / 2, minTop, maxTop);
   const arrowLeft = clamp(anchorCenterX - left - 6, 10, popperSize.width - 22);
   const arrowTop = clamp(anchorCenterY - top - 6, 10, popperSize.height - 22);
   const node = (
     <div
       ref={ref}
       data-testid={testId}
-      role="dialog"
+      role={role}
       style={
         {
           "--tk-popper-offset": `${offset}px`,
@@ -206,14 +240,33 @@ export interface TKTooltipProps {
 export function TKTooltip({ children, content, placement = "top", disabled, testId, style }: TKTooltipProps) {
   const [open, setOpen] = useState(false);
   const id = useId();
+  const wrapRef = useRef<HTMLSpanElement>(null);
+  const longPressRef = useRef<number>(0);
+  const clearLongPress = () => {
+    if (longPressRef.current) {
+      window.clearTimeout(longPressRef.current);
+      longPressRef.current = 0;
+    }
+  };
   useEffect(() => {
     if (!open) return;
     const onKey = (e: globalThis.KeyboardEvent) => {
       if (e.key === "Escape") setOpen(false);
     };
+    // touch users open via long-press; a tap anywhere else dismisses it
+    const onOutside = (e: globalThis.PointerEvent) => {
+      if (e.pointerType === "mouse") return;
+      if (wrapRef.current?.contains(e.target as Node)) return;
+      setOpen(false);
+    };
     document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
+    document.addEventListener("pointerdown", onOutside);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("pointerdown", onOutside);
+    };
   }, [open]);
+  useEffect(() => clearLongPress, []);
 
   const describedChildren = isValidElement(children)
     ? cloneElement(children as ReactElement<{ "aria-describedby"?: string }>, {
@@ -231,11 +284,26 @@ export function TKTooltip({ children, content, placement = "top", disabled, test
 
   return (
     <span
+      ref={wrapRef}
       data-testid={testId}
       onMouseEnter={() => !disabled && setOpen(true)}
       onMouseLeave={() => setOpen(false)}
       onFocus={() => !disabled && setOpen(true)}
       onBlur={() => setOpen(false)}
+      onPointerDown={(e) => {
+        // touch can't hover — open on a long-press instead
+        if (disabled || e.pointerType === "mouse") return;
+        clearLongPress();
+        longPressRef.current = window.setTimeout(() => setOpen(true), 350);
+      }}
+      onPointerUp={(e) => {
+        if (e.pointerType === "mouse") return;
+        clearLongPress();
+      }}
+      onPointerCancel={(e) => {
+        if (e.pointerType === "mouse") return;
+        clearLongPress();
+      }}
       style={{ position: "relative", display: "inline-flex", ...style }}
     >
       {describedChildren}

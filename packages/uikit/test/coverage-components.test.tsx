@@ -495,7 +495,9 @@ describe("coverage-backed component behaviours", () => {
       />,
     );
 
-    await user.click(screen.getByDisplayValue("06/10/2026"));
+    // The calendar opens from its own trigger now (a field tap stays free for
+    // manual entry); see TKDateInput finding #10.
+    await user.click(screen.getByRole("button", { name: "Open calendar" }));
     await user.click(screen.getByRole("button", { name: "Year" }));
     await user.click(screen.getByRole("option", { name: "1990" }));
     await user.click(screen.getByRole("button", { name: "Month" }));

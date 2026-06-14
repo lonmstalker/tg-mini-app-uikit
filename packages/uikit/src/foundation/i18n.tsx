@@ -86,6 +86,8 @@ export interface TKLocale {
   invalidEmail: string;
   /** TKPhoneInput country-code selector aria label. */
   countryCode: string;
+  /** TKDateInput calendar trigger button aria label. */
+  openCalendar: string;
 }
 
 export const enLocale: TKLocale = {
@@ -133,6 +135,7 @@ export const enLocale: TKLocale = {
   progress: "Progress",
   invalidEmail: "Enter a valid email address",
   countryCode: "Country code",
+  openCalendar: "Open calendar",
 };
 
 /** Ready-made Russian preset. */
@@ -181,6 +184,7 @@ export const ruLocale: TKLocale = {
   progress: "Прогресс",
   invalidEmail: "Введите корректный email",
   countryCode: "Код страны",
+  openCalendar: "Открыть календарь",
 };
 
 const TKLocaleContext = /* @__PURE__ */ createContext<TKLocale>(enLocale);

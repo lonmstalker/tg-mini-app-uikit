@@ -81,7 +81,7 @@ export function TKTabbar({ tabs, value, defaultValue = 0, onChange, safeArea, te
               }}
             >
               <TKIcon name={tab.icon} size={22} strokeWidth={on ? 2.2 : 2} />
-              {tab.count ? (
+              {tab.count != null ? (
                 <span style={{ position: "absolute", top: -3, right: 2 }}>
                   <TKCounter value={tab.count} />
                 </span>

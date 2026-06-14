@@ -1,4 +1,4 @@
-import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, type CSSProperties, type ReactNode } from "react";
 
 /* ---------------- Infinite list ---------------- */
 
@@ -7,6 +7,8 @@ export interface TKInfiniteListProps {
   /** Called when the sentinel becomes visible and `hasMore` is true. */
   onLoadMore: () => void;
   hasMore?: boolean;
+  /** Skip new requests while a page is in flight; re-checks on release. */
+  loading?: boolean;
   /** Custom loader row shown while more content is expected. */
   loader?: ReactNode;
   /** Root margin of the IntersectionObserver (default `240px`). */
@@ -16,23 +18,73 @@ export interface TKInfiniteListProps {
 }
 
 /** IntersectionObserver-driven "load more" wrapper for any list. */
-export function TKInfiniteList({ children, onLoadMore, hasMore = true, loader, margin = "240px", testId, style }: TKInfiniteListProps) {
+export function TKInfiniteList({
+  children,
+  onLoadMore,
+  hasMore = true,
+  loading = false,
+  loader,
+  margin = "240px",
+  testId,
+  style,
+}: TKInfiniteListProps) {
   const sentinelRef = useRef<HTMLDivElement>(null);
   const loadRef = useRef(onLoadMore);
   loadRef.current = onLoadMore;
+  const hasMoreRef = useRef(hasMore);
+  hasMoreRef.current = hasMore;
+  const loadingRef = useRef(loading);
+  loadingRef.current = loading;
+  // One load-more per page: set when a load fires, re-armed when the sentinel
+  // leaves the viewport or `loading` settles. Without it the two observers
+  // below (both seeded on mount with the sentinel already in the 240px margin)
+  // each called onLoadMore, double-fetching the first page.
+  const firedRef = useRef(false);
 
+  const maybeLoad = useCallback(() => {
+    if (loadingRef.current || !hasMoreRef.current || firedRef.current) return;
+    firedRef.current = true;
+    loadRef.current();
+  }, []);
+
+  // Persistent observer for scroll-driven loading. Re-arms the guard whenever
+  // the sentinel scrolls out of view so a later re-entry can load again.
   useEffect(() => {
     const node = sentinelRef.current;
     if (!node || !hasMore || typeof IntersectionObserver === "undefined") return;
     const io = new IntersectionObserver(
       (entries) => {
-        if (entries.some((e) => e.isIntersecting)) loadRef.current();
+        const entry = entries[entries.length - 1];
+        if (entry && !entry.isIntersecting) {
+          firedRef.current = false;
+          return;
+        }
+        maybeLoad();
       },
-      { rootMargin: margin },
+      { rootMargin: margin, threshold: 0 },
     );
     io.observe(node);
     return () => io.disconnect();
-  }, [hasMore, margin]);
+  }, [hasMore, margin, maybeLoad]);
+
+  // When loading settles, re-arm and re-check the CURRENT intersection (a
+  // persistent observer wouldn't re-deliver an unchanged "still visible" state),
+  // so a short page that leaves the sentinel on screen loads the next one.
+  useEffect(() => {
+    if (loading || !hasMore) return;
+    firedRef.current = false;
+    const node = sentinelRef.current;
+    if (!node || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) maybeLoad();
+        io.disconnect();
+      },
+      { rootMargin: margin, threshold: 0 },
+    );
+    io.observe(node);
+    return () => io.disconnect();
+  }, [loading, hasMore, margin, maybeLoad]);
 
   return (
     <div data-testid={testId} style={style}>

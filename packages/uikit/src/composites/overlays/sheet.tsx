@@ -1,7 +1,10 @@
 import { forwardRef, useCallback, useEffect, useId, useImperativeHandle, useRef, useState, type ReactNode, type Ref } from "react";
 import { TKIconButton } from "../../atoms/buttons";
-import { mergeRefs, tkZ } from "../../internal/dom";
+import { mergeRefs } from "../../internal/dom";
 import { tkShouldCommit, useDragGesture } from "../../internal/useDragGesture";
+import { useScrollLock } from "../../internal/useScrollLock";
+import { useOverlayLayer } from "../../internal/useOverlayLayer";
+import { useVerticalSwipeGuard } from "../../internal/useVerticalSwipeGuard";
 import { useTKLocale } from "../../foundation/i18n";
 import { useBackIntercept } from "../../foundation/telegram";
 import { Scrim, useMountTransition, useOverlayA11y } from "./shared";
@@ -67,6 +70,9 @@ export const TKSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSheetProps>(
   snapRef.current = snap;
   const [dragY, setDragY] = useState(0);
   const [dragging, setDragging] = useState(false);
+  // True once the entrance keyframes have played, so a partial drag-and-release
+  // (or any later re-render) never re-runs the full `translateY(104%)→0` slide.
+  const [settled, setSettled] = useState(false);
 
   const closeRequest = useRef(onClose);
   closeRequest.current = onClose;
@@ -75,6 +81,13 @@ export const TKSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSheetProps>(
   }, []);
 
   useOverlayA11y(mounted && !closing, ref, dismissible ? requestClose : undefined);
+  // lock page scroll while the sheet is mounted (covers the closing animation)
+  useScrollLock(mounted);
+  // disable Telegram's swipe-down-to-minimize so a downward drag / overscroll
+  // here steps snap points or closes the sheet instead of collapsing the app
+  useVerticalSwipeGuard(mounted);
+  // stack above any overlay opened before this one (scrim covers it too)
+  const layer = useOverlayLayer(mounted);
   // an open sheet handles the Telegram Back button before the nav stack
   useBackIntercept(mounted && !closing && dismissible, requestClose);
 
@@ -82,6 +95,9 @@ export const TKSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSheetProps>(
   openChangeRef.current = onOpenChange;
   useEffect(() => {
     openChangeRef.current?.(open);
+    // Each fresh open replays the entrance keyframes once; `settled` then pins
+    // the sheet so a drag-release returns via the inline transform/transition.
+    if (open) setSettled(false);
   }, [open]);
 
   useImperativeHandle(
@@ -108,6 +124,8 @@ export const TKSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSheetProps>(
     onEnd: (state) => {
       setDragging(false);
       setDragY(0);
+      // The sheet is settled by this interaction — never replay the entrance.
+      setSettled(true);
       const height = ref.current?.clientHeight ?? 400;
       if (state.delta > 0 && tkShouldCommit(state.delta, state.velocity, height)) {
         // swiping down: step down a snap point, close from the lowest
@@ -120,9 +138,34 @@ export const TKSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSheetProps>(
   });
 
   if (!mounted) return null;
+  // ----- drag-driven geometry -----
+  const dragOffset = dragging || dragY !== 0;
+  // Snap mode drives the HEIGHT live: a downward drag shrinks the sheet, an
+  // upward drag GROWS it (the old `Math.max(0, dragY)` clamp froze upward
+  // drags), clamped between fully closed and the tallest snap point. The sign
+  // is baked into the calc because CSS rejects `calc(40% - -50px)`.
+  const baseSnapPct = snapPoints ? (snapPoints[snap] ?? snapPoints[0]) * 100 : 0;
+  const maxSnapPct = snapPoints ? (snapPoints[snapPoints.length - 1] ?? baseSnapPct / 100) * 100 : 0;
+  const dragPx = -dragY; // > 0 grows, < 0 shrinks
+  const dragSign = dragPx >= 0 ? "+" : "-";
+  const height = snapPoints
+    ? dragOffset
+      ? `clamp(0px, calc(${baseSnapPct}% ${dragSign} ${Math.abs(dragPx)}px), ${maxSnapPct}%)`
+      : `${baseSnapPct}%`
+    : undefined;
+  // Content mode: size to content but cap it so a long sheet can't grow past
+  // the top safe area, and let the body scroll instead of pushing its header
+  // (and the close button) off-screen.
+  const maxHeight = snapPoints ? undefined : "calc(100% - var(--tk-safe-top) - 24px)";
+  const transform = !snapPoints && dragY > 0 ? `translateY(${dragY}px)` : undefined;
+  const animation = closing
+    ? "tk-sheet-down var(--tk-t3) var(--tk-ease) both"
+    : settled || dragOffset
+      ? "none"
+      : "tk-sheet-up var(--tk-t3) var(--tk-spring) both";
   return (
     <>
-      <Scrim closing={closing} onClick={dismissible ? requestClose : undefined} />
+      <Scrim closing={closing} onClick={dismissible ? requestClose : undefined} z={layer.scrimZ} />
       <div
         ref={mergeRefs(ref, forwardedRef)}
         data-testid={testId}
@@ -130,28 +173,35 @@ export const TKSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSheetProps>(
         aria-modal="true"
         aria-labelledby={title ? titleId : undefined}
         tabIndex={-1}
+        onAnimationEnd={(e) => {
+          if (e.animationName === "tk-sheet-up") setSettled(true);
+        }}
         style={{
           outline: "none",
           position: "absolute",
           left: 0,
           right: 0,
           bottom: 0,
-          zIndex: tkZ.sheet,
-          height: snapPoints ? `${(snapPoints[snap] ?? snapPoints[0]) * 100}%` : undefined,
+          zIndex: layer.panelZ,
+          height,
+          maxHeight,
           display: "flex",
           flexDirection: "column",
           background: "var(--tk-surface)",
           borderRadius: "var(--tk-r-xl) var(--tk-r-xl) 0 0",
           boxShadow: "var(--tk-shadow-lg)",
-          padding: "8px 16px 16px",
-          transform: dragY > 0 || (dragging && dragY !== 0) ? `translateY(${Math.max(0, dragY)}px)` : undefined,
+          padding: "8px 16px calc(16px + var(--tk-safe-bottom))",
+          transform,
           transition: dragging
             ? "none"
             : "height var(--tk-t3) var(--tk-spring), transform var(--tk-t2) var(--tk-ease)",
-          animation: `${closing ? "tk-sheet-down" : "tk-sheet-up"} var(--tk-t3) ${closing ? "var(--tk-ease)" : "var(--tk-spring)"} both`,
+          // Entrance keyframes only on the first open (until `settled`); during
+          // a drag the inline transform/height drive the sheet instead, so the
+          // finger tracks it and a partial drag returns without re-sliding in.
+          animation,
         }}
       >
-        <div {...grabDrag} style={{ touchAction: "none", margin: "-8px -16px 0", padding: "8px 16px 0" }}>
+        <div {...grabDrag} style={{ flexShrink: 0, touchAction: "none", margin: "-8px -16px 0", padding: "8px 16px 0" }}>
           {!noGrabber ? (
             <div
               style={{
@@ -179,7 +229,14 @@ export const TKSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSheetProps>(
             </div>
           ) : null}
         </div>
-        <div style={{ flex: snapPoints ? 1 : undefined, minHeight: 0, overflowY: snapPoints ? "auto" : undefined }}>
+        <div
+          style={{
+            flex: snapPoints ? 1 : "0 1 auto",
+            minHeight: 0,
+            overflowY: "auto",
+            overscrollBehavior: "contain",
+          }}
+        >
           {children}
         </div>
       </div>

@@ -80,7 +80,7 @@ export function TKToastProvider({ children, offset = 14, duration = 2400, max = 
           left: 14,
           right: 14,
           top: position === "top" ? offset : undefined,
-          bottom: position === "bottom" ? offset : undefined,
+          bottom: position === "bottom" ? `calc(${offset}px + var(--tk-safe-bottom))` : undefined,
           display: "flex",
           flexDirection: "column",
           gap: 8,
@@ -126,15 +126,27 @@ export function TKToastProvider({ children, offset = 14, duration = 2400, max = 
               {t.text}
             </span>
             {t.action ? (
-              <span
+              <button
+                type="button"
                 onClick={() => {
                   t.onAction?.();
                   dismiss(t.id);
                 }}
-                style={{ fontSize: "var(--tk-fz-sub)", fontWeight: 700, color: "var(--tk-accent-ink)", cursor: "pointer" }}
+                style={{
+                  border: "none",
+                  padding: 0,
+                  margin: 0,
+                  background: "none",
+                  font: "inherit",
+                  fontSize: "var(--tk-fz-sub)",
+                  fontWeight: 700,
+                  color: "var(--tk-accent-ink)",
+                  cursor: "pointer",
+                  flexShrink: 0,
+                }}
               >
                 {t.action}
-              </span>
+              </button>
             ) : null}
           </div>
         ))}

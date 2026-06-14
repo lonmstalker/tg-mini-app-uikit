@@ -1,4 +1,4 @@
-import { useRef, type CSSProperties } from "react";
+import { useEffect, useRef, type CSSProperties } from "react";
 import { tkOptionItem, type TKOption } from "../../foundation/options";
 import { useControllable } from "../../internal/useControllable";
 import { tkRovingNext, tkTabbableIndex } from "../../internal/roving";
@@ -12,12 +12,26 @@ export interface TKCategoryTabsProps {
   testId?: string;
 }
 
+function prefersReducedMotion(): boolean {
+  return typeof window !== "undefined" && !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+}
+
 export function TKCategoryTabs({ tabs, value, defaultValue = 0, onChange, style, testId }: TKCategoryTabsProps) {
   const [active, setActive] = useControllable(value, defaultValue, onChange);
   const items = tabs.map(tkOptionItem);
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
   const disabledAt = (index: number) => !!items[index]?.disabled;
   const tabbable = tkTabbableIndex(active, items.length, disabledAt);
+
+  // Keep the active tab visible as the selection moves through the scroller.
+  // `scrollIntoView` is optional-chained — jsdom and very old WebViews omit it.
+  useEffect(() => {
+    refs.current[active]?.scrollIntoView?.({
+      inline: "center",
+      block: "nearest",
+      behavior: prefersReducedMotion() ? "auto" : "smooth",
+    });
+  }, [active]);
 
   return (
     <div
@@ -29,6 +43,7 @@ export function TKCategoryTabs({ tabs, value, defaultValue = 0, onChange, style,
         return (
           <button
             type="button"
+            aria-current={on ? true : undefined}
             key={item.value}
             ref={(el) => {
               refs.current[index] = el;
@@ -37,6 +52,9 @@ export function TKCategoryTabs({ tabs, value, defaultValue = 0, onChange, style,
             disabled={item.disabled}
             onClick={() => setActive(index)}
             onKeyDown={(event) => {
+              // Category tabs use selection-follows-focus: arrows move the active
+              // tab (and focus) together. (Roving-focus-without-selection lives in
+              // TKChipGroup instead.)
               const next = tkRovingNext(event.key, index, items.length, disabledAt, "horizontal");
               if (next == null) return;
               event.preventDefault();

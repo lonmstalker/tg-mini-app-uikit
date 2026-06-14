@@ -14,10 +14,10 @@ export interface TKCalendarProps {
   value?: Date | null;
   defaultValue?: Date | null;
   onChange?: (date: Date) => void;
-  /** Selected range (range mode). */
+  /** Selected range (range mode). `null` is emitted when a new range starts. */
   range?: TKDateRange | null;
   defaultRange?: TKDateRange | null;
-  onRangeChange?: (range: TKDateRange) => void;
+  onRangeChange?: (range: TKDateRange | null) => void;
   /** Visible month (any date within it). */
   month?: Date;
   defaultMonth?: Date;
@@ -38,6 +38,13 @@ export interface TKCalendarProps {
 
 function startOfDay(d: Date): Date {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+/** `Date` → `yyyy-mm-dd` (local) for a deterministic `data-tk-date` selector. */
+function isoDate(d: Date): string {
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${m}-${day}`;
 }
 
 function sameDay(a: Date | null | undefined, b: Date | null | undefined): boolean {
@@ -92,17 +99,21 @@ export function TKCalendar({
   const locale = useTKLocale();
   const resolvedLang = lang ?? documentLang();
   const [selected, setSelected] = useControllable<Date | null>(value, defaultValue, onChange as (d: Date | null) => void);
-  const [selectedRange, setSelectedRange] = useControllable<TKDateRange | null>(
-    range,
-    defaultRange,
-    onRangeChange as (r: TKDateRange | null) => void,
-  );
+  const [selectedRange, setSelectedRange] = useControllable<TKDateRange | null>(range, defaultRange, onRangeChange);
   const [pendingStart, setPendingStart] = useState<Date | null>(null);
+  // True while the `null` currently flowing through the controlled `range` prop
+  // is one this calendar emitted itself (first click of a new range), so the
+  // reset effect below can ignore it instead of wiping the pending start.
+  const selfRangeResetRef = useRef(false);
   const initialMonth = defaultMonth ?? (mode === "range" ? selectedRange?.[0] : selected) ?? new Date();
   const [visibleMonth, setVisibleMonth] = useControllable<Date>(month, startOfDay(initialMonth), onMonthChange);
   const [focusDate, setFocusDate] = useState<Date | null>(null);
   const [picker, setPicker] = useState<"none" | "month" | "year">("none");
   const gridRef = useRef<HTMLDivElement>(null);
+  // Only move DOM focus into the grid when navigation was keyboard-initiated, so
+  // arrow-button / part-selector month changes don't steal focus.
+  const keyboardNavRef = useRef(false);
+  const today = startOfDay(new Date());
 
   const fmtDay = useMemo(
     () => new Intl.DateTimeFormat(resolvedLang, { month: "long", day: "numeric", year: "numeric" }),
@@ -143,6 +154,7 @@ export function TKCalendar({
     }
     if (!pendingStart) {
       setPendingStart(d);
+      selfRangeResetRef.current = true;
       setSelectedRange(null);
     } else {
       const [a, b] = pendingStart <= d ? [pendingStart, d] : [d, pendingStart];
@@ -153,8 +165,17 @@ export function TKCalendar({
 
   const setMonthPart = (year: number, monthIndex: number) => {
     setPicker("none");
+    keyboardNavRef.current = false;
     setFocusDate(null);
     setVisibleMonth(new Date(year, monthIndex, 1));
+  };
+
+  // Pointer-driven month change (arrow buttons): don't steal focus into the grid.
+  const stepMonth = (delta: number) => {
+    setPicker("none");
+    keyboardNavRef.current = false;
+    setFocusDate(null);
+    setVisibleMonth(addMonths(visibleMonth, delta));
   };
 
   const moveFocus = (from: Date, e: KeyboardEvent) => {
@@ -173,18 +194,34 @@ export function TKCalendar({
       return;
     } else return;
     e.preventDefault();
+    keyboardNavRef.current = true;
     setFocusDate(next);
     if (next.getMonth() !== visibleMonth.getMonth() || next.getFullYear() !== visibleMonth.getFullYear()) {
       setVisibleMonth(new Date(next.getFullYear(), next.getMonth(), 1));
     }
   };
 
-  // focus follows keyboard navigation across month switches
+  // Focus follows keyboard navigation across month switches, but only when the
+  // last navigation was keyboard-initiated — arrow-button / part-selector month
+  // changes (which set `keyboardNavRef` false) must not pull focus into the grid.
   useEffect(() => {
-    if (!focusDate || !gridRef.current) return;
-    const btn = gridRef.current.querySelector<HTMLButtonElement>(`[data-tk-date="${focusDate.toDateString()}"]`);
+    if (!keyboardNavRef.current || !focusDate || !gridRef.current) return;
+    const btn = gridRef.current.querySelector<HTMLButtonElement>(`[data-tk-date="${isoDate(focusDate)}"]`);
     btn?.focus();
   }, [focusDate, visibleMonth]);
+
+  // Reset the in-progress range start when the EXTERNAL range prop changes, so a
+  // controlled reset doesn't leave a dangling pending pick. Ignore the `null`
+  // this calendar emits itself on the first click of a new range — in
+  // controlled mode that round-trips through `range` and would otherwise wipe
+  // the start we just set, making the range impossible to close on re-select.
+  useEffect(() => {
+    if (selfRangeResetRef.current) {
+      selfRangeResetRef.current = false;
+      return;
+    }
+    setPendingStart(null);
+  }, [range]);
 
   const inRange = (d: Date): boolean => {
     const r = selectedRange;
@@ -212,10 +249,7 @@ export function TKCalendar({
           size="sm"
           variant="plain"
           label={locale.prevMonth}
-          onClick={() => {
-            setPicker("none");
-            setVisibleMonth(addMonths(visibleMonth, -1));
-          }}
+          onClick={() => stepMonth(-1)}
         />
         {partSelectors ? (
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, minWidth: 0, flex: "1 1 auto" }}>
@@ -247,10 +281,7 @@ export function TKCalendar({
           size="sm"
           variant="plain"
           label={locale.nextMonth}
-          onClick={() => {
-            setPicker("none");
-            setVisibleMonth(addMonths(visibleMonth, 1));
-          }}
+          onClick={() => stepMonth(1)}
         />
       </div>
       {picker === "year" ? (
@@ -274,7 +305,7 @@ export function TKCalendar({
           onPick={(monthIndex) => setMonthPart(visibleMonth.getFullYear(), monthIndex)}
         />
       ) : (
-        <div ref={gridRef} role="grid" aria-label={fmtMonth.format(visibleMonth)}>
+        <div ref={gridRef} role="grid" aria-label={fmtMonth.format(visibleMonth)} aria-multiselectable={mode === "range" || undefined}>
         <div role="row" style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", marginBottom: 4 }}>
           {weekdayLabels.map((w) => (
             <span
@@ -300,41 +331,61 @@ export function TKCalendar({
               const disabled = isDisabled(d);
               const sel = isSelected(d);
               const mid = mode === "range" && inRange(d) && !sel;
+              const isToday = sameDay(d, today);
               return (
                 <span key={d.getTime()} role="gridcell" style={{ display: "flex", justifyContent: "center", padding: "1px 0" }}>
                   <button
                     type="button"
-                    data-tk-date={d.toDateString()}
+                    data-tk-date={isoDate(d)}
                     aria-label={fmtDay.format(d)}
-                    aria-pressed={sel}
+                    aria-selected={sel}
+                    aria-current={isToday ? "date" : undefined}
                     disabled={disabled}
                     tabIndex={sameDay(d, tabbableDate) ? 0 : -1}
                     onClick={() => pick(d)}
                     onKeyDown={(e) => moveFocus(d, e)}
                     className={disabled ? undefined : "tk-press"}
                     style={{
+                      position: "relative",
                       width: 38,
                       height: 38,
                       border: "none",
                       borderRadius: mid ? 0 : "var(--tk-r-pill)",
                       fontFamily: "inherit",
                       fontSize: "var(--tk-fz-sub)",
-                      fontWeight: sel ? 700 : 500,
+                      fontWeight: sel || isToday ? 700 : 500,
                       fontVariantNumeric: "tabular-nums",
                       background: sel ? "var(--tk-accent)" : mid ? "var(--tk-accent-12)" : "transparent",
                       color: disabled
                         ? "var(--tk-text-3)"
                         : sel
                           ? "var(--tk-on-accent)"
-                          : outside
-                            ? "var(--tk-text-3)"
-                            : "var(--tk-text)",
+                          : isToday
+                            ? "var(--tk-accent-ink)"
+                            : outside
+                              ? "var(--tk-text-3)"
+                              : "var(--tk-text)",
                       opacity: disabled ? 0.5 : 1,
                       cursor: disabled ? "default" : "pointer",
                       textDecoration: disabled ? "line-through" : "none",
                     }}
                   >
                     {d.getDate()}
+                    {isToday && !sel ? (
+                      <span
+                        aria-hidden="true"
+                        style={{
+                          position: "absolute",
+                          bottom: 5,
+                          left: "50%",
+                          transform: "translateX(-50%)",
+                          width: 4,
+                          height: 4,
+                          borderRadius: "50%",
+                          background: "var(--tk-accent)",
+                        }}
+                      />
+                    ) : null}
                   </button>
                 </span>
               );
