@@ -5,6 +5,7 @@
 **iOS-flavored React UI kit for Telegram Mini Apps** — design tokens, springy motion,
 production-shaped components and a full Bot API 9.6 WebApp platform layer with a browser-testable Telegram mock.
 
+[![npm](https://img.shields.io/npm/v/tg-mini-app-uikit?logo=npm&logoColor=white&color=cb3837)](https://www.npmjs.com/package/tg-mini-app-uikit)
 [![CI](https://github.com/lonmstalker/tg-mini-app-uikit/actions/workflows/ci.yml/badge.svg)](https://github.com/lonmstalker/tg-mini-app-uikit/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)](packages/uikit)
