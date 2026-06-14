@@ -50,16 +50,26 @@ function isAllowedDate(d: Date, min?: Date, max?: Date, disabledDates?: (date: D
  * from `Intl.DateTimeFormat.formatToParts` so manual entry matches what the
  * field displays (e.g. en-US shows MM/DD/YYYY, ru-RU shows DD.MM.YYYY).
  */
+// Cache the resolved order per locale so the Intl formatter is built once per
+// language, not on every keystroke that parses a manual date.
+const localeOrderCache = new Map<string, { dayFirst: boolean }>();
+
 function localeDateOrder(lang: string): { dayFirst: boolean } {
+  const cached = localeOrderCache.get(lang);
+  if (cached) return cached;
+  let result: { dayFirst: boolean } = { dayFirst: true };
   try {
     const parts = new Intl.DateTimeFormat(lang, { day: "2-digit", month: "2-digit", year: "numeric" }).formatToParts(
       new Date(2026, 0, 1),
     );
-    const order = parts.filter((p) => p.type === "day" || p.type === "month").map((p) => p.type);
-    return { dayFirst: order[0] !== "month" };
+    // single pass: first day/month part decides the order
+    const first = parts.find((p) => p.type === "day" || p.type === "month");
+    result = { dayFirst: first?.type !== "month" };
   } catch {
-    return { dayFirst: true };
+    /* unknown locale — fall back to day-first */
   }
+  localeOrderCache.set(lang, result);
+  return result;
 }
 
 /** Build a real `Date` from y/m/d, rejecting overflow (e.g. month 13, day 32). */

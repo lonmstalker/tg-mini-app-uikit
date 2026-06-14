@@ -87,8 +87,10 @@ describe("forms: date / calendar", () => {
 
     // Both endpoints selected → the second click closed the range instead of
     // being swallowed as a new start (the self-emitted null no longer wipes it).
-    expect(screen.getByRole("button", { name: /January 5, 2026/ })).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByRole("button", { name: /January 8, 2026/ })).toHaveAttribute("aria-selected", "true");
+    // aria-selected lives on the gridcell (valid for the grid role).
+    const cellOf = (name: RegExp) => screen.getByRole("button", { name }).closest('[role="gridcell"]');
+    expect(cellOf(/January 5, 2026/)).toHaveAttribute("aria-selected", "true");
+    expect(cellOf(/January 8, 2026/)).toHaveAttribute("aria-selected", "true");
   });
 });
 

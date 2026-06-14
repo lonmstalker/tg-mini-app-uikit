@@ -66,6 +66,8 @@ export function TKGallery({ children, onPageChange, dots = true, gap = 10, edgeI
     <div data-testid={testId} style={{ display: "flex", flexDirection: "column", gap: 10, ...style }}>
       <div
         ref={trackRef}
+        role="group"
+        aria-roledescription="carousel"
         tabIndex={0}
         onScroll={syncPage}
         onKeyDown={onKeyDown}

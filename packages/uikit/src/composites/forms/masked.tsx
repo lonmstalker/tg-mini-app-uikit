@@ -194,24 +194,34 @@ export interface TKPhoneInputProps extends Omit<TKMaskedInputProps, "mask"> {
 }
 
 export const TKPhoneInput = /* @__PURE__ */ forwardRef<HTMLInputElement, TKPhoneInputProps>(function TKPhoneInput(
-  { defaultCountry = "+7", numberMask, countrySelect, countries, lang, value, defaultValue = "", onChange, ...rest },
+  props,
   ref,
 ) {
-  if (countrySelect) {
-    return (
-      <TKPhoneCountryField
-        ref={ref}
-        defaultCountry={defaultCountry}
-        numberMask={numberMask}
-        countries={countries}
-        lang={lang}
-        value={value}
-        defaultValue={defaultValue}
-        onChange={onChange}
-        {...rest}
-      />
-    );
-  }
+  // Dispatch to a dedicated component per variant: the country picker and the
+  // plain field call different hooks, so branching here (not after a hook) keeps
+  // the hook order stable across renders.
+  return props.countrySelect ? (
+    <TKPhoneCountryField ref={ref} {...props} />
+  ) : (
+    <TKPhoneSimpleField ref={ref} {...props} />
+  );
+});
+
+/** Single-field phone variant: one masked `<input>` with a `+dial ` prefix. */
+const TKPhoneSimpleField = /* @__PURE__ */ forwardRef<HTMLInputElement, TKPhoneInputProps>(function TKPhoneSimpleField(
+  {
+    defaultCountry = "+7",
+    numberMask,
+    value,
+    defaultValue = "",
+    onChange,
+    countrySelect: _countrySelect,
+    countries: _countries,
+    lang: _lang,
+    ...rest
+  },
+  ref,
+) {
   const defaultDial = normalizeDialCode(defaultCountry);
   const mask = numberMask ?? "(###) ###-##-##";
   const initial = formatPhoneValue(defaultValue, defaultDial, mask).formatted;

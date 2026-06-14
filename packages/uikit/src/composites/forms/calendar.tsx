@@ -333,12 +333,16 @@ export function TKCalendar({
               const mid = mode === "range" && inRange(d) && !sel;
               const isToday = sameDay(d, today);
               return (
-                <span key={d.getTime()} role="gridcell" style={{ display: "flex", justifyContent: "center", padding: "1px 0" }}>
+                <span
+                  key={d.getTime()}
+                  role="gridcell"
+                  aria-selected={sel}
+                  style={{ display: "flex", justifyContent: "center", padding: "1px 0" }}
+                >
                   <button
                     type="button"
                     data-tk-date={isoDate(d)}
                     aria-label={fmtDay.format(d)}
-                    aria-selected={sel}
                     aria-current={isToday ? "date" : undefined}
                     disabled={disabled}
                     tabIndex={sameDay(d, tabbableDate) ? 0 : -1}
