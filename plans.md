@@ -43,6 +43,7 @@ After this work, a reviewer should be able to open Trailhead in Telegram, comple
 - [x] (2026-06-15 15:05Z) Rebuilt and redeployed the sixth feedback pass to `visitka`; public smoke confirmed `https://201-51-25-123.sslip.io/trailhead/`, the new `index-DdkZB0Gy.js` asset, and the deployed Trips pull-to-refresh indicator in mock Telegram mode.
 - [x] (2026-06-15 16:13Z) Fixed the seventh feedback pass locally: pull-to-refresh now renders a visible 38px indicator as soon as the pull starts, native MainButton click handlers ignore raw Telegram click events while disabled/loading/hidden, and DateSlot cannot navigate to checkout before a time is selected.
 - [x] (2026-06-15 16:24Z) Rebuilt and redeployed the seventh feedback pass to `visitka`; public smoke confirmed `https://201-51-25-123.sslip.io/trailhead/`, the new `index-i-t-ooR-.js` asset, and a deployed 38px Trips pull-to-refresh indicator in mock Telegram mode.
+- [x] (2026-06-15 16:29Z) Pushed branch `codex/trailhead-polish-plans` and opened draft PR https://github.com/lonmstalker/tg-mini-app-uikit/pull/2. It stays draft because the only remaining acceptance item is manual visual validation inside a real Telegram client.
 - [ ] Re-run real Telegram visual verification when a real Telegram client plus HTTPS Mini App URL are available.
 
 
@@ -324,6 +325,7 @@ Verification evidence:
   - `rsync -az --delete examples/trailhead/dist/ visitka:/opt/visitka/trailhead-dist/` completed successfully.
   - `curl -fsS https://201-51-25-123.sslip.io/trailhead/` returned the deployed HTML referencing `/trailhead/assets/index-i-t-ooR-.js`, and that asset returns `HTTP/2 200`.
   - Public Playwright smoke against `https://201-51-25-123.sslip.io/trailhead/?mock=1&fast=1` passed: onboarding dismissed, Trips opened, and the deployed pull-to-refresh indicator measured `38x38`.
+  - Draft PR opened: https://github.com/lonmstalker/tg-mini-app-uikit/pull/2.
 
 Remaining blocker: real Telegram visual validation has not been performed by this agent. The deployed URL is now available through the existing bot's `/demo` command and the sent WebApp button, so the remaining manual step is to open Trailhead in Telegram and verify native Main Button, native Back Button, safe areas, haptics, TON wallet modal, and Stars payment UI in the real client.
 
