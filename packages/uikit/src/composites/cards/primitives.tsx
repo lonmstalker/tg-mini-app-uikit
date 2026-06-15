@@ -17,13 +17,16 @@ export interface TKCardProps {
   onClick?: () => void;
   padding?: number | string;
   inset?: boolean;
+  /** Canonical hairline outline. Use this instead of an ad-hoc inline `border`
+   * so every outlined card across the app shares one separator value. */
+  outlined?: boolean;
   testId?: string;
   className?: string;
   style?: CSSProperties;
 }
 
 export const TKCard = /* @__PURE__ */ forwardRef<HTMLDivElement, TKCardProps>(function TKCard(
-  { children, onClick, interactive, padding = 14, inset = true, testId, className, style },
+  { children, onClick, interactive, padding = 14, inset = true, outlined, testId, className, style },
   ref,
 ) {
   const isInteractive = interactive ?? !!onClick;
@@ -46,6 +49,7 @@ export const TKCard = /* @__PURE__ */ forwardRef<HTMLDivElement, TKCardProps>(fu
         background: "var(--tk-surface)",
         borderRadius: inset ? "var(--tk-r-lg)" : 0,
         boxShadow: inset ? "var(--tk-shadow-sm)" : "none",
+        border: outlined ? ".5px solid var(--tk-sep)" : undefined,
         padding,
         cursor: onClick ? "pointer" : "default",
         outline: "none",

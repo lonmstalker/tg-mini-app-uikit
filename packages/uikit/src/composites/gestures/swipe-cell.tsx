@@ -20,6 +20,12 @@ export interface TKSwipeCellProps {
   trailing?: TKSwipeAction[];
   /** A swipe across most of the row fires the first action of that side. */
   fullSwipe?: boolean;
+  /**
+   * Corner radius of the row. The cell clips with `overflow:hidden` to mask the
+   * sliding actions, so wrapping a rounded card needs this to match — otherwise
+   * the card's corners are clipped square. Default 0 (flat list cells).
+   */
+  radius?: string | number;
   testId?: string;
   style?: CSSProperties;
 }
@@ -40,7 +46,7 @@ const OPEN_EVENT = "tk-swipecell-open";
  * trailing actions. Opening one row closes its siblings; a full swipe fires
  * the first action. The buttons stay keyboard-reachable without gestures.
  */
-export function TKSwipeCell({ children, leading = [], trailing = [], fullSwipe = true, testId, style }: TKSwipeCellProps) {
+export function TKSwipeCell({ children, leading = [], trailing = [], fullSwipe = true, radius, testId, style }: TKSwipeCellProps) {
   const haptics = useOptionalHaptics();
   const [offset, setOffset] = useState(0);
   const [dragging, setDragging] = useState(false);
@@ -160,6 +166,7 @@ export function TKSwipeCell({ children, leading = [], trailing = [], fullSwipe =
       style={{
         position: "relative",
         overflow: "hidden",
+        borderRadius: radius,
         touchAction: "pan-y",
         userSelect: "none",
         WebkitUserSelect: "none",

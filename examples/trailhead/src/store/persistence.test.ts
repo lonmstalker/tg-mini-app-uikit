@@ -49,7 +49,7 @@ describe("persistence", () => {
       onboardingDone: true,
       streak: { xp: 999, dayOfWeek: 6 },
       wallet: { connected: true, address: "EQc…demo", trailPassActive: true },
-      themePrefs: { accent: "#e5484d", roundness: 0.6, motion: "smooth", fontSize: 17, rtl: true, lang: "ru", colorScheme: "dark", cutouts: true },
+      themePrefs: { accent: "#e5484d", roundness: 0.6, motion: "smooth", fontSize: 17, lang: "ru", colorScheme: "dark" },
       pin: "4821",
     };
     await savePersisted(null, state, b.handle);

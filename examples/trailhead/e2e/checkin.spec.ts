@@ -91,8 +91,9 @@ test("trips: swipe to cancel shows an Undo toast that restores the booking", asy
   await page.goto("/?fast=1");
   await openTrips(page, "Trips");
 
-  await expect(page.getByTestId("trips-gesture-hints")).toContainText("Swipe");
-  await expect(page.getByTestId("trips-gesture-hints")).toContainText("Pull");
+  // First-run gesture coach (shown once) explains the pull/swipe affordances.
+  await expect(page.getByTestId("trips-coach")).toContainText("Swipe");
+  await expect(page.getByTestId("trips-coach")).toContainText("Pull");
 
   // Reveal the trailing actions with a swipe (fullSwipe is off, so the swipe
   // opens the rail rather than auto-firing the first action), then tap Cancel.
@@ -107,6 +108,27 @@ test("trips: swipe to cancel shows an Undo toast that restores the booking", asy
 
   // Undo restores the booking.
   await expect(page.getByTestId("trip-card-bk-seed")).toBeVisible();
+});
+
+test("trips: reschedule opens a real date/slot screen and updates the booking", async ({ page }) => {
+  await page.goto("/?fast=1");
+  await openTrips(page, "Trips");
+
+  // Swipe → tap Reschedule → a real screen, not a "coming soon" toast.
+  await swipeLeft(page, "trip-cell-bk-seed");
+  await page.getByTestId("trip-cell-bk-seed").getByText("Reschedule").click();
+  await expect(page.getByTestId("panel-trips-reschedule")).toBeVisible();
+  // Confirm is disabled until the user actually changes the slot.
+  await expect(page.getByTestId("reschedule-confirm")).toBeDisabled();
+
+  // Seed is 09:00; cedar-loop also offers a free 13:00.
+  await page.getByTestId("reschedule-slots").getByRole("button", { name: "13:00", exact: true }).click();
+  await expect(page.getByTestId("reschedule-confirm")).toBeEnabled();
+  await page.getByTestId("reschedule-confirm").click();
+
+  // Back on the list, the booking now shows the new time.
+  await expect(page.getByTestId("panel-trips-list")).toBeVisible();
+  await expect(page.getByTestId("trip-card-bk-seed")).toContainText("13:00");
 });
 
 test("trips: pull-to-refresh indicator is reachable from the top of the page", async ({ page }) => {

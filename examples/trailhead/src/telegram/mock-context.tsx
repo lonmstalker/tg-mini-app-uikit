@@ -1,11 +1,11 @@
 import { createContext, use, type ReactNode } from "react";
-import type { MockTelegram } from "tg-mini-app-uikit/testing";
+import type { MockTelegram } from "@tg-mini-app/telegram/testing";
 
 /*
  * Local dev/e2e can inject a mock bridge; production uses a real
  * `window.Telegram.WebApp` when present and otherwise runs as an honest browser
- * fallback. Platform Lab reaches for the live-control methods on the handle
- * (`setColorScheme`, `setDeviceCutouts`, ...) only in mock mode.
+ * fallback. AppFrame reaches for the live-control methods on the handle
+ * (`setColorScheme`, ...) only in mock mode.
  */
 const MockContext = createContext<MockTelegram | null>(null);
 

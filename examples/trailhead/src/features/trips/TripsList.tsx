@@ -1,6 +1,7 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   TKBookingCard,
+  TKButton,
   TKCard,
   TKEmptyState,
   TKPage,
@@ -8,6 +9,7 @@ import {
   TKSwipeCell,
   TKText,
   TKTitle,
+  useDeviceStorage,
   useNav,
   useTKToast,
 } from "tg-mini-app-uikit";
@@ -24,6 +26,53 @@ type BookingView = ReturnType<typeof bookingView>;
 // swipes during the pull (useVerticalSwipeGuard), so it never minimizes the
 // app. There is no remote source here, so we just resolve after a beat.
 const refreshTrips = () => new Promise<void>((resolve) => setTimeout(resolve, 650));
+
+const TRIPS_COACH_KEY = "th_trips_coach";
+
+/*
+ * One-time gesture onboarding for the trips list: surfaces the pull/swipe hints
+ * once, then persists a "seen" flag so it never returns. Non-blocking on
+ * purpose (a card, not a scrim) so the swipe it teaches stays usable right away.
+ */
+function TripsCoach() {
+  const t = useT();
+  const device = useDeviceStorage();
+  const [seen, setSeen] = useState<boolean | null>(null);
+  useEffect(() => {
+    let alive = true;
+    device
+      .get(TRIPS_COACH_KEY)
+      .then((v) => alive && setSeen(!!v))
+      .catch(() => alive && setSeen(false));
+    return () => {
+      alive = false;
+    };
+  }, [device]);
+
+  if (seen !== false) return null;
+  const dismiss = () => {
+    setSeen(true);
+    void device.set(TRIPS_COACH_KEY, "1").catch(() => {});
+  };
+  return (
+    <TKCard outlined padding={12} testId="trips-coach">
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <TKText as="div" weight={700}>
+          {t("trips.coach.title")}
+        </TKText>
+        <TKText as="div" size="footnote" tone="secondary">
+          {t("trips.coach.pull.text")}
+        </TKText>
+        <TKText as="div" size="footnote" tone="secondary">
+          {t("trips.coach.swipe.text")}
+        </TKText>
+        <TKButton size="sm" variant="tonal" onClick={dismiss} testId="trips-coach-dismiss" style={{ alignSelf: "flex-start" }}>
+          {t("onboarding.done")}
+        </TKButton>
+      </div>
+    </TKCard>
+  );
+}
 
 function TripBookingRow({
   booking,
@@ -54,6 +103,9 @@ function TripBookingRow({
   return (
     <TKSwipeCell
       testId={`trip-cell-${booking.id}`}
+      // Match the booking card's radius so the swipe cell's overflow clip keeps
+      // the rounded corners (and the Platform Lab roundness slider shows through).
+      radius="var(--tk-r-lg)"
       // No full-swipe: the destructive Cancel must be a deliberate tap on the
       // revealed rail, never auto-fired by an over-swipe.
       fullSwipe={false}
@@ -75,7 +127,10 @@ function TripBookingRow({
       <TKBookingCard
         testId={`trip-card-${booking.id}`}
         initials={view.emoji}
-        avatarTone={`hsl(${view.hue} 50% 52%)`}
+        avatarShape="rounded"
+        // Same gradient thumbnail formula as the discover feed tile, so the
+        // identical hike reads as one card across browse and booked.
+        avatarTone={`linear-gradient(135deg, hsl(${view.hue} 55% 62%), hsl(${(view.hue + 40) % 360} 50% 48%))`}
         name={view.title}
         subtitle={view.location}
         date={date}
@@ -129,16 +184,7 @@ export function TripsList() {
     <TKPullToRefresh onRefresh={refreshTrips} testId="trips-refresh">
       <TKPage testId="panel-trips-list">
         <TKTitle level={1}>{t("trips.title")}</TKTitle>
-        <TKCard padding={10} testId="trips-gesture-hints" style={{ border: "0.5px solid var(--tk-sep)" }}>
-          <div style={{ display: "grid", gap: 4 }}>
-            <TKText as="div" size="footnote" tone="secondary">
-              {t("trips.hint.pull")}
-            </TKText>
-            <TKText as="div" size="footnote" tone="secondary">
-              {t("trips.hint.swipe")}
-            </TKText>
-          </div>
-        </TKCard>
+        <TripsCoach />
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {bookings.map((booking) => {
             const view = bookingView(booking.experienceId, lang);
@@ -151,7 +197,7 @@ export function TripsList() {
                 checkInLabel={t("trips.action.checkIn")}
                 rescheduleLabel={t("trips.swipe.reschedule")}
                 cancelLabel={t("trips.swipe.cancel")}
-                onReschedule={() => toast.show({ text: t("trips.rescheduleToast"), icon: "calendar" })}
+                onReschedule={() => nav.push("reschedule", { id: booking.id })}
                 onCancel={cancel}
                 onCheckIn={() => nav.push("detail", { id: booking.id })}
               />

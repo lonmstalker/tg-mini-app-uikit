@@ -10,10 +10,12 @@ export interface TKAvatarProps {
   alt?: string;
   /** Presence dot: `online` (green), `offline` (gray) or a custom node. */
   status?: "online" | "offline" | ReactNode;
+  /** Silhouette: a circle (people, default) or a rounded square (place/media thumbnails). */
+  shape?: "circle" | "rounded";
   testId?: string;
 }
 
-export function TKAvatar({ initials = "", size = 40, tone, src, alt = "", status, testId }: TKAvatarProps) {
+export function TKAvatar({ initials = "", size = 40, tone, src, alt = "", status, shape = "circle", testId }: TKAvatarProps) {
   const [failed, setFailed] = useState(false);
   useEffect(() => setFailed(false), [src]);
   if (status != null) {
@@ -39,7 +41,7 @@ export function TKAvatar({ initials = "", size = 40, tone, src, alt = "", status
       );
     return (
       <span data-testid={testId} style={{ position: "relative", display: "inline-flex", width: size, height: size, flexShrink: 0 }}>
-        <TKAvatar initials={initials} size={size} tone={tone} src={src} alt={alt} />
+        <TKAvatar initials={initials} size={size} tone={tone} src={src} alt={alt} shape={shape} />
         {dot}
       </span>
     );
@@ -54,7 +56,7 @@ export function TKAvatar({ initials = "", size = 40, tone, src, alt = "", status
         justifyContent: "center",
         width: size,
         height: size,
-        borderRadius: "50%",
+        borderRadius: shape === "rounded" ? "var(--tk-r-md)" : "50%",
         overflow: "hidden",
         background: tone || "var(--tk-accent-grad)",
         color: "#fff",

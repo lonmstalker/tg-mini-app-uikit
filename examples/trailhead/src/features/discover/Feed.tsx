@@ -14,9 +14,9 @@ import {
   TKTitle,
   useNav,
 } from "tg-mini-app-uikit";
-import type { Experience, ExperienceCategory } from "../../data/mockApi";
-import { useT } from "../../i18n";
-import { useExperiences } from "./useExperiences";
+import { useTKInfiniteData } from "@tg-mini-app/async";
+import { listExperiences, type Experience, type ExperienceCategory } from "../../data/mockApi";
+import { useLang, useT } from "../../i18n";
 import { starsLabel } from "./format";
 
 const CATEGORIES: (ExperienceCategory | "all")[] = ["all", "summit", "forest", "water", "sunrise"];
@@ -69,13 +69,16 @@ function ExperienceTile({ exp, onOpen }: { exp: Experience; onOpen: () => void }
     <div data-trailhead-feed-card="true">
       <TKCard
         padding={10}
+        outlined
+        // Press feedback: the absolute overlay button is a descendant, so its
+        // :active bubbles to this card and the kit's tk-press scales it on tap.
+        className="tk-press tk-press-soft"
         style={{
           position: "relative",
           display: "grid",
           gridTemplateColumns: "76px minmax(0, 1fr)",
           gap: "8px 12px",
           alignItems: "center",
-          border: "0.5px solid var(--tk-sep)",
         }}
       >
         <button
@@ -155,7 +158,7 @@ function ExperienceTile({ exp, onOpen }: { exp: Experience; onOpen: () => void }
 function FeaturedRecommendation({ onOpen }: { onOpen: () => void }) {
   const t = useT();
   return (
-    <TKCard testId="feed-banner" padding="12px 14px" style={{ border: "1px solid var(--tk-sep)" }}>
+    <TKCard testId="feed-banner" padding="12px 14px" outlined>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <div style={{ minWidth: 0, flex: 1, display: "flex", flexDirection: "column", gap: 3 }}>
           <TKText weight={700} truncate>
@@ -175,18 +178,18 @@ function FeaturedRecommendation({ onOpen }: { onOpen: () => void }) {
 
 function FeedSkeleton({ rows = 4, testId }: { rows?: number; testId?: string }) {
   return (
-    <div data-testid={testId} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+    <div data-testid={testId} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
       {Array.from({ length: rows }).map((_, i) => (
         <TKCard
           key={i}
           padding={10}
+          outlined
           testId={i === 0 ? "feed-skeleton-card" : undefined}
           style={{
             display: "grid",
             gridTemplateColumns: "76px minmax(0, 1fr)",
             gap: "8px 12px",
             alignItems: "center",
-            border: "0.5px solid var(--tk-sep)",
           }}
         >
           <TKSkeleton width={76} height={76} radius="var(--tk-r-md)" style={{ gridRow: "1 / span 2" }} />
@@ -292,7 +295,12 @@ function FilterSheet({
 export function Feed() {
   const t = useT();
   const nav = useNav();
-  const feed = useExperiences();
+  const { lang } = useLang();
+  // The pagination FSM is now the kit's @tg-mini-app/async; lang lives in the
+  // fetcher (and its deps), keeping the engine i18n-free.
+  const feed = useTKInfiniteData<Experience>((cursor) => listExperiences(lang, cursor), [lang], {
+    getKey: (e) => e.id,
+  });
   const [ui, dispatchUi] = useReducer(feedUiReducer, initialFeedUi);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const { category, difficulty, query, filtersOpen, searchFocused } = ui;
@@ -347,18 +355,35 @@ export function Feed() {
     );
   } else {
     content = (
-      <TKInfiniteList
-        testId="feed-list"
-        onLoadMore={() => void feed.loadMore()}
-        hasMore={feed.hasMore}
-        loading={feed.loading}
-        loader={<FeedSkeleton rows={2} />}
-        style={{ display: "flex", flexDirection: "column", gap: 8 }}
-      >
-        {filtered.map((exp) => (
-          <ExperienceTile key={exp.id} exp={exp} onOpen={() => open(exp.id)} />
-        ))}
-      </TKInfiniteList>
+      <>
+        <TKInfiniteList
+          testId="feed-list"
+          onLoadMore={() => void feed.loadMore()}
+          // Stop feeding the auto-loading sentinel while a page errored, so the
+          // next fetch only happens on an explicit retry (never in a loop).
+          hasMore={feed.hasMore && feed.phase !== "page-error"}
+          loading={feed.loading}
+          loader={<FeedSkeleton rows={2} />}
+          style={{ display: "flex", flexDirection: "column", gap: 10 }}
+        >
+          {filtered.map((exp) => (
+            <ExperienceTile key={exp.id} exp={exp} onOpen={() => open(exp.id)} />
+          ))}
+        </TKInfiniteList>
+        {feed.phase === "page-error" ? (
+          <div
+            data-testid="feed-page-error"
+            style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, padding: "8px 0 4px" }}
+          >
+            <TKText tone="secondary" size="footnote" style={{ textAlign: "center" }}>
+              {t("discover.error.text")}
+            </TKText>
+            <TKButton size="sm" variant="tonal" onClick={() => void feed.retryPage()} testId="feed-page-retry">
+              {t("discover.error.retry")}
+            </TKButton>
+          </div>
+        ) : null}
+      </>
     );
   }
 

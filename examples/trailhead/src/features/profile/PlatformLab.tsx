@@ -4,7 +4,6 @@ import {
   TKRating,
   TKSegmented,
   TKSlider,
-  TKSwitch,
   TKText,
   TKTitle,
   type TKMotion,
@@ -13,7 +12,6 @@ import { useLang, useT, type Lang } from "../../i18n";
 import { DEFAULT_THEME_PREFS, useAppDispatch, useAppState, type ThemePrefs } from "../../store";
 import { useMockBackHeader } from "../../components/MockBackHeader";
 import { PrimaryAction } from "../../components/PrimaryAction";
-import { useMockHandle } from "../../telegram/mock-context";
 
 // All AA-compliant with white text (≥ 4.5:1), so any choice keeps contrast.
 const ACCENTS = [
@@ -42,7 +40,6 @@ export function PlatformLab({ active }: { active: boolean }) {
   const dispatch = useAppDispatch();
   const set = (payload: Partial<ThemePrefs>) => dispatch({ type: "SET_THEME_PREF", payload });
   const header = useMockBackHeader(t("lab.title"));
-  const mock = useMockHandle();
 
   const activeAccent = ACCENTS.find((a) => a.color.toLowerCase() === themePrefs.accent.toLowerCase())?.id ?? "blue";
 
@@ -63,8 +60,6 @@ export function PlatformLab({ active }: { active: boolean }) {
               motion: DEFAULT_THEME_PREFS.motion,
               fontSize: DEFAULT_THEME_PREFS.fontSize,
               colorScheme: "light",
-              cutouts: false,
-              rtl: false,
             })
           }
         />
@@ -172,22 +167,6 @@ export function PlatformLab({ active }: { active: boolean }) {
           />
         </Row>
       </TKListGroup>
-
-      {mock ? (
-        <TKListGroup>
-          <Row label={t("lab.cutouts")}>
-            <TKSwitch
-              ariaLabel={t("lab.cutouts")}
-              checked={themePrefs.cutouts}
-              onChange={(cutouts) => set({ cutouts })}
-              testId="lab-cutouts"
-            />
-          </Row>
-          <Row label={t("lab.rtl")}>
-            <TKSwitch ariaLabel={t("lab.rtl")} checked={themePrefs.rtl} onChange={(rtl) => set({ rtl })} testId="lab-rtl" />
-          </Row>
-        </TKListGroup>
-      ) : null}
 
       <div aria-hidden style={{ height: "calc(var(--tk-safe-bottom, 0px) + 72px)" }} />
     </TKPage>

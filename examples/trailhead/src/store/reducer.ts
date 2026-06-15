@@ -26,11 +26,9 @@ export interface ThemePrefs {
   roundness: number;
   motion: TKMotion;
   fontSize: number;
-  rtl: boolean;
   lang: Lang;
+  /** In-app appearance override; drives the kit theme in mock AND real clients. */
   colorScheme: "light" | "dark";
-  /** Simulated notch / home-indicator insets (mock device cutouts). */
-  cutouts: boolean;
 }
 
 export interface WalletState {
@@ -65,21 +63,23 @@ export const DEFAULT_THEME_PREFS: ThemePrefs = {
   roundness: 1,
   motion: "springy",
   fontSize: 16,
-  rtl: false,
   lang: "en",
   colorScheme: "light",
-  cutouts: false,
 };
 
-/** A fresh session: seeded booking, day-5 streak, wallet disconnected. */
-export function createInitialState(initialLang: Lang = "en"): AppState {
+/**
+ * A fresh session: seeded booking, day-5 streak, wallet disconnected. The
+ * appearance is seeded from the surrounding client's theme so a real Mini App
+ * opens matching light/dark; hydration then restores any persisted override.
+ */
+export function createInitialState(initialLang: Lang = "en", colorScheme: "light" | "dark" = "light"): AppState {
   return {
     hydrated: false,
     bookings: seedBookings(),
     cart: {},
     streak: { xp: 1840, dayOfWeek: 5 },
     wallet: { connected: false, address: null, trailPassActive: false },
-    themePrefs: { ...DEFAULT_THEME_PREFS, lang: initialLang },
+    themePrefs: { ...DEFAULT_THEME_PREFS, lang: initialLang, colorScheme },
     pin: null,
     onboardingDone: false,
   };

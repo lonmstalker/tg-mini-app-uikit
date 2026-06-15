@@ -6,6 +6,7 @@ import {
   TKListGroup,
   TKPage,
   TKProgress,
+  TKPullToRefresh,
   TKRing,
   TKSkeletonList,
   TKStatTile,
@@ -18,7 +19,7 @@ import {
 import { listPeople, listSessions, type TrainingSession } from "../../data/mockApi";
 import { useLang, useT } from "../../i18n";
 import { useAppState } from "../../store";
-import { useAsync } from "../discover/useAsync";
+import { useAsync } from "@tg-mini-app/async";
 
 const initialsOf = (name: string) =>
   name
@@ -59,10 +60,12 @@ export function Train() {
   const leaderboard = useMemo(() => {
     const friends = (people.data ?? []).filter((p) => p.bookedSameTrip);
     const rows = [
-      ...friends.map((p, i) => ({ name: p.name, points: 2400 - i * 280, you: false })),
+      // Points come from each persona's own XP (data), not their position in the
+      // list. Ties break by name so the order is stable across renders.
+      ...friends.map((p) => ({ name: p.name, points: p.xp, you: false })),
       { name: userName, points: streak.xp, you: true },
     ]
-      .sort((a, b) => b.points - a.points)
+      .sort((a, b) => b.points - a.points || String(a.name).localeCompare(String(b.name)))
       .map((r, i) => ({
         rank: i + 1,
         initials: initialsOf(String(r.name)),
@@ -74,6 +77,10 @@ export function Train() {
   }, [people.data, streak.xp, userName]);
 
   return (
+    <TKPullToRefresh
+      onRefresh={() => Promise.all([sessions.reload(), people.reload()])}
+      testId="train-refresh"
+    >
     <TKPage testId="panel-train-home">
       <TKTitle level={1}>{t("train.title")}</TKTitle>
 
@@ -152,5 +159,6 @@ export function Train() {
         ))
       )}
     </TKPage>
+    </TKPullToRefresh>
   );
 }

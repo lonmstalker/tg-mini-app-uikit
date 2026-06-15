@@ -1,45 +1,39 @@
 import { useEffect } from "react";
-import { TKProvider, TKToastProvider, useTelegramTheme } from "tg-mini-app-uikit";
+import { TKProvider, TKToastProvider } from "tg-mini-app-uikit";
 import { App } from "./App";
 import { LangProvider } from "./i18n";
 import { useStore } from "./store";
 import { useMockHandle } from "./telegram/mock-context";
 
 /*
- * Bridges the store to the kit providers. The theme follows the (mock) Telegram
- * client's light/dark; the visual knobs, language and RTL come from `themePrefs`,
- * which Platform Lab (M4) drives and which persist via DeviceStorage. Lives
- * inside StoreProvider so it reads hydrated preferences.
+ * Bridges the store to the kit providers. `themePrefs.colorScheme` is the single
+ * source of truth for light/dark — seeded from the client at startup (see
+ * store), then owned by the Platform Lab toggle so it works in mock AND real
+ * clients. The other visual knobs and language come from `themePrefs` too, all
+ * persisted via DeviceStorage. Lives inside StoreProvider so it reads hydrated
+ * preferences.
  */
 export function AppFrame() {
   const { state, dispatch } = useStore();
   const mock = useMockHandle();
-  const theme = useTelegramTheme();
   const { themePrefs } = state;
 
-  // Apply the persisted / Platform Lab colour scheme to the mock client (mock
-  // mode only — a real client owns its own light/dark). `useTelegramTheme` then
-  // reflects it, so dark mode survives a reload.
+  // Keep the mock device chrome (status bar, etc.) in step with the chosen
+  // scheme. ponytail: a real client owns its own chrome, so this is mock-only;
+  // the kit theme below is driven straight from the pref in every environment.
   useEffect(() => {
     if (mock && mock.getState().colorScheme !== themePrefs.colorScheme) {
       mock.setColorScheme(themePrefs.colorScheme);
     }
   }, [mock, themePrefs.colorScheme]);
 
-  // Simulated device cutouts (notch / home indicator), mock mode only.
-  useEffect(() => {
-    mock?.setDeviceCutouts(themePrefs.cutouts);
-  }, [mock, themePrefs.cutouts]);
-
   return (
     <LangProvider
       lang={themePrefs.lang}
       onLangChange={(lang) => dispatch({ type: "SET_THEME_PREF", payload: { lang } })}
-      rtl={mock ? themePrefs.rtl : false}
-      onRtlChange={(rtl) => dispatch({ type: "SET_THEME_PREF", payload: { rtl } })}
     >
       <TKProvider
-        theme={theme}
+        theme={themePrefs.colorScheme}
         telegram
         testId="app-root"
         accent={themePrefs.accent}

@@ -8,7 +8,7 @@ import {
   type Dispatch,
   type ReactNode,
 } from "react";
-import { useCloudStorage, useDeviceStorage, useInitData, useSecureStorage } from "tg-mini-app-uikit";
+import { useCloudStorage, useDeviceStorage, useInitData, useSecureStorage, useTelegramTheme } from "tg-mini-app-uikit";
 import { initialLangFor, type Lang } from "../i18n";
 import { loadPersisted, savePersisted, type StorageBackends } from "./persistence";
 import { createInitialState, reducer, toPersisted, type Action, type AppState } from "./reducer";
@@ -38,9 +38,12 @@ export function StoreProvider({ children }: { children?: ReactNode }) {
   const device = useDeviceStorage();
   const secure = useSecureStorage();
   const { user } = useInitData();
-  // Seed the initial language from the ?lang deep-link or the Telegram client.
+  // Read the client's light/dark once for the seed (synchronous in a real client).
+  const clientTheme = useTelegramTheme();
+  // Seed the initial language from the ?lang deep-link or the Telegram client,
+  // and the appearance from the client's current theme.
   const [state, dispatch] = useReducer(reducer, undefined, () =>
-    createInitialState(initialLangFor(user?.language_code)),
+    createInitialState(initialLangFor(user?.language_code), clientTheme),
   );
 
   const backends = useMemo<StorageBackends>(() => ({ cloud, device, secure }), [cloud, device, secure]);

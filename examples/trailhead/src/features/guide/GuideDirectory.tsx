@@ -1,10 +1,12 @@
 import { useRef, useState } from "react";
 import {
+  AsyncBoundary,
   TKActionSheet,
   TKAvatarStack,
   TKBadge,
+  TKCard,
   TKPage,
-  TKSkeletonList,
+  TKPullToRefresh,
   TKText,
   TKTitle,
   TKVirtualList,
@@ -14,7 +16,7 @@ import {
 } from "tg-mini-app-uikit";
 import { listPeople, type Person } from "../../data/mockApi";
 import { useLang, useT } from "../../i18n";
-import { useAsync } from "../discover/useAsync";
+import { useAsync } from "@tg-mini-app/async";
 
 function GuideStat({ label, value }: { label: string; value: string | number }) {
   return (
@@ -39,12 +41,10 @@ function GuideStat({ label, value }: { label: string; value: string | number }) 
 
 function GuideRow({
   person,
-  index,
   onOpen,
   onLongPress,
 }: {
   person: Person;
-  index: number;
   onOpen: () => void;
   onLongPress: () => void;
 }) {
@@ -76,6 +76,7 @@ function GuideRow({
         suppress.current = false;
         longPress.onPointerDown(e);
       }}
+      className="tk-press tk-press-soft"
       style={{
         display: "flex",
         alignItems: "center",
@@ -83,7 +84,12 @@ function GuideRow({
         height: 88,
         padding: "0 14px",
         cursor: "pointer",
-        borderTop: index ? "0.5px solid var(--tk-sep)" : "none",
+        // Standalone card matching the discover/trips cards: same radius, shadow
+        // and hairline — so the directory reads as the same list pattern.
+        background: "var(--tk-surface)",
+        borderRadius: "var(--tk-r-lg)",
+        boxShadow: "var(--tk-shadow-sm)",
+        border: ".5px solid var(--tk-sep)",
       }}
     >
       <div
@@ -133,36 +139,27 @@ export function GuideDirectory() {
   const { lang } = useLang();
   const nav = useNav();
   const toast = useTKToast();
-  const { data: people } = useAsync(() => listPeople(lang), [lang]);
+  const { data: people, loading, error, reload } = useAsync(() => listPeople(lang), [lang]);
   const [actionPerson, setActionPerson] = useState<Person | null>(null);
 
-  if (!people) {
-    return (
-      <TKPage testId="panel-guide-directory">
-        <TKTitle level={1}>{t("guide.title")}</TKTitle>
-        <TKSkeletonList rows={5} />
-      </TKPage>
-    );
-  }
-
-  const bookedCount = people.filter((p) => p.bookedSameTrip).length;
-  const routeCount = new Set(people.flatMap((p) => p.guides)).size;
+  const bookedCount = (people ?? []).filter((p) => p.bookedSameTrip).length;
+  const routeCount = new Set((people ?? []).flatMap((p) => p.guides)).size;
 
   return (
+    <TKPullToRefresh onRefresh={reload} testId="guide-refresh">
     <TKPage testId="panel-guide-directory">
       <TKTitle level={1}>{t("guide.title")}</TKTitle>
-      <div
-        data-testid="guide-overview"
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 12,
-          padding: 12,
-          borderRadius: "var(--tk-r-lg)",
-          background: "var(--tk-surface)",
-          border: "0.5px solid var(--tk-sep)",
-        }}
+      <AsyncBoundary
+        loading={loading}
+        error={error}
+        onRetry={reload}
+        errorTitle={t("discover.error.title")}
+        errorText={t("discover.error.text")}
+        retryLabel={t("discover.error.retry")}
       >
+        {people ? (
+          <>
+      <TKCard testId="guide-overview" outlined padding={12} style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <TKAvatarStack avatars={people.map((p) => ({ initials: p.emoji, tone: `hsl(${p.hue} 50% 80%)` }))} />
         <div style={{ minWidth: 0, flex: 1 }}>
           <TKText as="div" weight={700} truncate>
@@ -172,35 +169,29 @@ export function GuideDirectory() {
             {t("guide.directoryHint", { count: people.length })}
           </TKText>
         </div>
-      </div>
+      </TKCard>
       <div style={{ display: "flex", gap: 8 }}>
         <GuideStat label={t("guide.onTripCount")} value={bookedCount} />
         <GuideStat label={t("guide.coverageCount")} value={routeCount} />
       </div>
 
-      <div
-        style={{
-          background: "var(--tk-surface)",
-          borderRadius: "var(--tk-r-md)",
-          border: "0.5px solid var(--tk-sep)",
-          overflow: "hidden",
-        }}
-      >
-        <TKVirtualList
-          testId="guide-list"
-          items={people}
-          itemHeight={88}
-          height={people.length * 88}
-          renderItem={(person, index) => (
-            <GuideRow
-              person={person}
-              index={index}
-              onOpen={() => nav.push("profile", { id: person.id })}
-              onLongPress={() => setActionPerson(person)}
-            />
-          )}
-        />
-      </div>
+      <TKVirtualList
+        testId="guide-list"
+        items={people}
+        // Row is 88; the extra 10 is the inter-card gap, matching discover/trips.
+        itemHeight={98}
+        height={people.length * 98}
+        renderItem={(person) => (
+          <GuideRow
+            person={person}
+            onOpen={() => nav.push("profile", { id: person.id })}
+            onLongPress={() => setActionPerson(person)}
+          />
+        )}
+      />
+          </>
+        ) : null}
+      </AsyncBoundary>
 
       <TKActionSheet
         open={!!actionPerson}
@@ -237,5 +228,6 @@ export function GuideDirectory() {
         ]}
       />
     </TKPage>
+    </TKPullToRefresh>
   );
 }

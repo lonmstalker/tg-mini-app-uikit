@@ -85,6 +85,8 @@ export function TKBannerCard({ title, text, cta, onCta, testId }: TKBannerCardPr
 export interface TKBookingCardProps {
   initials?: string;
   avatarTone?: string;
+  /** Avatar silhouette: circle for people (default), rounded for place/media thumbnails. */
+  avatarShape?: "circle" | "rounded";
   name: ReactNode;
   subtitle?: ReactNode;
   /** Trailing status node, e.g. `<TKBadge tone="green" soft>Confirmed</TKBadge>`. */
@@ -99,6 +101,7 @@ export interface TKBookingCardProps {
 export function TKBookingCard({
   initials = "",
   avatarTone,
+  avatarShape = "circle",
   name,
   subtitle,
   status,
@@ -120,7 +123,7 @@ export function TKBookingCard({
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 12, padding: 14 }}>
-        <TKAvatar initials={initials} size={44} tone={avatarTone} />
+        <TKAvatar initials={initials} size={44} tone={avatarTone} shape={avatarShape} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: "var(--tk-fz-body)", fontWeight: 600 }}>{name}</div>
           {subtitle ? (
