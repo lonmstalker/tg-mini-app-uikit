@@ -99,16 +99,16 @@ describe("forms: PIN", () => {
     vi.useFakeTimers();
     try {
       const onComplete = vi.fn();
-      render(<TKPinInput length={4} onComplete={onComplete} />);
+      const { container } = render(<TKPinInput length={4} onComplete={onComplete} />);
 
       ["1", "2", "3", "4"].forEach((d) => fireEvent.click(screen.getByRole("button", { name: d })));
 
       expect(onComplete).toHaveBeenCalledWith("1234");
       // the completed state paints first…
-      expect(screen.getByText("4 of 4 entered")).toBeInTheDocument();
+      expect(container.querySelectorAll("[data-dot]")).toHaveLength(4);
       // …then the deferred reset clears it
       act(() => vi.advanceTimersByTime(220));
-      expect(screen.getByText("0 of 4 entered")).toBeInTheDocument();
+      expect(container.querySelectorAll("[data-dot]")).toHaveLength(0);
     } finally {
       vi.useRealTimers();
     }

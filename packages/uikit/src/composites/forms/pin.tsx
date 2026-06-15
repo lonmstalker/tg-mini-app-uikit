@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { TKIcon } from "../../atoms/icons";
 import { useTKLocale } from "../../foundation/i18n";
 import { useOptionalHaptics } from "../../foundation/telegram";
@@ -6,7 +6,10 @@ import { useOptionalHaptics } from "../../foundation/telegram";
 /* ---------------- Pin input ---------------- */
 
 export interface TKPinInputProps {
+  /** Fixed PIN length, or minimum length when `maxLength` is larger. */
   length?: number;
+  /** Enables variable-length entry when larger than `length`. */
+  maxLength?: number;
   onComplete?: (pin: string) => void;
   /** Shows the error shake and clears the entered digits. */
   error?: boolean;
@@ -18,7 +21,16 @@ export interface TKPinInputProps {
 }
 
 /** PIN screen: dot indicators + on-screen 3×4 keypad, optional biometrics key. */
-export function TKPinInput({ length = 4, onComplete, error, onBiometricRequest, title, testId, style }: TKPinInputProps) {
+export function TKPinInput({
+  length = 4,
+  maxLength,
+  onComplete,
+  error,
+  onBiometricRequest,
+  title,
+  testId,
+  style,
+}: TKPinInputProps) {
   const locale = useTKLocale();
   const haptics = useOptionalHaptics();
   const [pin, setPin] = useState("");
@@ -26,13 +38,12 @@ export function TKPinInput({ length = 4, onComplete, error, onBiometricRequest, 
   // when `error` stays `true` across repeated wrong entries (a one-shot CSS
   // animation only restarts when the element is keyed afresh).
   const [shakeKey, setShakeKey] = useState(0);
-  const inputRef = useRef<HTMLInputElement>(null);
   const completeRef = useRef(onComplete);
   completeRef.current = onComplete;
-  const fieldId = useId();
   // Holds the post-complete clear so the filled dots paint for a beat first.
   const resetTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => () => clearTimeout(resetTimer.current), []);
+  const maxDigits = maxLength || length;
 
   useEffect(() => {
     if (error) {
@@ -44,23 +55,25 @@ export function TKPinInput({ length = 4, onComplete, error, onBiometricRequest, 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [error]);
 
+  const complete = (next: string) => {
+    completeRef.current?.(next);
+    // Paint the FULL set of dots first, then clear on a later tick. Clearing
+    // in the same commit meant the last dot never lit — it read as "the last
+    // tap didn't count" even on a correct code. An `error` clears immediately.
+    clearTimeout(resetTimer.current);
+    resetTimer.current = setTimeout(() => setPin(""), PIN_FILL_HOLD_MS);
+  };
+
   // Commit raw digits coming from the hidden field (hardware keyboard, SMS
   // autofill) or the on-screen pad through a single path, so both stay in sync.
   const setDigits = (raw: string) => {
-    const next = raw.replace(/\D/g, "").slice(0, length);
+    const next = raw.replace(/\D/g, "").slice(0, maxDigits);
     setPin(next);
-    if (next.length === length) {
-      completeRef.current?.(next);
-      // Paint the FULL set of dots first, then clear on a later tick. Clearing
-      // in the same commit meant the last dot never lit — it read as "the last
-      // tap didn't count" even on a correct code. An `error` clears immediately.
-      clearTimeout(resetTimer.current);
-      resetTimer.current = setTimeout(() => setPin(""), PIN_FILL_HOLD_MS);
-    }
+    if (!maxLength && next.length === length) complete(next);
   };
 
   const push = (digit: string) => {
-    if (pin.length >= length) return;
+    if (pin.length >= maxDigits) return;
     setDigits(pin + digit);
   };
 
@@ -91,15 +104,12 @@ export function TKPinInput({ length = 4, onComplete, error, onBiometricRequest, 
           pad mirrors the same value. Kept outside the keyed shake wrapper below
           so an error re-trigger never drops the input's focus. */}
       <input
-        ref={inputRef}
-        id={fieldId}
         value={pin}
         // `inputMode="none"` keeps the field usable for SMS one-time-code
         // autofill and a hardware keyboard (it stays focusable) WITHOUT raising
         // the OS soft keyboard over the custom pad's lower rows.
         inputMode="none"
         autoComplete="one-time-code"
-        maxLength={length}
         aria-label={locale.oneTimeCode}
         onChange={(e) => setDigits(e.target.value)}
         style={SR_ONLY}
@@ -114,26 +124,19 @@ export function TKPinInput({ length = 4, onComplete, error, onBiometricRequest, 
         {/* The dots are a decorative progress readout, not a text field — tapping
             them no longer focuses the hidden input (which would raise the OS
             keyboard over the pad). Entry goes through the on-screen pad. */}
-        <div
-          aria-live="polite"
-          aria-atomic="true"
-          style={{ display: "flex", gap: 14, justifyContent: "center" }}
-        >
-          {Array.from({ length }).map((_, i) => (
+        <div style={{ display: "flex", gap: 14, justifyContent: "center", minHeight: 14 }}>
+          {Array.from({ length: pin.length }).map((_, i) => (
             <span
               key={i}
+              data-dot
               style={{
                 width: 14,
                 height: 14,
                 borderRadius: "50%",
-                background: i < pin.length ? "var(--tk-accent)" : "var(--tk-surface-3)",
-                boxShadow: error ? "0 0 0 2px var(--tk-red-12)" : "none",
-                transition: "background var(--tk-t1) var(--tk-ease)",
+                background: "var(--tk-accent)",
               }}
             />
           ))}
-          {/* Screen-reader-only progress; the dots above are decorative. */}
-          <span style={SR_ONLY}>{`${pin.length} of ${length} entered`}</span>
         </div>
         <div role="group" aria-label={locale.oneTimeCode} style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
           {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((d) => (
@@ -167,6 +170,17 @@ export function TKPinInput({ length = 4, onComplete, error, onBiometricRequest, 
             <TKIcon name="backspace" size={22} />
           </button>
         </div>
+        {maxLength ? (
+          <button
+            type="button"
+            className="tk-press"
+            disabled={pin.length < length}
+            onClick={() => complete(pin)}
+            style={keyStyle}
+          >
+            {locale.done}
+          </button>
+        ) : null}
       </div>
     </div>
   );

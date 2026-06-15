@@ -44,6 +44,8 @@ export function TKSkeletonList({ rows = 3, testId }: { rows?: number; testId?: s
     <div
       data-testid={testId}
       style={{
+        width: "100%",
+        boxSizing: "border-box",
         background: "var(--tk-surface)",
         borderRadius: "var(--tk-r-md)",
         boxShadow: "var(--tk-shadow-sm)",

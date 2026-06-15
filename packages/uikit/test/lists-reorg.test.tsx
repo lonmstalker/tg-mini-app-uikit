@@ -53,4 +53,21 @@ describe("lists module reorganization", () => {
     expect(screen.getByTestId("infinite").querySelector("[data-tk-sentinel]")).not.toBeNull();
     expect(screen.getByTestId("virtual")).toBeVisible();
   });
+
+  it("keeps custom infinite-list loaders stretched to the list width", () => {
+    render(
+      <TKInfiniteList
+        hasMore
+        onLoadMore={vi.fn()}
+        testId="infinite"
+        loader={<div data-testid="loader" style={{ width: "100%" }} />}
+      >
+        <div>Feed item</div>
+      </TKInfiniteList>,
+    );
+
+    const sentinel = screen.getByTestId("infinite").querySelector<HTMLElement>("[data-tk-sentinel]");
+    expect(sentinel).not.toBeNull();
+    expect(sentinel).toHaveStyle({ width: "100%", boxSizing: "border-box" });
+  });
 });

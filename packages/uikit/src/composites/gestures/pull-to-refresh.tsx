@@ -1,6 +1,5 @@
 import { useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { TKSpinner } from "../../atoms/buttons";
-import { TKIcon } from "../../atoms/icons";
 import { useOptionalHaptics } from "../../foundation/telegram";
 import { useDragGesture } from "../../internal/useDragGesture";
 import { useVerticalSwipeGuard } from "../../internal/useVerticalSwipeGuard";
@@ -34,6 +33,11 @@ export function TKPullToRefresh({ children, onRefresh, threshold = 72, disabled,
   useVerticalSwipeGuard(pull > 0 || refreshing);
 
   const resist = (delta: number) => Math.max(0, delta) * 0.5;
+  const showIndicator = pull > 2 || refreshing;
+  const getScrollTop = () => {
+    const innerPageScroll = scrollRef.current?.querySelector<HTMLElement>("[data-tk-page-scroll]");
+    return innerPageScroll?.scrollTop ?? scrollRef.current?.scrollTop ?? 0;
+  };
 
   const drag = useDragGesture({
     axis: "y",
@@ -45,7 +49,7 @@ export function TKPullToRefresh({ children, onRefresh, threshold = 72, disabled,
     onMove(state) {
       // Only pull when starting from the very top AND moving downward — an
       // upward or mid-list drag is a scroll and must not be hijacked.
-      if ((scrollRef.current?.scrollTop ?? 0) > 0 || state.delta <= 0) {
+      if (getScrollTop() > 0 || state.delta <= 0) {
         if (armedRef.current) armedRef.current = false;
         if (pull !== 0) setPull(0);
         return;
@@ -57,8 +61,7 @@ export function TKPullToRefresh({ children, onRefresh, threshold = 72, disabled,
       setPull(Math.min(next, threshold * 1.6));
     },
     onEnd(state) {
-      const committed =
-        (scrollRef.current?.scrollTop ?? 0) <= 0 && state.delta > 0 && resist(state.delta) >= threshold;
+      const committed = getScrollTop() <= 0 && state.delta > 0 && resist(state.delta) >= threshold;
       armedRef.current = false;
       if (!committed) {
         setPull(0);
@@ -91,7 +94,6 @@ export function TKPullToRefresh({ children, onRefresh, threshold = 72, disabled,
       style={{ position: "relative", overflow: "hidden", height: "100%", touchAction: "pan-y", ...style }}
     >
       <div
-        aria-hidden={!refreshing}
         style={{
           position: "absolute",
           left: 0,
@@ -100,25 +102,14 @@ export function TKPullToRefresh({ children, onRefresh, threshold = 72, disabled,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          height: pull,
+          height: showIndicator ? Math.max(pull, 48) : 0,
           overflow: "hidden",
-          opacity: pull > 8 ? 1 : 0,
+          zIndex: 2,
         }}
       >
-        {refreshing ? (
-          <TKSpinner size={22} />
-        ) : (
-          <span
-            style={{
-              display: "inline-flex",
-              color: "var(--tk-text-3)",
-              transform: `rotate(${armedRef.current ? 180 : 0}deg)`,
-              transition: "transform var(--tk-t2) var(--tk-spring)",
-            }}
-          >
-            <TKIcon name="chevronDown" size={20} />
-          </span>
-        )}
+        <span className="tk-ptr">
+          <TKSpinner size={20} />
+        </span>
       </div>
       <div
         ref={scrollRef}

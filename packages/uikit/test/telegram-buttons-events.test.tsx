@@ -66,6 +66,29 @@ describe("useMainButton", () => {
     expect(onClick).toHaveBeenCalledTimes(1);
   });
 
+  it("ignores native click events while disabled, loading, or hidden", () => {
+    const mock = createMockTelegram();
+    const onClick = vi.fn();
+    const { rerender } = renderHook((props: TKNativeButtonParams) => useMainButton(props), {
+      wrapper: wrapperFor(mock.webApp),
+      initialProps: { text: "Continue", disabled: true, onClick } as TKNativeButtonParams,
+    });
+    const fireRawNativeClick = () => {
+      (mock.webApp.MainButton as unknown as { __clicks: Set<() => void> }).__clicks.forEach((handler) => handler());
+    };
+
+    act(fireRawNativeClick);
+    rerender({ text: "Continue", loading: true, onClick });
+    act(fireRawNativeClick);
+    rerender({ text: "Continue", visible: false, onClick });
+    act(fireRawNativeClick);
+    expect(onClick).not.toHaveBeenCalled();
+
+    rerender({ text: "Continue", onClick });
+    act(fireRawNativeClick);
+    expect(onClick).toHaveBeenCalledTimes(1);
+  });
+
   it("reports isSupported=false without a MainButton", () => {
     const { result } = renderHook(() => useMainButton({ text: "Go" }), { wrapper: wrapperFor({}) });
     expect(result.current.isSupported).toBe(false);

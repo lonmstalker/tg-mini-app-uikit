@@ -77,6 +77,9 @@ export const PinAndChips = {
         <TKPinInput title={<strong>Wallet access</strong>} onBiometricRequest={() => undefined} />
       </Narrow>
       <Narrow>
+        <TKPinInput title={<strong>Variable PIN</strong>} length={4} maxLength={8} />
+      </Narrow>
+      <Narrow>
         <TKChipsInput label="Tags" defaultValue={["VIP", "Courier"]} placeholder="Add tag" />
       </Narrow>
     </AppScreen>

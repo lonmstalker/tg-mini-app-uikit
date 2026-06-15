@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { createRef } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as kit from "../src/index";
@@ -147,6 +147,23 @@ describe("M3.4 TKPullToRefresh", () => {
     fireEvent.pointerMove(area, { pointerId: 1, clientY: 80 });
     fireEvent.pointerUp(area, { pointerId: 1, clientY: 80 });
     expect(onRefresh).not.toHaveBeenCalled();
+  });
+
+  it("shows a visible pull indicator as soon as the pull starts", async () => {
+    render(
+      <kit.TKPullToRefresh onRefresh={() => Promise.resolve()} testId="ptr">
+        <div>content</div>
+      </kit.TKPullToRefresh>,
+    );
+    const area = screen.getByTestId("ptr");
+    fireEvent.pointerDown(area, { pointerId: 1, clientY: 50 });
+    fireEvent.pointerMove(area, { pointerId: 1, clientY: 100 });
+    await waitFor(() => {
+      const indicator = area.querySelector<HTMLElement>(".tk-ptr");
+      if (!indicator) throw new Error("Pull indicator is missing");
+      expect(indicator).toHaveClass("tk-ptr");
+      expect(indicator.parentElement).toHaveStyle({ height: "48px" });
+    });
   });
 });
 

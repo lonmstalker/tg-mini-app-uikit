@@ -52,12 +52,11 @@ export function TKPage({
       className={className}
       data-testid={testId}
       style={{
-        // Shrink the page by the keyboard overlap so the pinned footer (and its
-        // primary action) rises above the on-screen keyboard instead of sitting
-        // behind it. `keyboard.height` is the overlap the layout viewport does
-        // not already account for, so this is correct whether the client resizes
-        // the layout viewport (Android) or only the visual one (iOS WebView).
-        height: keyboard.visible ? `calc(100% - ${keyboard.height}px)` : "100%",
+        // Only shrink when this page owns a pinned footer that must clear the
+        // keyboard. Scroll-only pages should keep their full height; shrinking
+        // those can collapse a focused search/feed in Telegram clients that
+        // already adjust the viewport.
+        height: footer && keyboard.visible ? `calc(100% - ${keyboard.height}px)` : "100%",
         display: "flex",
         flexDirection: "column",
         // The header (e.g. TKHeader) reserves the top inset itself; padding here

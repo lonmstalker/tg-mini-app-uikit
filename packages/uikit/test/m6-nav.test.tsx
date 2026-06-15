@@ -203,6 +203,9 @@ describe("M6.5 useKeyboard", () => {
     }
     render(<Probe />);
     expect(screen.getByText("no kb")).toBeInTheDocument();
+    const input = document.createElement("input");
+    document.body.append(input);
+    input.focus();
     act(() => {
       vv.height = window.innerHeight - 320;
       listeners.resize?.();

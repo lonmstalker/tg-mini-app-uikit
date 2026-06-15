@@ -104,12 +104,16 @@ function useNativeButton(
 ): { isSupported: boolean } {
   const clickRef = useRef(onClick);
   clickRef.current = onClick;
+  const clickEnabledRef = useRef(false);
+  clickEnabledRef.current = visible && !disabled && !loading;
   // Tracks the last applied custom icon so we can clear it once (sending "")
   // when the prop drops, without spamming an empty id every render.
   const iconRef = useRef<string | undefined>(undefined);
   useEffect(() => {
     if (!supported || !button?.onClick) return;
-    const h = () => clickRef.current?.();
+    const h = () => {
+      if (clickEnabledRef.current) clickRef.current?.();
+    };
     button.onClick(h);
     return () => {
       button.offClick?.(h);

@@ -97,8 +97,8 @@ export function TKInfiniteList({
     <div data-testid={testId} style={style}>
       {children}
       {hasMore ? (
-        <div ref={sentinelRef} data-tk-sentinel style={{ display: "flex", justifyContent: "center", padding: 12 }}>
-          {loader ?? <span className="tk-skel" style={{ width: 120, height: 12, borderRadius: 6 }} />}
+        <div ref={sentinelRef} data-tk-sentinel style={{ width: "100%", padding: 12, boxSizing: "border-box" }}>
+          {loader ?? <span className="tk-skel" style={{ display: "block", width: 120, height: 12, borderRadius: 6, margin: "0 auto" }} />}
         </div>
       ) : null}
     </div>

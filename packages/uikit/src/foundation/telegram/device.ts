@@ -32,19 +32,33 @@ export function useKeyboard(threshold = 80): TKKeyboardState {
     tkKbConsumers += 1;
     const sync = () => {
       const covered = Math.max(0, window.innerHeight - vv.height - (vv.offsetTop ?? 0));
+      const editableFocused = tkIsEditableActive();
       setState((prev) => {
-        const next = { visible: covered > threshold, height: covered > threshold ? Math.round(covered) : 0 };
+        const open = editableFocused && covered > threshold;
+        const next = { visible: open, height: open ? Math.round(covered) : 0 };
         return prev.visible === next.visible && prev.height === next.height ? prev : next;
       });
       // recipe hook: `.tk-kb-open` lets CSS lift bottom bars above the keyboard
-      tkSetKeyboardOpenClass(covered > threshold);
+      tkSetKeyboardOpenClass(editableFocused && covered > threshold);
+    };
+    const syncFocus = () => {
+      sync();
+      window.setTimeout(sync);
     };
     sync();
     vv.addEventListener("resize", sync);
     vv.addEventListener("scroll", sync);
+    document.addEventListener("focusin", syncFocus);
+    document.addEventListener("focusout", syncFocus);
+    document.addEventListener("visibilitychange", sync);
+    window.addEventListener("focus", sync);
     return () => {
       vv.removeEventListener("resize", sync);
       vv.removeEventListener("scroll", sync);
+      document.removeEventListener("focusin", syncFocus);
+      document.removeEventListener("focusout", syncFocus);
+      document.removeEventListener("visibilitychange", sync);
+      window.removeEventListener("focus", sync);
       tkKbConsumers -= 1;
       // Clear the global class once the LAST keyboard consumer unmounts, so a
       // screen that navigates away while the keyboard is still up doesn't leave
@@ -56,6 +70,12 @@ export function useKeyboard(threshold = 80): TKKeyboardState {
     };
   }, [threshold]);
   return state;
+}
+
+function tkIsEditableActive(): boolean {
+  if (typeof document === "undefined") return false;
+  const el = document.activeElement;
+  return el instanceof HTMLElement && el.matches("input,textarea,[contenteditable]");
 }
 
 // Process-wide because the class is toggled on every `.tk` root; ref-counted so

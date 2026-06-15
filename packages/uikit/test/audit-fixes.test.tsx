@@ -78,6 +78,9 @@ describe("audit · useKeyboard clears .tk-kb-open on unmount-while-open (#6)", (
     Object.defineProperty(window, "visualViewport", { value: vv, configurable: true });
 
     const { unmount } = renderHook(() => kit.useKeyboard(80));
+    const input = document.createElement("input");
+    document.body.append(input);
+    input.focus();
     act(() => {
       vv.height = window.innerHeight - 300;
       listeners.get("resize")?.();

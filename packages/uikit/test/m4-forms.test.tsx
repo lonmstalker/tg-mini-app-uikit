@@ -232,6 +232,31 @@ describe("M4.4 TKPinInput", () => {
     fireEvent.click(screen.getByRole("button", { name: /biometric|face|fingerprint/i }));
     expect(onBio).toHaveBeenCalledOnce();
   });
+
+  it("supports variable-length PIN entry with an explicit submit action", () => {
+    const onComplete = vi.fn();
+    render(<kit.TKPinInput length={4} maxLength={8} onComplete={onComplete} />);
+
+    for (const d of ["1", "2", "3"]) fireEvent.click(screen.getByRole("button", { name: d }));
+    expect(screen.getByRole("button", { name: "Done" })).toBeDisabled();
+
+    fireEvent.click(screen.getByRole("button", { name: "4" }));
+    fireEvent.click(screen.getByRole("button", { name: "5" }));
+    fireEvent.click(screen.getByRole("button", { name: "6" }));
+    fireEvent.click(screen.getByRole("button", { name: "Done" }));
+
+    expect(onComplete).toHaveBeenCalledWith("123456");
+  });
+
+  it("adds PIN dots as digits are entered instead of pre-rendering the maximum length", () => {
+    const { container } = render(<kit.TKPinInput length={4} maxLength={8} />);
+    expect(container.querySelectorAll("[data-dot]")).toHaveLength(0);
+
+    fireEvent.click(screen.getByRole("button", { name: "1" }));
+    fireEvent.click(screen.getByRole("button", { name: "2" }));
+
+    expect(container.querySelectorAll("[data-dot]")).toHaveLength(2);
+  });
 });
 
 /* ---------------- M4.5 TKChipsInput ---------------- */

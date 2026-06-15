@@ -2,10 +2,10 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "demo",
+      "name": "trailhead",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev", "-w", "tg-mini-app-uikit-demo", "--", "--port", "5180", "--strictPort"],
-      "port": 5180
+      "runtimeArgs": ["run", "dev", "-w", "trailhead"],
+      "port": 5173
     },
     {
       "name": "stories",

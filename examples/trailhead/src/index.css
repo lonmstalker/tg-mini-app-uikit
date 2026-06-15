@@ -1,0 +1,22 @@
+/*
+ * Minimal app glue only — all component styling comes from the kit's tokens.
+ * The full-height column and overscroll lock mirror what a real Mini App needs
+ * so a stray body scroll never reads as the Telegram swipe-to-minimize gesture.
+ */
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  overscroll-behavior: none;
+  background: var(--tk-bg, #fff);
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}

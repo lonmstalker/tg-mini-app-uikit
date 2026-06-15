@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "resolveJsonModule": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "useDefineForClassFields": true,
+    "allowImportingTsExtensions": false,
+    "noEmit": true,
+    "types": ["vitest/globals", "node"],
+    "paths": {
+      "tg-mini-app-uikit": ["../../packages/uikit/src/index.ts"],
+      "tg-mini-app-uikit/testing": ["../../packages/uikit/test/support/telegram/mock.ts"]
+    }
+  },
+  "include": ["src", "e2e", "vite.config.ts"]
+}

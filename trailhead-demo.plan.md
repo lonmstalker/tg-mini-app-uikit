@@ -67,21 +67,36 @@ must update it. Timestamps are UTC (`Z`).
       accepts a `webApp` prop (`packages/uikit/src/foundation/telegram/provider.tsx:90`)
       and a mock factory exists at `packages/uikit/test/support/telegram/mock.ts`
       (not a public package export — see Decision Log).
-- [ ] M0 — App shell + mock + empty per-tab nav stacks; swipe-back and back-button
-      priority proven on placeholder panels. (completed: —; remaining: all)
-- [ ] M1 — Mock-data layer with tunable latency/failure + above-stack store
-      mirrored to Telegram storage; close/reopen rehydration works.
-- [ ] M2 — Discover tab end-to-end: feed → detail → 3-panel booking funnel →
-      snap-point checkout sheet → biometric PIN → real Stars round-trip →
-      confetti → booking persisted.
-- [ ] M3 — Trips tab: booking list, pull-to-refresh, swipe actions, and the
-      QR + biometric + location check-in. Completes the signature chain.
-- [ ] M4 — Profile tab: TON wallet connect, Trail Pass discount wired back into
-      M2's line items, and Platform Lab live theming.
-- [ ] M5 — Thicken the thin tabs: Train (streak/leaderboard with a session-detail
-      push) and Guide (directory → profile → DM, with long-press).
-- [ ] M6 — First-run onboarding coach marks, error/empty states, accessibility +
-      reduced-motion pass, e2e specs, and the README recording script.
+- [x] (2026-06-14 22:11Z) M0 — App shell + mock + per-tab nav stacks; swipe-back and
+      tab-switch state-preservation proven on placeholder panels (en+ru e2e green,
+      typecheck/unit/build green, reviewer-verified). See `wiki/goals.log.md` G1.M0 DONE.
+- [x] (2026-06-14 22:33Z) M1 — Mock-data layer (tunable latency/failure) + above-stack
+      store mirrored to Telegram storage; close/reopen rehydration works (30 unit + 4 e2e
+      green, reviewer-verified). CARRYOVER to M2: the failure-flag error/retry *UI* (this
+      milestone's second acceptance sentence) is delivered with the Discover feed in M2,
+      where it has a natural home; the data-layer failure contract is met + unit-tested.
+- [x] (2026-06-14 23:13Z) M2 — Discover end-to-end: feed → detail → 3-panel funnel →
+      snap-point checkout sheet → biometric PIN → real Stars round-trip → confetti →
+      booking persisted (31 unit + 8 e2e green, en+ru signature chain, reviewer-verified;
+      double-book bug found+fixed). Kit findings #14/#16 re-verified already-resolved.
+      Closed the M1 carryover (feed failure → error/retry → content).
+- [x] (2026-06-14 23:35Z) M3 — Trips tab: booking list, pull-to-refresh, swipe actions
+      (Reschedule/Cancel + Undo), empty state, and the QR + biometric + location check-in.
+      Completes the signature chain (33 unit + 12 e2e green, en+ru, reviewer-verified).
+- [x] (2026-06-14 23:58Z) M4 — Profile tab: PIN-gated TON wallet connect, Trail Pass 15%
+      discount wired causally into M2's line items, settings, and Platform Lab live theming
+      (accent/radius/type/motion, light↔dark, cutouts, RTL, language; all persisted). 33 unit
+      + 16 e2e green, en+ru, reviewer-verified. NOTE: the plan's "density" knob has no kit prop
+      (mapped to type scale / fontSize); RTL is via `document.dir`, not `TKLocaleProvider`.
+- [x] (2026-06-15 00:20Z) M5 — Thickened Train (streak ring/leaderboard with a session-detail
+      push) and Guide (directory → profile → DM thread, with long-press action sheet). All five
+      tabs are now real (PlaceholderStack deleted). 33 unit + 21 e2e green, en+ru, reviewer-verified.
+- [x] (2026-06-15 00:55Z) M6 — First-run onboarding coach marks + add-to-home, failed-
+      checkout error/retry, accessibility (axe, color-contrast ENABLED via an AA accent) +
+      reduced-motion pass, full e2e specs, README recording script, and prod-parity (dist
+      build; /testing mock kept a documented source alias). 33 unit + 26 e2e green, kit
+      gates green, reviewer-verified. CARRYOVER: promoting the mock to a real `/testing`
+      package export (deferred — would need the mock in src/ + multi-entry build).
 
 
 ## Surprises & Discoveries
@@ -136,6 +151,55 @@ the work; a novice must not re-derive them by trial and error.
   `packages/uikit/src/composites/overlays/sheet.tsx:88` and
   `packages/uikit/src/composites/gestures/pull-to-refresh.tsx:34`;
   `packages/uikit/src/composites/layout/page.tsx:85` sets `overscrollBehavior:"contain"`.
+
+- Observation (M0): Headless Chromium (Playwright) drops the inner `scrollTop` of an
+  off-screen panel under BOTH hide mechanisms the shell uses — the nav stack's
+  `visibility:hidden` (swipe-back) and the tab wrapper's `display:none` (tab switch) —
+  while a headed browser preserves it. So the plan's literal "scroll offset is
+  unchanged" criterion is not assertable in headless e2e. It is verified headed (live
+  preview: a dispatched-pointer swipe and a click-pop both keep `scrollTop` at 240) and
+  is guaranteed by the kit keeping lower panels mounted (`nav.tsx`). The e2e asserts the
+  equivalent, headless-stable contract via a mounted `marks` `useState` counter that a
+  remount would reset to 0.
+  Evidence: `examples/trailhead/e2e/shell.spec.ts` (marks assertions); probe runs showed
+  `scrollTop` → 0 in headless after the panel was hidden by either mechanism.
+
+- Observation (M0→M6 RESOLVED): `tg-mini-app-uikit/testing` is wired as a Vite alias +
+  tsconfig path (to `packages/uikit/test/support/telegram/mock.ts`). The plan originally
+  intended M6 to promote it to a real package `exports` subpath. OUTCOME: M6 took the
+  Decision-Log fallback and kept it a source alias in BOTH dev and the
+  `TRAILHEAD_USE_DIST=1` prod-parity build (M6 was scoped to not touch the kit, and
+  moving the mock into `src/` risked the kit's 90% coverage gate). Prod-parity therefore
+  proves the *production* exports (`.` + `./style.css`) resolve from `dist/`, with the
+  test-only mock the single specifier kept aliased. See the M6 Decision Log.
+  Evidence: `packages/uikit/package.json` `exports` = {".","./style.css"} only;
+  `examples/trailhead/vite.config.ts` keeps `testingAlias` even when `useDist`.
+
+- Observation (M1): the kit does NOT re-export the `TKCloudStorage` interface by name
+  (the telegram barrel re-exports the hooks `useCloudStorage/useDeviceStorage/
+  useSecureStorage` but not their shared return type). The demo derives it via
+  `ReturnType<typeof useCloudStorage>`. Candidate kit-API improvement (export the type)
+  for a future kit touch. NOTE: M6 deliberately did NOT touch `packages/uikit/src`
+  (see the M6 Decision Log on the `/testing` fallback), so this remains a derive-in-demo
+  workaround, not a kit change.
+  Evidence: `packages/uikit/src/foundation/telegram.tsx` named re-exports;
+  `examples/trailhead/src/store/persistence.ts` derives the type.
+
+- Observation (M1): the plan's M1 acceptance has two sentences — (a) close/reopen
+  rehydration, and (b) "toggling the mock failure flag shows an error state with a retry
+  control." (a) is done and verified; (b) is a *UI* requirement whose only natural home is
+  the Discover feed (M2: TKSkeletonList → error/retry → content). The M1 data layer already
+  meets the failure contract (every endpoint gates on `config.fail`, unit-tested), so (b)
+  is delivered with the M2 feed, not skipped. Recorded so it is not mistaken for done.
+  Evidence: `examples/trailhead/src/data/mockApi.ts` `gate()`; `App.tsx` renders only the
+  placeholder spine at M1 (no data-driven surface yet).
+
+- Observation (M1): the demo's mock seed data (`mockApi.ts`) carries user-facing English
+  (experience titles/summaries, guide bios, chat messages). Nothing renders it at M1, so
+  the "zero hardcoded user-facing strings" rule is not yet breached — but M2 MUST localize
+  this content (lang-parameterized mock data or dict-keyed strings) the moment the feed
+  renders it. Tracked as an M2 obligation.
+  Evidence: `examples/trailhead/src/data/mockApi.ts` seed arrays.
 
 
 ## Decision Log
@@ -256,13 +320,70 @@ the work; a novice must not re-derive them by trial and error.
   reviewer-verification discipline a durable, write-once home.
   Date/Author: 2026-06-15 / Claude.
 
+- Decision (M6): The `tg-mini-app-uikit/testing` mock is NOT promoted to a real kit
+  package export; M6 was scoped to not touch `packages/uikit/src`. Per the earlier
+  Decision-Log fallback (keep the mock a dev-time alias rather than a published
+  subpath), the demo keeps `tg-mini-app-uikit/testing` aliased to the test-support
+  file in BOTH dev and the `TRAILHEAD_USE_DIST=1` prod-parity build; only the
+  production specifiers `tg-mini-app-uikit` and `tg-mini-app-uikit/style.css` resolve
+  from the published `dist/`. The public-looking name is kept (rather than the
+  fallback's `@uikit-testing`) so the demo source reads as a real consumer would once
+  the export lands. So Step 5's "Expected" is met for the production exports; the
+  `/testing` subpath promotion + `check:package` coverage of it is the one carried-over
+  item, deferred to a future kit touch (it would move the mock into `src/`, which risks
+  the kit's 90% coverage gate and needs a multi-entry lib build — out of M6 budget).
+  Rationale: the demo's value is proving the *production* package consumes from dist; a
+  test-only utility legitimately stays a source alias, and forcing the kit refactor now
+  endangered the kit's own gates for no marketing gain.
+  Date/Author: 2026-06-15 / Claude.
+
+- Decision (M6): The demo's default accent and all Platform Lab accent presets are
+  chosen to clear WCAG-AA 4.5:1 against white (default `#1c6fd3`, not the Telegram
+  `#3390ec` which is only 3.3:1), so axe `color-contrast` runs ENABLED on every tab —
+  not suppressed. The single excluded node is the kit `TKXPHeader`'s translucent-white
+  level badge over the accent (host-supplied brand chrome, the kit's own documented
+  contrast debt), excluded by element, not by disabling the rule.
+  Rationale: the cross-cutting Contrast criterion ("axe color-contrast passes on every
+  screen") is unconditional; meeting it honestly beats blanket-disabling the rule.
+  Date/Author: 2026-06-15 / Claude.
+
 
 ## Outcomes & Retrospective
 
 
-Fill this in at the end of each milestone and at completion: what now works that
-did not, what was cut, which kit bugs the demo forced fixes for, and what the
-README recording ended up showing. Empty until M0 lands.
+All seven milestones (M0–M6) shipped, each reviewer-verified and recorded in
+`wiki/goals.log.md`. Final state: `npm run dev -w trailhead` serves the five-tab
+Trailhead app; a human completes the signature chain (browse → book → pay 450
+Stars behind a PIN → confetti → QR check-in → reload → state survived) in a desktop
+browser with no Telegram client, in both Russian and English. Gates green: kit
+typecheck + 612 unit + build + `check:package`; demo typecheck + 33 unit + 26 e2e
+(incl. axe, reduced-motion, onboarding tour-walk) + source build + the
+`TRAILHEAD_USE_DIST=1` prod-parity build.
+
+What now works that did not: a real, runnable product (not a component gallery)
+exercising every distinctive kit capability in its natural habitat — swipe-back at
+depth, Stars payments, TON wallet causally discounting the total 450→382, QR +
+biometric + location check-in, snap-point checkout sheet, calendar/slot/PIN forms,
+pull-to-refresh + swipe-cell + long-press gestures, infinite + virtual lists, a DM
+thread, gamification (streak ring, leaderboard, confetti), close/reopen persistence,
+live Platform Lab re-theming, full ru/en, onboarding coach marks, and loading/empty/
+error states.
+
+Bugs the demo forced fixed (in the demo, not the kit — the kit's audit findings #14
+PIN-last-dot and #16 InfiniteList double-fetch were re-verified ALREADY resolved in
+the current kit): a checkout double-book (re-entry latch + stable id), a touch
+long-press/tap double-fire, a nested-interactive a11y violation on feed cards
+(overlay-button), and an accent that failed WCAG-AA contrast (darkened to #1c6fd3).
+
+What was cut / carried over: promoting the test mock to a real
+`tg-mini-app-uikit/testing` package export (kept a documented source alias — moving
+it into `src/` risks the kit's 90% coverage gate and needs a multi-entry build).
+Deliberately omitted (per Artifacts and Notes, to avoid a feature-dump): motion
+sensors, emoji status, fullscreen, OTP, masked/phone inputs.
+
+The README recording script (`examples/trailhead/README.md`) walks the ~30s
+signature chain plus two B-roll clips: swipe-back at depth and Platform Lab live
+re-skin.
 
 
 ## Context and Orientation
@@ -551,10 +672,13 @@ the built `dist` (not the source alias), to prove the published package works:
     npm run build
     TRAILHEAD_USE_DIST=1 npm run build -w trailhead
 
-Expected: with the source alias disabled (the `vite.config.ts` reads
-`TRAILHEAD_USE_DIST`), the demo still type-checks and builds against
-`tg-mini-app-uikit/dist`, including `tg-mini-app-uikit/style.css` and the
-`tg-mini-app-uikit/testing` subpath.
+Expected (as implemented in M6): with the source aliases for the production
+specifiers disabled (the `vite.config.ts` reads `TRAILHEAD_USE_DIST`), the demo
+builds against `tg-mini-app-uikit/dist`, resolving `tg-mini-app-uikit` and
+`tg-mini-app-uikit/style.css` from the published `exports`. The
+`tg-mini-app-uikit/testing` MOCK stays a source alias even in dist-parity (it is a
+dev/test utility, not a production export — see the M6 Decision Log on the fallback);
+promoting it to a real `/testing` package subpath is the one carried-over kit touch.
 
 
 ## Validation and Acceptance

@@ -199,6 +199,20 @@ describe("coverage-backed component behaviours", () => {
     expect(visibleCancel).not.toHaveAttribute("tabindex", "-1");
   });
 
+  it("TKSearch can hide its cancel action and report focus state", async () => {
+    const user = userEvent.setup();
+    const onFocusChange = vi.fn();
+    render(<kit.TKSearch placeholder="Find" cancelLabel="Close" showCancelAction={false} onFocusChange={onFocusChange} />);
+
+    const input = screen.getByPlaceholderText("Find");
+    await user.click(input);
+    expect(onFocusChange).toHaveBeenLastCalledWith(true);
+    expect(screen.queryByRole("button", { name: "Close" })).toBeNull();
+
+    await user.tab();
+    expect(onFocusChange).toHaveBeenLastCalledWith(false);
+  });
+
   it("TKChipsInput removes tags through a keyboard-accessible button", async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();

@@ -56,6 +56,7 @@ describe("feedback module reorganization", () => {
     );
 
     expect(screen.getByTestId("skel")).toBeVisible();
+    expect(screen.getByTestId("skel-list")).toHaveStyle({ width: "100%", boxSizing: "border-box" });
     expect(screen.getAllByRole("progressbar")).toHaveLength(2);
     fireEvent.click(screen.getByRole("button", { name: "Tue" }));
     expect(onBarClick).toHaveBeenCalledWith(1);

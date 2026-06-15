@@ -5,8 +5,17 @@
 persona, one week) that exercises every distinctive kit capability in its natural
 habitat; it is both the README marketing piece and the kit's hardest integration
 test.
-**Status**: verified (concept + plan); not yet built
-**Updated**: 2026-06-14
+**Status**: SHIPPED — all milestones M0–M6 built & reviewer-verified
+**Updated**: 2026-06-15
+
+> Built: the demo workspace lives at `examples/trailhead` (Vite + React 19 + TS).
+> `npm run dev -w trailhead` serves the five real tabs (Discover/Trips/Train/Guide/
+> Profile), each owning an independent [[navstack]]. The full signature chain runs in a
+> plain browser (book → pay 450 Stars behind a PIN → confetti → QR check-in → reload
+> survives), en + ru. 33 unit + 26 e2e green; kit gates + prod-parity build green.
+> Per-milestone outcomes in [`goals.log.md`](goals.log.md) (G1 DONE). Run + recording
+> script: `examples/trailhead/README.md`. One carryover: a real `/testing` package
+> export (kept a documented source alias).
 
 ---
 

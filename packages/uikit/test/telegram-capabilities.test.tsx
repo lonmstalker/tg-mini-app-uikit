@@ -544,8 +544,30 @@ describe("expanded Telegram capabilities", () => {
     document.body.append(root);
 
     const { result, unmount } = renderHook(() => useKeyboard(80));
+    expect(result.current).toEqual({ visible: false, height: 0 });
+    expect(root.classList.contains("tk-kb-open")).toBe(false);
+
+    const focused = document.createElement("input");
+    document.body.append(focused);
+    focused.focus();
+    act(() => {
+      listeners.get("resize")?.();
+    });
     expect(result.current).toEqual({ visible: true, height: 200 });
     expect(root.classList.contains("tk-kb-open")).toBe(true);
+
+    focused.blur();
+    act(() => {
+      document.dispatchEvent(new FocusEvent("focusout", { bubbles: true }));
+    });
+    expect(result.current).toEqual({ visible: false, height: 0 });
+    expect(root.classList.contains("tk-kb-open")).toBe(false);
+
+    focused.focus();
+    act(() => {
+      listeners.get("resize")?.();
+    });
+    expect(result.current).toEqual({ visible: true, height: 200 });
 
     act(() => {
       visualViewport.height = 760;
