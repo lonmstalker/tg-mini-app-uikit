@@ -2,7 +2,7 @@
   {
     "name": "full kit · esm · gzip",
     "path": "packages/uikit/dist/index.js",
-    "limit": "47.1 kB",
+    "limit": "47.4 kB",
     "ignore": [
       "react",
       "react-dom"
@@ -11,7 +11,7 @@
   {
     "name": "full kit · cjs · gzip",
     "path": "packages/uikit/dist/index.cjs",
-    "limit": "48.2 kB",
+    "limit": "48.5 kB",
     "ignore": [
       "react",
       "react-dom"

@@ -24,23 +24,47 @@ const resistPull = (delta: number) => Math.max(0, delta) * 0.5;
  * the very top, a spinner while `onRefresh` runs, auto-hide afterwards.
  */
 export function TKPullToRefresh({ children, onRefresh, threshold = 72, disabled, testId, style }: TKPullToRefreshProps) {
-  const [pull, setPull] = useState(0);
+  const [guarding, setGuarding] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const indicatorRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollTargetRef = useRef<HTMLElement | null>(null);
+  const pullRef = useRef(0);
   const armedRef = useRef(false);
+  const guardingRef = useRef(false);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   const haptics = useOptionalHaptics();
   // The pull is a top-edge swipe-down — exactly Telegram's minimize gesture. Mute
   // it while pulling/refreshing so the gesture refreshes instead of collapsing
   // the app.
-  useVerticalSwipeGuard(pull > 0 || refreshing);
+  useVerticalSwipeGuard(guarding || refreshing);
 
-  const showIndicator = pull > 2 || refreshing;
-  const getScrollTop = () => {
-    const innerPageScroll = scrollRef.current?.querySelector<HTMLElement>("[data-tk-page-scroll]");
-    return innerPageScroll?.scrollTop ?? scrollRef.current?.scrollTop ?? 0;
+  const setGuardingActive = (active: boolean) => {
+    if (guardingRef.current === active) return;
+    guardingRef.current = active;
+    setGuarding(active);
   };
+  const resolveScrollTarget = () => {
+    if (scrollTargetRef.current?.isConnected) return scrollTargetRef.current;
+    const target = scrollRef.current?.querySelector<HTMLElement>("[data-tk-page-scroll]") ?? scrollRef.current ?? null;
+    scrollTargetRef.current = target;
+    return target;
+  };
+  const getScrollTop = () => {
+    return resolveScrollTarget()?.scrollTop ?? 0;
+  };
+  const applyPull = (nextPull: number) => {
+    const next = Math.max(0, nextPull);
+    pullRef.current = next;
+    if (indicatorRef.current) indicatorRef.current.style.height = next > 2 ? `${Math.max(next, 48)}px` : "0px";
+    if (scrollRef.current) {
+      scrollRef.current.style.transform = next ? `translateY(${next}px)` : "";
+      scrollRef.current.style.transition = next ? "none" : "transform var(--tk-t2) var(--tk-ease)";
+    }
+  };
+  const renderedPull = pullRef.current;
+  const showIndicator = renderedPull > 2 || refreshing;
 
   // The drag below is pointer-events based, but on a real touch device the
   // browser claims the vertical pan (touch-action: pan-y, needed for native
@@ -55,16 +79,18 @@ export function TKPullToRefresh({ children, onRefresh, threshold = 72, disabled,
     if (!el) return;
     const onStart = (e: TouchEvent) => {
       touchStart.current = e.touches.length === 1 ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : null;
+      if (touchStart.current) resolveScrollTarget();
     };
     const onMove = (e: TouchEvent) => {
       const s = touchStart.current;
-      if (!s || disabled || refreshing) return;
+      if (!s || disabled || refreshing || e.touches.length !== 1) return;
       const dy = e.touches[0].clientY - s.y;
       const dx = e.touches[0].clientX - s.x;
       if (dy > 0 && dy > Math.abs(dx) && getScrollTop() <= 0) e.preventDefault();
     };
     const clear = () => {
       touchStart.current = null;
+      scrollTargetRef.current = null;
     };
     el.addEventListener("touchstart", onStart, { passive: true });
     el.addEventListener("touchmove", onMove, { passive: false });
@@ -90,24 +116,28 @@ export function TKPullToRefresh({ children, onRefresh, threshold = 72, disabled,
       // upward or mid-list drag is a scroll and must not be hijacked.
       if (getScrollTop() > 0 || state.delta <= 0) {
         if (armedRef.current) armedRef.current = false;
-        if (pull !== 0) setPull(0);
+        if (pullRef.current !== 0) applyPull(0);
+        setGuardingActive(false);
         return;
       }
       const next = resistPull(state.delta);
       const armed = next >= threshold;
       if (armed && !armedRef.current) haptics.impact("light");
       armedRef.current = armed;
-      setPull(Math.min(next, threshold * 1.6));
+      applyPull(Math.min(next, threshold * 1.6));
+      setGuardingActive(true);
     },
     onEnd(state) {
       const committed = getScrollTop() <= 0 && state.delta > 0 && resistPull(state.delta) >= threshold;
+      scrollTargetRef.current = null;
       armedRef.current = false;
       if (!committed) {
-        setPull(0);
+        applyPull(0);
+        setGuardingActive(false);
         return;
       }
+      applyPull(threshold * 0.75);
       setRefreshing(true);
-      setPull(threshold * 0.75);
       // Call onRefresh synchronously, but turn a synchronous throw into a
       // handled rejection so it never crashes the pointerup handler or leaks an
       // unhandled rejection; the spinner is always cleared in `finally`.
@@ -120,8 +150,9 @@ export function TKPullToRefresh({ children, onRefresh, threshold = 72, disabled,
       Promise.resolve(result)
         .catch(() => {})
         .finally(() => {
+          applyPull(0);
           setRefreshing(false);
-          setPull(0);
+          setGuardingActive(false);
         });
     },
   });
@@ -142,10 +173,11 @@ export function TKPullToRefresh({ children, onRefresh, threshold = 72, disabled,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          height: showIndicator ? Math.max(pull, 48) : 0,
+          height: showIndicator ? Math.max(renderedPull, 48) : 0,
           overflow: "hidden",
           zIndex: 2,
         }}
+        ref={indicatorRef}
       >
         <span className="tk-ptr">
           <TKSpinner size={20} />
@@ -157,8 +189,8 @@ export function TKPullToRefresh({ children, onRefresh, threshold = 72, disabled,
           height: "100%",
           overflowY: "auto",
           WebkitOverflowScrolling: "touch",
-          transform: pull ? `translateY(${pull}px)` : undefined,
-          transition: pull ? "none" : "transform var(--tk-t2) var(--tk-ease)",
+          transform: renderedPull ? `translateY(${renderedPull}px)` : undefined,
+          transition: renderedPull ? "none" : "transform var(--tk-t2) var(--tk-ease)",
         }}
       >
         {children}

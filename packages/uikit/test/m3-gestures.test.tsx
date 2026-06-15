@@ -165,6 +165,28 @@ describe("M3.4 TKPullToRefresh", () => {
       expect(indicator.parentElement).toHaveStyle({ height: "48px" });
     });
   });
+
+  it("caches the scroll target instead of querying it on every blocking touchmove", () => {
+    const querySelector = vi.spyOn(HTMLElement.prototype, "querySelector");
+    render(
+      <kit.TKPullToRefresh onRefresh={() => Promise.resolve()} testId="ptr">
+        <div data-tk-page-scroll style={{ height: 300 }}>
+          content
+        </div>
+      </kit.TKPullToRefresh>,
+    );
+    const area = screen.getByTestId("ptr");
+    querySelector.mockClear();
+
+    fireEvent.touchStart(area, { touches: [{ clientX: 160, clientY: 50 }] });
+    for (const y of [90, 130, 170, 210]) {
+      fireEvent.touchMove(area, { touches: [{ clientX: 160, clientY: y }] });
+    }
+
+    const scrollLookups = querySelector.mock.calls.filter(([selector]) => selector === "[data-tk-page-scroll]");
+    expect(scrollLookups.length).toBeLessThanOrEqual(1);
+    querySelector.mockRestore();
+  });
 });
 
 /* ---------------- M3.5 TKSwipeCell ---------------- */
@@ -205,10 +227,11 @@ describe("M3.5 TKSwipeCell", () => {
 /* ---------------- M3.7 toast queue & position ---------------- */
 
 describe("M3.7 TKToast position and overflow", () => {
+  let toastId = 0;
   function Trigger() {
     const toast = kit.useTKToast();
     return (
-      <button type="button" onClick={() => toast.show({ text: `t${Date.now()}-${Math.random()}` })}>
+      <button type="button" onClick={() => toast.show({ text: `t${++toastId}` })}>
         fire
       </button>
     );
