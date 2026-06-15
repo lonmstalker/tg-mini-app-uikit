@@ -6,6 +6,7 @@ import {
   TKEmptyState,
   TKInfiniteList,
   TKPage,
+  TKPullToRefresh,
   TKSearch,
   TKSheet,
   TKSkeleton,
@@ -362,6 +363,7 @@ export function Feed() {
   }
 
   return (
+    <TKPullToRefresh onRefresh={feed.retry} testId="discover-refresh">
       <TKPage testId="panel-discover-feed" gap={10}>
         <TKTitle level={1}>{t("discover.feedTitle")}</TKTitle>
         <FeaturedRecommendation onOpen={() => open("sunrise-ridge")} />
@@ -458,6 +460,7 @@ export function Feed() {
         activeCount={filterCount}
         onReset={resetFilters}
       />
-    </TKPage>
+      </TKPage>
+    </TKPullToRefresh>
   );
 }

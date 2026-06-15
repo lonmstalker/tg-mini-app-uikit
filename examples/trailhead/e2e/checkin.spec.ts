@@ -140,6 +140,32 @@ test("trips: pull-to-refresh indicator is reachable from the top of the page", a
   }).toBeGreaterThanOrEqual(32);
 });
 
+test("trips: pull-to-refresh survives a REAL touch drag (touch-action must not steal it)", async ({ page }) => {
+  await page.goto("/?fast=1");
+  await openTrips(page, "Trips");
+
+  const root = page.getByTestId("trips-refresh");
+  const box = (await root.boundingBox())!;
+  const x = box.x + box.width / 2;
+  const y = box.y + 16;
+
+  // Unlike the synthetic-PointerEvent tests above, this drives a real
+  // compositor touch via CDP — the only input that goes through `touch-action`.
+  // With `pan-y` the browser used to claim the vertical pan and fire
+  // pointercancel before the pull armed, so the gesture was dead on device while
+  // mouse/synthetic tests stayed green. A non-passive touchmove now
+  // preventDefaults the top-edge overscroll, keeping the pointer drag alive.
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x, y }] });
+  for (let i = 1; i <= 16; i++) {
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x, y: y + i * 12 }] });
+  }
+  // Mid-drag (before release) the resisted pull must have shown the indicator —
+  // proof the gesture was not hijacked by the browser.
+  await expect(root.locator(".tk-ptr")).toBeVisible();
+  await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+});
+
 test("trips: pull-to-refresh runs without minimizing the app", async ({ page }) => {
   await page.goto("/?fast=1");
   await openTrips(page, "Trips");
