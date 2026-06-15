@@ -1,5 +1,7 @@
+import { useRef, type KeyboardEvent } from "react";
 import { tkFormat, useTKLocale } from "../../foundation/i18n";
 import { useControllable } from "../../internal/useControllable";
+import { tkRovingNext, tkTabbableIndex } from "../../internal/roving";
 
 export interface TKPageDotsProps {
   count: number;
@@ -12,6 +14,16 @@ export interface TKPageDotsProps {
 export function TKPageDots({ count, page, defaultPage = 0, onChange, testId }: TKPageDotsProps) {
   const locale = useTKLocale();
   const [cur, setCur] = useControllable(page, defaultPage, onChange);
+  // Roving tabindex: one tab stop, arrows move focus + page (selection follows focus).
+  const btnRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const tabbable = tkTabbableIndex(cur, count);
+  const onKeyDown = (e: KeyboardEvent<HTMLButtonElement>, index: number) => {
+    const next = tkRovingNext(e.key, index, count, undefined, "horizontal");
+    if (next == null) return;
+    e.preventDefault();
+    setCur(next);
+    btnRefs.current[next]?.focus();
+  };
 
   return (
     <div data-testid={testId} style={{ display: "flex", gap: 7 }}>
@@ -19,6 +31,12 @@ export function TKPageDots({ count, page, defaultPage = 0, onChange, testId }: T
         <button
           type="button"
           key={index}
+          ref={(el) => {
+            btnRefs.current[index] = el;
+          }}
+          aria-current={index === cur ? "true" : undefined}
+          tabIndex={index === tabbable ? 0 : -1}
+          onKeyDown={(e) => onKeyDown(e, index)}
           onClick={() => setCur(index)}
           aria-label={tkFormat(locale.page, { page: index + 1 })}
           style={{

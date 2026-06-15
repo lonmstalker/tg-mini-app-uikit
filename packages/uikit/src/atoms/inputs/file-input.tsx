@@ -121,7 +121,12 @@ export const TKFileInput = /* @__PURE__ */ forwardRef<HTMLInputElement, TKFileIn
           accept={accept}
           multiple={multiple}
           disabled={disabled}
-          onChange={(e) => commit(Array.from(e.target.files ?? []))}
+          onChange={(e) => {
+            commit(Array.from(e.target.files ?? []));
+            // Clear the value so re-picking the SAME file fires `change` again
+            // (the browser suppresses it when the selection is unchanged).
+            e.target.value = "";
+          }}
           // display:none keeps it clickable programmatically while staying out
           // of the focus order and accessibility tree (the row is the control)
           style={{ display: "none" }}

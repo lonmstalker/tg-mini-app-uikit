@@ -13,7 +13,9 @@
     "noFallthroughCasesInSwitch": true,
     "noEmit": true,
     "paths": {
-      "tg-mini-app-uikit": ["./src/index.ts"]
+      "tg-mini-app-uikit": ["./src/index.ts"],
+      "@tg-mini-app/telegram": ["../telegram/src/index.ts"],
+      "@tg-mini-app/telegram/testing": ["../telegram/src/testing.ts"]
     }
   },
   "include": ["src", "test", "storybook", "vitest.config.ts"]

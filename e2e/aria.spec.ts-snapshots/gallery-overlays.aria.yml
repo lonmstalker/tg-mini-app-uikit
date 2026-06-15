@@ -1,7 +1,0 @@
-- text: Overlays · toasts
-- button "Bottom sheet"
-- button "Dialog"
-- button "Action sheet"
-- button "Success toast"
-- button "Error toast"
-- button "Undo snackbar"

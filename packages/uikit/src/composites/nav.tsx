@@ -41,6 +41,11 @@ export function useNav(): TKNavApi {
   return api;
 }
 
+/** Like `useNav`, but returns null outside a `<TKNavStack>` instead of throwing — for components (e.g. `TKHeader back="auto"`) that adapt to a nav stack when present. */
+export function useOptionalNav(): TKNavApi | null {
+  return useContext(TKNavContext);
+}
+
 export interface TKNavPanelProps {
   id: string;
   children?: ReactNode;

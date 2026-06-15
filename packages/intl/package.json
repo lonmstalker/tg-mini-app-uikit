@@ -1,0 +1,53 @@
+{
+  "name": "@tg-mini-app/intl",
+  "version": "0.1.0",
+  "description": "Tiny localization engine for Telegram Mini Apps — createI18n, ICU-lite plurals via Intl.PluralRules, language resolution, and locale-aware date helpers. Zero dependencies; no UI.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "vite build && tsc -p tsconfig.build.json && node scripts/postbuild-types.mjs",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.3",
+    "@types/react": "^19.1.0",
+    "@vitejs/plugin-react": "^4.5.0",
+    "react": "^19.1.0",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5",
+    "vitest": "^4.1.8"
+  },
+  "keywords": [
+    "telegram",
+    "mini-app",
+    "i18n",
+    "intl",
+    "pluralrules"
+  ]
+}

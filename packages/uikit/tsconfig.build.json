@@ -4,7 +4,12 @@
     "noEmit": false,
     "declaration": true,
     "emitDeclarationOnly": true,
-    "outDir": "dist"
+    "outDir": "dist",
+    // Drop the dev path aliases for the declaration build: resolve
+    // `@tg-mini-app/telegram` via node_modules (its built .d.ts) so tsc does NOT
+    // pull the peer's source into this program — that would shift the rootDir
+    // and emit `dist/uikit/index.d.ts` instead of the flat `dist/index.d.ts`.
+    "paths": {}
   },
   "include": ["src"]
 }

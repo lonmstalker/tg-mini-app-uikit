@@ -12,7 +12,7 @@ import {
   TKSheet,
   type TKDateRange,
 } from "../src/index";
-import { createMockTelegram } from "./support/telegram/mock";
+import { createMockTelegram } from "@tg-mini-app/telegram/testing";
 import { wrapperFor } from "./helpers/telegram";
 
 /*

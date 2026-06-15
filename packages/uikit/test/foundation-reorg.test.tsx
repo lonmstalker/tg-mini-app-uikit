@@ -21,7 +21,7 @@ import {
   useWebApp,
   type TKNativeButtonParams,
 } from "../src/foundation/telegram";
-import { createStorageApi } from "../src/foundation/telegram/storage";
+import { createStorageApi } from "../../telegram/src/storage";
 
 function ThemeProbe() {
   const theme = useTKTheme();

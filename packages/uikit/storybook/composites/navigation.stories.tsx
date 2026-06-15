@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import {
   TKButton,
@@ -8,8 +9,29 @@ import {
   TKSegmented,
   TKSteps,
   TKTabbar,
+  TKTabView,
 } from "tg-mini-app-uikit";
 import { AppScreen, Narrow, Row, Screen, options } from "../story-helpers";
+
+function TabViewDemo() {
+  const [tab, setTab] = useState(0);
+  const body = (label: string) => (
+    <div style={{ padding: 20, height: "100%", display: "grid", placeItems: "center", fontWeight: 600 }}>{label}</div>
+  );
+  return (
+    <TKTabView
+      value={tab}
+      onChange={setTab}
+      safeArea
+      tabs={[
+        { icon: "home", label: "Home" },
+        { icon: "search", label: "Search" },
+        { icon: "user", label: "You" },
+      ]}
+      panels={[body("Home — kept mounted"), body("Search"), body("You")]}
+    />
+  );
+}
 
 const meta = {
   title: "Composites/Navigation",
@@ -79,4 +101,11 @@ export const StepsAndDots = {
       </Narrow>
     </AppScreen>
   ),
+} satisfies Story;
+
+export const TabView = {
+  // Keep-mounted bottom tabs: each panel survives a tab switch; the tabbar hides
+  // on a deep screen or when the keyboard is up.
+  parameters: { fullBleed: true },
+  render: () => <TabViewDemo />,
 } satisfies Story;

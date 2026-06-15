@@ -5,6 +5,16 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: [
+      // Resolve the platform peer to its sources (most specific first), so the
+      // kit's tests never need a built telegram dist/.
+      {
+        find: "@tg-mini-app/telegram/testing",
+        replacement: new URL("../telegram/src/testing.ts", import.meta.url).pathname,
+      },
+      {
+        find: "@tg-mini-app/telegram",
+        replacement: new URL("../telegram/src/index.ts", import.meta.url).pathname,
+      },
       {
         find: "tg-mini-app-uikit/style.css",
         replacement: new URL("./src/tokens/tokens.css", import.meta.url).pathname,

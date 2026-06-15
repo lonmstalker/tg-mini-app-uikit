@@ -70,7 +70,7 @@ mustContain("docs/site/pages/recipes.md", [
   "keyboard",
   "edge swipes",
   "back priorities",
-  "tg-mini-app-testkit",
+  "@tg-mini-app/telegram/testing",
 ]);
 
 mustContain(".github/workflows/docs.yml", ["npm run docs:check", "npm run docs:build"]);

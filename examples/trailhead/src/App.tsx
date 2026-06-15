@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { TKTabbar, useKeyboard, useVerticalSwipes } from "tg-mini-app-uikit";
+import { TKTabView, useVerticalSwipes } from "tg-mini-app-uikit";
 import { useT } from "./i18n";
 import { TABS, type TabId } from "./tabs";
 import { MockBadge } from "./components/MockBadge";
@@ -27,7 +27,6 @@ export function App() {
     profile: 1,
   });
   const verticalSwipes = useVerticalSwipes();
-  const keyboard = useKeyboard();
   const tabbarRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -49,7 +48,6 @@ export function App() {
   );
 
   const activeTab = TABS[active]?.id ?? "discover";
-  const tabbarVisible = (depthByTab[activeTab] ?? 1) <= 1 && !keyboard.visible;
   const setTabDepth = useCallback((tab: TabId, depth: number) => {
     setDepthByTab((prev) => (prev[tab] === depth ? prev : { ...prev, [tab]: depth }));
   }, []);
@@ -74,21 +72,18 @@ export function App() {
         data-testid="app-shell"
         style={{ height: "100dvh", display: "flex", flexDirection: "column", background: "var(--tk-bg)" }}
       >
-        <div ref={contentRef} style={{ position: "relative", flex: 1, minHeight: 0 }}>
-          {TABS.map((tab, index) => (
-            <div
-              key={tab.id}
-              data-testid={`tab-panel-${tab.id}`}
-              aria-hidden={index === active ? undefined : true}
-              style={{ position: "absolute", inset: 0, display: index === active ? "block" : "none" }}
-            >
-              {screens[tab.id]}
-            </div>
-          ))}
-        </div>
-        <div ref={tabbarRef} style={{ display: tabbarVisible ? "block" : "none" }} aria-hidden={tabbarVisible ? undefined : true}>
-          <TKTabbar testId="tabbar" tabs={tabItems} value={active} onChange={setActive} safeArea />
-        </div>
+        <TKTabView
+          testId="tabbar"
+          tabs={tabItems}
+          panels={TABS.map((tab) => screens[tab.id])}
+          panelTestId={(index) => `tab-panel-${TABS[index].id}`}
+          value={active}
+          onChange={setActive}
+          hideTabbar={(depthByTab[activeTab] ?? 1) > 1}
+          safeArea
+          contentRef={contentRef}
+          tabbarRef={tabbarRef}
+        />
         <MockBadge />
         <Onboarding tabbarRef={tabbarRef} contentRef={contentRef} />
       </div>

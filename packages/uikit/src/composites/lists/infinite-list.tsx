@@ -4,7 +4,17 @@ import { Children, useCallback, useEffect, useRef, type CSSProperties, type Reac
 
 export interface TKInfiniteListProps {
   children?: ReactNode;
-  /** Called when the sentinel becomes visible and `hasMore` is true. */
+  /**
+   * Called when the sentinel becomes visible and `hasMore` is true.
+   *
+   * Contract: each call MUST make progress — append children, or set `hasMore`
+   * false (or, while a page is in flight, set `loading` true). If a call
+   * settles with the same child count and `hasMore` still true (e.g. a failed
+   * page fetch that neither appended nor cleared `hasMore`), the list treats
+   * itself as STALLED and will not auto-retry; it waits until the child count
+   * or `hasMore` changes (a consumer-driven retry) before firing again. This
+   * is what stops an unbounded retry loop on a page error.
+   */
   onLoadMore: () => void;
   hasMore?: boolean;
   /** Skip new requests while a page is in flight; re-checks on release. */
@@ -40,10 +50,17 @@ export function TKInfiniteList({
   // below (both seeded on mount with the sentinel already in the 240px margin)
   // each called onLoadMore, double-fetching the first page.
   const firedRef = useRef(false);
+  // Child count captured at the moment of the last fire. If a later settle
+  // finds the count unchanged while `hasMore` is still true, the previous
+  // onLoadMore made no progress (a stall — e.g. a page error) and we must NOT
+  // re-arm and re-fire, or the list spins forever.
+  const childCountRef = useRef(0);
+  const lastFiredCountRef = useRef(-1);
 
   const maybeLoad = useCallback(() => {
     if (loadingRef.current || !hasMoreRef.current || firedRef.current) return;
     firedRef.current = true;
+    lastFiredCountRef.current = childCountRef.current;
     loadRef.current();
   }, []);
 
@@ -53,6 +70,7 @@ export function TKInfiniteList({
   // the rootMargin would load page 1 and then silently stall: the persistent
   // observer never re-fires for an unchanged "still visible" state.
   const childCount = Children.count(children);
+  childCountRef.current = childCount;
 
   // Persistent observer for scroll-driven loading. Re-arms the guard whenever
   // the sentinel scrolls out of view so a later re-entry can load again.
@@ -79,6 +97,11 @@ export function TKInfiniteList({
   // so a short page that leaves the sentinel on screen loads the next one.
   useEffect(() => {
     if (loading || !hasMore) return;
+    // A fire that settled without appending children (and `hasMore` is still
+    // true) made no progress: leave the guard armed-shut so a non-advancing
+    // onLoadMore can't spin. The next genuine input change (more children, or
+    // `hasMore` flipping) re-runs this effect and clears the stall.
+    if (firedRef.current && childCount === lastFiredCountRef.current) return;
     firedRef.current = false;
     const node = sentinelRef.current;
     if (!node || typeof IntersectionObserver === "undefined") return;

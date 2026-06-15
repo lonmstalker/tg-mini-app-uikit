@@ -1,6 +1,6 @@
 import { act, renderHook } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { createMockTelegram } from "./support/telegram/mock";
+import { createMockTelegram } from "@tg-mini-app/telegram/testing";
 import {
   useBackButton,
   useCloudStorage,

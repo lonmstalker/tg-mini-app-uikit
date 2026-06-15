@@ -1,523 +1,1911 @@
-# Polish the Trailhead demo for real Telegram Mini App viewing
+# Design the UIKit-selling Telegram Mini App demo
 
-This ExecPlan is a living document. The sections `Progress`, `Surprises & Discoveries`, `Decision Log`, and `Outcomes & Retrospective` must be kept up to date as work proceeds.
+This file is an ExecPlan: a self-contained, living plan for designing and then
+implementing the flagship demo for `tg-mini-app-uikit`. It follows the OpenAI
+Codex PLANS.md convention for multi-hour problem solving. Read it top to bottom
+before editing code. The sections `Progress`, `Surprises & Discoveries`,
+`Decision Log`, and `Outcomes & Retrospective` are living sections and must be
+updated as work proceeds.
 
-This file follows the OpenAI Codex ExecPlan convention from "Using PLANS.md for multi-hour problem solving". It is intentionally self-contained: a future contributor should be able to read only this file plus the current repository and understand why the work matters, what to change, how to verify it, and how to recover from partial progress. When this file is revised, update every affected section, not just the checklist.
+The previous working-tree occupant of this file was the completed post-Trailhead
+DDD package split plan. The user explicitly allowed deleting old content from
+`plans.md`. This plan now supersedes it as the one active `plans.md` effort.
+
+
+## Agent Operating Contract
+
+This file is written for future coding and design agents. It is the source of
+truth for the demo design, but it is not the user-facing answer format.
+
+When working from this plan, an agent must:
+
+- read the whole file before changing demo code or expanding a screen;
+- keep `plans.md` precise, exhaustive, and implementation-ready;
+- write chat updates in concise Russian, using natural human language;
+- keep chat summaries synchronized with this file, but never paste long plan
+  sections into chat unless the user explicitly asks for that;
+- describe only the currently active screen in chat, plus the concrete decision
+  needed from the user;
+- update `Progress`, `Surprises & Discoveries`, and `Decision Log` when the
+  design direction changes;
+- mark screen status as `drafted`, `approved`, `needs revision`, or
+  `implemented`;
+- avoid starting implementation for any screen that is not approved;
+- preserve existing unrelated working-tree changes.
+
+The correct loop is:
+
+1. Update this file with exact screen detail.
+2. Give the user a short human-readable explanation of the same screen.
+3. Ask for approval or targeted changes.
+4. If the user changes direction, update this file first, then summarize the
+   synchronized change in chat.
+
+Never answer only with "I updated the file." The user needs the human version of
+the same decision.
+
+
+## Human Sync Snapshot
+
+This section mirrors the current state in a short form. Agents should update it
+whenever a screen changes, then use it as the basis for the chat response.
+
+Current approved direction:
+
+- The demo sells `tg-mini-app-uikit`, not a one-off Mini App.
+- The approved working name is **UIKit Surface Composer**.
+- The demo is a live in-app composer inside a Telegram Mini App WebView.
+- The user accepted the direction where the opening wow is **Token Singularity**:
+  one living point in the center of the TMA viewport generates the first page
+  from UIKit tokens, safe-area rails, component slots, runtime states, and
+  motion rules.
+- Every later page must stay in the same language: not a typical app flow, not a
+  navbar demo, but a capability scene that makes TMA constraints feel valuable.
+- Every touch reveals UIKit craft: components, tokens, runtime, accessibility,
+  Telegram constraints, and recorder proof.
+- Screens 1-6 are now drafted for review.
+
+Human version of Screen 1:
+
+Screen 1 starts almost empty: a real TMA viewport and one tiny point in the
+center. That point is the seed token. It breathes, emits spacing rails, radius
+arcs, safe-area bounds, semantic colors, component slots, and runtime state
+marks. The page does not fade in as a screenshot. It is generated from the
+UIKit contract, then settles into a compact premium composer. When the viewer
+taps the surface, chips, badge, progress ring, avatar stack, header action, or
+empty space, the screen answers with small purposeful motion and shows which
+UIKit layer caused it. The first impression should be: this UIKit can generate a
+living TMA surface, and I can inspect how it is built.
+
+Human version of the remaining pages:
+
+Screen 2 remixes the same generated surface into commerce, booking, wallet,
+community, and support without losing tokens or Telegram constraints. Screen 3
+turns touch into a microscope: cards can tilt, rotate, split into state layers,
+and show why each microinteraction exists. Screen 4 stress-tests Telegram
+runtime: keyboard, safe areas, viewport, native buttons, haptics, BackButton,
+theme changes, fallback mode. Screen 5 breaks one card into refracted UIKit
+layers so developers see tokens, atoms, composites, templates, runtime hooks,
+a11y, tests, and stories. Screen 6 compresses the whole run into a shareable
+proof card generated from recorder events.
+
+Current user decision needed:
+
+- Choose the first surface content: checkout, booking, wallet, support, or a
+  neutral premium app shell.
+- Approve or revise the Screen 2-6 motif line: `Template Prism`,
+  `Component Refraction`, `Runtime Pressure Chamber`, `Build Tomography`,
+  `Proof Card Forge`.
 
 
 ## Purpose / Big Picture
 
-Trailhead is the flagship demo application for `tg-mini-app-uikit`. It is not just a component gallery; it is meant to prove that the kit can compose a believable Telegram Mini App under real platform constraints: native bottom buttons, native back behavior, safe areas, Telegram theme colors, haptics, Stars payment, sheets, storage, and narrow WebView layout.
+The demo must sell the UIKit, not a one-off Telegram Mini App. The user should
+not leave thinking "nice custom app." They should leave thinking:
 
-The next improvement is a design polish pass focused on how the demo looks when it is watched inside the Telegram Mini App container. A plain desktop browser with the injected mock bridge is useful for development, but it is not the final judge. The final judge is a real Telegram client opening the demo as a Mini App: the native Main Button and Back Button must feel integrated, Telegram safe areas must be respected, dark and light themes must follow the client, and the first minute of the demo must read as a product flow rather than a web page inside WebView.
+> I can build premium, alive, Telegram-native Mini App surfaces from this UIKit,
+> and every touch proves the kit has real product craft.
 
-After this work, a reviewer should be able to open Trailhead in Telegram, complete the signature flow from Discover to booking to Trips, and see a compact, polished, Telegram-native product surface. The biggest visible changes are: the first-run welcome no longer clips, the Discover feed cards read cleanly, nested screens have obvious back behavior even in mock/browser previews, booking date and checkout screens are more compact, Platform Lab no longer confuses the user-facing profile flow, and dark theme keeps strong contrast.
+The demo runs inside a Telegram Mini App WebView. It does not depend on real
+Telegram dialogs, a video sequence, or an external chat screen. Telegram context
+can appear only as in-app simulated launch context, native chrome, safe-area
+constraints, runtime events, theme variables, and share-ready proof states.
+
+The current working direction is **UIKit Surface Composer**. It is a live composer
+where a premium Mini App surface can be touched, remixed, inspected, stressed,
+and decomposed into real UIKit primitives. The wow is not a MainButton, theme
+change, safe area, haptic, or animation by itself. The wow is that every
+interaction reveals a reusable UIKit layer: tokens, primitives, templates,
+runtime hooks, accessibility states, Telegram chrome, and recorder-backed proof.
+
+This plan is intentionally screen-by-screen. Each screen must be described,
+reviewed, and approved before moving to the next one. Do not implement a later
+screen until its plan section has been accepted or revised.
 
 
 ## Progress
 
-- [x] (2026-06-15 10:46Z) Captured the design audit findings into this OpenAI-style ExecPlan. No production code has been changed.
-- [x] (2026-06-15 11:09Z) Established browser/mock visual baselines before implementation at 390 by 844, 360 by 780, and 320 by 700. Baseline screenshots were kept outside the repository at `/tmp/trailhead-baseline-2026-06-15`.
-- [ ] Establish a real Telegram Mini App WebView baseline. Blocked locally by missing tunnel/bot/client configuration; no `cloudflared`, `ngrok`, `localtunnel`, or Telegram bot/tunnel environment variables were available on this machine.
-- [x] (2026-06-15 11:09Z) Polished the Discover first viewport: replaced the large hero-style banner with a compact recommendation row and rebuilt feed cards around `TKCard` composition with stable price placement and one-line non-interactive rating metadata.
-- [x] (2026-06-15 11:09Z) Improved browser/mock nested navigation affordance with a mock-only `TKHeader` back fallback across nested demo screens while preserving native Telegram Back Button behavior for real clients.
-- [x] (2026-06-15 11:09Z) Compacted the booking flow: DateSlot now shows the selected hike and price before the calendar, the calendar is denser, and checkout sheet spacing is tightened.
-- [x] (2026-06-15 11:09Z) Separated Platform Lab from the user-facing Profile story by moving it into a clearly marked demo tools section; shortened guide same-trip badges in both English and Russian.
-- [x] (2026-06-15 11:09Z) Re-ran automated gates and browser/mock visual verification. Final screenshots were kept outside the repository at `/tmp/trailhead-polish-final-2026-06-15`; in-app Browser smoke verified feed metadata and mock back behavior.
-- [x] (2026-06-15 11:19Z) Created an ephemeral HTTPS preview candidate with `npx --yes localtunnel --port 5173 --local-host 127.0.0.1`. The tunnel URL `https://purple-days-kick.loca.lt/` returned the Trailhead Vite HTML by `curl -L` while active; this narrows the local blocker to missing Telegram bot/client Mini App launch, not missing HTTPS transport.
-- [x] (2026-06-15 11:19Z) Added an injected real-bridge e2e proxy at `examples/trailhead/e2e/telegram-bridge.spec.ts`. It installs `window.Telegram.WebApp` before app boot and verifies that Trailhead hides browser-only mock chrome, drives native MainButton and BackButton handlers, and emits selection haptics after slot selection.
-- [x] (2026-06-15 11:31Z) Added a reproducible real-Telegram preview helper at `examples/trailhead/scripts/telegram-preview.mjs` and documented it in `examples/trailhead/README.md`. It starts Vite, opens a temporary HTTPS localtunnel URL, verifies Trailhead HTML, and, when `TELEGRAM_BOT_TOKEN` is present, calls Bot API `setChatMenuButton` with a `web_app` menu button.
-- [x] (2026-06-15 11:35Z) Deployed the production Trailhead build to the existing `visitka` server at `https://201-51-25-123.sslip.io/trailhead/`. The current root Mini App remains served by `visitka-bot-1`; Caddy now serves only `/trailhead/*` from `/srv/trailhead` and continues to proxy all other paths to `bot:8080`.
-- [x] (2026-06-15 11:35Z) Wired the deployed Trailhead URL into the existing `lonmstalker_bot` only for `OWNER_CHAT_ID`: Bot API `setChatMenuButton` returned a `web_app` owner menu button pointing at `https://201-51-25-123.sslip.io/trailhead/`, and an owner-only message with an inline `web_app` button was sent.
-- [x] (2026-06-15 12:05Z) Fixed the real-client issue pass reported after deployment: biometric unlock now performs `init` and `requestAccess` before `authenticate`; Stars payment now requests a real Bot API invoice link from `my-work-bot`; TON wallet connect now uses TonConnect UI and a deployed manifest; mock-only cutout controls are hidden in real Telegram; guides, feed cards, route cards, skeletons, and infinite-list loaders now have Telegram-style hairline separation and stable width.
-- [x] (2026-06-15 12:05Z) Extended `my-work-bot` so it can serve and deploy the Trailhead demo: added `just deploy-trailhead-demo`, `/demo` BotCommand, `/start` and `/demo` WebApp buttons, Caddy `/trailhead/` static route, protected `/api/trailhead/invoice`, and `pre_checkout_query` acceptance for Stars payments.
-- [x] (2026-06-15 12:07Z) Rebuilt and redeployed both artifacts to `visitka`: Trailhead static dist was synced to `/opt/visitka/trailhead-dist`, and `visitka-bot-1` was recreated from a freshly built `ghcr.io/lonmstalker/my-work-bot:latest` image. Root app, `/trailhead/`, TON manifest, Bot commands, and invoice endpoint were all smoke-tested after deployment.
-- [x] (2026-06-15 12:32Z) Fixed the second real-client feedback pass: production Trailhead no longer auto-injects the mock bridge, loads and validates the official Telegram WebApp script before boot, ignores plain-browser Telegram stubs without launch data, hides mock-only cutout/RTL/closing controls from real/non-mock runtime, replaces the feed inline filters with a filter sheet, improves the light-theme search field, adds feed-card-shaped skeletons, and prevents empty checkout from rendering `0 Stars`.
-- [x] (2026-06-15 12:32Z) Rebuilt and redeployed the updated Trailhead static build to `visitka`; public smoke confirmed `/trailhead/`, the new JS asset, TonConnect manifest, unauthenticated invoice `401`, authenticated invoice `200`, and deployed render without `MOCK` or inline filter rows.
-- [x] (2026-06-15 13:00Z) Fixed and redeployed the third feedback pass: search focus keeps the feed mounted, `TKSearch` no longer squeezes the Russian cancel label, nested booking/check-in/detail flows hide the bottom tabbar, native MainButton ownership is scoped to the visible tab stack, Trips statuses use a compact pill instead of the old badge, and check-in now has an explicit demo path when no physical QR stand is available. The updated static build was deployed to `visitka` under `/trailhead/`.
-- [x] (2026-06-15 14:02Z) Fixed the fourth feedback pass: focused search hides the bottom tabbar while the keyboard overlaps the viewport, checkout warns before real Stars payments and offers an explicit demo completion after a cancelled invoice, checkout/profile PIN entry supports variable 4-8 digit codes, and Discover now uses one animated search/filter toolbar with the filter label collapsing to an icon while search is active.
-- [x] (2026-06-15 14:04Z) Rebuilt and redeployed the fourth feedback pass to `visitka`; public smoke confirmed `https://201-51-25-123.sslip.io/trailhead/`, the new `index-B1PdVzCN.js` asset, production render without `MOCK`, and the deployed search/filter toolbar behavior.
-- [x] (2026-06-15 14:40Z) Fixed the fifth feedback pass locally: checkout final charge is capped to `1 Star`, checkout hides the MainButton while the payment sheet is open, closing a completed demo payment returns to Trips instead of a dead checkout, PIN dots render only as digits are entered, keyboard detection ignores Telegram viewport drag without focused text input, and Trips opens with visible swipe/pull-to-refresh hints.
-- [x] (2026-06-15 14:41Z) Redeployed the fifth feedback pass to `visitka`; public smoke confirmed `https://201-51-25-123.sslip.io/trailhead/`, the new `index-CIOBpOCG.js` asset, production render without `MOCK`, `1 Star` checkout cap, hidden checkout pay action under the sheet, dynamic PIN dots, and Trips gesture hints.
-- [x] (2026-06-15 15:00Z) Fixed the sixth feedback pass locally: Trips pull-to-refresh now starts at the top of the Trips page and exposes a visible indicator, keyboard state resyncs on focus/blur/visibility so the bottom navbar is not left hidden after re-entry, checkout PIN explains the 4-8 digit flow, profile wallet PIN explains first-time PIN setup, and the Stars PIN sheet snaps high enough to show `Готово` without dragging.
-- [x] (2026-06-15 15:05Z) Rebuilt and redeployed the sixth feedback pass to `visitka`; public smoke confirmed `https://201-51-25-123.sslip.io/trailhead/`, the new `index-DdkZB0Gy.js` asset, and the deployed Trips pull-to-refresh indicator in mock Telegram mode.
-- [x] (2026-06-15 16:13Z) Fixed the seventh feedback pass locally: pull-to-refresh now renders a visible 38px indicator as soon as the pull starts, native MainButton click handlers ignore raw Telegram click events while disabled/loading/hidden, and DateSlot cannot navigate to checkout before a time is selected.
-- [x] (2026-06-15 16:24Z) Rebuilt and redeployed the seventh feedback pass to `visitka`; public smoke confirmed `https://201-51-25-123.sslip.io/trailhead/`, the new `index-i-t-ooR-.js` asset, and a deployed 38px Trips pull-to-refresh indicator in mock Telegram mode.
-- [x] (2026-06-15 16:29Z) Pushed branch `codex/trailhead-polish-plans` and opened draft PR https://github.com/lonmstalker/tg-mini-app-uikit/pull/2. It stays draft because the only remaining acceptance item is manual visual validation inside a real Telegram client.
-- [ ] Re-run real Telegram visual verification when a real Telegram client plus HTTPS Mini App URL are available.
+- [x] (2026-06-16) Read the brainstorm
+  `docs/brainstorms/2026-06-16-tma-native-lab-brainstorm.md`.
+- [x] (2026-06-16) Rejected the previous `Revenue Recovery`, `Launch Echo`, and
+  generic magic-app directions as first-screen concepts because they sell a
+  custom TMA instead of the UIKit.
+- [x] (2026-06-16) Loaded project design context through `impeccable`:
+  `PRODUCT.md` and `DESIGN.md` are present and valid.
+- [x] (2026-06-16) Confirmed the real UIKit surface from
+  `packages/uikit/src/index.ts` and package-local Storybook folders.
+- [x] (2026-06-16) Drafted this new active `plans.md`.
+- [x] (2026-06-16) Added an agent operating contract and human sync snapshot so
+  future agents keep `plans.md` exhaustive while answering the user in concise
+  synchronized Russian.
+- [x] (2026-06-16) Replaced the generic first-screen reveal with
+  `Token Singularity`: one center point generates the first TMA page from UIKit
+  tokens, safe-area rails, component slots, runtime states, and motion rules.
+- [x] (2026-06-16) Expanded Screens 2-6 as TMA capability scenes instead of a
+  typical navbar application flow.
+- [x] (2026-06-16) Integrated 5 spawned role-agent reviews: founder, senior TMA
+  engineer, creative director, product motion designer, and QA automation lead.
+- [x] (2026-06-16) Renamed the demo to **UIKit Surface Composer**.
+- [x] (2026-06-16) Added Apple/OpenAI-style product reveal direction: cold open,
+  one idea per screen, signature motion first, proof immediately after.
+- [x] (2026-06-16) Approved the `Show UIKit layers` reveal behavior: hidden
+  during the first cinematic birth, revealed only after the first meaningful
+  touch.
+- [ ] User approves or revises the first surface content and Screen 2-6
+  capability scene line.
+
+
+## Product Principles For This Demo
+
+The demo is a product surface first and a sales surface second. It should feel
+like something a serious Telegram or TON product team could open in front of a
+client and say: this is why the UIKit is worth using.
+
+The first viewer is not a random visitor. The viewer has already seen generic
+TMA dashboards, airdrops, claim screens, launchpads, wallets, and card grids.
+They will not be impressed by standard mobile UI, ordinary gradients, component
+catalogs, or Telegram API checklists.
+
+The demo must prove three things quickly:
+
+- UIKit surfaces can feel premium and alive.
+- The same surface is built from reusable pieces, not a hand-coded one-off.
+- Telegram constraints are handled as part of the system, not afterthoughts.
+
+Why the viewer should care about TMA at all:
+
+- A TMA opens inside the distribution surface where the user already is:
+  Telegram. The demo should make this feel like instant product entry, not a
+  compromised embedded website.
+- TMA can combine native Telegram context, lightweight checkout or wallet
+  actions, sharing, bot journeys, chat-adjacent acquisition, and web-grade UI in
+  one surface. The demo should show that this can feel premium instead of
+  cramped.
+- The UIKit's job is to make Telegram constraints productive: safe areas,
+  theme variables, native buttons, haptics, viewport pressure, fallback runtime,
+  recorder proof, and automated tests become visible advantages.
+- A buyer should leave thinking: a TMA is not a smaller website. It is a
+  Telegram-native product surface with distribution, trust, and interaction
+  primitives already around it.
+
+The demo should avoid:
+
+- external Telegram chat as the primary scene;
+- fake bot versus website comparisons as first-screen wow;
+- business metrics as first-screen wow;
+- a standalone "cool object" that does not explain UIKit;
+- a Storybook-like component grid as the hero;
+- MainButton, theme, safe area, haptics, or sensors as isolated wow claims;
+- visual effects that do not reveal function.
+
+
+## Presentation Direction: Apple/OpenAI-Style Product Reveal
+
+The demo should borrow presentation discipline from Apple and OpenAI without
+copying their visual identity. The goal is calm inevitability: the product feels
+simple because the system underneath is powerful.
+
+Do:
+
+- open with the product, not explanation;
+- show one idea per screen;
+- let the signature motion happen before copy appears;
+- reveal proof immediately after the wow moment;
+- use short, exact sentences instead of marketing paragraphs;
+- make every label sound like an object or event in the system;
+- keep the viewer inside the TMA surface the entire time;
+- use silence, delay, and negative space as part of the perceived value;
+- make the UI feel discovered, not explained.
+
+Do not:
+
+- use a landing-page hero;
+- introduce a feature checklist;
+- narrate the interface with tutorial text;
+- show generic mobile-app navigation;
+- overuse glowing lines, particles, or decorative 3D;
+- paste docs into the product surface;
+- claim platform magic without recorder or runtime proof.
+
+### Narrative Arc
+
+The six screens should feel like a keynote demo compressed into an interactive
+TMA:
+
+1. **Birth.** One token point creates the first TMA surface.
+2. **Range.** The same system remixes into multiple business surfaces.
+3. **Feel.** Every touch reveals a component contract.
+4. **Telegram Reality.** The surface survives runtime pressure.
+5. **Trust.** The magic opens into UIKit layers and evidence.
+6. **Handoff.** The run compresses into a proof card that can be shared.
+
+Each screen has the same structure:
+
+- cold open with the surface;
+- one signature motion;
+- one concise sentence;
+- one visible proof layer;
+- one touch surprise;
+- one recorder event trail.
+
+### Copy System
+
+Copy should be sparse and product-led.
+
+Screen-level copy candidates:
+
+- Screen 1: `A Telegram surface, born from tokens.`
+- Screen 2: `One system. Many Mini Apps.`
+- Screen 3: `Every touch has a contract.`
+- Screen 4: `Telegram changes the environment. The surface holds.`
+- Screen 5: `The magic is inspectable.`
+- Screen 6: `A demo you can replay, share, and build from.`
+
+Buttons should stay functional:
+
+- `Remix surface`;
+- `Inspect touch`;
+- `Stress runtime`;
+- `Open layers`;
+- `Forge proof`;
+- `Replay`.
+
+Avoid vague copy:
+
+- `Experience the future`;
+- `Unlock possibilities`;
+- `Seamless magic`;
+- `Next-gen Mini Apps`;
+- `Beautiful components`.
+
+### Pacing
+
+Opening:
+
+- 0 to 1200 ms: Token Singularity birth;
+- after 1200 ms: surface is usable;
+- after first touch: proof affordances appear.
+
+Between screens:
+
+- navigation feels like changing capability modes in one instrument, not moving
+  between app pages;
+- the seed point should appear as the continuity object between modes;
+- each transition must finish quickly enough that the viewer wants to touch, not
+  wait.
+
+Proof reveal:
+
+- proof follows wow, never precedes it;
+- proof is anchored to the touched object;
+- recorder output stays compact and visible enough to create trust.
+
+
+## Audience
+
+Primary audience:
+
+- Telegram and TON product founders who want a premium Mini App surface.
+- Studios and senior frontend teams selling Mini Apps to clients.
+- Product engineers who need reusable React components, not static mockups.
+- Design-system maintainers who care about tokens, variants, docs, and tests.
+
+Secondary audience:
+
+- QA and automation engineers validating Telegram WebView behavior.
+- AI coding agents that need a clear map of what the UIKit exports and how it
+  should be used.
+
+The demo should make a founder feel the polish first. Then it should make an
+engineer trust the system.
+
+
+## Existing UIKit Surface To Use
+
+Use existing UIKit exports as the default building blocks.
+
+Foundation and runtime:
+
+- `TKProvider`, `tkThemeVars`, `useTKTheme`.
+- `TKLocaleProvider`, `useTKLocale`, `enLocale`, `ruLocale`.
+- Telegram runtime re-export from `@tg-mini-app/telegram`.
+- `useHasNativeChrome` from `foundation/chrome`.
+
+Layout and navigation:
+
+- `TKPage`, `TKSafeArea`, `TKBottomBar`.
+- `TKHeader`, `TKTabbar`, `TKTabView`, `TKSegmented`, `TKCategoryTabs`.
+- `TKSteps`, `TKPageDots`, `TKNavStack`, `TKNavPanel`, `useNav`.
+
+Controls and inputs:
+
+- `TKTappable`, `TKButton`, `TKIconButton`, `TKInlineButtons`,
+  `TKMainButton`, `TKSpinner`.
+- `TKChip`, `TKChipGroup`, `TKCheckbox`, `TKRadioGroup`, `TKSwitch`,
+  `TKSlider`, `TKStepper`, `TKRating`.
+- `TKInput`, `TKFormInput`, `TKTextarea`, `TKSearch`, `TKSelect`, `TKOTP`,
+  `TKFileInput`, `TKPhoneInput`, `TKTimeInput`, `TKDateInput`,
+  `TKChipsInput`.
+
+Display, lists, cards, overlays, feedback:
+
+- `TKText`, `TKTitle`, `TKCaption`, `TKIcon`.
+- `TKAvatar`, `TKAvatarStack`, `TKBadge`, `TKDot`, `TKCounter`.
+- `TKCard`, `TKCardCell`, `TKCardChip`, `TKCell`, `TKListGroup`,
+  `TKAccordion`, `TKInfiniteList`, `TKVirtualList`.
+- `TKFrame`, `TKSheet`, `TKDialog`, `TKActionSheet`, `TKTooltip`,
+  `TKPopper`, `TKToastProvider`, `useTKToast`.
+- `TKProgress`, `TKRing`, `TKTimeline`, `TKEmptyState`, `TKSkeleton*`,
+  `AsyncBoundary`, `TKAsyncState`.
+- `TKPullToRefresh`, `TKSwipeCell`, `TKGallery`.
+
+Templates and patterns:
+
+- `TKProductCardA`, `TKProductCardB`, `TKBannerCard`, `TKBookingCard`,
+  `TKStatTile`.
+- `TKSlotPicker`, `TKPaymentSummary`.
+- `TKXPHeader`, `TKLeaderboard`.
+- `TKWalletConnectButton`, `TKWalletStatusCell`.
+- `TKMessageBubble`, `TKMessages`, `TKWriteBar`.
+- `TKOnboardingTooltip`, `TKConfetti`.
+
+New public UIKit elements are not allowed by default. If a screen needs an
+effect that cannot be composed from existing exports, mark it as one of:
+
+- demo-only composition;
+- internal helper candidate;
+- future public UIKit candidate, blocked until it has API, tests, Storybook,
+  docs, accessibility, reduced-motion behavior, and package export review.
+
+
+## Screen Map
+
+The current screen sequence is:
+
+1. **Token Singularity / Surface Composer.** First impression. One center point
+   generates a premium TMA surface from UIKit tokens, slots, Telegram rails, and
+   runtime state. Touching any region proves the surface is alive and inspectable.
+2. **Template Remix Studio.** The same generated surface morphs between
+   commerce, booking, wallet, community, and support templates without losing
+   token identity, Telegram chrome, safe area, or interaction states.
+3. **Interaction Microscope.** The viewer rotates, presses, cracks, and inspects
+   cards or media. Every expensive detail maps to a component state, event,
+   token, accessibility contract, or haptic/runtime fallback.
+4. **Telegram Runtime Stress.** Keyboard, viewport, safe area, native chrome,
+   theme, BackButton, MainButton, haptics, permission denial, and browser fallback
+   strike the same surface as visible forces. The UI adapts without breaking.
+5. **UIKit Layers / Build Proof.** One rich card refracts into tokens, atoms,
+   composites, templates, runtime hooks, accessibility, stories, tests, and
+   recorder evidence. Developer flexibility becomes explicit here.
+6. **Shareable Proof / Handoff.** The final screen forges the run into a
+   share-ready proof card for founders, developers, and agents, generated from
+   deterministic recorder data.
+
+All six screens are drafted below. They remain review specs until the user
+approves or revises the motion direction.
+
+
+## Screen 1: Token Singularity / UIKit Surface Composer
+
+Status: drafted for user review. Do not implement until approved.
+
+Purpose:
+
+Screen 1 must immediately sell the UIKit. It should not look like a component
+gallery, a Trailhead clone, a product landing page, or a custom business app.
+It is an interactive composer inside a Telegram Mini App: a polished TMA surface
+in the center, surrounded by compact controls that reveal how UIKit makes the
+surface feel alive.
+
+The viewer should understand in the first 10 seconds:
+
+- this is running inside a Telegram Mini App frame;
+- the surface is touchable and alive;
+- the surface is built from UIKit primitives;
+- the surface was generated from semantic tokens, not revealed as a static mock;
+- every interaction can be inspected;
+- Telegram constraints are part of the design system.
+
+### Physical Scene
+
+A senior product engineer or studio founder opens the demo on a phone-sized TMA
+surface during a client call. They are not browsing docs. They are trying to
+decide if this UIKit can make their next Telegram Mini App feel premium without
+building everything from scratch.
+
+This forces a product UI direction:
+
+- compact;
+- high trust;
+- tactile;
+- no decorative hero copy;
+- no generic card grid;
+- no fake website or external Telegram chat;
+- enough magic to make the buyer want to touch the screen.
+
+### Why The Previous Visual References Failed
+
+The earlier image references looked like expensive UI posters, not like a UIKit
+generating a TMA. They were too complete at the first frame, so the viewer could
+not feel where the interface came from.
+
+They also separated the visual effect from the product value. A light sweep,
+depth lift, or premium dark frame could sell any app. The opening effect must
+instead make the buyer feel this exact system: semantic tokens, slots, safe-area
+rails, runtime state, accessibility, and deterministic motion.
+
+The new rule: the first page does not appear as a finished mockup. It is born
+from one center point, then settles into a usable surface.
+
+### First Viewport Composition
+
+The first viewport uses one full-screen TMA frame.
+
+Top zone:
+
+- `TKHeader` with title `UIKit Surface Composer`.
+- Subtitle: `Build premium Telegram surfaces`.
+- One `TKIconButton` for theme, one `TKIconButton` for reduced motion preview,
+  one `TKIconButton` for recorder mode.
+- The header is compact and does not become a marketing hero.
+
+Center zone:
+
+- A single live preview surface named **Surface A**.
+- Surface A is a realistic TMA mini screen, initially a premium checkout or
+  booking surface built from existing UIKit pieces.
+- Surface A uses `TKCard`, `TKCardCell`, `TKBadge`, `TKAvatarStack`,
+  `TKSegmented`, `TKProgress`, `TKBottomBar`, and `TKButton`.
+- The preview surface is not a screenshot. It is composed from real UIKit.
+
+Left or upper rail, depending on viewport:
+
+- A compact `TKSegmented` control: `Surface`, `Tokens`, `Runtime`.
+- On mobile width, this becomes a top segmented strip.
+- On wider demo/browser width, it can sit as a narrow side rail.
+
+Bottom zone:
+
+- `TKBottomBar` with one obvious first action:
+  - primary: `Remix surface`;
+- The secondary action `Show UIKit layers` is hidden during the first
+  Token Singularity birth.
+- After the first meaningful touch, the seed pulse travels into a compact
+  `Layers` affordance and the secondary action appears.
+- If native chrome is available, primary action maps to `TKMainButton`, but
+  the in-DOM fallback remains visible in browser demo mode.
+- MainButton is not the wow. It is proof that native chrome is integrated.
+
+Floating detail layer:
+
+- Three `TKCardChip` tags pinned to real parts of Surface A:
+  - `tokens`;
+  - `safe area`;
+  - `state`.
+- Chips are not decorative. Tapping a chip highlights the exact UIKit layer it
+  represents.
+
+### Token Singularity Arrival
+
+The first load is cinematic but functional. It is not a spinner, logo reveal, or
+blocking video. The TMA viewport is present from the first frame; the center
+point explains where the UIKit surface comes from.
+
+0 ms:
+
+- TMA viewport is visible immediately.
+- The screen is nearly empty, using tinted neutral `--tk-*` surfaces.
+- One seed point sits in the exact visual center of the safe content area.
+- The point is 4 px to 6 px and uses the current accent token.
+- `data-motion-state="seed"` is present for deterministic capture.
+
+0 to 180 ms:
+
+- The seed point breathes once: scale `1` to `1.18` to `1`.
+- The movement is quiet, like stored energy, not a loader loop.
+- A faint static ready dot remains for reduced motion.
+
+180 to 360 ms:
+
+- The seed emits token rails:
+  - spacing rails;
+  - radius arcs;
+  - typography baseline marks;
+  - elevation shadow hints;
+  - top and bottom safe-area bounds.
+- Rails draw outward from the point using transform and opacity only.
+- No particles without meaning. Every line maps to a UIKit or Telegram concept.
+
+360 to 620 ms:
+
+- Semantic token fragments appear around the seed and move to their destinations:
+  - `surface` becomes the central Surface A canvas;
+  - `accent` lights selected controls;
+  - `text` and `muted` settle into labels;
+  - `success`, `warning`, and `danger` attach to state-capable components;
+  - `radius` defines card and chip corners;
+  - `motion` becomes the interaction physics marker;
+  - `safe area` forms the Telegram rails.
+- Labels are tiny and transient. They should feel like an engineering trailer,
+  not documentation pasted on the screen.
+
+620 to 900 ms:
+
+- Component slots materialize:
+  - header;
+  - Surface A;
+  - segmented control;
+  - layer chips;
+  - recorder strip;
+  - bottom action bar.
+- Slots become real UIKit components with a 45 ms stagger.
+- Components do not fly in from arbitrary directions; they resolve from the
+  token geometry created by the seed.
+
+900 to 1200 ms:
+
+- Runtime state marks attach:
+  - `themeChanged`;
+  - `viewport`;
+  - `safeArea`;
+  - `haptic`;
+  - `mainButton`;
+  - `backButton`;
+  - `fallback`, when not running inside native Telegram.
+- The recorder strip captures the generation as system events.
+- A final ready pulse moves from the seed to the nearest active layer chip.
+
+After 1200 ms:
+
+- Idle breathing begins only on Surface A and the seed memory, not the whole
+  page.
+- The original point is no longer a central dot. It becomes a small origin mark
+  under the active chip or tap point.
+- Scale changes from `1` to `1.004` over 2400 ms and back.
+- Shadow opacity shifts by a tiny amount.
+- Reduced motion disables breathing and replaces it with a static origin mark.
+
+Touch recall:
+
+- Any later tap briefly reveals the seed origin under the pointer.
+- The origin pulse travels to the responsible token, component, or runtime chip.
+- This makes even accidental taps feel expensive without adding random actions.
+
+### Idle State
+
+The screen must feel alive but not busy.
+
+Surface A:
+
+- soft depth;
+- stable dimensions;
+- no text movement;
+- no layout shift;
+- very subtle breathing;
+- touchable regions show small affordance contours on pointer proximity.
+
+Layer chips:
+
+- `TKDot pulse` only on the active chip.
+- Inactive chips stay calm.
+- Each chip has a stable width so labels do not cause jump.
+
+Bottom action area:
+
+- Primary action has a calm pressed affordance only on touch.
+- No endless shimmer.
+- No fake urgency.
+
+### Touch Model
+
+Every primary object needs a response.
+
+Tap Surface A background:
+
+- A circular context pulse starts at the tap point.
+- Nearby UIKit regions shift `1px` to `2px` away, then settle.
+- The pulse ends in the closest layer chip.
+- A tiny event mark appears in the mini recorder strip.
+- Duration: 220 ms.
+- Reduced motion: instant static ring for 500 ms.
+
+Tap a `TKCardCell` inside Surface A:
+
+- Cell compresses to scale `0.992` for 70 ms.
+- Leading icon shifts `1px` down, then returns.
+- Trailing value updates or reveals a state chip.
+- If haptics are available, fire selection haptic once.
+- If haptics are unavailable, no fake haptic claim. Show `mock` or `fallback`
+  in recorder state.
+
+Tap a `TKCardChip`:
+
+- Chip becomes selected.
+- Surface A dims non-related regions to 82 percent opacity.
+- The related region gets a thin focus contour.
+- The layer inspector rail slides in from the nearest edge by transform.
+- Duration: 180 ms.
+- Escape or Back closes the inspector first.
+
+Long press Surface A:
+
+- Surface A lifts by `translateY(-3px)` and exposes a shallow layer stack.
+- Layers are named `template`, `components`, `tokens`, `runtime`, `a11y`.
+- This is not a modal.
+- The user can drag slightly left or right to scrub layers.
+- Releasing returns the surface to normal.
+
+Drag a layer chip:
+
+- The chip detaches with a small lift and follows the pointer.
+- Surface A highlights compatible drop zones.
+- Dropping `tokens` on the preview opens token mapping.
+- Dropping `state` opens interaction states.
+- Dropping outside snaps back with 160 ms transform.
+- No layout animation.
+
+Tap empty space:
+
+- Empty space is not dead.
+- A small pulse travels to Surface A and then to the `runtime` chip.
+- It communicates that the app understood the tap but no destructive action was
+  taken.
+- This is one of the "expensive product" details.
+
+### Microinteraction Points
+
+The following exact points need designed responses:
+
+- Header title hover or press: title weight increases from 600 to 700 for
+  120 ms, then settles. It must not resize.
+- Theme icon press: icon rotates 22 degrees, tokens remap in Surface A, and the
+  `tokens` chip counts one event.
+- Recorder icon press: a small red `TKDot` appears for 800 ms, then the recorder
+  strip expands by transform. No modal.
+- Surface A top edge press: safe-area rails appear from top and bottom.
+- Surface A bottom edge press: bottom bar demonstrates keyboard-safe rebound.
+- Avatar stack press: `TKAvatarStack` fans out by `translateX`, then returns.
+- Badge press: `TKBadge` flips tone between info and success, with the related
+  state shown in the inspector.
+- Progress ring press: `TKRing` advances by 7 percent and logs a state event.
+- Primary action press: `TKButton` or native button enters loading for 420 ms,
+  then success for 600 ms, then returns to idle.
+- Secondary action reveal: after the first meaningful touch, `Show UIKit layers`
+  appears as a proof affordance rather than first-frame developer chrome.
+- Secondary action press: `Show UIKit layers` transitions to Screen 5.
+
+### Motion Grammar
+
+Use motion only for state, feedback, reveal, dismissal, or loading.
+
+Allowed properties:
+
+- transform;
+- opacity;
+- filter only for small focus contrast if performance remains stable;
+- CSS variable interpolation for token changes.
+
+Forbidden in Screen 1:
+
+- animating width, height, top, left, margin, or padding;
+- permanent background shimmer;
+- decorative particle fields;
+- full-screen intro animation;
+- bounce or elastic gimmicks;
+- animation that hides what component changed.
+
+Default durations:
+
+- tap compression: 70 ms down, 140 ms return;
+- chip selection: 160 ms to 190 ms;
+- inspector reveal: 180 ms to 220 ms;
+- token remap: 180 ms;
+- safe-area rail reveal: 160 ms;
+- bottom bar rebound: 220 ms;
+- idle breathing: 2400 ms cycle.
+
+### UIKit Proof Inside The Screen
+
+Screen 1 must visibly expose the kit without becoming docs.
+
+When the user taps `tokens`:
+
+- show the active semantic token names next to real UI regions;
+- examples: `--tk-bg`, `--tk-card`, `--tk-accent`, `--tk-text`,
+  `--tk-sep`, `--tk-r-md`;
+- do not show a full token table.
+
+When the user taps `safe area`:
+
+- `TKSafeArea` rails appear;
+- top and bottom rails show measured values;
+- content magnetically avoids rails;
+- bottom bar remains clear of the home indicator.
+
+When the user taps `state`:
+
+- show component state badges: default, pressed, loading, success, error,
+  disabled, unsupported;
+- each state points to one visible component;
+- no generic checklist.
+
+When the user taps `runtime`:
+
+- show Telegram runtime source: native, mock, or browser fallback;
+- show `themeChanged`, `viewportChanged`, `mainButton`, `haptic`,
+  `backButton` as compact event chips only if they are part of the scenario.
+
+### Visual Style
+
+The visual style should feel like a precise product instrument, not a crypto
+landing page.
+
+Color:
+
+- tinted neutral surfaces;
+- one Telegram-friendly accent;
+- small state colors only where state needs them;
+- no purple-blue gradient wash;
+- no neon cyberpunk;
+- no black or pure white as new design decisions.
+
+Typography:
+
+- system font stack;
+- compact hierarchy;
+- no display font;
+- no hero-scale type inside panels;
+- labels must fit at 320 px width.
+
+Layout:
+
+- one primary live surface;
+- compact controls;
+- no nested cards;
+- no identical feature-card grid;
+- stable dimensions for chips, buttons, rail, recorder strip, and bottom bar.
+
+### Accessibility And Reduced Motion
+
+Screen 1 cannot fake craft by excluding accessibility.
+
+Required:
+
+- every interactive region has an accessible name;
+- chips use button semantics or equivalent;
+- focus ring is visible and not clipped;
+- keyboard can reach Surface A, chips, top actions, and bottom actions;
+- Escape closes the active inspector first;
+- Back closes inspector before navigating;
+- reduced motion preserves all meaning with static highlights and shorter fades;
+- color is never the only way to understand state;
+- recorder strip has polite status announcements.
+
+### Data And Recorder Hooks
+
+Screen 1 needs deterministic scenario data.
+
+Minimum event record:
+
+- timestamp;
+- source: user, runtime, mock, system;
+- event name;
+- target component;
+- visible reaction;
+- fallback or native status.
+
+Suggested test hooks:
+
+- `data-demo-frame` on the outer capture target.
+- `data-demo-screen="surface-composer"`.
+- `data-demo-surface`.
+- `data-demo-layer-chip="tokens|safe-area|state|runtime"`.
+- `data-demo-inspector`.
+- `data-demo-recorder-strip`.
+- `data-demo-primary-action`.
+
+Do not finalize hook names until implementation planning checks existing demo
+conventions.
+
+### Existing UIKit Used In Screen 1
+
+Primary:
+
+- `TKProvider`;
+- `TKPage`;
+- `TKSafeArea`;
+- `TKHeader`;
+- `TKSegmented`;
+- `TKCard`;
+- `TKCardCell`;
+- `TKCardChip`;
+- `TKBadge`;
+- `TKDot`;
+- `TKAvatarStack`;
+- `TKProgress` or `TKRing`;
+- `TKBottomBar`;
+- `TKButton`;
+- `TKIconButton`;
+- `TKToastProvider`;
+- `TKTooltip` or `TKPopper`.
+
+Conditional:
+
+- `TKMainButton` if native chrome is active;
+- `TKSheet` only if an inspector cannot remain inline;
+- `TKTimeline` only if the event strip needs more than compact chips.
+
+Demo-only composition:
+
+- `SurfaceComposerStage`;
+- `SurfaceLayerPins`;
+- `SurfaceInteractionRecorder`;
+- `SurfaceSafeAreaRails`;
+- `SurfaceTokenOverlay`.
+
+Future UIKit candidates, not automatically public:
+
+- `TKInteractionPulse`;
+- `TKLayerInspector`;
+- `TKMotionScope`;
+- `TKSurfaceComposer`.
+
+These candidates stay internal until a later API review proves they are
+generically reusable outside this demo.
+
+### Screen 1 Acceptance Criteria
+
+- In 10 seconds, a reviewer understands that the demo sells the UIKit, not one
+  custom TMA.
+- A founder wants to touch the screen because it feels premium and alive.
+- A developer can identify at least five real UIKit primitives being used.
+- Every primary touch target has a purposeful response.
+- Empty space is not dead, but it does not trigger random decoration.
+- At least five microinteractions are discoverable without instructions.
+- `Show UIKit layers` appears after the first meaningful touch and does not
+  compete with the opening wow.
+- MainButton, theme, safe area, and haptics are proof details, not hero claims.
+- The screen works at 320 px width without overlapping text or controls.
+- Reduced motion preserves meaning.
+- Recorder events can prove the visible reactions.
+
+### User Approval Questions For Screen 1
+
+Answer these before implementation planning starts:
+
+- Should Surface A start as checkout, booking, wallet, support, or a neutral
+  "premium app shell"?
+- Should the first obvious interaction be tapping Surface A, dragging a layer
+  chip, or pressing `Remix surface`?
+
+### Screen 1 Test Cases
+
+Token Singularity states:
+
+- Opening exposes deterministic states:
+  `seed -> rails -> tokens -> components -> runtime -> idle`.
+- Each state is addressable through `data-motion-state`, not only through
+  timing sleeps.
+- Visual snapshots are captured at the important states: seed, rails, tokens,
+  components, runtime, idle.
+- The same fixture produces the same state sequence and recorder output.
+
+Reduced motion:
+
+- seed remains visible as a static origin mark;
+- token rails and component slots appear as static highlights;
+- no breathing loop, rotation, particle travel, or long path motion is required
+  to understand the opening.
+
+Layout and Telegram constraints:
+
+- 320 px, 375 px, 430 px, and desktop preview do not overlap header, token
+  labels, layer chips, Surface A, recorder strip, or bottom actions;
+- top and bottom safe-area rails appear from fixture values;
+- Surface A and bottom action stay clear of the home indicator.
+
+Recorder and data:
+
+- recorder logs `tokenSeed`, `tokenRails`, `componentMaterialized`,
+  `runtimeReady`, and `idleReady`;
+- every later touch recall logs a source, target, visible reaction, and
+  native/mock/fallback status.
+
+Performance:
+
+- opening uses transform and opacity for motion;
+- token variable interpolation is allowed only for token remap;
+- no width, height, top, left, margin, padding, or layout shift animation;
+- no long task during the 1200 ms opening sequence.
+
+
+## Screen 2: Template Remix Studio
+
+Status: drafted for user review. Do not implement until approved.
+
+Purpose:
+
+Screen 2 proves that a TMA is a fast product surface for Telegram distribution,
+not one fixed app screen. A founder should understand that the same UIKit can
+generate checkout, booking, wallet, community, and support flows inside the
+same Telegram-native shell.
+
+Business reason for TMA:
+
+- Telegram already contains the audience, identity context, chat-adjacent
+  acquisition, sharing, and bot journey.
+- The TMA should turn that audience into action without app install friction.
+- UIKit makes the production of multiple TMA scenarios repeatable instead of
+  hand-coded for every client.
+
+### Core Visual Motif: Token Prism Remix
+
+The seed origin from Screen 1 opens into a small prism of semantic tokens. The
+current surface separates into meaningful fragments:
+
+- header;
+- hero/content area;
+- price or value row;
+- primary action;
+- list or timeline;
+- bottom bar;
+- safe-area rails;
+- runtime event strip.
+
+The fragments rotate like physical surface tiles, then reassemble into the next
+template. The movement must prove continuity: token identity, safe-area rails,
+theme, selected segment, and runtime status remain anchored while the business
+scenario changes.
+
+Template cycle:
+
+1. checkout;
+2. booking;
+3. wallet;
+4. support;
+5. community.
+
+The user does not navigate through app pages. They remix one Telegram-native
+surface.
+
+### Secondary Motif: Card Gyroscope
+
+The viewer can drag the central surface stack left or right. Cards rotate around
+a calm center axis, like a premium physical object. The front card is always
+readable; side cards are abstracted enough to avoid text distortion.
+
+On release:
+
+- the nearest template locks into the center;
+- the token prism compresses back into the active seed mark;
+- the recorder logs `templateChanged`, `tokensPreserved`,
+  `safeAreaPreserved`, and `runtimePreserved`;
+- the bottom action updates without layout shift.
+
+### UIKit And TMA Proof
+
+Must visibly prove:
+
+- templates can share one token system;
+- Telegram safe areas are preserved across business scenarios;
+- theme variables remain mapped through tokens;
+- interaction states survive the remix when they are still meaningful;
+- runtime status is not reset just because the template changed;
+- the shell remains TMA-sized and does not become a desktop dashboard.
+
+Existing UIKit candidates to compose:
+
+- `TKSegmented` or `TKCategoryTabs` for template categories;
+- `TKCard`, `TKCardCell`, `TKProductCardA`, `TKBookingCard`,
+  `TKPaymentSummary`, `TKWalletStatusCell`, `TKMessages`, `TKWriteBar`;
+- `TKBottomBar`, `TKButton`, `TKBadge`, `TKDot`, `TKProgress`;
+- `TKSafeArea`, `TKHeader`, `TKToastProvider`.
+
+Demo-only composition:
+
+- `TemplateRemixStage`;
+- `TokenPrism`;
+- `TemplateSurfaceTile`;
+- `TemplateContinuityRecorder`.
+
+Future UIKit candidates, not automatically public:
+
+- `TKTemplateRemix`;
+- `TKSurfacePreview`;
+- `TKTokenMorph`;
+- `TKTemplateRail`.
+
+### Motion Detail
+
+Remix trigger:
+
+- press `Remix surface`;
+- drag the surface stack;
+- tap a template chip.
+
+Timeline:
+
+- 0 to 90 ms: active surface compresses to scale `0.992`;
+- 90 to 220 ms: fragments separate by `translateZ`-like depth using transform;
+- 220 to 480 ms: fragments rotate to the next scenario around the seed axis;
+- 480 to 700 ms: fragments lock into the new template slots;
+- 700 to 860 ms: state chips and recorder events settle;
+- after 860 ms: the surface returns to the quiet breathing state.
+
+Easing:
+
+- ease-out-quart for separation and lock;
+- no bounce;
+- no elastic;
+- no layout property animation.
+
+Reduced motion:
+
+- replace 3D-ish rotation with a stepped crossfade:
+  `checkout -> booking -> wallet -> support -> community`;
+- show static continuity marks for tokens, safe area, theme, and runtime;
+- keep the recorder events identical.
+
+### Test Cases
+
+E2E:
+
+- `Remix surface` changes template id in the expected order.
+- Theme, safe-area values, selected segment, and runtime source persist through
+  every remix.
+- The same scenario can be restored from a deterministic fixture.
+- `Escape` or Back cancels an in-progress inspector before leaving Screen 2.
+
+Visual:
+
+- capture before remix, mid-remix, lock state, and idle state;
+- verify 320 px, 375 px, 430 px, and desktop preview;
+- assert no text overflow, no overlapping chips, and no bottom bar jump.
+
+Reduced motion:
+
+- `prefers-reduced-motion` disables rotation and uses static steps;
+- all proof labels remain available;
+- recorder events match the full-motion path.
+
+Performance:
+
+- only transform and opacity animate;
+- no layout shift budget failures during remix;
+- no long task during card rotation.
+
+
+## Screen 3: Interaction Microscope
+
+Status: drafted for user review. Do not implement until approved.
+
+Purpose:
+
+Screen 3 proves that the expensive feeling is systematic. The buyer should see
+that every tap, hover, long press, focus, loading state, haptic response, and
+unsupported fallback is part of the UIKit contract, not custom animation glue.
+
+Business reason for TMA:
+
+- TMA conversion depends on instant confidence in a cramped WebView.
+- Users decide quickly whether a Telegram surface feels real or cheap.
+- Microinteractions create trust only when they are consistent, accessible, and
+  resilient across Telegram clients.
+
+### Core Visual Motif: Touch Lens
+
+Any tap creates a short-lived lens at the contact point. The lens is not a
+tooltip. It is a microscope that reveals the interaction stack:
+
+- hit target;
+- component name;
+- state transition;
+- semantic token;
+- haptic native/mock/fallback status;
+- focus or aria contract;
+- recorder event.
+
+The lens lasts 500 ms by default, then collapses into the responsible chip or
+recorder mark. Empty space also responds: it shows "recognized, no action" and
+routes the pulse to the runtime chip.
+
+### Secondary Motif: Refracted State Card
+
+Long press on a rich card or image splits it into thin meaning layers. This is
+the user's requested "broken card with light refraction", but with product
+meaning:
+
+- visual layer;
+- state layer;
+- token layer;
+- haptic/runtime layer;
+- accessibility layer;
+- test hook layer.
+
+The layers separate by a few pixels with a restrained light refraction between
+them. Text remains real DOM and readable, or deliberately fades into an intact
+text layer before the split. The card must never look randomly shattered.
+
+### Interaction Set
+
+Required probes:
+
+- tap card;
+- tap badge;
+- tap avatar stack;
+- tap empty space;
+- press primary action;
+- long press rich card;
+- drag card slightly to inspect depth;
+- keyboard focus card;
+- trigger loading, success, error, disabled, and unsupported states.
+
+Each probe must reveal a real reason:
+
+- component state;
+- token;
+- accessibility contract;
+- haptic or runtime event;
+- fallback branch;
+- recorder proof.
+
+### UIKit And TMA Proof
+
+Existing UIKit candidates to compose:
+
+- `TKTappable`, `TKButton`, `TKIconButton`;
+- `TKCard`, `TKCardCell`, `TKCardChip`;
+- `TKBadge`, `TKAvatarStack`, `TKRing`, `TKProgress`;
+- `TKTooltip` or `TKPopper` for anchored details only;
+- `TKToastProvider` for non-blocking state feedback;
+- `TKFocus` behavior through existing focus-visible rules;
+- Telegram runtime haptic wrapper or fallback event.
+
+Demo-only composition:
+
+- `TouchLens`;
+- `RefractedStateCard`;
+- `InteractionStackOverlay`;
+- `HapticStatusMark`;
+- `A11yContractPin`.
+
+Future UIKit candidates, not automatically public:
+
+- `TKInteractionPulse`;
+- `TKStateInspector`;
+- `TKHapticIndicator`;
+- `TKFocusProbe`;
+- `TKMotionScope`.
+
+### Motion Detail
+
+Touch Lens:
+
+- 0 to 70 ms: local compression or focus response;
+- 70 to 180 ms: lens expands from the touch point;
+- 180 to 360 ms: stack labels appear in a radial but compact arrangement;
+- 360 to 500 ms: lens collapses into the related chip or recorder event.
+
+Refracted card:
+
+- 0 to 90 ms: card lifts `translateY(-3px)` and scales to `1.006`;
+- 90 to 260 ms: layers separate by 2 px to 6 px;
+- 260 to 480 ms: light refraction passes between layers;
+- drag scrub: layers rotate up to 8 degrees, text layer stays readable;
+- release: layers recompose in 180 ms.
+
+Reduced motion:
+
+- no refraction sweep;
+- static split layers;
+- direct labels;
+- same state and recorder events.
+
+### Test Cases
+
+E2E:
+
+- every required probe creates one recorder event with source, target, state,
+  visible reaction, and native/mock/fallback status;
+- haptic calls are recorded only when available, otherwise fallback is explicit;
+- keyboard focus triggers the same proof path as pointer focus;
+- Escape closes the lens or layer split before leaving the screen.
+
+Accessibility:
+
+- all interactive regions have accessible names;
+- focus ring is visible and not clipped during split state;
+- aria snapshot reflects state changes;
+- color is not the only state signal.
+
+Visual:
+
+- capture lens open, lens collapse, card split, card recomposed;
+- verify text readability or deliberate text-layer isolation;
+- verify no overlap at 320 px and RTL.
+
+Reduced motion:
+
+- split state becomes static;
+- no transform depth beyond the minimum needed for meaning;
+- recorder output matches the full-motion scenario.
+
+
+## Screen 4: Telegram Runtime Stress
+
+Status: drafted for user review. Do not implement until approved.
+
+Purpose:
+
+Screen 4 proves why a Telegram-specific UIKit exists. Ordinary web UI breaks or
+feels fake under Telegram runtime pressure. This screen makes runtime events
+visible as physical forces that the UIKit can absorb.
+
+Business reason for TMA:
+
+- Telegram gives distribution, account context, sharing, native chrome,
+  chat-adjacent journeys, payments or wallet context, and fast return loops.
+- Those advantages come with constraints: safe areas, keyboard viewport changes,
+  theme variables, native buttons, BackButton behavior, haptics, and fallback
+  clients.
+- UIKit should make those constraints reliable enough to sell TMA work to real
+  clients.
+
+### Core Visual Motif: Runtime Gravity Well
+
+The active surface enters a pressure chamber. Runtime events arrive as visible
+forces from Telegram chrome:
+
+- keyboard rises from the bottom and pushes content with measured clearance;
+- safe-area rails squeeze and release the surface;
+- BackButton pressure closes the active inspector first;
+- MainButton state pulls the primary CTA into native chrome proof;
+- haptic event produces a tiny local tick, not a fake device vibration claim;
+- permission denial creates a reversible blocked state, not dead UI.
+
+The UI does not panic, jump, or resize arbitrarily. It magnetically avoids
+Telegram boundaries.
+
+### Secondary Motif: Theme Shockwave
+
+A `themeChanged` event enters from the top chrome as a controlled wave. It
+passes through semantic tokens and remaps the UI:
+
+- background;
+- card;
+- text;
+- muted text;
+- accent;
+- separator;
+- state colors.
+
+This is not a dark/light toggle. It is proof that Telegram theme variables flow
+through semantic UIKit tokens.
+
+### Runtime Stressors
+
+Required stressors:
+
+- keyboard open;
+- keyboard close;
+- viewport height change;
+- safe-area top and bottom change;
+- native chrome on/off;
+- BackButton visible/hidden;
+- MainButton loading/success/error/fallback;
+- haptic native/mock/unavailable;
+- themeChanged;
+- permission denied;
+- browser fallback;
+- runtime absence during SSR or non-Telegram preview.
+
+### UIKit And TMA Proof
+
+Existing UIKit candidates to compose:
+
+- `TKSafeArea`, `TKBottomBar`, `TKMainButton`, `TKButton`;
+- `TKHeader`, `TKPage`, `TKSegmented`;
+- Telegram runtime re-export from `@tg-mini-app/telegram`;
+- `useHasNativeChrome`;
+- `TKToastProvider`, `TKBadge`, `TKDot`, `TKProgress`;
+- browser fallback states where runtime is missing.
+
+Demo-only composition:
+
+- `RuntimePressureChamber`;
+- `ThemeShockwaveOverlay`;
+- `NativeButtonMirror`;
+- `ViewportPressureMeter`;
+- `RuntimeFallbackBadge`.
+
+Future UIKit candidates, not automatically public:
+
+- `TKRuntimeBoundary`;
+- `TKViewportLab`;
+- `TKSafeAreaRails`;
+- `TKNativeButtonMirror`;
+- `TKRuntimeEventLog`.
+
+### Motion Detail
+
+Keyboard pressure:
+
+- 0 to 120 ms: bottom pressure rail appears;
+- 120 to 260 ms: bottom bar translates to safe position;
+- 260 to 420 ms: focused field remains visible and gets a static proof mark;
+- no content jumps after the first settled frame.
+
+Theme shockwave:
+
+- 0 to 160 ms: top chrome emits wave;
+- 160 to 360 ms: tokens remap in order: surface, text, accent, state;
+- 360 to 520 ms: recorder logs `themeChanged` and `tokensMapped`.
+
+BackButton:
+
+- if inspector is open, Back closes inspector;
+- if no overlay is open, Back prepares navigation;
+- the visual pressure should make priority obvious.
+
+Reduced motion:
+
+- no wave sweep;
+- token swatches update in place;
+- pressure rails snap through static states.
+
+### Test Cases
+
+Runtime injection:
+
+- inject each stressor from deterministic fixtures;
+- assert visible state and recorder event for every fixture;
+- assert runtime source is `native`, `mock`, or `fallback`.
+
+Viewport and safe area:
+
+- verify 320 px, 375 px, 430 px, desktop preview;
+- verify top and bottom insets;
+- verify bottom action never hides behind home indicator or keyboard;
+- assert no overlap after each pressure event.
+
+Native controls:
+
+- MainButton state is mirrored honestly in browser mode;
+- native mode and fallback mode are visually distinct;
+- Back closes overlay before navigation.
+
+Theme:
+
+- Telegram theme values map through semantic tokens;
+- no raw color-only state;
+- visual snapshots for light, dark, and Telegram theme.
+
+Reduced motion and performance:
+
+- motion alternative preserves meaning;
+- only transform, opacity, and token variable interpolation animate;
+- no long task or layout shift during pressure changes.
+
+
+## Screen 5: UIKit Layers / Build Proof
+
+Status: drafted for user review. Do not implement until approved.
+
+Purpose:
+
+Screen 5 converts founder wow into engineering trust. The buyer has seen magic;
+now the team must see that the magic is maintainable, testable, and built from
+real UIKit layers instead of a one-off demo.
+
+Business reason for TMA:
+
+- A polished TMA is valuable only if the team can keep shipping scenarios after
+  the launch.
+- UIKit reduces the cost of future TMA surfaces by turning visual polish,
+  Telegram runtime behavior, accessibility, docs, tests, and stories into a
+  repeatable system.
+
+### Core Visual Motif: Exploded UIKit Lattice
+
+Long press on the active surface lifts it into a 3D-ish lattice. The lattice is
+not a decorative exploded product render. Each layer is a real build proof:
+
+- tokens;
+- atoms;
+- composites;
+- templates;
+- Telegram runtime hooks;
+- accessibility contracts;
+- Storybook evidence;
+- tests;
+- recorder evidence.
+
+The viewer can scrub the lattice with a finger. Each layer can be isolated, then
+recomposed into the live TMA surface.
+
+### Secondary Motif: Evidence Pins
+
+Small proof pins attach to real visible UI elements:
+
+- token pin;
+- component pin;
+- Storybook pin;
+- test pin;
+- a11y pin;
+- runtime fallback pin;
+- recorder pin.
+
+Pins must not become a grid or a docs page. They sit on the actual UI and prove
+the object under them.
+
+### UIKit And TMA Proof
+
+Existing UIKit candidates to compose:
+
+- all visible components from Screens 1-4;
+- `TKAccordion` or `TKSegmented` for layer filters;
+- `TKTimeline` for recorder evidence if needed;
+- `TKBadge`, `TKDot`, `TKTooltip`, `TKPopper`;
+- `TKButton`, `TKIconButton`, `TKBottomBar`.
+
+Data sources must be fixture-backed:
+
+- token names from the current design system;
+- component names from known UIKit exports;
+- story/test categories from deterministic local fixtures;
+- recorder events from the current demo run.
+
+Do not invent evidence. If an item is not yet real, mark it as `candidate` or
+`planned`, not `passed`.
+
+Demo-only composition:
+
+- `ExplodedUIKitLattice`;
+- `EvidencePinLayer`;
+- `BuildProofScrubber`;
+- `LayerRecomposeControl`.
+
+Future UIKit candidates, not automatically public:
+
+- `TKLayerStack`;
+- `TKTokenTrace`;
+- `TKBuildEvidence`;
+- `TKA11yContractPanel`;
+- `TKTestBadge`.
+
+### Motion Detail
+
+Lattice open:
+
+- 0 to 120 ms: surface lifts by `translateY(-4px)`;
+- 120 to 340 ms: layers separate in a shallow stack;
+- 340 to 520 ms: evidence pins attach to their source regions;
+- 520 to 700 ms: scrub handle becomes active.
+
+Layer scrub:
+
+- horizontal drag moves between layers;
+- active layer is fully readable;
+- inactive layers stay visible as context but do not steal focus;
+- recomposition returns to live surface in 220 ms.
+
+Broken-card refraction option:
+
+- one card can split into refracted pieces here if Screen 3 uses the simpler
+  Touch Lens path;
+- every fragment must map to a build layer;
+- text remains a preserved layer, not shattered glyphs.
+
+Reduced motion:
+
+- show static stacked layers;
+- no parallax;
+- no refraction sweep;
+- preserve focus order and proof pins.
+
+### Test Cases
+
+Evidence integrity:
+
+- every proof pin maps to a fixture item;
+- missing evidence appears as `candidate` or `planned`, never `passed`;
+- recorder evidence is generated from current session events.
+
+Layer behavior:
+
+- layers can be toggled independently;
+- recomposition restores the live surface;
+- keyboard can move through layer controls;
+- Escape closes the lattice before leaving the screen.
+
+Visual:
+
+- capture closed surface, lattice open, active token layer, active tests layer,
+  recomposed surface;
+- verify no text overlap and no unreadable evidence pins at 320 px;
+- verify RTL and long localized labels.
+
+Reduced motion:
+
+- static stack preserves all layer meanings;
+- no required information depends on depth or refraction.
+
+
+## Screen 6: Shareable Proof / Handoff
+
+Status: drafted for user review. Do not implement until approved.
+
+Purpose:
+
+Screen 6 turns the demo into a shareable artifact. It must answer "what do I
+send to the person with budget?" and "what do engineers use next?" without
+leaving the TMA.
+
+Business reason for TMA:
+
+- TMA work is sold through Telegram context: chats, channels, founders,
+  agencies, investors, and client handoffs.
+- The final artifact should be easy to forward, replay, inspect, and implement.
+- The proof must stay honest about native versus mock versus browser fallback.
+
+### Core Visual Motif: Proof Compression
+
+All meaningful events from the run compress back into the original center seed.
+The seed then opens into a proof capsule:
+
+- templates remixed;
+- interactions tested;
+- runtime events survived;
+- accessibility covered;
+- reduced motion covered;
+- fallback branch identified;
+- UIKit layers exposed;
+- share/replay available.
+
+This is not a marketing card. It is a receipt generated from recorder data.
+
+### Secondary Motif: Investor Replay Ribbon
+
+A narrow replay ribbon shows deterministic milestones:
+
+1. token birth;
+2. template remix;
+3. touch lens;
+4. runtime stress;
+5. layer proof;
+6. proof capsule.
+
+The ribbon is not a video. It is a replay of recorded states, so it can be
+tested, paused, and restored.
+
+### UIKit And TMA Proof
+
+Existing UIKit candidates to compose:
+
+- `TKCard`, `TKCardCell`, `TKBadge`, `TKDot`, `TKProgress`;
+- `TKTimeline` if it fits the replay ribbon;
+- `TKButton`, `TKMainButton`, `TKBottomBar`;
+- `TKToastProvider` for share fallback;
+- `TKSheet` only if a compact handoff preview needs a focused overlay.
+
+Generated proof fields:
+
+- scenario id;
+- template sequence;
+- runtime source;
+- native capabilities available;
+- fallback capabilities used;
+- interaction count;
+- accessibility status;
+- reduced-motion status;
+- evidence layer count;
+- replay deep link or local replay id;
+- deterministic proof hash.
+
+Demo-only composition:
+
+- `ProofCompressionStage`;
+- `ProofCapsule`;
+- `InvestorReplayRibbon`;
+- `ScenarioReceipt`;
+- `ShareFallbackPanel`.
+
+Future UIKit candidates, not automatically public:
+
+- `TKProofCard`;
+- `TKScenarioReceipt`;
+- `TKRecorderTimeline`;
+- `TKShareSheetFallback`;
+- `TKCapabilityMatrix`.
+
+### Motion Detail
+
+Compression:
+
+- 0 to 160 ms: visible events become small marks around the surface;
+- 160 to 360 ms: marks travel back to the seed origin;
+- 360 to 620 ms: seed opens into the proof capsule;
+- 620 to 820 ms: proof fields settle in groups: founder, developer, agent;
+- after 820 ms: replay ribbon becomes interactive.
+
+Share action:
+
+- native share available: primary action maps to native path and logs it;
+- browser fallback: open inline fallback panel with copy/replay controls;
+- never claim native share when unavailable.
+
+Reduced motion:
+
+- no compression travel;
+- show static milestones, then proof capsule;
+- keep proof hash and replay id identical.
+
+### Test Cases
+
+Data integrity:
+
+- proof capsule is generated from recorder fixture data;
+- identical fixture produces identical proof hash and visual state;
+- missing native capability is shown as fallback, not passed.
+
+Replay:
+
+- replay ribbon restores each milestone deterministically;
+- deep link or local replay id restores scenario state;
+- pause and resume do not mutate proof data.
+
+Share:
+
+- native branch and fallback branch are both testable;
+- copy action works in browser fallback;
+- proof card remains readable at 320 px and in RTL.
+
+Accessibility and reduced motion:
+
+- proof capsule sections have accessible names;
+- replay ribbon is keyboard reachable;
+- static reduced-motion milestones preserve the same meaning.
+
+
+## Cross-Screen Motion System
+
+The demo has one continuous motion language. The center point from Screen 1 is
+not a one-time intro. It changes role on every screen:
+
+- Screen 1: seed token that generates the first TMA surface.
+- Screen 2: prism origin that remixes templates.
+- Screen 3: touch lens origin that exposes interaction state.
+- Screen 4: runtime pressure sensor that shows Telegram forces.
+- Screen 5: lattice core that separates build layers.
+- Screen 6: proof seal that compresses the run into a shareable receipt.
+
+Allowed easing:
+
+- ease-out-quart for common UI feedback;
+- ease-out-quint for surface assembly and recomposition;
+- ease-out-expo for the rare signature reveal moments;
+- no bounce;
+- no elastic.
+
+Timing rules:
+
+- immediate tap feedback starts within 70 ms;
+- common transitions stay between 150 ms and 260 ms;
+- signature reveal moments can run 700 ms to 1200 ms;
+- idle breathing can run 2200 ms to 3600 ms, only on one active object;
+- no screen blocks user understanding while waiting for choreography.
+
+Allowed animated properties:
+
+- transform;
+- opacity;
+- small local mask or clip-path only when isolated and measurable;
+- semantic CSS variable interpolation for token remap.
+
+Forbidden motion:
+
+- layout property animation: width, height, top, left, margin, padding;
+- permanent shimmer;
+- generic particle fields;
+- generic 3D carousel;
+- broken-card effects that look like damage instead of inspection;
+- tabbar-style app navigation as the primary structure;
+- MainButton, theme, haptics, or safe area as standalone wow.
+
+
+## Cross-Screen Test Contract
+
+Every animated capability scene must be deterministic enough for automation.
+
+Minimum hooks:
+
+- `data-demo-frame` on the outer capture target.
+- `data-demo-screen` with one of:
+  `token-singularity`, `template-remix`, `interaction-microscope`,
+  `runtime-stress`, `layers-proof`, `shareable-proof`.
+- `data-motion-origin="token-singularity"`.
+- `data-motion-state` with one of:
+  `idle`, `seed`, `rails`, `tokens`, `components`, `runtime`, `entering`,
+  `active`, `settling`, `settled`, `reduced`.
+- `data-motion-event` with one of:
+  `token-birth`, `template-remix`, `tap-lens`, `card-refraction`,
+  `runtime-pressure`, `theme-shockwave`, `surface-explode`,
+  `proof-compress`.
+- `data-demo-recorder-event` on visible recorder rows or chips.
+- `data-runtime-mode="native|mock|browser-fallback"`.
+- `data-reduced-motion="true|false"`.
+
+Pass criteria:
+
+- triggering any visible effect creates a recorder event with source, target,
+  visible reaction, and native/mock/fallback status;
+- active animation reaches `settled` or `idle` within the defined budget;
+- rapid taps do not leave the surface stuck in `entering` or `active`;
+- reduced motion preserves meaning without rotation, long path motion, or depth
+  travel;
+- 320 px, 375 px, 430 px, desktop preview, RTL, and long localized text do not
+  overlap;
+- keyboard focus and pointer interaction expose equivalent proof where relevant;
+- visual snapshots target deterministic motion states, not arbitrary video
+  frames.
+
+Fail criteria:
+
+- an effect can be swapped into another UI library without losing meaning;
+- an effect fires but recorder state does not know what happened;
+- a Telegram runtime feature is presented as native when only fallback is
+  available;
+- a layer, test, or proof pin claims evidence that does not exist;
+- animation hides the component or token that changed;
+- visual polish depends on inaccessible color-only state.
+
+
+## Role-Agent Review Integration
+
+Five subagents reviewed the direction from different buyer and builder roles:
+
+- Telegram/TON founder: prioritized why TMA matters commercially and pushed
+  Screen 2 and Screen 4 as the main business value proof.
+- Senior TMA engineer: required deterministic runtime fixtures, honest fallback
+  states, reduced-motion paths, and candidate APIs staying internal until
+  reviewed.
+- Creative director: rejected tabbar navigation, generic carousel, decorative
+  shattered cards, and standalone MainButton/theme/safe-area wow.
+- Product motion designer: defined the single narrative device where the center
+  point changes role across all six screens.
+- QA automation lead: required fixed motion states, visual snapshots by state,
+  no layout animation, no overlap, recorder evidence, and reduced-motion gates.
+
+The integrated line is:
+
+> token point generates the TMA, remixes it, refracts touch, survives Telegram
+> runtime pressure, opens into build proof, and compresses into a shareable
+> receipt.
 
 
 ## Surprises & Discoveries
 
-- Observation: The repository currently has `trailhead-demo.plan.md`, but no root-level `plans.md`.
-  Evidence: `rg --files -g 'plans.md' -g '*plan*.md'` returned only `trailhead-demo.plan.md` before this file was created.
+- Observation: The earlier `Launch Echo` idea still centered the demo on a
+  custom TMA scene. It did not directly sell the UIKit as the product.
+  Evidence: user rejected the direction because it did not fit selling the
+  UIKit.
 
-- Observation: `trailhead-demo.plan.md` records that an older root `plans.md` was not an ExecPlan and was deliberately avoided for the original demo build.
-  Evidence: `trailhead-demo.plan.md` says the old root `plans.md` was an audit report in git history, and the Trailhead build plan used a distinct filename to avoid confusion.
+- Observation: The repo already has a broad public UIKit surface that can sell
+  composition without inventing many new public APIs.
+  Evidence: `packages/uikit/src/index.ts` exports foundation, tokens, atoms,
+  composites, overlays, feedback, templates, and Telegram runtime re-exports.
 
-- Observation: The current app already has strong Telegram infrastructure.
-  Evidence: `examples/trailhead/src/AppFrame.tsx` wraps the app in `TKProvider` with `telegram`, `useTelegramTheme`, and persisted theme knobs; `examples/trailhead/src/App.tsx` uses `TKTabbar` and per-tab `TKNavStack`; `examples/trailhead/src/components/PrimaryAction.tsx` uses `useMainButton` in real Telegram and `TKMainButton` fallback in browser.
+- Observation: `plans.md` already contained a completed ExecPlan. The file's own
+  convention says the one active multi-milestone effort lives here, so this plan
+  supersedes it.
 
-- Observation: The largest visual issues are visible at normal Telegram-like mobile width.
-  Evidence: a 390 by 844 Playwright pass showed a clipped welcome title, feed-card price/rating collisions, a large DateSlot first viewport, long guide badges squeezing row content, Platform Lab bottom action overlapping lower controls, and dark-theme contrast weaknesses around the banner CTA.
+- Observation: Static premium UI references failed because they showed finished
+  screens instead of the system that generates them.
+  Evidence: the user rejected the images and proposed a center point that
+  gradually creates the first page as token generation.
 
-- Observation: Real Telegram viewing changes the acceptance bar.
-  Evidence: the browser mock can show the DOM fallback `TKMainButton`, but a real Telegram client moves the primary action into native Telegram chrome. A browser-only screenshot can prove layout regressions, but cannot prove native Main Button, native Back Button, client safe-area behavior, haptics, or theme synchronization.
-
-- Observation: The first-run welcome did not reproduce as a measurable text-overflow problem in the current browser/mock pass.
-  Evidence: 320, 360, and 390px Playwright measurements showed the welcome title text range inside its card. No production change was made to onboarding in this pass; the visible layout was still included in before screenshots.
-
-- Observation: Browser mock mode should be detected through the demo's mock handle, not by assuming every `WebApp` object is real Telegram.
-  Evidence: `TKTelegramProvider` receives an injected mock object in browser mode, while a real Telegram client makes `useMockHandle()` return `null`. The mock-only header fallback is therefore gated through `useMockHandle()`, not by duplicating native chrome in real clients.
-
-- Observation: A local real-Telegram verification path was not available in this checkout.
-  Evidence: `command -v cloudflared`, `command -v ngrok`, `command -v lt`, and `command -v localtunnel` returned nothing, and the environment exposed no Telegram bot, ngrok, Cloudflare, or tunnel variables. Without a bot URL and a real Telegram client, the native Main Button, Back Button, haptics, safe area, and theme sync acceptance items remain unverified.
-
-- Observation: An HTTPS preview can be created without adding project dependencies by using npm's one-shot package execution.
-  Evidence: with the Trailhead dev server on `127.0.0.1:5173`, `npx --yes localtunnel --port 5173 --local-host 127.0.0.1` returned `https://purple-days-kick.loca.lt/`, and `curl -L https://purple-days-kick.loca.lt/` returned the Trailhead `index.html`.
-
-- Observation: The demo's real-bridge code path can be regression-tested without pretending it is a real Telegram client.
-  Evidence: `examples/trailhead/e2e/telegram-bridge.spec.ts` injects a structural `window.Telegram.WebApp` before module load. The test proves the mock badge and DOM primary button disappear, native BackButton pops the detail screen, native MainButton advances into DateSlot, DateSlot's native Continue button changes from inactive to active after slot selection, and haptic selection feedback is sent.
-
-- Observation: The remaining real-client pass can now be started from a repo-local command once bot credentials are available.
-  Evidence: `npm run telegram:preview -w trailhead` successfully started Vite, received `https://bright-heads-end.loca.lt` from localtunnel, verified the HTTPS response contained the Trailhead Vite app, and correctly skipped the Bot API step because `TELEGRAM_BOT_TOKEN` was not set.
-
-- Observation: The existing `visitka` host is a Caddy-fronted Docker deployment suitable for hosting the Trailhead static build beside the current bot.
-  Evidence: `docker ps` on `visitka` showed `visitka-bot-1` on the internal compose network and `visitka-caddy-1` publishing ports 80/443. `/opt/visitka/Caddyfile` served `201-51-25-123.sslip.io` and proxied to `bot:8080`; adding a `/trailhead/*` static route kept the root route on the original bot.
-
-- Observation: Public browser smoke now proves the deployed Trailhead build is not only reachable as HTML, but renders the demo app.
-  Evidence: a Playwright smoke against `https://201-51-25-123.sslip.io/trailhead/?fast=1` dismissed onboarding, waited for `feed-list`, found visible `Sunrise Ridge`, and read `450 Stars` plus `4.9 · 284` metadata without page errors.
-
-- Observation: The original Stars checkout path was not a valid Telegram payment integration.
-  Evidence: `examples/trailhead/src/features/discover/Checkout.tsx` called `openInvoice` with a synthetic `https://t.me/$trailhead-...` URL. The deployed follow-up now creates a real invoice URL through `my-work-bot` at `/api/trailhead/invoice`; a signed `initData` smoke returned `200` and a `https://t.me/$...` invoice URL.
-
-- Observation: The visually broken "two ovals in the center" skeleton came from the reusable infinite-list sentinel, not only from Trailhead screen code.
-  Evidence: `TKInfiniteList` centered its sentinel with flex. A full-width `TKSkeletonList` passed as a loader therefore shrank and appeared centered. The sentinel now stretches to `width: 100%`, and the default tiny loader keeps its own centered block styling.
-
-- Observation: Telegram biometric authentication needs the manager lifecycle, not just an `authenticate` call.
-  Evidence: Trailhead now routes biometric actions through `authenticateWithBiometrics`, which performs `init()`, checks availability, requests access if needed, and only then calls `authenticate()`.
-
-- Observation: The deployed production build was still entering mock mode because `examples/trailhead/src/main.tsx` created a mock bridge whenever `getTelegramWebApp()` was absent.
-  Evidence: real Telegram Desktop screenshots showed the `MOCK` badge, fake Stars path, and mock-only controls. The production bootstrap now creates the mock only in dev or via explicit `?mock=1`.
-
-- Observation: `telegram-web-app.js` creates a browser stub even outside Telegram, so presence of `window.Telegram.WebApp` alone is not enough to prove a real Mini App launch.
-  Evidence: production preview loaded the official script in a plain browser and exposed a version-6.0 WebApp without `initData` or `initDataUnsafe.user`. The bootstrap now discards that stub before rendering, keeping browser fallback honest while accepting real launch data.
-
-- Observation: The `0 Stars` summary came from rendering checkout against an already reset cart.
-  Evidence: `Checkout.tsx` previously computed `computeCheckout(cart.basePriceStars ?? 0, ...)` even when the summary panel was reached with no active cart. It now renders a `checkout-empty` state instead of a disabled `Оплатить 0 Stars` footer.
-
-- Observation: Hidden but still-mounted tab stacks can continue to own Telegram native chrome.
-  Evidence: `App.tsx` keeps every tab panel mounted for state preservation. Before the third pass, nested screens computed `active` only from their local stack, so an inactive tab could still mount `useMainButton`. The app now passes top-level tab visibility into each stack and hides the tabbar while the active stack is deeper than its root.
-
-- Observation: Search collapse in real clients is consistent with shrinking scroll-only pages for keyboard overlap.
-  Evidence: `TKPage` applied keyboard height reduction even when a page had no footer. The Discover feed has no page footer, so keyboard focus did not need this shrink. `TKPage` now only reduces height when it owns a pinned footer.
-
-- Observation: The Russian search cancel action needed an explicit flex guard.
-  Evidence: visual smoke at 390px showed the cancel label could shrink to a single visible character after focusing search. `TKSearch` now gives the field `minWidth: 0` and prevents the cancel button from flex-shrinking.
-
-- Observation: A separate filter button row wastes the first viewport and makes search focus feel broken in Telegram.
-  Evidence: the fourth feedback pass moved Discover to a single toolbar. `TKSearch` now supports host-owned collapse controls, and Playwright verifies the filter button shrinks from 116px to 44px while the search expands from 234px to 306px at 390px width.
-
-- Observation: Telegram viewport shrink is not sufficient evidence that the soft keyboard is open.
-  Evidence: after pulling a Mini App down and returning, `visualViewport` can change while no text input is focused. `useKeyboard` now requires an editable active element before setting `.tk-kb-open`, which keeps the bottom navbar from disappearing after Telegram chrome gestures.
-
-- Observation: The public demo must cap real Stars exposure without pretending the payment is fake.
-  Evidence: `computeCheckout` now keeps the catalog price and Trail Pass accounting rows, then applies a `Demo safety cap` line so the final invoice amount is `1 Star`. The confirmation sheet still warns that Telegram may charge that Star and offers a no-spend demo completion after a cancelled invoice.
-
-- Observation: The missing pull-to-refresh feedback was caused by composition, not by the gesture engine alone.
-  Evidence: `TripsList` mounted `TKPullToRefresh` around only the card list below the title and hint card, so a pull from the top of the page did not enter the refresh root. `TKPullToRefresh` now can wrap a full `TKPage`, uses the inner page scroll position when present, and the refresh indicator is covered by unit and e2e checks.
-
-- Observation: The checkout PIN keypad could be cut off because the sheet kept the confirmation snap point after switching content.
-  Evidence: `Checkout.tsx` used `snapPoints={[0.55, 0.92]}` but never moved from the low snap when `phase` changed from `confirm` to `pin`. The sheet now snaps to the high point for PIN entry, and the PIN copy explicitly says to enter 4-8 digits and press `Готово`.
-
-- Observation: Native Telegram click events must be guarded independently from `MainButton.setParams({ is_active: false })`.
-  Evidence: the demo keeps hidden tab stacks mounted and tests can call the raw MainButton click listener directly. `useNativeButton` now stores whether the native button is visible, enabled, and not loading before invoking the latest click callback; DateSlot also guards its local `nav.push("summary")` call behind `canContinue`.
+- Observation: The 5 role-agent reviews converged on the same structure:
+  `Token Singularity`, `Template Prism`, `Component Refraction`,
+  `Runtime Pressure Chamber`, `Build Tomography`, and `Proof Card Forge`.
+  Evidence: founder, engineer, creative, motion, and QA reviews all rejected a
+  typical app/navigation flow and required capability scenes.
 
 
 ## Decision Log
 
-- Decision: Treat this work as Telegram Mini App polish, not a general web redesign.
-  Rationale: The owner explicitly clarified that the demo will be watched inside Telegram Mini Apps. The plan therefore prioritizes native Telegram behavior, safe areas, compact screens, and WebView rhythm over desktop-browser presentation.
-  Date/Author: 2026-06-15 / Codex.
+- Decision: The demo direction is `UIKit Surface Composer`, not `Living Telegram
+  Surface` as a standalone app concept.
+  Rationale: the demo must sell reusable UIKit composition, not one custom
+  magical TMA.
+  Date/Author: 2026-06-16 / Codex.
 
-- Decision: Keep the new plan in root `plans.md`.
-  Rationale: The user explicitly requested `plans.md`. The existing `trailhead-demo.plan.md` is already a large, dirty build ExecPlan for creating Trailhead; this file is a separate living plan for the next design-polish pass.
-  Date/Author: 2026-06-15 / Codex.
+- Decision: Use `UIKit Surface Composer` as the approved working name.
+  Rationale: the name says what the demo sells: composing premium TMA surfaces
+  from the UIKit, not presenting a decorative atelier or standalone app.
+  Date/Author: 2026-06-16 / User.
 
-- Decision: Use the OpenAI ExecPlan structure without wrapping the file in a Markdown code fence.
-  Rationale: The OpenAI ExecPlan guidance says a standalone `.md` file whose entire content is the ExecPlan should omit the outer triple backticks.
-  Date/Author: 2026-06-15 / Codex.
+- Decision: Use Apple/OpenAI-style product reveal pacing.
+  Rationale: the user wants premium presentation, but the demo must not copy a
+  brand skin. The relevant pattern is cold open, one strong idea per screen,
+  signature motion first, proof immediately after, and sparse exact copy.
+  Date/Author: 2026-06-16 / User plus Codex.
 
-- Decision: Browser/mock visual checks are required but insufficient.
-  Rationale: Browser checks are faster and deterministic, but they do not exercise the actual native Main Button, Back Button, safe-area, haptic, or Telegram theme container. Completion requires at least one real Telegram Mini App visual pass.
-  Date/Author: 2026-06-15 / Codex.
+- Decision: Reveal `Show UIKit layers` only after the first meaningful touch.
+  Rationale: first-frame developer chrome would weaken the Token Singularity
+  opening. The user approved the recommendation to let the surface feel alive
+  first, then expose the engineering proof.
+  Date/Author: 2026-06-16 / User.
 
-- Decision: Prefer reusing UIKit components over adding app-specific custom UI.
-  Rationale: Trailhead is meant to sell `tg-mini-app-uikit`; custom feed cards, custom welcome dialog structure, and ad hoc control rows weaken the demo because they hide the kit's reusable component vocabulary.
-  Date/Author: 2026-06-15 / Codex.
+- Decision: Detail one screen at a time and wait for user approval before
+  expanding the next screen.
+  Rationale: previous broad ideation drifted away from the selling goal. A
+  screen-by-screen gate keeps the concept aligned.
+  Date/Author: 2026-06-16 / Codex.
 
-- Decision: Keep demo-specific polish in Trailhead, but fix reusable UIKit bugs where the demo exposes them.
-  Rationale: Most required behaviors were achievable with existing UIKit primitives (`TKCard`, `TKHeader`, `TKPage`, `TKSheet`, `TKListGroup`, `TKSegmented`, and `PrimaryAction`). The later centered skeleton defect was a reusable `TKInfiniteList`/`TKSkeletonList` layout bug, so that fix belongs in `packages/uikit/src`.
-  Date/Author: 2026-06-15 / Codex.
+- Decision: `plans.md` stays exhaustive and agent-facing, while chat responses
+  stay human, short, and synchronized through `Human Sync Snapshot`.
+  Rationale: the user needs to co-design screen direction in chat, not receive a
+  pasted planning file.
+  Date/Author: 2026-06-16 / Codex.
 
-- Decision: Use a compact non-interactive rating display in feed cards instead of `TKRating`.
-  Rationale: `TKRating` renders star buttons even when readonly, which is correct for the component but too wide and semantically noisy inside a narrow tappable feed row. A single-star metadata line keeps rating plus review count unbroken at 320px without nested interactive controls.
-  Date/Author: 2026-06-15 / Codex.
+- Decision: Screen 1 starts with a live UIKit-composed surface, not a Telegram
+  chat, bot comparison, revenue scenario, or component grid.
+  Rationale: the buyer needs to feel premium craft while immediately seeing the
+  reusable system behind it.
+  Date/Author: 2026-06-16 / Codex.
 
-- Decision: Use one-shot `npx localtunnel` only as an ephemeral preview candidate for real Telegram validation.
-  Rationale: The repository has no committed tunnel/deploy workflow and no tunnel binary installed. `npx localtunnel` creates an HTTPS URL without changing `package.json`, but it still does not prove Mini App behavior until a Telegram bot/client opens that URL as a Mini App.
-  Date/Author: 2026-06-15 / Codex.
+- Decision: Screen 1 opening uses `Token Singularity`.
+  Rationale: the previous premium visual references looked like finished UI
+  posters. A center seed point makes the first page feel generated from UIKit
+  tokens, safe-area rails, component slots, runtime states, and motion rules.
+  Date/Author: 2026-06-16 / Codex.
 
-- Decision: Automate only the safe, credential-gated Bot API setup step.
-  Rationale: Telegram's official Bot API exposes `setChatMenuButton` for a bot menu button, including a `MenuButtonWebApp` shape that launches a Web App. The helper therefore updates the bot menu only when `TELEGRAM_BOT_TOKEN` is explicitly provided, and never stores credentials in the repository. Creating or configuring a Main Mini App direct link still remains a BotFather/client action.
-  Date/Author: 2026-06-15 / Codex.
+- Decision: Screens 2-6 are capability scenes, not a typical application with
+  tabbar or navbar navigation.
+  Rationale: the demo must show why TMA and this UIKit matter: remixable
+  scenarios, touch physics, Telegram runtime pressure, build proof, and
+  shareable recorder evidence.
+  Date/Author: 2026-06-16 / Codex.
 
-- Decision: Deploy Trailhead under `/trailhead/` on the existing `visitka` domain instead of replacing the root Mini App.
-  Rationale: The existing bot already owns the root route and API paths. A path-scoped static route lets the demo Mini App coexist on the same host and certificate without changing the current bot container or its public root behavior.
-  Date/Author: 2026-06-15 / Codex.
+- Decision: The chosen visual line is `Template Prism`, `Component Refraction`,
+  `Runtime Pressure Chamber`, `Build Tomography`, and `Proof Card Forge`.
+  Rationale: 5 role-agent reviews converged on this sequence as the strongest
+  way to keep the Token Singularity language across the whole demo.
+  Date/Author: 2026-06-16 / Codex plus role-agent reviews.
 
-- Decision: Set the Trailhead bot menu button only for `OWNER_CHAT_ID`.
-  Rationale: The deployed server already has a production bot. A chat-specific `setChatMenuButton` gives the owner a real Telegram launch path for Trailhead without changing the bot's default menu for all users.
-  Date/Author: 2026-06-15 / Codex.
+- Decision: Cinematic motion must be deterministic and testable.
+  Rationale: the demo is still a UIKit sales surface. Every visible effect needs
+  recorder evidence, reduced-motion fallback, no layout animation, fixed
+  motion states, and responsive no-overlap tests.
+  Date/Author: 2026-06-16 / Codex plus QA automation review.
 
-- Decision: Move Stars invoice creation to `my-work-bot` and require signed Mini App `initData`.
-  Rationale: A static Mini App cannot safely create invoice links because Bot API requires the bot token. The backend can create `XTR` invoices without exposing the token, and the existing initData validator prevents unauthenticated public invoice-link creation.
-  Date/Author: 2026-06-15 / Codex.
-
-- Decision: Use TonConnect UI only for the real Telegram path and keep the old deterministic demo wallet in mock/browser mode.
-  Rationale: Real TON wallet integration needs TonConnect manifest and wallet UI. Browser/e2e mock mode still needs deterministic Trail Pass behavior without opening an external wallet modal during automated tests.
-  Date/Author: 2026-06-15 / Codex.
-
-- Decision: Production Trailhead must not silently fall back to fake Telegram behavior.
-  Rationale: The demo is now deployed as a real Mini App. If the real Telegram bridge is absent, production should remain an honest browser fallback; fake Stars, fake TON, mock cutouts, and `MOCK` badge are reserved for dev/e2e or explicit `?mock=1`.
-  Date/Author: 2026-06-15 / Codex.
-
-- Decision: Move Discover filters into a sheet instead of keeping category tabs and difficulty chips inline.
-  Rationale: The screenshot showed the inline filter area already crowding the first viewport with only a few options. A sheet scales to more categories and keeps the feed header focused on search plus one compact filter entry.
-  Date/Author: 2026-06-15 / Codex.
-
-- Decision: Keep search and filters in one animated toolbar.
-  Rationale: Telegram's narrow viewport cannot afford a second control row under search. The search field starts compact beside a labeled filter button, expands over the label on focus, and leaves only an icon-sized filter action; blur or filter-open collapses search and restores the label.
-  Date/Author: 2026-06-15 / Codex.
-
-- Decision: Keep the full-kit size-limit gates, but raise the CJS budget from `48 kB` to `48.2 kB` and the ESM budget from `47 kB` to `47.1 kB`.
-  Rationale: Variable-length PIN entry, safer keyboard-focus/native-button guards, and the visible pull-to-refresh indicator add small legitimate integration overhead. The ESM increase was kept to 0.1 kB after moving static indicator styling out of inline JS; tree-shaking budgets remain unchanged, and `check:package` still enforces publint, ATTW, size-limit, and docs gates.
-  Date/Author: 2026-06-15 / Codex.
+- Decision: New public UIKit elements are blocked by default.
+  Rationale: the product value is stronger if the demo mostly proves existing
+  exports. Any new public element must pass API, tests, Storybook, docs,
+  accessibility, reduced-motion, and package review.
+  Date/Author: 2026-06-16 / Codex.
 
 
 ## Outcomes & Retrospective
 
-Browser/mock implementation is complete for this pass. Discover now opens with a compact recommendation row and denser card list; feed cards keep price and rating/review metadata separate at 320 and 390px; nested demo screens show a visible mock-only back header; DateSlot starts with a selected-hike summary and price; Checkout sheet spacing is tighter; Profile separates real settings from demo tooling; Platform Lab's reset footer no longer overlaps the language control; Guide same-trip badges are short in English and Russian.
-
-The initial polish implementation deliberately stayed in `examples/trailhead` plus its e2e coverage and i18n dictionaries. The follow-up real-client issue pass also touched reusable UIKit list/feedback internals because the centered skeleton defect came from `TKInfiniteList` and `TKSkeletonList`, not only from the demo app.
-
-Verification evidence:
-
-- `npm run typecheck -w trailhead` passed.
-- `npm run test -w trailhead` passed: 7 files, 33 tests.
-- `npm run build -w trailhead` passed.
-- `npx playwright test --project=trailhead --reporter=line` passed: 31 tests.
-- `npm run typecheck` passed.
-- `npm run test:unit` passed: 47 files, 612 tests.
-- `npm run build` passed.
-- `npm run check:stories` passed: 113/113 Storybook export coverage.
-- `npm run check:package` passed after the package build completed. A previous parallel run failed only because `check:package` started before `packages/uikit/dist` existed.
-- `npm run test:e2e -- --reporter=line` passed: 92 tests.
-- In-app Browser smoke at 390 by 844 passed: feed price and metadata did not overlap, metadata was `nowrap`, mock back appeared on detail and returned to feed.
-- `npx playwright test --project=trailhead examples/trailhead/e2e/telegram-bridge.spec.ts examples/trailhead/e2e/polish.spec.ts --reporter=line` passed: 6 tests.
-- `npx playwright test --project=trailhead examples/trailhead/e2e/telegram-bridge.spec.ts --reporter=line` passed: 1 test. This is not the real Telegram pass, but it verifies the app's `window.Telegram.WebApp` branch for native MainButton, BackButton, and haptic selection routing.
-- `curl -L https://purple-days-kick.loca.lt/` returned the Trailhead Vite HTML while the local dev server and tunnel were running.
-- `npm run telegram:preview -w trailhead -- --help` passed and printed the real Telegram preview workflow and env contract.
-- `npm run telegram:preview -w trailhead` successfully produced and verified `https://bright-heads-end.loca.lt`; the script remained running as intended for a manual Telegram pass and was stopped with `Ctrl-C`.
-- `npm run build -w trailhead -- --base=/trailhead/` passed and produced `/trailhead/assets/...` references in `dist/index.html`.
-- `rsync -az --delete examples/trailhead/dist/ visitka:/opt/visitka/trailhead-dist/` completed successfully.
-- On `visitka`, `docker compose up -d caddy` recreated only `visitka-caddy-1`; `visitka-bot-1` remained up, and `docker exec visitka-caddy-1 caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile` reported a valid configuration.
-- `curl -I https://201-51-25-123.sslip.io/` returned `HTTP/2 200` from the existing root app, while `curl -I https://201-51-25-123.sslip.io/trailhead/` returned `HTTP/2 200` from Caddy's static file server and `/trailhead/assets/index-jsIMt7Uf.js` returned JavaScript.
-- Bot API verification for `lonmstalker_bot` returned an owner-specific `web_app` menu button with text `Trailhead demo` and URL `https://201-51-25-123.sslip.io/trailhead/`; an owner chat message with an inline `Open Trailhead demo` web app button was sent.
-- Playwright production smoke against `https://201-51-25-123.sslip.io/trailhead/?fast=1` passed: title was `Trailhead — Telegram Mini App demo`, mock badge appeared in normal browser mode, and the Discover feed rendered `Sunrise Ridge`, `450 Stars`, and rating metadata.
-- `npm run test -w tg-mini-app-uikit -- test/lists-reorg.test.tsx test/feedback-reorg.test.tsx` passed: 2 files, 7 tests.
-- `npx react-doctor@latest --verbose --scope changed` reported 100/100 for the changed tracked UIKit files. It skipped `examples/trailhead` because that directory is untracked in this checkout; Trailhead was covered by its own unit, typecheck, build, and e2e gates.
-- `cargo fmt --all -- --check`, `cargo check -p bot`, and `cargo test -p bot` passed in `/Users/nikitakocnev/IdeaProjects/my-work-bot/my-work-bot`.
-- `npx playwright test --project=trailhead examples/trailhead/e2e/wallet-lab.spec.ts examples/trailhead/e2e/train-guide.spec.ts examples/trailhead/e2e/booking.spec.ts --reporter=line` passed: 14 tests.
-- `just deploy-trailhead-demo` passed and synced the Trailhead build to `visitka`.
-- `just deploy` passed after a 7m56s amd64 release build, loaded the image onto `visitka`, and recreated `visitka-bot-1`.
-- `curl` smoke after deployment returned `200` for `https://201-51-25-123.sslip.io/`, `200` for `https://201-51-25-123.sslip.io/trailhead/`, and `200` for `/trailhead/tonconnect-manifest.json`.
-- Unauthenticated `POST /api/trailhead/invoice` returned `401`; the same endpoint with freshly signed `initData` returned `200` plus a real `https://t.me/$...` invoice URL.
-- Bot API `getMyCommands?language_code=ru` returned `/start`, `/demo`, and `/forget`; a new owner chat message with an inline Trailhead WebApp button was sent.
-- Second feedback pass verification:
-  - `npm run typecheck -w trailhead` passed.
-  - `npm run test -w trailhead` passed: 7 files, 33 tests.
-  - `npm run build -w trailhead -- --base=/trailhead/` passed.
-  - `npm run test -w tg-mini-app-uikit -- test/coverage-components.test.tsx test/inputs-reorg.test.tsx` passed: 2 files, 31 tests.
-  - `npx playwright test --project=trailhead examples/trailhead/e2e/booking.spec.ts examples/trailhead/e2e/wallet-lab.spec.ts examples/trailhead/e2e/telegram-bridge.spec.ts examples/trailhead/e2e/shell.spec.ts --reporter=line` passed: 13 tests.
-  - `npm run check:stories` passed: 113/113 Storybook export coverage.
-  - `npm run check:package` passed: publint, arethetypeswrong, size-limit, and docs gate.
-- Second feedback pass deploy/browser smoke:
-  - `npx react-doctor@latest --verbose --scope changed` exited 0; diagnostics JSON was empty, with reported changed-scope score 87/100.
-  - In-app Browser production preview at 390 by 844 rendered without `MOCK`, without inline filter rows, with one search field and a filter sheet. Selecting `Лес` filtered to forest cards and reset restored the feed.
-  - `just deploy-trailhead-demo` rebuilt and synced the static build to `visitka`.
-  - Public smoke returned `200` for `https://201-51-25-123.sslip.io/trailhead/`, `200` for the new JS asset, `200` for `/trailhead/tonconnect-manifest.json`, `401` for unauthenticated `POST /api/trailhead/invoice`, and `200` with a `t.me` invoice host for a freshly signed authenticated invoice request.
-  - In-app Browser smoke against the deployed URL rendered the app without `MOCK`, with `feed-filter-open`, `feed-search`, and no `feed-categories`.
-- Third feedback pass verification:
-  - `npm run typecheck` in `examples/trailhead` passed.
-  - `npm run test -- --run src/features/trips/useCheckIn.test.tsx` in `examples/trailhead` passed: 1 file, 3 tests.
-  - `npm run test -w tg-mini-app-uikit -- --run test/telegram-capabilities.test.tsx test/m6-nav.test.tsx test/layout-reorg.test.tsx` passed: 3 files, 48 tests.
-  - `npx playwright test examples/trailhead/e2e/booking.spec.ts examples/trailhead/e2e/checkin.spec.ts examples/trailhead/e2e/shell.spec.ts examples/trailhead/e2e/telegram-bridge.spec.ts` passed: 15 tests.
-  - `npm run build` at repo root passed for `tg-mini-app-uikit`.
-  - `npm run build` in `examples/trailhead` passed.
-  - Headless Chrome visual smoke at 390 by 844 confirmed focused search retained 8 route cards and a full `Отмена` action; check-in showed a compact 123px `Подтверждено` status pill, hidden tabbar parent, and the demo check-in card.
-  - `just deploy-trailhead-demo` passed from `/Users/nikitakocnev/IdeaProjects/my-work-bot/my-work-bot`; it built Trailhead with `--base=/trailhead/`, synced `dist` to `visitka:/opt/visitka/trailhead-dist/`, and confirmed `visitka-caddy-1` running.
-  - Public smoke returned `HTTP/2 200` for `https://201-51-25-123.sslip.io/trailhead/` and served the new `/trailhead/assets/index-BxvSsXHW.js` asset.
-  - Headless Chrome smoke against `https://201-51-25-123.sslip.io/trailhead/?fast=1&lang=ru` confirmed production render without `MOCK`, focused search retained 8 cards with full `Отмена`, and check-in hid the tabbar parent while showing the compact status and demo card.
-- Fourth feedback pass verification:
-  - `npm run test -w tg-mini-app-uikit -- --run test/m4-forms.test.tsx` passed: 1 file, 41 tests.
-  - `npx playwright test examples/trailhead/e2e/booking.spec.ts -g "cancelled Stars|stored PIN|keyboard overlaps"` passed: 3 tests.
-  - `npm run test -w tg-mini-app-uikit -- --run test/m4-forms.test.tsx test/telegram-capabilities.test.tsx test/m6-nav.test.tsx test/layout-reorg.test.tsx` passed: 4 files, 89 tests.
-  - `npx playwright test examples/trailhead/e2e/booking.spec.ts examples/trailhead/e2e/wallet-lab.spec.ts examples/trailhead/e2e/a11y.spec.ts` passed: 17 tests.
-  - `npm run typecheck` in `examples/trailhead` passed.
-  - `npm run test -w tg-mini-app-uikit -- --run test/coverage-components.test.tsx test/inputs-reorg.test.tsx test/m4-forms.test.tsx` passed: 3 files, 73 tests.
-  - `npm run build` at repo root passed for `tg-mini-app-uikit`.
-  - `npm run build` in `examples/trailhead` passed.
-  - Headless Chrome production-preview smoke at 390 by 844 confirmed the search/filter toolbar idle state, focused icon-only state, sheet-open restored label state, cancelled-Stars demo fallback, and 6-digit stored PIN success.
-  - `just deploy-trailhead-demo` passed from `/Users/nikitakocnev/IdeaProjects/my-work-bot/my-work-bot`; it built Trailhead with `--base=/trailhead/`, synced `dist` to `visitka:/opt/visitka/trailhead-dist/`, and confirmed `visitka-caddy-1` running.
-  - Public smoke returned `HTTP/2 200` for `https://201-51-25-123.sslip.io/trailhead/` and served `/trailhead/assets/index-B1PdVzCN.js`.
-  - Headless Chrome smoke against `https://201-51-25-123.sslip.io/trailhead/?fast=1&lang=ru` confirmed production render without `MOCK`, idle search/filter toolbar, focused icon-only filter state, and restored filter label after opening the sheet.
-- Fifth feedback pass local verification:
-  - `npm run test -w trailhead` passed: 7 files, 34 tests.
-  - `npm run typecheck` in `examples/trailhead` passed.
-  - `npm run build` in `examples/trailhead` passed.
-  - `npm run test:unit` passed: 47 files, 616 tests.
-  - `npm run build` at repo root passed for `tg-mini-app-uikit`.
-  - `npm run check:stories` passed: 113/113 Storybook export coverage.
-  - `npm run check:package` passed after the CJS full-kit budget was adjusted to `48.2 kB`; ESM and tree-shaking budgets remain under their existing limits.
-  - `npx playwright test examples/trailhead/e2e/booking.spec.ts examples/trailhead/e2e/wallet-lab.spec.ts examples/trailhead/e2e/checkin.spec.ts examples/trailhead/e2e/telegram-bridge.spec.ts examples/trailhead/e2e/polish.spec.ts examples/trailhead/e2e/a11y.spec.ts --reporter=line` passed: 28 tests.
-  - `npx react-doctor@latest --verbose --scope changed` exited 0 with score 87/100. It reported no changed source files in untracked `examples/trailhead`, which is covered by Trailhead unit, typecheck, build, e2e, and preview smoke.
-  - Headless Chrome production-preview smoke at 390 by 844 confirmed the `1 Stars` demo cap row, hidden `summary-pay` while the checkout sheet is open, dynamic PIN dots with no pre-rendered dots, and Trips swipe/pull hints.
-  - `just deploy-trailhead-demo` passed from `/Users/nikitakocnev/IdeaProjects/my-work-bot/my-work-bot`; it built Trailhead with `--base=/trailhead/`, synced `dist` to `visitka:/opt/visitka/trailhead-dist/`, and confirmed `visitka-caddy-1` running.
-  - Public smoke returned `HTTP/2 200` for `https://201-51-25-123.sslip.io/trailhead/` and `HTTP/2 200` for `/trailhead/assets/index-CIOBpOCG.js`.
-  - Unauthenticated `POST /api/trailhead/invoice` with `totalStars: 1` returned `401`, confirming public invoice creation still requires Telegram `initData`.
-  - Headless Chrome smoke against `https://201-51-25-123.sslip.io/trailhead/?fast=1&lang=ru` confirmed production render without `MOCK`, the `1 Stars` demo cap row, hidden checkout pay action while the sheet is open, dynamic PIN dots, and Trips gesture hints.
-- Sixth feedback pass verification:
-  - `npm run test -w tg-mini-app-uikit -- --run test/m3-gestures.test.tsx test/telegram-capabilities.test.tsx` passed: 2 files, 58 tests.
-  - `npm run typecheck -w trailhead` passed.
-  - `npm run test -w trailhead` passed: 7 files, 34 tests.
-  - `npm run build -w trailhead -- --base=/trailhead/` passed and produced `/trailhead/assets/index-DdkZB0Gy.js`.
-  - `npx playwright test --project=trailhead examples/trailhead/e2e/checkin.spec.ts examples/trailhead/e2e/booking.spec.ts --reporter=line` passed: 18 tests.
-  - `npm run typecheck -w tg-mini-app-uikit` passed.
-  - `npm run build -w tg-mini-app-uikit` passed.
-  - `npm run check:package` passed: zero runtime dependencies, publint, ATTW, size-limit, and docs gate.
-  - `rsync -az --delete examples/trailhead/dist/ visitka:/opt/visitka/trailhead-dist/` completed successfully.
-  - `curl -fsS https://201-51-25-123.sslip.io/trailhead/` returned the deployed HTML referencing `/trailhead/assets/index-DdkZB0Gy.js`, and that asset returns `HTTP/2 200`.
-  - Public Playwright smoke against `https://201-51-25-123.sslip.io/trailhead/?mock=1&fast=1&lang=ru` passed: onboarding dismissed, Trips opened, `trips-refresh` was aligned with `panel-trips-list`, and the refresh indicator became visible after a pull gesture.
-- Seventh feedback pass verification:
-  - RED checks reproduced the missing visible pull indicator and raw native MainButton click bypass before the fix.
-  - `npm run typecheck -w tg-mini-app-uikit` passed.
-  - `npm run test -w tg-mini-app-uikit -- --run test/m3-gestures.test.tsx test/telegram-buttons-events.test.tsx` passed: 2 files, 36 tests.
-  - `npm run test -w tg-mini-app-uikit` passed: 47 files, 618 tests.
-  - `npm run typecheck -w trailhead` passed.
-  - `npm run test -w trailhead` passed: 7 files, 34 tests.
-  - `npm run build -w tg-mini-app-uikit` passed.
-  - `npm run build -w trailhead -- --base=/trailhead/` passed and produced `/trailhead/assets/index-i-t-ooR-.js`.
-  - `npx react-doctor@latest --verbose --scope changed` passed with Trailhead at `100` and no changed-scope findings.
-  - `npm run check:stories` passed: 113/113 Storybook export coverage.
-  - `npm run check:package` passed: zero runtime dependencies, publint, ATTW, size-limit, and docs gate.
-  - `npx playwright test --project=trailhead --reporter=line` passed: 42 tests.
-  - `rsync -az --delete examples/trailhead/dist/ visitka:/opt/visitka/trailhead-dist/` completed successfully.
-  - `curl -fsS https://201-51-25-123.sslip.io/trailhead/` returned the deployed HTML referencing `/trailhead/assets/index-i-t-ooR-.js`, and that asset returns `HTTP/2 200`.
-  - Public Playwright smoke against `https://201-51-25-123.sslip.io/trailhead/?mock=1&fast=1` passed: onboarding dismissed, Trips opened, and the deployed pull-to-refresh indicator measured `38x38`.
-  - Draft PR opened: https://github.com/lonmstalker/tg-mini-app-uikit/pull/2.
-
-Remaining blocker: real Telegram visual validation has not been performed by this agent. The deployed URL is now available through the existing bot's `/demo` command and the sent WebApp button, so the remaining manual step is to open Trailhead in Telegram and verify native Main Button, native Back Button, safe areas, haptics, TON wallet modal, and Stars payment UI in the real client.
-
-
-## Context and Orientation
-
-The repository is an npm workspace for a React and TypeScript Telegram Mini Apps UI kit. The published package source is in `packages/uikit`, and the flagship demo app is in `examples/trailhead`. Trailhead imports `tg-mini-app-uikit` and demonstrates a hiking product with five tabs: Discover, Trips, Train, Guide, and Profile.
-
-A Telegram Mini App is a web application opened inside Telegram's in-app WebView. Telegram exposes a JavaScript bridge at `window.Telegram.WebApp`. The kit wraps this bridge in hooks such as `useMainButton`, `useBackButton`, `useHaptics`, `useSafeArea`, `useViewport`, `useInvoice`, `useCloudStorage`, `useDeviceStorage`, and `useSecureStorage`. The browser mock simulates this bridge so the app can run locally, but the mock is not identical to a real Telegram client.
-
-The files most relevant to this polish pass are:
-
-- `examples/trailhead/src/App.tsx`: app shell, tabbar, per-tab stacks, onboarding anchors.
-- `examples/trailhead/src/AppFrame.tsx`: providers, Telegram theme mapping, language and visual preferences.
-- `examples/trailhead/src/components/PrimaryAction.tsx`: native Main Button integration and browser fallback.
-- `examples/trailhead/src/components/Onboarding.tsx`: first-run welcome and coach marks.
-- `examples/trailhead/src/features/discover/Feed.tsx`: Discover feed, filters, search, and custom experience tiles.
-- `examples/trailhead/src/features/discover/ExperienceDetail.tsx`: detail page, gallery, stats, guide quote, route, and book action.
-- `examples/trailhead/src/features/discover/DateSlot.tsx`: date and time selection.
-- `examples/trailhead/src/features/discover/Checkout.tsx`: summary, payment sheet, PIN, invoice, success and error flows.
-- `examples/trailhead/src/features/guide/GuideDirectory.tsx`: guide list and long-press action sheet.
-- `examples/trailhead/src/features/profile/Profile.tsx`: profile, wallet, settings, and entry to Platform Lab.
-- `examples/trailhead/src/features/profile/PlatformLab.tsx`: live theme controls.
-- `packages/uikit/src/index.ts` and `packages/uikit/test/__snapshots__/api-surface.test.ts.snap`: source of truth for public `TK*` components and hooks.
-
-Important component and hook vocabulary:
-
-- `TKPage` is the full-height Mini App page wrapper with scroll area, safe-area behavior, and optional header/footer slots.
-- `TKTabbar` is the bottom tab navigation.
-- `TKNavStack` is the per-tab push navigation stack. It integrates with Telegram Back Button while stack depth is greater than one.
-- `TKMainButton` is the DOM fallback for Telegram's native Main Button.
-- `TKBottomBar` pins bottom actions inside the app when the native Telegram button is unavailable.
-- `TKSheet`, `TKDialog`, and `TKActionSheet` are overlay patterns that intercept back behavior.
-- `TKCard`, `TKCardCell`, `TKImage`, `TKImg`, `TKRating`, `TKBadge`, `TKPaymentSummary`, `TKListGroup`, `TKCell`, `TKSegmented`, `TKSlider`, `TKSearch`, `TKSkeletonList`, `TKEmptyState`, and `TKToastProvider` are the reusable kit pieces this work should favor.
-
-The design context for this repository is product UI, not a landing page. The UI should be restrained, compact, task-oriented, Telegram-aware, and built from semantic `--tk-*` tokens. Do not add decorative SaaS hero patterns, nested cards, gradient text, glassmorphism as a default, or broad raw-color styling. Use cards only when they frame a real item or control group.
-
-
-## Plan of Work
-
-Start by establishing a fresh baseline. Run the demo locally in browser mock mode and capture the same states that were audited: welcome, onboarding coach mark, Discover feed, Experience detail, DateSlot before and after slot selection, Checkout summary, Checkout confirm sheet, Trips, Train, Guide, Profile, Platform Lab, Platform Lab dark, and Discover dark. Then open the same demo in a real Telegram Mini App WebView using the project's normal bot/deployment/tunnel workflow. If there is no stable Telegram URL yet, create a temporary HTTPS preview URL for the Vite app and configure the Telegram bot's Mini App URL for that preview. Do not mark the plan complete until a real Telegram client has been used for the final visual pass.
-
-Polish the first-run welcome. In `examples/trailhead/src/components/Onboarding.tsx`, replace the custom fixed welcome dialog structure with a kit-consistent sheet-like layout or a `TKSheet` if it fits the first-run flow. The title must not clip at 320px, 360px, or 390px. The copy and CTA should remain focused: Trailhead lets the user book guided hikes, pay in Telegram Stars, and check in on the trail. Keep safe-area padding and avoid oversized decorative media. If the app is running in real Telegram, the welcome must not fight native bottom chrome.
-
-Polish the Discover feed. In `examples/trailhead/src/features/discover/Feed.tsx`, replace the custom `ExperienceTile` layout with a component composition based on the kit's card/cell vocabulary. The target structure is a compact row card: media on the left, title and location in the center, price as a stable trailing or bottom-aligned element, and rating plus review count as one unbroken metadata line. Avoid the current collision where price, numeric rating, dot separator, and review count compete in the same narrow right column. Keep the whole card tappable and accessible, but do not introduce nested interactive controls. If a read-only `TKRating` still renders internal buttons, keep the full-card click target outside that interactive subtree as the current implementation does, or choose a non-interactive rating display if the kit provides one by then.
-
-Tighten the feed's first viewport. The current hero-style `TKBannerCard` dominates the top of Discover and feels closer to a web hero than a Telegram task surface. Keep a promotional entry, but make it smaller and more Telegram-native: either a compact banner with reduced height, or a list-style recommendation cell that opens the signature hike. The filters should read as quick controls, not a large marketing section. Preserve `TKCategoryTabs`, `TKChipGroup`, and `TKSearch`, but tune spacing so at least two complete experience cards are visible on a 390px Telegram viewport after the first-run flow is dismissed.
-
-Improve nested navigation affordances. `TKNavStack` already connects to Telegram's native Back Button, but a browser/mock reviewer cannot see that native button. Add a fallback `TKHeader` or equivalent kit-consistent header only when there is no real Telegram bridge and the active stack depth is greater than one. In real Telegram, do not duplicate the native Back Button with an extra in-app back button unless platform testing proves the native button is not visible in the target client. The acceptance behavior is simple: in Telegram, the native Back Button pops detail/date/checkout/profile-lab screens; in browser mock, a visible header back control does the same.
-
-Compact the booking date flow. In `examples/trailhead/src/features/discover/DateSlot.tsx`, reduce the feeling of a full web form. The default view should show a compact selected-experience summary, quick date choices or a compact calendar surface, time slots, and a single primary continuation action. If a full monthly calendar remains, consider opening it from a sheet or collapsible region rather than consuming most of the first viewport. The user should always see what they are booking and what the current price is before tapping Continue.
-
-Polish Checkout. `examples/trailhead/src/features/discover/Checkout.tsx` already uses a `TKSheet`, `TKPaymentSummary`, haptics, invoice, PIN, toast, and success states. Keep that structure. Improve spacing so the sheet reads like a Telegram confirmation sheet rather than a desktop modal, and ensure the underlying tabbar is visually de-emphasized or safely separated when the sheet is open. In real Telegram, the native Main Button should own the primary pay action; the DOM fallback is only for browser/mock mode.
-
-Separate Platform Lab from the user profile story. `examples/trailhead/src/features/profile/Profile.tsx` currently places Platform Lab beside user settings. That is useful for demonstrating the kit, but confusing as product UX. Either move Platform Lab behind a clearly marked demo/developer section, rename it to make its purpose explicit, or expose it through a Telegram SettingsButton/debug entry when running in demo mode. In `examples/trailhead/src/features/profile/PlatformLab.tsx`, make the reset action footer-aware so it cannot overlap lower controls such as Language, cutouts, or RTL.
-
-Shorten Guide list badges. In `examples/trailhead/src/features/guide/GuideDirectory.tsx`, the "On your Sunrise Ridge trip" badge is too long for a compact row. Replace it with shorter copy such as "Same trip" or move the longer text to the guide profile/detail screen. The guide list should show names and roles without truncation pressure at 390px, and it must still work in Russian where text may be longer.
-
-Check dark theme as a first-class mode. The current dark mode mostly works, but some CTA and metadata colors look like automatic token application rather than deliberate design. Verify contrast for banner CTA, feed price, search placeholder, selected tabs, disabled Main Button, and sheet surfaces. Use semantic tokens and Telegram theme variables instead of raw one-off colors.
-
-
-## Concrete Steps
-
-Work from the repository root:
-
-    /Users/nikitakocnev/RustroverProjects/tg-mini-app-uikit
-
-Begin with a clean understanding of local state:
-
-    git status --short
-    rg --files -g 'plans.md' -g '*plan*.md'
-
-Run the local browser preview:
-
-    npm run dev -w trailhead -- --host 127.0.0.1 --port 5173
-
-Open `http://127.0.0.1:5173/` at 390 by 844, 360 by 780, and 320 by 700. Capture before screenshots for the states listed in `Plan of Work`. If Playwright is used, keep screenshots outside the repository unless the team decides to update snapshot fixtures.
-
-For real Telegram verification, expose the demo through an HTTPS URL suitable for Telegram's WebView. The exact tunnel or deployment method may vary by machine. Record the chosen method in `Decision Log` before using it. The important requirement is that the URL is opened by Telegram as a Mini App, not just by a mobile browser. In that real client, verify native Main Button, native Back Button, theme, haptics, safe area, and keyboard behavior.
-
-Make small, testable edits in this order:
-
-1. First-run welcome.
-2. Discover feed cards and banner density.
-3. Navigation fallback for browser/mock, while preserving native Back Button in Telegram.
-4. DateSlot compactness and booking summary.
-5. Checkout sheet spacing and bottom action behavior.
-6. Profile and Platform Lab separation.
-7. Guide badge copy and row density.
-8. Dark theme contrast polish.
-
-After each area, run the narrowest useful tests first. At minimum, run the demo typecheck and relevant e2e specs before broad gates:
-
-    npm run typecheck -w trailhead
-    npm run test -w trailhead
-    npm run test:e2e -- e2e/demo2.spec.ts
-    npm run test:e2e -- examples/trailhead/e2e
-
-If the exact e2e selector changes because the current Playwright config routes specs differently, inspect `playwright.config.ts` and `examples/trailhead/e2e` and run the equivalent Trailhead specs. Do not update visual baselines until the visual difference has been reviewed as intended.
-
-Before completion, run the broad repository gates that are relevant to demo and kit integration:
-
-    npm run typecheck
-    npm run test:unit
-    npm run build
-    npm run check:package
-    npm run test:e2e
-
-If these are too broad for an intermediate checkpoint, record what was run in `Progress` and leave the broader gates for final validation. Do not claim completion until final validation has been run or a blocker is explicitly recorded.
-
-
-## Validation and Acceptance
-
-Acceptance is user-visible. A reviewer should open the demo inside Telegram and be able to complete this flow without visual glitches:
-
-Open the Mini App in Telegram. Dismiss first-run onboarding. On Discover, the welcome state does not clip, the top section feels compact, and at least two trail cards are readable without metadata collisions. Tap Sunrise Ridge. The detail screen opens, back behavior is obvious, and the primary Book action appears in the native Telegram Main Button area. Continue to date and time. The date flow shows the selected hike and price while letting the user pick a time without excessive vertical dead space. Continue to checkout. The payment confirmation sheet uses Telegram-like sheet behavior, does not collide with the tabbar or safe area, and the pay action is native in Telegram. Complete or simulate payment, then verify the booking appears under Trips.
-
-Run the same flow in dark theme. Text, CTA, metadata, disabled states, and selected states must remain readable. The feed price and rating metadata must not collide. The dark Discover banner CTA must pass contrast by inspection and, where automated contrast checks exist, by test.
-
-Run the same critical screens at 320px width in browser mock mode. No heading, button label, tab label, guide badge, price, rating, or primary action may clip or overlap. Long Russian strings must be checked, not assumed.
-
-Native Telegram acceptance must include these observations:
-
-- Main Button appears as Telegram native chrome on Detail, DateSlot, Checkout, and Platform Lab reset where applicable.
-- Back Button appears and pops nested screens in real Telegram when stack depth is greater than one.
-- Safe areas avoid notches, home indicator, bottom Telegram chrome, and sheet handles.
-- Theme follows Telegram light and dark modes.
-- Haptics fire on meaningful selection, confirmation, success, and error actions where supported, while no-oping safely outside Telegram.
-- Browser/mock mode remains usable and honest, with visible fallback controls and the `MOCK` badge.
-
-Automated gates should be green. If any broad existing gate fails for an unrelated dirty-tree reason, record the command, failure, and why it is unrelated. Then run the narrowest gate that proves the changed behavior.
-
-
-## Idempotence and Recovery
-
-This work should be additive and reversible. Do not rewrite the app architecture. Do not replace `TKNavStack`, `TKProvider`, `TKTelegramProvider`, or the store. Keep edits scoped to the demo surfaces and only touch `packages/uikit/src` if a reusable component gap or bug blocks a correct demo implementation.
-
-If a visual change causes e2e failures, first determine whether the failure is a legitimate selector/behavior regression, an intended visual update, or a brittle snapshot. Do not regenerate snapshots as a reflex. Fix the UI or test intent first, then update baselines only after review.
-
-If real Telegram testing is blocked by bot configuration or missing HTTPS preview, do not mark the plan complete. Record the blocker in `Progress`, keep browser/mock work separate, and leave the real Telegram validation checkbox unchecked.
-
-If a file already has unrelated user changes, preserve them. Read the file before editing, apply the smallest patch, and do not revert unrelated modifications.
-
-Stop the local dev server after verification unless a user explicitly asks to keep it running.
-
-
-## Artifacts and Notes
-
-Design audit observations that motivated this plan:
-
-- First-run welcome at 390px clipped the title "Welcome to Trailhead" on the right.
-- Discover feed cards showed the trail price, numeric rating, separator, and review count competing in the same right-side area.
-- The Discover top banner consumed a large first-viewport area and felt closer to a web hero than a Telegram list surface.
-- DateSlot showed a full monthly calendar that dominated the first screen, with no compact selected-hike summary near the bottom action.
-- Checkout was functionally strong but needs real Telegram Main Button validation, because browser fallback is not equivalent.
-- Guide list rows used a long badge, "On your Sunrise Ridge trip", that squeezed names and roles.
-- Profile mixed real user settings with Platform Lab, a developer/demo control surface.
-- Platform Lab bottom reset action visually overlapped the lower control area.
-- Dark mode worked structurally but needs targeted contrast review for banner CTA, feed metadata, and disabled/selected states.
-
-Relevant public UIKit surface confirmed by source:
-
-- Layout and navigation: `TKPage`, `TKBottomBar`, `TKSafeArea`, `TKTabbar`, `TKNavStack`, `TKNavPanel`, `TKHeader`.
-- Cards and display: `TKCard`, `TKCardCell`, `TKBannerCard`, `TKBookingCard`, `TKImage`, `TKImg`, `TKAvatar`, `TKAvatarStack`, `TKBadge`, `TKRating`.
-- Forms and controls: `TKSearch`, `TKChipGroup`, `TKSegmented`, `TKSlider`, `TKSwitch`, `TKCalendar`, `TKSlotPicker`, `TKPinInput`.
-- Overlays and feedback: `TKSheet`, `TKDialog`, `TKActionSheet`, `TKToastProvider`, `TKEmptyState`, `TKSkeletonList`, `TKSpinner`.
-- Telegram hooks: `useMainButton`, `useBackButton`, `useBackIntercept`, `useHaptics`, `useOptionalHaptics`, `useSafeArea`, `useViewport`, `useTelegramTheme`, `useInvoice`, `useClosingConfirmation`, `useHomeScreen`.
-
-OpenAI ExecPlan principles embedded in this file:
-
-- The plan is self-contained and assumes no previous chat.
-- The plan produces observable product behavior, not just code changes.
-- Progress, discoveries, decisions, and retrospective are living sections.
-- Commands and validation are explicit.
-- The final acceptance is phrased as what a human can observe in the running system.
-
-
-## Interfaces and Dependencies
-
-Do not introduce a new UI library. Use `tg-mini-app-uikit` components and hooks first. If a component is missing a small prop needed for a reusable behavior, prefer adding that prop to the kit with tests rather than hardcoding a one-off Trailhead workaround. If the need is specific to the Trailhead demo story, keep it in `examples/trailhead`.
-
-The key demo-level interface is `PrimaryAction` in `examples/trailhead/src/components/PrimaryAction.tsx`. It must continue to provide native `useMainButton` behavior in real Telegram and DOM fallback behavior outside Telegram. Any changes to bottom actions should go through or preserve this abstraction.
-
-The key navigation interface is `TKNavStack` plus `useNav`. Do not create a parallel router for this polish pass. Browser/mock back fallback should read stack state and call `useNav().pop()`; real Telegram should continue to rely on native Back Button integration.
-
-The theme interface is `TKProvider` with `telegram`, `accent`, `roundness`, `motion`, and `fontSize` props in `examples/trailhead/src/AppFrame.tsx`. Preserve Telegram theme synchronization through `useTelegramTheme`. Avoid raw colors except where existing demo data uses stable illustrative hues; even there, prefer mapping into semantic surfaces when practical.
-
-The persistence and language interfaces are the existing store and i18n layers under `examples/trailhead/src/store` and `examples/trailhead/src/i18n`. Do not hardcode user-facing strings. Any new copy must be added to both English and Russian dictionaries and verified in Russian at narrow width.
-
-The external dependency for final validation is a real Telegram client that can open the demo as a Mini App through an HTTPS URL. Browser mock mode is a development dependency, not the final acceptance environment.
-
-
-## Change Notes
-
-- 2026-06-15 / Codex: Created this root `plans.md` from the design audit, using the OpenAI ExecPlan structure and adding the explicit constraint that the demo must be judged inside a real Telegram Mini App WebView.
+This section is intentionally empty until Screen 1 is approved and work proceeds.

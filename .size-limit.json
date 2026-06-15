@@ -1,27 +1,29 @@
 [
   {
-    "name": "full kit · esm · gzip",
+    "name": "full kit · esm · brotli",
     "path": "packages/uikit/dist/index.js",
-    "limit": "47.4 kB",
+    "limit": "46 kB",
     "ignore": [
       "react",
-      "react-dom"
+      "react-dom",
+      "@tg-mini-app/telegram"
     ]
   },
   {
-    "name": "full kit · cjs · gzip",
+    "name": "full kit · cjs · brotli",
     "path": "packages/uikit/dist/index.cjs",
-    "limit": "48.5 kB",
+    "limit": "46 kB",
     "ignore": [
       "react",
-      "react-dom"
+      "react-dom",
+      "@tg-mini-app/telegram"
     ]
   },
   {
     "name": "tree-shaking · import { TKButton }",
     "path": "packages/uikit/dist/index.js",
     "import": "{ TKButton }",
-    "limit": "4.5 kB",
+    "limit": "5 kB",
     "ignore": [
       "react",
       "react-dom"
@@ -31,7 +33,7 @@
     "name": "tree-shaking · import { TKSpinner }",
     "path": "packages/uikit/dist/index.js",
     "import": "{ TKSpinner }",
-    "limit": "3.5 kB",
+    "limit": "4 kB",
     "ignore": [
       "react",
       "react-dom"

@@ -1,7 +1,0 @@
-- text: Selection controls
-- switch "Notifications" [checked]
-- checkbox "Save card for later" [checked]
-- radiogroup:
-  - radio "Standard delivery" [checked]
-  - radio "Express delivery"
-  - radio "Pickup — temporarily unavailable" [disabled]

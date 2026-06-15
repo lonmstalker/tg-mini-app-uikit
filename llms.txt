@@ -52,6 +52,6 @@ useHideKeyboard, useTelegramEvent.
 
 ## Testing
 
-- Test support ships `createMockTelegram()` (packages/uikit/test/support/telegram/mock.ts) — a full
+- Test support ships `createMockTelegram()` from the `@tg-mini-app/telegram/testing` subpath — a full
   in-browser WebApp mock (buttons, invoices, storages, sensors, biometrics) injectable via
-  `TKTelegramProvider webApp=`. For e2e of consumer apps see the sibling project tg-mini-app-testkit.
+  `TKTelegramProvider webApp=`. It is `sideEffects:false` and dev-only, so it tree-shakes out of production builds.

@@ -15,6 +15,7 @@ export const MINIMAL_PROPS: Record<string, Record<string, unknown>> = {
   TKSegmented: { options: ["a", "b"] },
   TKCategoryTabs: { tabs: ["a", "b"] },
   TKTabbar: { tabs: [{ icon: "check", label: "Home" }] },
+  TKTabView: { tabs: [{ icon: "check", label: "Home" }], panels: [], value: 0, onChange: () => {} },
   TKSteps: { steps: ["one", "two"], current: 0 },
   TKPageDots: { count: 3 },
   TKCounter: { value: 3 },

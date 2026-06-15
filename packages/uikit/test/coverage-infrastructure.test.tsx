@@ -4,7 +4,7 @@ import { createRef } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import * as kit from "../src/index";
 import { useNav } from "../src/composites/nav";
-import { createStorageApi } from "../src/foundation/telegram/storage";
+import { createStorageApi } from "../../telegram/src/storage";
 import { useClosingConfirmation, useSettingsButton, useTelegramPopup, type TelegramWebApp } from "../src/foundation/telegram";
 import { wrapperFor } from "./helpers/telegram";
 

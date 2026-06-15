@@ -3,7 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
 import { TKTelegramProvider } from "tg-mini-app-uikit";
-import { createMockTelegram, type MockTelegram } from "tg-mini-app-uikit/testing";
+import { createMockTelegram, type MockTelegram } from "@tg-mini-app/telegram/testing";
 import { StoreProvider, useAppDispatch, useAppState } from "./index";
 
 /*

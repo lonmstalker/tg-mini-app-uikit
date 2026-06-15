@@ -243,7 +243,10 @@ describe("M3.7 TKToast position and overflow", () => {
         <Trigger />
       </kit.TKToastProvider>,
     );
-    const region = screen.getByRole("status");
+    // The stack container is presentational (each toast is its own live region
+    // so an error can be assertive while a success stays polite), so locate it
+    // by testId rather than role="status".
+    const region = screen.getByTestId("stack");
     expect(region.style.top).not.toBe("");
     expect(region.style.bottom).toBe("");
   });

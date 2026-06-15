@@ -1,4 +1,8 @@
+import { createMockGate, type Page } from "@tg-mini-app/async";
 import type { Lang } from "../i18n";
+
+// The Page<T> contract + the configurable gate now live in @tg-mini-app/async.
+export type { Page };
 
 /*
  * The demo's single data source. Every function is `async`, waits a tunable
@@ -96,6 +100,8 @@ export interface Person {
   hue: number;
   guides: string[];
   bookedSameTrip?: boolean;
+  /** Lifetime trail XP — drives the Train leaderboard (data, not a view formula). */
+  xp: number;
 }
 
 export type MessageStatus = "sent" | "delivered" | "read";
@@ -109,10 +115,6 @@ export interface Message {
   offset: number;
 }
 
-export interface Page<T> {
-  items: T[];
-  nextCursor: number | null;
-}
 
 /* ---------------- Tunable behavior ---------------- */
 
@@ -121,14 +123,16 @@ export interface MockApiConfig {
   fail: boolean;
 }
 
-let config: MockApiConfig = { delayMs: 550, fail: false };
+// Delay + failure mechanics come from the kit's createMockGate; this layer
+// keeps its own config/error names as the public, e2e-driven contract.
+const apiGate = createMockGate({ delayMs: 550 });
 
 export function configureMockApi(next: Partial<MockApiConfig>): void {
-  config = { ...config, ...next };
+  apiGate.configure(next);
 }
 
 export function getMockApiConfig(): MockApiConfig {
-  return config;
+  return apiGate.getConfig();
 }
 
 export class MockApiError extends Error {
@@ -138,11 +142,12 @@ export class MockApiError extends Error {
   }
 }
 
-const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
-
 async function gate(): Promise<void> {
-  if (config.delayMs > 0) await wait(config.delayMs);
-  if (config.fail) throw new MockApiError();
+  try {
+    await apiGate();
+  } catch {
+    throw new MockApiError();
+  }
 }
 
 /* ---------------- Seed data (bilingual) ---------------- */
@@ -180,6 +185,7 @@ interface RawPerson {
   hue: number;
   guides: string[];
   bookedSameTrip?: boolean;
+  xp: number;
 }
 
 interface RawSession {
@@ -206,6 +212,7 @@ interface RawMessage {
 const RAW_PEOPLE: RawPerson[] = [
   {
     id: "g-sora",
+    xp: 2680,
     name: "Sora Voronova",
     role: L("Lead alpine guide", "Старший альпийский гид"),
     bio: L(
@@ -219,6 +226,7 @@ const RAW_PEOPLE: RawPerson[] = [
   },
   {
     id: "g-ilya",
+    xp: 2105,
     name: "Ilya Marsh",
     role: L("Forest & flora guide", "Гид по лесу и флоре"),
     bio: L(
@@ -231,6 +239,7 @@ const RAW_PEOPLE: RawPerson[] = [
   },
   {
     id: "g-nadia",
+    xp: 2320,
     name: "Nadia Brook",
     role: L("Water & canyon guide", "Гид по воде и каньонам"),
     bio: L(
@@ -244,6 +253,7 @@ const RAW_PEOPLE: RawPerson[] = [
   },
   {
     id: "g-pavel",
+    xp: 1990,
     name: "Pavel Stone",
     role: L("Summit & scramble guide", "Гид по вершинам и скрэмблу"),
     bio: L(
@@ -256,6 +266,7 @@ const RAW_PEOPLE: RawPerson[] = [
   },
   {
     id: "f-lena",
+    xp: 2480,
     name: "Lena Frost",
     role: L("Hiking buddy", "Напарница по походу"),
     bio: L(
@@ -613,6 +624,7 @@ function flattenPerson(raw: RawPerson, lang: Lang): Person {
     hue: raw.hue,
     guides: [...raw.guides],
     bookedSameTrip: raw.bookedSameTrip,
+    xp: raw.xp,
   };
 }
 

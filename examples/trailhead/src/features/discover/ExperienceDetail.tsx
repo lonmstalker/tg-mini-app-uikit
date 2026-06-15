@@ -15,7 +15,7 @@ import { useAppDispatch } from "../../store";
 import { useMockBackHeader } from "../../components/MockBackHeader";
 import { PrimaryAction } from "../../components/PrimaryAction";
 import { starsLabel } from "./format";
-import { useAsync } from "./useAsync";
+import { useAsync } from "@tg-mini-app/async";
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (

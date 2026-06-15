@@ -16,6 +16,10 @@ const config: StorybookConfig = {
       plugins: [tailwindcss()],
       resolve: {
         alias: {
+          // Resolve the platform peer + its mock to sources (most specific
+          // first), so Storybook needs no built telegram dist/.
+          "@tg-mini-app/telegram/testing": fileURLToPath(new URL("../../../telegram/src/testing.ts", import.meta.url)),
+          "@tg-mini-app/telegram": fileURLToPath(new URL("../../../telegram/src/index.ts", import.meta.url)),
           "tg-mini-app-uikit": fileURLToPath(new URL("../../src/index.ts", import.meta.url)),
         },
       },

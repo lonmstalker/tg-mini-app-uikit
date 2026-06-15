@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Packaging gates for tg-mini-app-uikit — backs the README promises:
- *   1. zero runtime dependencies (peer deps on react only)
+ *   1. zero runtime (non-peer) dependencies; peers are react + the platform package
  *   2. publint: package.json / exports / files are publish-clean
  *   3. arethetypeswrong: types resolve under node16/bundler, esm & cjs
  *   4. size-limit: gzip budget for the full kit + tree-shaken single imports
@@ -19,7 +19,8 @@ if (deps.length > 0) {
   console.error(`✖ tg-mini-app-uikit must have zero runtime dependencies, found: ${deps.join(", ")}`);
   process.exit(1);
 }
-const allowedPeers = ["react", "react-dom"];
+// @tg-mini-app/telegram is a required peer (single-instance platform bridge); see the DDD split.
+const allowedPeers = ["react", "react-dom", "@tg-mini-app/telegram"];
 const badPeers = Object.keys(pkg.peerDependencies ?? {}).filter((d) => !allowedPeers.includes(d));
 if (badPeers.length > 0) {
   console.error(`✖ unexpected peer dependencies: ${badPeers.join(", ")}`);

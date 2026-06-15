@@ -6,11 +6,12 @@ import {
   type CSSProperties,
   type ReactNode,
 } from "react";
-import { useTelegramEvent, useWebApp } from "./telegram/provider";
-import { useSafeArea } from "./telegram/layout";
-import type { TelegramThemeParams } from "./telegram/types";
+import { useSafeArea, useTelegramEvent, useWebApp } from "@tg-mini-app/telegram";
+import type { TelegramThemeParams, TKTheme } from "@tg-mini-app/telegram";
 
-export type TKTheme = "light" | "dark";
+// `TKTheme` now lives with the platform bridge (colorScheme is a Telegram
+// concept); re-export it here so `tg-mini-app-uikit` keeps exposing it.
+export type { TKTheme } from "@tg-mini-app/telegram";
 export type TKMotion = "springy" | "smooth";
 
 export const TK_SPRING = "cubic-bezier(.34, 1.45, .58, 1)";

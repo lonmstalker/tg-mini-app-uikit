@@ -4,7 +4,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { TonConnectUIProvider } from "@tonconnect/ui-react";
 import { TKTelegramProvider, getTelegramWebApp } from "tg-mini-app-uikit";
-import { createMockTelegram } from "tg-mini-app-uikit/testing";
+import { createMockTelegram } from "@tg-mini-app/telegram/testing";
 import { AppFrame } from "./AppFrame";
 import { configureMockApi, getMockApiConfig } from "./data/mockApi";
 import { StoreProvider } from "./store";

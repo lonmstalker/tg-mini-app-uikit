@@ -64,7 +64,7 @@ export const TKSwitch = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKSwitchPr
         role="switch"
         aria-checked={on}
         disabled={disabled}
-        onClick={() => setOn(!on)}
+        onClick={toggle}
         {...tkDomProps(dom)}
         aria-label={dom["aria-label"] ?? ariaLabel}
         style={{

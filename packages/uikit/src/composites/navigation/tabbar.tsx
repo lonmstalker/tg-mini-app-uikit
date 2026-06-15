@@ -1,7 +1,9 @@
+import { useRef, type KeyboardEvent } from "react";
 import { TKCounter } from "../../atoms/display";
 import { TKIcon, type TKIconName } from "../../atoms/icons";
 import { useSafeArea, useOptionalHaptics } from "../../foundation/telegram";
 import { useControllable } from "../../internal/useControllable";
+import { tkRovingNext, tkTabbableIndex } from "../../internal/roving";
 
 export interface TKTabItem {
   icon: TKIconName;
@@ -24,6 +26,18 @@ export function TKTabbar({ tabs, value, defaultValue = 0, onChange, safeArea, te
   const haptics = useOptionalHaptics();
   const { inset, contentInset } = useSafeArea();
   const safeBottom = inset.bottom + contentInset.bottom;
+  // Roving tabindex: only the active tab is in the tab order; arrows move focus
+  // between tabs and switch (selection follows focus, matching a tap).
+  const btnRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const tabbable = tkTabbableIndex(active, tabs.length);
+  const onKeyDown = (e: KeyboardEvent<HTMLButtonElement>, index: number) => {
+    const next = tkRovingNext(e.key, index, tabs.length, undefined, "horizontal");
+    if (next == null) return;
+    e.preventDefault();
+    haptics.selection();
+    setActive(next);
+    btnRefs.current[next]?.focus();
+  };
 
   return (
     <div
@@ -47,7 +61,12 @@ export function TKTabbar({ tabs, value, defaultValue = 0, onChange, safeArea, te
           <button
             type="button"
             key={tab.label}
+            ref={(el) => {
+              btnRefs.current[index] = el;
+            }}
             aria-current={on ? "page" : undefined}
+            tabIndex={index === tabbable ? 0 : -1}
+            onKeyDown={(e) => onKeyDown(e, index)}
             onClick={() => {
               haptics.selection();
               setActive(index);

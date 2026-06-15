@@ -74,6 +74,12 @@ export function useMountTransition(open: boolean, closeMs: number) {
 
 const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
+// LIFO stack of mounted modal overlays. Each `useOverlayA11y` adds its own
+// document-capture keydown listener; without coordination one Escape would fire
+// every listener and collapse the whole stack. Only the top overlay handles
+// Escape (and stops the rest), so a nested sheet closes before its parent.
+const overlayEscapeStack: object[] = [];
+
 /**
  * Modal keyboard behavior: moves focus into the overlay, traps Tab inside,
  * closes on Escape and returns focus to the previously focused element.
@@ -103,9 +109,17 @@ export function useOverlayA11y(
     const first = node?.querySelector<HTMLElement>(FOCUSABLE);
     (first ?? node)?.focus({ preventScroll: true });
 
+    // Register this overlay as the new top of the Escape stack.
+    const token = {};
+    overlayEscapeStack.push(token);
+
     const onKey = (e: globalThis.KeyboardEvent) => {
       if (e.key === "Escape") {
-        e.stopPropagation();
+        // Only the topmost overlay closes; `stopImmediatePropagation` also
+        // prevents the other overlays' (and any app) document listeners from
+        // firing, so one Escape closes exactly one layer.
+        if (overlayEscapeStack[overlayEscapeStack.length - 1] !== token) return;
+        e.stopImmediatePropagation();
         closeRef.current?.();
         return;
       }
@@ -139,6 +153,8 @@ export function useOverlayA11y(
     document.addEventListener("keydown", onKey, true);
     return () => {
       document.removeEventListener("keydown", onKey, true);
+      const i = overlayEscapeStack.indexOf(token);
+      if (i !== -1) overlayEscapeStack.splice(i, 1);
       // Only restore on the real teardown (active -> false), and only if the
       // captured element is still in the document and not inside another live
       // overlay that is taking over focus.

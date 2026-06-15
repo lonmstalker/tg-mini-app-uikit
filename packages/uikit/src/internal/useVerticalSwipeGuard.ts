@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useWebApp } from "../foundation/telegram/provider";
+import { useWebApp } from "@tg-mini-app/telegram";
 
 /*
  * Suppresses Telegram's native "swipe down to minimize/close the Mini App"

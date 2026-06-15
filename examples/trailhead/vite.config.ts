@@ -20,9 +20,11 @@ const useDist = process.env.TRAILHEAD_USE_DIST === "1";
 
 const fromHere = (rel: string) => fileURLToPath(new URL(rel, import.meta.url));
 
+// The Telegram mock moved into @tg-mini-app/telegram/testing. It stays a source
+// alias even in dist-parity (a dev/test utility, not a production export).
 const testingAlias = {
-  find: "tg-mini-app-uikit/testing",
-  replacement: fromHere("../../packages/uikit/test/support/telegram/mock.ts"),
+  find: "@tg-mini-app/telegram/testing",
+  replacement: fromHere("../../packages/telegram/src/testing.ts"),
 };
 
 const sourceAliases = [
@@ -31,6 +33,21 @@ const sourceAliases = [
     replacement: fromHere("../../packages/uikit/src/tokens/tokens.css"),
   },
   testingAlias,
+  // The kit source (aliased below) imports the platform peer by name; resolve
+  // it to telegram's source too. (In dist-parity this is dropped — the kit's
+  // dist imports it and the workspace symlink resolves to telegram's dist.)
+  {
+    find: "@tg-mini-app/telegram",
+    replacement: fromHere("../../packages/telegram/src/index.ts"),
+  },
+  {
+    find: "@tg-mini-app/intl",
+    replacement: fromHere("../../packages/intl/src/index.ts"),
+  },
+  {
+    find: "@tg-mini-app/async",
+    replacement: fromHere("../../packages/async/src/index.ts"),
+  },
   {
     find: "tg-mini-app-uikit",
     replacement: fromHere("../../packages/uikit/src/index.ts"),

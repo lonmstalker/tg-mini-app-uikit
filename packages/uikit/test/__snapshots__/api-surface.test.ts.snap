@@ -2,8 +2,10 @@
 
 exports[`public API surface > keeps the set of named exports stable 1`] = `
 [
+  "AsyncBoundary",
   "TKAccordion",
   "TKActionSheet",
+  "TKAsyncState",
   "TKAvatar",
   "TKAvatarStack",
   "TKBadge",
@@ -89,6 +91,7 @@ exports[`public API surface > keeps the set of named exports stable 1`] = `
   "TKSteps",
   "TKSwipeCell",
   "TKSwitch",
+  "TKTabView",
   "TKTabbar",
   "TKTappable",
   "TKTelegramProvider",
@@ -135,6 +138,7 @@ exports[`public API surface > keeps the set of named exports stable 1`] = `
   "useEmojiStatus",
   "useFullscreen",
   "useHaptics",
+  "useHasNativeChrome",
   "useHideKeyboard",
   "useHomeScreen",
   "useInitData",
@@ -146,6 +150,7 @@ exports[`public API surface > keeps the set of named exports stable 1`] = `
   "useMotionSensors",
   "useNav",
   "useOptionalHaptics",
+  "useOptionalNav",
   "useOrientationLock",
   "useQrScanner",
   "useSafeArea",

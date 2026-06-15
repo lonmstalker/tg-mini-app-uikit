@@ -5,6 +5,9 @@ import { useAppDispatch } from "../../store";
 
 export type CheckInPhase = "idle" | "scanning" | "verifying" | "locating" | "done" | "error";
 
+/** XP awarded for completing a trail check-in — feeds the Train dashboard + leaderboard. */
+export const CHECKIN_XP = 120;
+
 /**
  * The signature device chain: scan the trailhead QR, verify with biometrics,
  * confirm the location, then flip the booking to "checked in" (persisted by the
@@ -24,6 +27,9 @@ export function useCheckIn() {
 
   const complete = (bookingId: string) => {
     dispatch({ type: "SET_BOOKING_STATUS", id: bookingId, status: "checkedIn" });
+    // Close the signature loop: a completed check-in feeds Train XP + the
+    // leaderboard. Only reached from the not-yet-checked-in CTA, so it awards once.
+    dispatch({ type: "ADD_XP", amount: CHECKIN_XP });
     haptics.notification("success");
     setPhase("done");
   };

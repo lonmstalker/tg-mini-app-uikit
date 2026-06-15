@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { TKIcon } from "../../atoms/icons";
 import { useTKLocale } from "../../foundation/i18n";
 import { useSafeArea } from "../../foundation/telegram";
+import { useOptionalNav } from "../nav";
 import { usePageScrollTop } from "../../internal/pageScroll";
 
 export interface TKHeaderProps {
@@ -10,7 +11,8 @@ export interface TKHeaderProps {
   large?: boolean;
   /** Large title collapses into the compact bar as the `TKPage` content scrolls. */
   collapsing?: boolean;
-  back?: boolean;
+  /** `true`/`false` to force the back control, or `"auto"` to derive it from the enclosing `TKNavStack` (shown while depth > 1, popping it). */
+  back?: boolean | "auto";
   onBack?: () => void;
   actions?: ReactNode;
   testId?: string;
@@ -21,6 +23,10 @@ export function TKHeader({ title, subtitle, large, collapsing, back = true, onBa
   const scrollTop = usePageScrollTop();
   const { inset, contentInset } = useSafeArea();
   const safeTop = inset.top + contentInset.top;
+  // `back="auto"` derives visibility + handler from the enclosing nav stack.
+  const nav = useOptionalNav();
+  const showBack = back === "auto" ? (nav?.depth ?? 1) > 1 : back;
+  const handleBack = onBack ?? (back === "auto" ? nav?.pop : undefined);
   // Hysteresis: collapse past 36px, expand back under 20px, hold in between so
   // the large title does not dither when scrollTop hovers around the threshold.
   const [collapsed, setCollapsed] = useState(false);
@@ -53,12 +59,12 @@ export function TKHeader({ title, subtitle, large, collapsing, back = true, onBa
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        {back ? (
+        {showBack ? (
           <button
             type="button"
             className="tk-press"
             aria-label={locale.back}
-            onClick={onBack}
+            onClick={handleBack}
             style={{
               display: "inline-flex",
               border: "none",
@@ -76,7 +82,7 @@ export function TKHeader({ title, subtitle, large, collapsing, back = true, onBa
             style={{
               flex: 1,
               textAlign: "center",
-              marginRight: back ? 18 : 0,
+              marginRight: showBack ? 18 : 0,
               opacity: large && !isCollapsed ? 0 : 1,
               transition: "opacity var(--tk-t2) var(--tk-ease)",
             }}

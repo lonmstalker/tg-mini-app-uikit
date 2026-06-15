@@ -233,6 +233,39 @@ test("feed: failure shows error + retry, clearing it shows content", async ({ pa
   await expect(page.getByTestId("feed-card-sunrise-ridge")).toBeVisible();
 });
 
+test("feed: a failed page shows a retry that stops the loop and recovers", async ({ page }) => {
+  // Default (non-fast) latency leaves a wide window to flip the failure flag
+  // while later pages are still loading.
+  await page.goto("/");
+  await dismissWelcome(page);
+  await expect(page.getByTestId("feed-list")).toBeVisible();
+  await expect(page.getByTestId("feed-card-sunrise-ridge")).toBeVisible();
+
+  // Fail the next page fetch; the auto-loading next page errors out.
+  await page.evaluate(() => {
+    (window as unknown as { __trailheadApi?: { configureMockApi: (c: { fail: boolean }) => void } }).__trailheadApi?.configureMockApi(
+      { fail: true },
+    );
+  });
+
+  // The page-error branch renders a retry, and the auto-loading sentinel is
+  // gone — the list cannot spin on the failed page (the M0 loop fix).
+  await expect(page.getByTestId("feed-page-error")).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByTestId("feed-page-retry")).toBeVisible();
+  await expect(page.locator("[data-tk-sentinel]")).toHaveCount(0);
+  const errored = await page.locator("[data-trailhead-feed-card]").count();
+
+  // Clear the failure and retry → the next page loads and the error clears.
+  await page.evaluate(() => {
+    (window as unknown as { __trailheadApi?: { configureMockApi: (c: { fail: boolean }) => void } }).__trailheadApi?.configureMockApi(
+      { fail: false },
+    );
+  });
+  await page.getByTestId("feed-page-retry").click();
+  await expect(page.getByTestId("feed-page-error")).toHaveCount(0);
+  await expect.poll(() => page.locator("[data-trailhead-feed-card]").count()).toBeGreaterThan(errored);
+});
+
 test("feed: filters live in a sheet and reset without crowding the feed header", async ({ page }) => {
   await page.goto("/?fast=1");
   await dismissWelcome(page);

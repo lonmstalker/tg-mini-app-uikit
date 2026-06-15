@@ -12,6 +12,8 @@ export interface TKToastOptions {
   action?: ReactNode;
   onAction?: () => void;
   duration?: number;
+  /** Announce with `assertive` urgency (`role="alert"`) instead of polite. Set by `error()`. */
+  assertive?: boolean;
 }
 
 export interface TKToastApi {
@@ -63,7 +65,7 @@ export function TKToastProvider({ children, offset = 14, duration = 2400, max = 
     () => ({
       show,
       success: (text) => show({ text, icon: "check", color: "var(--tk-green)" }),
-      error: (text) => show({ text, icon: "close", color: "var(--tk-red)" }),
+      error: (text) => show({ text, icon: "close", color: "var(--tk-red)", assertive: true }),
     }),
     [show],
   );
@@ -71,9 +73,10 @@ export function TKToastProvider({ children, offset = 14, duration = 2400, max = 
   return (
     <TKToastContext.Provider value={api}>
       {children}
+      {/* Presentational stack: each toast is its own live region (below) so an
+          error can announce `assertive` while a success stays `polite` — a
+          single container can't carry both politenesses. */}
       <div
-        role="status"
-        aria-live="polite"
         data-testid={testId}
         style={{
           position: "absolute",
@@ -91,6 +94,9 @@ export function TKToastProvider({ children, offset = 14, duration = 2400, max = 
         {toasts.map((t) => (
           <div
             key={t.id}
+            role={t.assertive ? "alert" : "status"}
+            aria-live={t.assertive ? "assertive" : "polite"}
+            aria-atomic="true"
             style={{
               display: "flex",
               alignItems: "center",

@@ -1,6 +1,6 @@
 import { forwardRef, useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { TKIcon } from "../icons";
-import { tkZ } from "../../internal/dom";
+import { mergeRefs, tkZ } from "../../internal/dom";
 import { useControllable } from "../../internal/useControllable";
 import { useTKLocale } from "../../foundation/i18n";
 import { tkFlattenOptions, type TKOption, type TKOptionGroup } from "../../foundation/options";
@@ -34,6 +34,8 @@ export const TKSelect = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKSelectPr
   const [open, setOpenRaw] = useState(false);
   const [active, setActive] = useState(-1);
   const ref = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
   const id = useId();
   const listId = `${id}-list`;
   const labelId = label ? `${id}-label` : undefined;
@@ -56,6 +58,13 @@ export const TKSelect = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKSelectPr
     return () => document.removeEventListener("pointerdown", close);
   }, [open]);
 
+  // Searchable: move focus into the filter when the popup opens. The trigger
+  // keeps DOM focus otherwise, so the field was keyboard-dead — you could not
+  // type to filter without a mouse click.
+  useEffect(() => {
+    if (open && searchable) searchRef.current?.focus({ preventScroll: true });
+  }, [open, searchable]);
+
   const move = (dir: 1 | -1) => {
     if (!items.some((item) => !item.disabled)) return;
     let i = active < 0 ? (dir === 1 ? -1 : items.length) : active;
@@ -70,6 +79,8 @@ export const TKSelect = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKSelectPr
     if (!item || item.disabled) return;
     setVal(item.value);
     setOpen(false);
+    // Return focus to the trigger so it never lands on the now-hidden filter.
+    buttonRef.current?.focus({ preventScroll: true });
   };
 
   const onKeyDown = (e: KeyboardEvent<HTMLButtonElement>) => {
@@ -115,7 +126,7 @@ export const TKSelect = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKSelectPr
         </div>
       ) : null}
       <button
-        ref={forwardedRef}
+        ref={mergeRefs(buttonRef, forwardedRef)}
         type="button"
         role="combobox"
         aria-expanded={open}
@@ -201,16 +212,30 @@ export const TKSelect = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKSelectPr
               <TKIcon name="search" size={15} />
             </span>
             <input
+              ref={searchRef}
               value={query}
               placeholder={locale.search}
+              aria-label={locale.search}
+              aria-controls={listId}
+              aria-activedescendant={active >= 0 ? `${id}-opt-${active}` : undefined}
               onChange={(e) => {
                 setQuery(e.target.value);
                 setActive(-1);
               }}
               onKeyDown={(e) => {
-                // arrows/enter fall through to the combobox contract
-                if (e.key === "ArrowDown" || e.key === "ArrowUp" || e.key === "Enter" || e.key === "Escape") return;
-                e.stopPropagation();
+                // The filter owns DOM focus while open, so it must drive option
+                // navigation/selection itself (the trigger's handler can't fire).
+                // Printable keys (incl. Space) fall through to filter the list.
+                if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+                  e.preventDefault();
+                  move(e.key === "ArrowDown" ? 1 : -1);
+                } else if (e.key === "Enter") {
+                  e.preventDefault();
+                  choose(active);
+                } else if (e.key === "Escape" || e.key === "Tab") {
+                  setOpen(false);
+                  buttonRef.current?.focus({ preventScroll: true });
+                }
               }}
               style={{
                 flex: 1,

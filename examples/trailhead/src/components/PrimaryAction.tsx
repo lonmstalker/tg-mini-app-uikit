@@ -1,4 +1,4 @@
-import { TKBottomBar, TKMainButton, getTelegramWebApp, useMainButton } from "tg-mini-app-uikit";
+import { TKBottomBar, TKMainButton, useHasNativeChrome, useMainButton } from "tg-mini-app-uikit";
 
 /*
  * The funnel's primary action. Inside Telegram it drives the NATIVE MainButton
@@ -24,11 +24,11 @@ export interface PrimaryActionProps {
 }
 
 export function PrimaryAction({ label, onClick, disabled, active, testId }: PrimaryActionProps) {
-  const realBridge = getTelegramWebApp() !== null;
+  const native = useHasNativeChrome();
   return (
     <>
       {active ? <NativeMainButton label={label} onClick={onClick} disabled={disabled} /> : null}
-      {active && !realBridge ? (
+      {active && !native ? (
         <TKBottomBar>
           <TKMainButton label={label} onClick={onClick} disabled={disabled} testId={testId} />
         </TKBottomBar>

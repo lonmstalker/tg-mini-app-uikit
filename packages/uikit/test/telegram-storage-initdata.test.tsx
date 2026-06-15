@@ -1,8 +1,8 @@
 import { renderHook } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { createMockTelegram } from "./support/telegram/mock";
+import { createMockTelegram } from "@tg-mini-app/telegram/testing";
 import { useInitData, useSecureStorage } from "../src/foundation/telegram";
-import { createStorageApi } from "../src/foundation/telegram/storage";
+import { createStorageApi } from "../../telegram/src/storage";
 import { wrapperFor } from "./helpers/telegram";
 
 describe("Telegram storage and init data trust boundary", () => {

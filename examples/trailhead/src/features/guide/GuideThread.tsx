@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { TKMessages, TKPage, TKSkeletonList, TKWriteBar, useNav, useOptionalHaptics } from "tg-mini-app-uikit";
+import { AsyncBoundary, TKMessages, TKPage, TKWriteBar, useNav, useOptionalHaptics } from "tg-mini-app-uikit";
 import { listMessages, sendMessage, type Message, type MessageStatus } from "../../data/mockApi";
 import { useLang, useT } from "../../i18n";
 import { useMockBackHeader } from "../../components/MockBackHeader";
-import { useAsync } from "../discover/useAsync";
+import { useAsync } from "@tg-mini-app/async";
 
 /** "08:04" derived from the message's minute offset (deterministic, no clock). */
 const clockOf = (offset: number) => {
@@ -35,14 +35,6 @@ export function GuideThread() {
     timers.current.push(setTimeout(() => bump(msg.id, "read"), 1000));
   };
 
-  if (loaded.loading) {
-    return (
-      <TKPage testId="panel-guide-thread" header={header}>
-        <TKSkeletonList rows={4} />
-      </TKPage>
-    );
-  }
-
   const messages = [...(loaded.data ?? []), ...sent].map((m) => ({
     id: m.id,
     text: m.text,
@@ -57,7 +49,21 @@ export function GuideThread() {
       header={header}
       footer={<TKWriteBar testId="guide-write" onSend={(text) => void send(text)} placeholder={t("guide.writePlaceholder")} />}
     >
-      <TKMessages testId="guide-messages" messages={messages} />
+      <AsyncBoundary
+        loading={loaded.loading}
+        error={loaded.error}
+        empty={!loaded.loading && !loaded.error && messages.length === 0}
+        onRetry={loaded.reload}
+        errorTitle={t("discover.error.title")}
+        errorText={t("discover.error.text")}
+        retryLabel={t("discover.error.retry")}
+        emptyIcon="chat"
+        emptyTitle={t("guide.empty.title")}
+        emptyText={t("guide.empty.text")}
+        testId="guide-thread-empty"
+      >
+        <TKMessages testId="guide-messages" messages={messages} />
+      </AsyncBoundary>
     </TKPage>
   );
 }

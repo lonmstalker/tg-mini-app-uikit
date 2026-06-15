@@ -4,6 +4,7 @@ export * from "./foundation/theme";
 export * from "./foundation/i18n";
 export * from "./tokens/typography";
 export * from "./foundation/telegram";
+export * from "./foundation/chrome";
 export * from "./composites/layout";
 export * from "./foundation/options";
 export * from "./atoms/service";

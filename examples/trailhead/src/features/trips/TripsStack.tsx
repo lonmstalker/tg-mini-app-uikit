@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 import { TKNavPanel, TKNavStack } from "tg-mini-app-uikit";
 import { TripsList } from "./TripsList";
 import { TripDetail } from "./TripDetail";
+import { RescheduleSlot } from "./RescheduleSlot";
 
 /*
  * Trips depth axis: the booking list and the trail check-in push. The check-in
@@ -27,6 +28,9 @@ export function TripsStack({ visible = true, onDepthChange }: TripsStackProps) {
       </TKNavPanel>
       <TKNavPanel id="detail">
         <TripDetail active={visible && active === "detail"} />
+      </TKNavPanel>
+      <TKNavPanel id="reschedule">
+        <RescheduleSlot active={visible && active === "reschedule"} />
       </TKNavPanel>
     </TKNavStack>
   );

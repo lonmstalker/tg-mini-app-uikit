@@ -1,5 +1,6 @@
-import type { CSSProperties } from "react";
+import { useRef, type CSSProperties, type KeyboardEvent } from "react";
 import { TKIcon } from "../../atoms/icons";
+import { tkRovingNext, tkTabbableIndex } from "../../internal/roving";
 
 export interface TKStepsProps {
   steps: string[];
@@ -12,6 +13,16 @@ export interface TKStepsProps {
 const CIRCLE = 28;
 
 export function TKSteps({ steps, current, onStepClick, testId }: TKStepsProps) {
+  // Roving tabindex over the clickable step circles: one tab stop (the current
+  // step), arrows move focus; Enter/Space activates via the native button.
+  const btnRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const tabbable = tkTabbableIndex(current, steps.length);
+  const onKeyDown = (e: KeyboardEvent<HTMLButtonElement>, index: number) => {
+    const next = tkRovingNext(e.key, index, steps.length, undefined, "horizontal");
+    if (next == null) return;
+    e.preventDefault();
+    btnRefs.current[next]?.focus();
+  };
   return (
     <div data-testid={testId} style={{ display: "flex", alignItems: "flex-start" }}>
       {steps.map((step, index) => {
@@ -96,7 +107,16 @@ export function TKSteps({ steps, current, onStepClick, testId }: TKStepsProps) {
               </div>
             ) : null}
             {onStepClick ? (
-              <button type="button" onClick={() => onStepClick(index)} style={innerStyle}>
+              <button
+                type="button"
+                ref={(el) => {
+                  btnRefs.current[index] = el;
+                }}
+                tabIndex={index === tabbable ? 0 : -1}
+                onKeyDown={(e) => onKeyDown(e, index)}
+                onClick={() => onStepClick(index)}
+                style={innerStyle}
+              >
                 {circle}
                 {label}
               </button>

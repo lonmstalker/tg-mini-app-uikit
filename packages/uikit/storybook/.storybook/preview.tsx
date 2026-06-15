@@ -10,7 +10,7 @@ import {
   type TKTheme,
   type TKThemePreset,
 } from "tg-mini-app-uikit";
-import { createMockTelegram } from "../../test/support/telegram/mock";
+import { createMockTelegram } from "@tg-mini-app/telegram/testing";
 import { PhoneFrame } from "../story-helpers";
 import "../../src/tokens/tokens.css";
 import "../storybook.css";

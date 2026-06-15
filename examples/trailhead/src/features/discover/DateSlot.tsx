@@ -18,7 +18,7 @@ import { useAppDispatch, useAppState } from "../../store";
 import { useMockBackHeader } from "../../components/MockBackHeader";
 import { PrimaryAction } from "../../components/PrimaryAction";
 import { formatDate, starsLabel, toIsoDate } from "./format";
-import { useAsync } from "./useAsync";
+import { useAsync } from "@tg-mini-app/async";
 
 function defaultDate(): string {
   const d = new Date();

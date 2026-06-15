@@ -2,7 +2,7 @@ import { act, fireEvent, render, renderHook, screen } from "@testing-library/rea
 import { useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as kit from "../src/index";
-import { createMockTelegram } from "./support/telegram/mock";
+import { createMockTelegram } from "@tg-mini-app/telegram/testing";
 
 /*
  * Regression tests for the June-2026 Mini App audit fixes. Each block pins one
@@ -166,6 +166,58 @@ describe("audit · TKInfiniteList re-arms when content grows without a loading p
       rerender(<Host count={2} />);
       act(() => instances[instances.length - 1].trigger(true));
       expect(onLoadMore).toHaveBeenCalledTimes(2);
+    } finally {
+      if (original) Object.defineProperty(globalThis, "IntersectionObserver", { value: original, configurable: true });
+      else Reflect.deleteProperty(globalThis, "IntersectionObserver");
+    }
+  });
+});
+
+describe("M0 · TKInfiniteList does not loop when onLoadMore makes no progress", () => {
+  it("stops after a settled page that neither appended children nor cleared hasMore", () => {
+    const original = globalThis.IntersectionObserver;
+    const instances: Array<{ disconnected: boolean; trigger: (v?: boolean) => void }> = [];
+    class MockIO {
+      disconnected = false;
+      observe = vi.fn();
+      disconnect = vi.fn(() => {
+        this.disconnected = true;
+      });
+      constructor(private readonly cb: IntersectionObserverCallback) {
+        instances.push(this);
+      }
+      trigger(isIntersecting = true) {
+        if (!this.disconnected) this.cb([{ isIntersecting } as IntersectionObserverEntry], this as never);
+      }
+    }
+    Object.defineProperty(globalThis, "IntersectionObserver", { value: MockIO, configurable: true });
+    const onLoadMore = vi.fn();
+    try {
+      // hasMore stays true and the child count never grows: the page "errors".
+      function Host({ loading }: { loading: boolean }) {
+        return (
+          <kit.TKInfiniteList hasMore loading={loading} onLoadMore={onLoadMore} testId="inf">
+            <div>item 0</div>
+            <div>item 1</div>
+          </kit.TKInfiniteList>
+        );
+      }
+      const { rerender } = render(<Host loading={false} />);
+      // Sentinel visible → the first page fires once.
+      act(() => instances[0].trigger(true));
+      expect(onLoadMore).toHaveBeenCalledTimes(1);
+
+      // Three failed retry cycles: paging (loading true) → error (loading
+      // false), child count unchanged, hasMore still true. The pre-fix code
+      // re-armed on every `loading→false` settle and re-fired the still-visible
+      // sentinel, looping unboundedly (onLoadMore would reach 4). The stall
+      // guard must hold it at one call until inputs actually advance.
+      for (let i = 0; i < 3; i++) {
+        rerender(<Host loading />);
+        rerender(<Host loading={false} />);
+        act(() => instances[instances.length - 1].trigger(true));
+      }
+      expect(onLoadMore).toHaveBeenCalledTimes(1);
     } finally {
       if (original) Object.defineProperty(globalThis, "IntersectionObserver", { value: original, configurable: true });
       else Reflect.deleteProperty(globalThis, "IntersectionObserver");

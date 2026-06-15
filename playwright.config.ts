@@ -39,16 +39,19 @@ export default defineConfig({
       timeout: 60_000,
     },
   ],
-  testMatch: ["**/*.storybook.spec.ts"],
   projects: [
     {
+      // The kit's own specs (Storybook smoke coverage at :6006). Matches every
+      // spec under `testDir` (`./e2e`) — not just `*.storybook.spec.ts` — so a
+      // newly added kit spec runs instead of silently matching no project.
       name: "chromium",
+      testMatch: ["**/*.spec.ts"],
       use: { ...devices["Desktop Chrome"], viewport: FRAME, deviceScaleFactor: 1 },
     },
     {
-      // The Trailhead demo's own e2e suite. It overrides `testDir`/`testMatch`
-      // (the global `testMatch` is `**/*.storybook.spec.ts`, which would
-      // otherwise exclude these specs) and points at the demo dev server.
+      // The Trailhead demo's own e2e suite. It overrides `testDir` to the demo's
+      // own spec folder (so the `chromium` project above never picks these up)
+      // and points at the demo dev server.
       name: "trailhead",
       testDir: "./examples/trailhead/e2e",
       testMatch: ["**/*.spec.ts"],

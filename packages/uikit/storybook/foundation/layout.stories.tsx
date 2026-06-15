@@ -10,7 +10,7 @@ import {
   TKSafeArea,
   TKTelegramProvider,
 } from "tg-mini-app-uikit";
-import { createMockTelegram } from "../../test/support/telegram/mock";
+import { createMockTelegram } from "@tg-mini-app/telegram/testing";
 
 const meta = {
   title: "Foundation/Layout",

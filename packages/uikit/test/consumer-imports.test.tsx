@@ -13,6 +13,9 @@ import {
   useSafeArea,
   useWebApp,
   type TKButtonProps,
+  type TKCloudStorage,
+  type TKInitData,
+  type TKTheme,
 } from "tg-mini-app-uikit";
 
 function TelegramHookConsumer() {
@@ -36,6 +39,14 @@ describe("consumer package imports", () => {
     expect(useWebApp).toBeTypeOf("function");
     expect(useMainButton).toBeTypeOf("function");
     expect(useSafeArea).toBeTypeOf("function");
+  });
+
+  it("re-exports the platform types after the @tg-mini-app/telegram split", () => {
+    // The old curated barrel dropped the storage types; the extraction restores
+    // them, and TKTheme now lives in the platform package (re-exported here).
+    expectTypeOf<TKTheme>().toEqualTypeOf<"light" | "dark">();
+    expectTypeOf<TKCloudStorage["get"]>().toBeFunction();
+    expectTypeOf<TKInitData["raw"]>().toEqualTypeOf<string | undefined>();
   });
 
   it("typechecks common consumer props without private subpath imports", () => {

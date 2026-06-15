@@ -3,7 +3,7 @@ import { experienceById, getPerson } from "../../data/mockApi";
 import { useLang, useT } from "../../i18n";
 import { useMockBackHeader } from "../../components/MockBackHeader";
 import { PrimaryAction } from "../../components/PrimaryAction";
-import { useAsync } from "../discover/useAsync";
+import { useAsync } from "@tg-mini-app/async";
 
 export function GuideProfile({ active }: { active: boolean }) {
   const t = useT();

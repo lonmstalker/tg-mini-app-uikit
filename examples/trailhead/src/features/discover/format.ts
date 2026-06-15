@@ -1,26 +1,13 @@
-import type { Lang } from "../../i18n";
 import type { T } from "../../i18n";
+
+// Locale-aware date helpers now live in @tg-mini-app/intl (de-duped from this
+// copy). `formatDate(iso, lang)` keeps working: the demo's Lang ("en"/"ru") is
+// a valid BCP-47 locale, and the kit's own calendar/chips-date copies adopt
+// these at v1.0 (the first deliberate uikit→intl edge — deferred for now).
+export { formatDate, toIsoDate } from "@tg-mini-app/intl";
 
 /** "450 Stars" / "450 Stars" (Stars is a Telegram brand term, kept in both). */
 export const starsLabel = (t: T, count: number) => t("unit.stars", { count });
 
 /** "★ 450" compact form for cards. */
 export const starsShort = (t: T, count: number) => t("unit.starsShort", { count });
-
-/** Localized medium date, e.g. "Sun, Jun 21" / "вс, 21 июн.". */
-export function formatDate(iso: string, lang: Lang): string {
-  const d = new Date(`${iso}T00:00:00`);
-  return new Intl.DateTimeFormat(lang === "ru" ? "ru-RU" : "en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  }).format(d);
-}
-
-/** YYYY-MM-DD in local time (avoids the UTC off-by-one of toISOString). */
-export function toIsoDate(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}

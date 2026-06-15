@@ -18,7 +18,10 @@
     "types": ["vitest/globals", "node"],
     "paths": {
       "tg-mini-app-uikit": ["../../packages/uikit/src/index.ts"],
-      "tg-mini-app-uikit/testing": ["../../packages/uikit/test/support/telegram/mock.ts"]
+      "@tg-mini-app/async": ["../../packages/async/src/index.ts"],
+      "@tg-mini-app/intl": ["../../packages/intl/src/index.ts"],
+      "@tg-mini-app/telegram": ["../../packages/telegram/src/index.ts"],
+      "@tg-mini-app/telegram/testing": ["../../packages/telegram/src/testing.ts"]
     }
   },
   "include": ["src", "e2e", "vite.config.ts"]

@@ -16,9 +16,9 @@ Use `useKeyboard()` and the `tk-kb-open` class on the provider root. Keep the fo
 
 Use `useBackIntercept` for transient surfaces. Dialogs and sheets should close before `TKNavStack` pops. The Platform Lab has a back-priority card that logs this order against the mock client; use it as the back priorities reference.
 
-## tg-mini-app-testkit
+## Testing with the mock
 
-Use this kit's `createMockTelegram()` while building UI locally. For consumer-app e2e suites, pair it with `tg-mini-app-testkit` so Bot API behavior, start params and client events are testable outside Telegram.
+Use `createMockTelegram()` from the `@tg-mini-app/telegram/testing` subpath while building UI locally and in e2e suites. It injects a full Bot API mock (buttons, invoices, storages, sensors, biometrics, client events) via `TKTelegramProvider webApp=`, so Bot API behavior, start params and client events are testable outside Telegram. It is `sideEffects:false` and dev-only — it never lands in a production bundle.
 
 ## Non-Telegram Browser Usage
 
