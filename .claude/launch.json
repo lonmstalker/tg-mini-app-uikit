@@ -12,6 +12,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "stories", "-w", "tg-mini-app-uikit"],
       "port": 6006
+    },
+    {
+      "name": "surface-composer",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "-w", "surface-composer"],
+      "port": 5174
     }
   ]
 }

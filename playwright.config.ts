@@ -38,6 +38,12 @@ export default defineConfig({
       reuseExistingServer: !process.env.CI,
       timeout: 60_000,
     },
+    {
+      command: "npm run dev -w surface-composer",
+      url: "http://127.0.0.1:5174",
+      reuseExistingServer: !process.env.CI,
+      timeout: 60_000,
+    },
   ],
   projects: [
     {
@@ -60,6 +66,20 @@ export default defineConfig({
         viewport: FRAME,
         deviceScaleFactor: 1,
         baseURL: "http://127.0.0.1:5173",
+      },
+    },
+    {
+      // The Surface Composer demo's own e2e suite. Overrides `testDir` to the
+      // demo's spec folder (so `chromium` never picks these up) and targets its
+      // own dev server at :5174.
+      name: "surface-composer",
+      testDir: "./examples/surface-composer/e2e",
+      testMatch: ["**/*.spec.ts"],
+      use: {
+        ...devices["Desktop Chrome"],
+        viewport: FRAME,
+        deviceScaleFactor: 1,
+        baseURL: "http://127.0.0.1:5174",
       },
     },
   ],

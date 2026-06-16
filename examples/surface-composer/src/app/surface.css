@@ -1,0 +1,109 @@
+/*
+ * The Surface Composer is a DEPLOYABLE Telegram Mini App: the surface fills the
+ * Telegram viewport and uses the Telegram theme background — there is no dark
+ * "stage" or black frame in the shipped product (that desktop-showcase idea is
+ * dropped). On a wide desktop window the surface centers at a phone width on a
+ * neutral tinted background so it is previewable; in Telegram it is full-bleed.
+ *
+ * Motion (birth/remix) is layered in by motion/birth.css + motion/remix.css,
+ * keyed off the surface root's [data-motion-state].
+ */
+.sc-stage {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: stretch;
+  background: var(--tk-bg, #fff);
+}
+
+/* The Mini App surface. Full-bleed by default (real TMA). */
+.sc-frame {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  background: var(--tk-bg, #fff);
+  overflow: hidden;
+}
+
+/* Desktop preview only: center at a phone width on a neutral tinted backdrop,
+ * with a light bound so it reads as "a Mini App", never a black theater. */
+@media (min-width: 540px) {
+  .sc-stage {
+    place-items: center;
+    padding: 28px;
+    /* tinted neutral (OKLCH), not pure white/black */
+    background: oklch(0.95 0.006 255);
+  }
+  .sc-frame {
+    width: min(420px, 100%);
+    height: min(900px, 100%);
+    border-radius: 22px;
+    box-shadow: 0 20px 60px -28px oklch(0.4 0.04 255 / 0.45);
+  }
+}
+
+/* min-width:0 down the whole flex chain so nothing forces the surface wider than
+ * the frame (the flexbox min-width:auto overflow that clipped content on the
+ * right). */
+.sc-frame__tk {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+.sc-frame__safe {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+}
+
+/* The live product surface — inspectable DOM (Principle IV/Rendering). It fills
+ * the frame; scrolling lives in an inner region so the action footer stays
+ * pinned (no layout shift across remix, US2 sc.1). */
+.sc-surface {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sc-slots {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.sc-slots__scroll {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 14px 16px 16px;
+}
+
+.sc-slots__footer {
+  flex-shrink: 0;
+  min-width: 0;
+  padding: 8px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(to top, var(--tk-bg, #fff) 80%, transparent);
+}
+
+.sc-trust {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  min-width: 0;
+}

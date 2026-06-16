@@ -1,0 +1,53 @@
+/*
+ * Demo-local motion tokens (animation-brief §5, research D3). Prefixed `--sc-*`
+ * so nothing leaks into the kit's `--tk-*` namespace. We reuse `--tk-ease` for
+ * functional motion but NEVER `--tk-spring` — its control point (1.45 > 1)
+ * overshoots, and premium reads as inevitability, not play-toy physics.
+ *
+ * Contact/origin/intensity vars carry defaults here and are overwritten inline
+ * on the surface root <main> per motion state (dom-contract §1).
+ */
+:root {
+  --sc-ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --sc-ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+  --sc-ease-functional: var(--tk-ease, cubic-bezier(0.4, 0, 0.2, 1));
+
+  --sc-duration-seed: 180ms;
+  --sc-duration-rails: 220ms;
+  --sc-duration-assemble: 420ms;
+  --sc-duration-sweep: 160ms;
+  --sc-duration-settle: 320ms;
+  --sc-duration-remix: 460ms;
+  --sc-stagger: 45ms;
+
+  --sc-origin-x: 50%;
+  --sc-origin-y: 46%;
+  --sc-contact-x: 50%;
+  --sc-contact-y: 50%;
+  --sc-motion-intensity: 1;
+
+  /* Committed accent (D8): derived from --tk-accent toward OKLCH 0.62 0.17 250,
+   * stable across theme. Applied ONLY to the seed and the primary action. The
+   * hex is the fallback for engines without oklch(); both clear 4.5:1 with white
+   * text on the light surface and a Telegram-dark inner surface. */
+  --sc-accent: #2f7ddb;
+  --sc-accent: oklch(0.62 0.17 250);
+}
+
+/*
+ * Reduced motion is a DESIGNED static state, not "animations off" (FR-010):
+ * collapse every signature duration to ~1ms and zero the intensity so the
+ * machine resolves straight to settled frames while still emitting events.
+ */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --sc-duration-seed: 1ms;
+    --sc-duration-rails: 1ms;
+    --sc-duration-assemble: 1ms;
+    --sc-duration-sweep: 1ms;
+    --sc-duration-settle: 1ms;
+    --sc-duration-remix: 1ms;
+    --sc-stagger: 0ms;
+    --sc-motion-intensity: 0;
+  }
+}

@@ -25,9 +25,11 @@ jobs:
       - run: npm run check:stories
       - run: npm run build
       - run: npm run stories:build
-      # The flagship demo must typecheck and build against the (source-aliased) packages.
+      # The flagship demos must typecheck and build against the (source-aliased) packages.
       - run: npm run typecheck -w trailhead
       - run: npm run build -w trailhead
+      - run: npm run typecheck -w surface-composer
+      - run: npm run build -w surface-composer
 
   unit:
     name: unit (vitest)
@@ -43,6 +45,8 @@ jobs:
       # peer from its built dist, and the tokens-contract tests assert against dist/style.css.
       - run: npm run build
       - run: npm run test:unit
+      # Surface Composer demo-only unit logic (reducer, recorder, runtime-mode).
+      - run: npm run test -w surface-composer
 
   package:
     name: packaging gates (publint, attw, size-limit)

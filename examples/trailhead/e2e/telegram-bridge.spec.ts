@@ -11,6 +11,27 @@ type MainButtonParams = {
   position?: string;
 };
 
+type BridgeScheme = "light" | "dark";
+
+const THEME_PARAMS: Record<BridgeScheme, Record<string, string>> = {
+  light: {
+    bg_color: "#f8f7f4",
+    text_color: "#1f2528",
+    hint_color: "#6e777d",
+    button_color: "#246b5a",
+    button_text_color: "#f8f7f4",
+    secondary_bg_color: "#ece9e1",
+  },
+  dark: {
+    bg_color: "#17212b",
+    text_color: "#f3f6f9",
+    hint_color: "#95a3b2",
+    button_color: "#3390ec",
+    button_text_color: "#ffffff",
+    secondary_bg_color: "#0e1621",
+  },
+};
+
 declare global {
   interface Window {
     Telegram?: {
@@ -28,8 +49,12 @@ declare global {
   }
 }
 
-async function installTelegramBridgeProbe(page: Page) {
-  await page.addInitScript(() => {
+async function installTelegramBridgeProbe(page: Page, colorScheme: BridgeScheme = "light") {
+  await page.addInitScript((config) => {
+    const { colorScheme, themeParams } = config as {
+      colorScheme: BridgeScheme;
+      themeParams: Record<string, string>;
+    };
     const probe = {
       mainParams: [] as MainButtonParams[],
       mainClicks: [] as (() => void)[],
@@ -45,15 +70,8 @@ async function installTelegramBridgeProbe(page: Page) {
       WebApp: {
         version: "9.6",
         platform: "ios",
-        colorScheme: "light",
-        themeParams: {
-          bg_color: "#f8f7f4",
-          text_color: "#1f2528",
-          hint_color: "#6e777d",
-          button_color: "#246b5a",
-          button_text_color: "#f8f7f4",
-          secondary_bg_color: "#ece9e1",
-        },
+        colorScheme,
+        themeParams,
         initDataUnsafe: {
           user: { id: 42, first_name: "Real", language_code: "en" },
         },
@@ -100,7 +118,7 @@ async function installTelegramBridgeProbe(page: Page) {
         offEvent: () => undefined,
       },
     };
-  });
+  }, { colorScheme, themeParams: THEME_PARAMS[colorScheme] });
 }
 
 test("telegram bridge: real WebApp path uses native chrome instead of browser fallbacks", async ({ page }) => {
@@ -211,4 +229,17 @@ test("telegram bridge: native Continue ignores clicks until a time is selected",
     handler();
   });
   await expect(page.getByTestId("panel-discover-summary")).toBeVisible();
+});
+
+test("telegram bridge: real Mini App follows client appearance and hides the local theme switch", async ({ page }) => {
+  await installTelegramBridgeProbe(page, "dark");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/?fast=1");
+  await passOnboarding(page);
+
+  await expect(page.getByTestId("app-root")).toHaveAttribute("data-theme", "dark");
+  await page.getByTestId("tabbar").getByRole("button", { name: "Profile" }).click();
+  await page.getByTestId("open-lab").click();
+  await expect(page.getByTestId("panel-profile-lab")).toBeVisible();
+  await expect(page.getByTestId("lab-appearance")).toHaveCount(0);
 });

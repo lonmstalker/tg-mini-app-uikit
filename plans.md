@@ -53,29 +53,37 @@ whenever a screen changes, then use it as the basis for the chat response.
 Current approved direction:
 
 - The demo sells `tg-mini-app-uikit`, not a one-off Mini App.
-- The approved working name is **UIKit Surface Composer**.
+- The internal working name is **UIKit Surface Composer**, but the visible first
+  launch must sell a launch-ready Telegram Mini App outcome before it explains
+  UIKit mechanics.
 - The demo is a live in-app composer inside a Telegram Mini App WebView.
-- The user accepted the direction where the opening wow is **Token Singularity**:
-  one living point in the center of the TMA viewport generates the first page
-  from UIKit tokens, safe-area rails, component slots, runtime states, and
-  motion rules.
+- The implementation approval gate is satisfied by the user's 2026-06-16
+  `/goal`: the user explicitly asked to implement this plan, allowed design
+  experiments inside the project, and delegated the first-surface decision to
+  the agent.
+- The first surface content is a **neutral premium app shell**. Checkout,
+  booking, wallet, support, and community appear as remixed templates, not as
+  the opening niche.
+- The default demo launch path `/` now opens Surface Composer. The older
+  Trailhead tabbed demo remains available through `?legacy=1` for regression
+  coverage.
+- The user rejected the implemented opening as too technical for buyers on
+  2026-06-16. The new opening must be buyer-first: desire, trust, and clear TMA
+  business use before any token/runtime language appears.
 - Every later page must stay in the same language: not a typical app flow, not a
   navbar demo, but a capability scene that makes TMA constraints feel valuable.
-- Every touch reveals UIKit craft: components, tokens, runtime, accessibility,
-  Telegram constraints, and recorder proof.
+- Every touch can still reveal UIKit craft, but only after the first impression
+  has sold the buyer-facing value of ordering a premium TMA.
 - Screens 1-6 are now drafted for review.
 
 Human version of Screen 1:
 
-Screen 1 starts almost empty: a real TMA viewport and one tiny point in the
-center. That point is the seed token. It breathes, emits spacing rails, radius
-arcs, safe-area bounds, semantic colors, component slots, and runtime state
-marks. The page does not fade in as a screenshot. It is generated from the
-UIKit contract, then settles into a compact premium composer. When the viewer
-taps the surface, chips, badge, progress ring, avatar stack, header action, or
-empty space, the screen answers with small purposeful motion and shows which
-UIKit layer caused it. The first impression should be: this UIKit can generate a
-living TMA surface, and I can inspect how it is built.
+Screen 1 starts as a client-ready Telegram Mini App launch. The buyer sees the
+promise first: open inside Telegram, look premium, let the user trust and order.
+The words are short and commercial, not technical. The surface still has a
+living generated feel, but visible labels talk about sales moments, checkout,
+booking, wallet, support, sharing, and native Telegram trust. Only after the
+viewer taps does the screen reveal the UIKit layer behind the polish.
 
 Human version of the remaining pages:
 
@@ -91,11 +99,9 @@ proof card generated from recorder events.
 
 Current user decision needed:
 
-- Choose the first surface content: checkout, booking, wallet, support, or a
-  neutral premium app shell.
-- Approve or revise the Screen 2-6 motif line: `Template Prism`,
-  `Component Refraction`, `Runtime Pressure Chamber`, `Build Tomography`,
-  `Proof Card Forge`.
+- No user decision is currently blocking implementation. Continue the
+  buyer-first correction, then reverify the default Surface Composer launch, the
+  legacy Trailhead path, type safety, build, diagnostics, and plan sync.
 
 
 ## Purpose / Big Picture
@@ -111,16 +117,17 @@ Telegram dialogs, a video sequence, or an external chat screen. Telegram context
 can appear only as in-app simulated launch context, native chrome, safe-area
 constraints, runtime events, theme variables, and share-ready proof states.
 
-The current working direction is **UIKit Surface Composer**. It is a live composer
-where a premium Mini App surface can be touched, remixed, inspected, stressed,
-and decomposed into real UIKit primitives. The wow is not a MainButton, theme
-change, safe area, haptic, or animation by itself. The wow is that every
-interaction reveals a reusable UIKit layer: tokens, primitives, templates,
-runtime hooks, accessibility states, Telegram chrome, and recorder-backed proof.
+The current working direction is **buyer-first Surface Composer**. It is a live
+Telegram Mini App sales surface where a buyer first sees their possible business
+inside Telegram, then can reveal UIKit proof after they care. The wow is not a
+MainButton, token map, runtime mode, safe area, haptic, or animation by itself.
+The wow is the immediate commercial read: this can be my shop, booking flow,
+wallet, or support surface, and it already feels ready to order.
 
-This plan is intentionally screen-by-screen. Each screen must be described,
-reviewed, and approved before moving to the next one. Do not implement a later
-screen until its plan section has been accepted or revised.
+This plan was originally screen-by-screen. The 2026-06-16 implementation `/goal`
+approved agent-led execution, so the current work mode is implementation and
+verification. Future agents should not reintroduce the old approval stop unless
+the user asks to redesign the demo direction.
 
 
 ## Progress
@@ -151,26 +158,257 @@ screen until its plan section has been accepted or revised.
 - [x] (2026-06-16) Approved the `Show UIKit layers` reveal behavior: hidden
   during the first cinematic birth, revealed only after the first meaningful
   touch.
-- [ ] User approves or revises the first surface content and Screen 2-6
-  capability scene line.
+- [x] (2026-06-16) Treated the user's implementation `/goal` as approval to
+  choose unresolved product decisions without another review stop.
+- [x] (2026-06-16) Chose a neutral premium app shell as the first Surface A
+  content so the launch sells reusable UIKit composition instead of one vertical.
+- [x] (2026-06-16) Implemented `SurfaceComposer` as demo-only code in
+  `examples/trailhead/src/features/surface-composer/`.
+- [x] (2026-06-16) Made `/` open Surface Composer by default and moved the
+  older Trailhead tab demo behind `?legacy=1`.
+- [x] (2026-06-16) Added Surface Composer e2e coverage for default launch,
+  proof-loop progression, recorder evidence, 320 px layout, and reduced motion.
+- [x] (2026-06-16) Accepted the user's correction that the implemented opening
+  was too technical for non-technical buyers and started a buyer-first
+  correction pass.
+- [x] (2026-06-16) Rewrote the default Surface Composer launch as a
+  buyer-first TMA sales surface: `Your Mini App in Telegram`, `Open. Trust.
+  Order.`, `Shop / Booking / Wallet / Support`, and `I want this Mini App`.
+- [x] (2026-06-16) Demoted UIKit internals to the second layer: `Build proof`
+  appears only after a meaningful touch, and token/runtime/test language is
+  visible in the build-proof scene, not in the first impression.
+- [x] (2026-06-16) Updated Surface Composer e2e to enforce buyer-first copy,
+  absence of technical-first visible text on first launch, proof-after-touch,
+  and 320/390/430/540 px geometry.
+
+## Checkpoint Ledger
+
+This ledger is the trust boundary for the current implementation pass. A
+checkpoint can be marked `verified` only after fresh evidence from the current
+worktree proves it. Do not summarize the task as complete unless every
+checkpoint below is `verified` and the evidence is still current.
+
+Checkpoint 1: Scope and worktree inventory
+
+- Status: verified.
+- Requirement: derive the actual changed surface from the current worktree, not
+  from memory or a prior chat summary.
+- Evidence required: `git status --short --branch`, relevant source/test file
+  inventory, and confirmation that generated `dist` output is not tracked.
+- Latest evidence: 2026-06-16 current worktree is on
+  `main...origin/main`; changed tracked files are legacy Trailhead e2e specs,
+  `examples/trailhead/src/App.tsx`, and `plans.md`; new untracked files are
+  `examples/trailhead/e2e/surface-composer.spec.ts` and
+  `examples/trailhead/src/features/surface-composer/`. `git ls-files
+  examples/trailhead/dist` returned no tracked files, so generated build output
+  is not part of the patch.
+
+Checkpoint 2: Default launch product path
+
+- Status: verified.
+- Requirement: opening `/` must launch UIKit Surface Composer, while the older
+  Trailhead app remains reachable only through `?legacy=1`.
+- Evidence required: source inspection of `examples/trailhead/src/App.tsx`,
+  browser or e2e proof for `/`, and legacy e2e URLs using `?legacy=1`.
+- Latest evidence: 2026-06-16 source inspection shows `App()` returns
+  `<SurfaceComposer />` when `legacy !== "1"` and `TrailheadApp` only when
+  `?legacy=1` is present. Existing legacy Trailhead e2e specs now navigate with
+  `?legacy=1`; `surface-composer.spec.ts` is the only Trailhead spec still
+  opening `/`. Fresh command proof:
+  `npx playwright test examples/trailhead/e2e/surface-composer.spec.ts
+  --project=trailhead` passed 3/3 tests, including the default `/` proof loop.
+
+Checkpoint 3: Surface Composer implementation contract
+
+- Status: verified.
+- Requirement: the implementation must be demo-only, use existing UIKit exports,
+  expose deterministic `data-demo-*` / `data-motion-*` proof hooks, support
+  reduced motion, and avoid new public UIKit API.
+- Evidence required: inspection of
+  `examples/trailhead/src/features/surface-composer/`,
+  `packages/uikit/src/index.ts`, and the dedicated e2e contract.
+- Latest evidence: 2026-06-16 source inspection shows Surface Composer exists
+  only under `examples/trailhead/src/features/surface-composer/`, imports
+  existing `tg-mini-app-uikit` exports, exposes `data-demo-frame`,
+  `data-demo-screen`, `data-motion-origin`, `data-motion-state`,
+  `data-motion-event`, `data-runtime-mode`, and `data-reduced-motion`, and uses
+  a local CSS reduced-motion branch. `packages/uikit/src/index.ts` has no
+  `SurfaceComposer` / `TKSurfaceComposer` export. Dedicated e2e contract was
+  strengthened to include 320 px vertical bounds, pairwise overlap checks, and
+  desktop TMA-width checks. Fresh command proof:
+  `npx playwright test examples/trailhead/e2e/surface-composer.spec.ts
+  --project=trailhead` passed 3/3 tests.
+
+Checkpoint 4: Visual and mobile TMA fit
+
+- Status: verified.
+- Requirement: the default launch must fit a 320 px Telegram-like viewport
+  without overlapping the live surface, recorder, and bottom action; desktop
+  preview must still read as a TMA surface, not a stretched web landing page.
+- Evidence required: in-app browser or Playwright geometry check for 320 px and
+  desktop viewport, with overlap explicitly checked.
+- Latest evidence: 2026-06-16 the buyer-first geometry test initially failed at
+  390/540 px because the proof strip overlapped the bottom action. Mobile CSS
+  was tightened for the whole 320-540 px range, then
+  `npx playwright test examples/trailhead/e2e/surface-composer.spec.ts
+  --project=trailhead` passed 3/3 tests. The suite now proves 320, 390, 430,
+  and 540 px vertical bounds, no overlap among buyer promise, niche switcher,
+  live surface, proof strip, and bottom action, plus desktop preview width <=
+  540 px centered in a 1280 px viewport.
+
+Checkpoint 5: Automated Trailhead regression
+
+- Status: verified.
+- Requirement: the new default launch must not destroy existing Trailhead demo
+  behavior; old scenarios must keep passing through `?legacy=1`.
+- Evidence required: full `npx playwright test --project=trailhead` from the
+  current worktree.
+- Latest evidence: 2026-06-16 `npx playwright test --project=trailhead` passed
+  48/48 tests. This includes the new 3-test Surface Composer suite and the
+  existing legacy Trailhead scenarios routed through `?legacy=1`.
+
+Checkpoint 6: Type, build, package, and React diagnostics
+
+- Status: verified.
+- Requirement: the changed React app and the reusable UIKit package must still
+  typecheck/build, and changed React diagnostics must not regress.
+- Evidence required: `npm run typecheck -w trailhead`,
+  `npm run typecheck -w tg-mini-app-uikit`, `npm run build -w trailhead`,
+  `npm run check:api`, and `npx react-doctor@latest --verbose --scope
+  changed`.
+- Latest evidence: 2026-06-16 fresh gates passed: `npm run typecheck -w
+  trailhead`; `npm run typecheck -w tg-mini-app-uikit`; `npm run build -w
+  trailhead` (build passed with the existing Vite chunk-size warning);
+  `npm run check:api` (`168 exports match the baseline`); `npm run test -w
+  tg-mini-app-uikit` (`50` files, `644` tests passed, with existing jsdom
+  environment warnings); `npm run check:stories` (`116/116` represented);
+  `npm run check:package` (publint, attw, size-limit, docs gate passed); and
+  `npx react-doctor@latest --verbose --scope changed` scored `100/100`.
+
+Checkpoint 7: Living plan sync and completion audit
+
+- Status: verified.
+- Requirement: `plans.md` must match the current implementation, decisions,
+  known risks, and fresh verification evidence; completion cannot be claimed
+  while this ledger is stale.
+- Evidence required: final `plans.md` inspection plus a fresh command summary
+  after checkpoints 1-6 are verified.
+- Latest evidence: 2026-06-16 `plans.md` was updated to mark the older
+  Token Singularity concept as historical where it conflicts with the
+  buyer-first implementation. Fresh final checks: `git diff --check` exited 0
+  with only Git line-ending warnings for `examples/trailhead/src/App.tsx` and
+  `plans.md`; repo-local Playwright screenshot at 390x700 was captured from
+  `http://127.0.0.1:5174/` and visually confirmed the buyer-first start frame;
+  preview listeners on ports 5173 and 5174 were stopped before completion.
+
+### Buyer-First Correction Pass
+
+This pass supersedes any completion claim based only on the earlier technical
+Surface Composer evidence. The task is not done until all checkpoints below are
+verified from the current worktree after the buyer-facing rewrite.
+
+Buyer checkpoint 1: Complaint captured and plan corrected
+
+- Status: verified.
+- Requirement: `plans.md` must explicitly record that the prior first screen was
+  too technical for buyers and define a buyer-first correction scope.
+- Evidence required: source inspection of this section after edit.
+- Latest evidence: 2026-06-16 this section and Human Sync Snapshot explicitly
+  record the user's correction and the buyer-first scope.
+
+Buyer checkpoint 2: First viewport sells a TMA outcome
+
+- Status: verified.
+- Requirement: the default `/` launch must lead with buyer-facing value: a
+  premium Telegram Mini App that opens where buyers already are and supports
+  ordering, booking, wallet, support, and sharing.
+- Evidence required: `SurfaceComposer.tsx` inspection and e2e assertions for
+  the default screen copy.
+- Latest evidence: 2026-06-16 `SurfaceComposer.tsx` now launches with
+  `Your Mini App in Telegram`, `Shop, booking, wallet, support. Ready to
+  launch.`, `Open. Trust. Order.`, niche buttons `Shop / Booking / Wallet /
+  Support`, first CTA `I want this Mini App`, and buyer surface labels
+  `Client-ready Mini App`, `Ready to sell`, `Brand`, `Flow`, `Trust`, `Share`,
+  `Open`, `Native`, `Order`, `Share`. Dedicated e2e asserts these labels on
+  default `/`.
+
+Buyer checkpoint 3: Technical proof demoted to second layer
+
+- Status: verified.
+- Requirement: visible token/runtime/event-recorder language must not be the
+  first impression. UIKit internals may appear after a meaningful touch or in
+  the proof/layers scene.
+- Evidence required: e2e assertions that first launch avoids visible token
+  labels and that the technical proof appears after interaction.
+- Latest evidence: 2026-06-16 dedicated e2e asserts default `/` does not
+  contain visible `--tk-*`, `Surface A`, `tokenSeed`, `runtimeReady`,
+  `Component contract`, `tokens`, or `runtime`; `Build proof` is absent before
+  touch; after tapping the live surface, the second-layer inspector appears
+  with `Why it feels premium` and `UIKit proof appears after the buyer cares`;
+  the `layers-proof` scene then exposes `tokens`, `stories`, and `tests`.
+
+Buyer checkpoint 4: 320-540 px TMA hierarchy remains readable
+
+- Status: verified.
+- Requirement: the buyer-first copy, live surface, recorder/proof strip, and
+  bottom action must fit without overlap at narrow Telegram widths and remain a
+  centered TMA surface on desktop preview.
+- Evidence required: Playwright geometry checks at 320 px and 1280 px desktop.
+- Latest evidence: 2026-06-16 `npx playwright test
+  examples/trailhead/e2e/surface-composer.spec.ts --project=trailhead` passed
+  3/3 after a real overlap failure at 390/540 px was fixed. The test checks
+  320, 390, 430, and 540 px reduced-motion layouts, buyer promise before niche
+  switcher before live surface, no overlap, and desktop TMA width <= 540 px.
+
+Buyer checkpoint 5: Legacy and package regressions reverified
+
+- Status: verified.
+- Requirement: the buyer-first rewrite must not break legacy Trailhead e2e,
+  typecheck, build, public API, package checks, story coverage, or React Doctor.
+- Evidence required: fresh command results from the current worktree after the
+  rewrite.
+- Latest evidence: 2026-06-16 fresh gates passed after the buyer-first rewrite:
+  dedicated Surface Composer e2e 3/3; full `npx playwright test
+  --project=trailhead` 48/48; both typechecks; Trailhead build; public API
+  check; UIKit vitest 644/644; Story coverage 116/116; package gate; React
+  Doctor 100/100.
+
+Buyer checkpoint 6: Final plan sync and skeptical audit
+
+- Status: verified.
+- Requirement: final `plans.md` must match the actual buyer-facing
+  implementation and include the exact verification evidence. No assistant or
+  helper claim is accepted without local verification.
+- Evidence required: final `plans.md` inspection, `git diff --check`, and a
+  final command/evidence summary.
+- Latest evidence: 2026-06-16 final plan sync records the actual visible
+  buyer-first labels, the proof-after-touch contract, the 320/390/430/540 px
+  geometry evidence, full Trailhead/package gates, React Doctor 100/100, a
+  repo-local Playwright 390x700 screenshot, `git diff --check` exit 0, and
+  preview-port cleanup. Claude and subagent critiques were treated as review
+  input only; all accepted claims were verified locally through source
+  inspection, e2e, build/type/package checks, and screenshot smoke.
 
 
 ## Product Principles For This Demo
 
-The demo is a product surface first and a sales surface second. It should feel
-like something a serious Telegram or TON product team could open in front of a
-client and say: this is why the UIKit is worth using.
+The demo is a sales surface first and a product-proof surface second. It should
+feel like something a serious Telegram or TON product team could open in front
+of a client and say: this is how your next Telegram Mini App can feel on day
+one, and here is the UIKit proof behind it.
 
 The first viewer is not a random visitor. The viewer has already seen generic
 TMA dashboards, airdrops, claim screens, launchpads, wallets, and card grids.
 They will not be impressed by standard mobile UI, ordinary gradients, component
 catalogs, or Telegram API checklists.
 
-The demo must prove three things quickly:
+The demo must prove four things quickly:
 
-- UIKit surfaces can feel premium and alive.
-- The same surface is built from reusable pieces, not a hand-coded one-off.
-- Telegram constraints are handled as part of the system, not afterthoughts.
+- a buyer can recognize a premium business outcome in the first seconds;
+- the same launch surface can speak shop, booking, wallet, and support;
+- UIKit surfaces can feel premium and alive without becoming a custom one-off;
+- Telegram constraints are handled as part of the system, not afterthoughts,
+  but this proof appears after the buyer-facing hook.
 
 Why the viewer should care about TMA at all:
 
@@ -232,11 +470,13 @@ Do not:
 The six screens should feel like a keynote demo compressed into an interactive
 TMA:
 
-1. **Birth.** One token point creates the first TMA surface.
-2. **Range.** The same system remixes into multiple business surfaces.
-3. **Feel.** Every touch reveals a component contract.
-4. **Telegram Reality.** The surface survives runtime pressure.
-5. **Trust.** The magic opens into UIKit layers and evidence.
+1. **Buyer Launch.** The first TMA surface says `Open. Trust. Order.` and looks
+   like a client-ready product, not a component lab.
+2. **Range.** The same surface shifts between shop, booking, wallet, and
+   support contexts.
+3. **Feel.** Every tap builds trust through tactile, accessible UIKit behavior.
+4. **Telegram Reality.** The surface still feels native when Telegram changes.
+5. **Trust.** UIKit layers and evidence open only after the buyer is hooked.
 6. **Handoff.** The run compresses into a proof card that can be shared.
 
 Each screen has the same structure:
@@ -252,23 +492,23 @@ Each screen has the same structure:
 
 Copy should be sparse and product-led.
 
-Screen-level copy candidates:
+Implemented screen-level copy:
 
-- Screen 1: `A Telegram surface, born from tokens.`
-- Screen 2: `One system. Many Mini Apps.`
-- Screen 3: `Every touch has a contract.`
-- Screen 4: `Telegram changes the environment. The surface holds.`
-- Screen 5: `The magic is inspectable.`
-- Screen 6: `A demo you can replay, share, and build from.`
+- Screen 1: `Open. Trust. Order.`
+- Screen 2: `Checkout. Booking. Wallet. Support.`
+- Screen 3: `Every tap builds trust.`
+- Screen 4: `It still feels native when Telegram changes.`
+- Screen 5: `The polish has proof behind it.`
+- Screen 6: `One live run your client can share.`
 
-Buttons should stay functional:
+Buttons should stay functional and buyer-readable:
 
-- `Remix surface`;
-- `Inspect touch`;
-- `Stress runtime`;
-- `Open layers`;
-- `Forge proof`;
-- `Replay`.
+- `I want this Mini App`;
+- `Feel the tap`;
+- `Prove Telegram fit`;
+- `Show proof`;
+- `Create proof`;
+- `Replay launch`.
 
 Avoid vague copy:
 
@@ -282,9 +522,10 @@ Avoid vague copy:
 
 Opening:
 
-- 0 to 1200 ms: Token Singularity birth;
-- after 1200 ms: surface is usable;
-- after first touch: proof affordances appear.
+- 0 to 1200 ms: a compact living launch surface settles into place;
+- the first readable promise is buyer-facing, not technical;
+- after first touch: `Build proof` and the UIKit inspector appear as a second
+  layer.
 
 Between screens:
 
@@ -380,58 +621,51 @@ effect that cannot be composed from existing exports, mark it as one of:
 
 ## Screen Map
 
-The current screen sequence is:
+The current implemented screen sequence is:
 
-1. **Token Singularity / Surface Composer.** First impression. One center point
-   generates a premium TMA surface from UIKit tokens, slots, Telegram rails, and
-   runtime state. Touching any region proves the surface is alive and inspectable.
-2. **Template Remix Studio.** The same generated surface morphs between
-   commerce, booking, wallet, community, and support templates without losing
-   token identity, Telegram chrome, safe area, or interaction states.
-3. **Interaction Microscope.** The viewer rotates, presses, cracks, and inspects
-   cards or media. Every expensive detail maps to a component state, event,
-   token, accessibility contract, or haptic/runtime fallback.
-4. **Telegram Runtime Stress.** Keyboard, viewport, safe area, native chrome,
-   theme, BackButton, MainButton, haptics, permission denial, and browser fallback
-   strike the same surface as visible forces. The UI adapts without breaking.
-5. **UIKit Layers / Build Proof.** One rich card refracts into tokens, atoms,
-   composites, templates, runtime hooks, accessibility, stories, tests, and
-   recorder evidence. Developer flexibility becomes explicit here.
-6. **Shareable Proof / Handoff.** The final screen forges the run into a
-   share-ready proof card for founders, developers, and agents, generated from
-   deterministic recorder data.
+1. **First launch.** `Your Mini App in Telegram`, `Open. Trust. Order.`, niche
+   buttons `Shop / Booking / Wallet / Support`, and CTA `I want this Mini App`.
+2. **Use cases.** `Checkout. Booking. Wallet. Support.` proves the surface can
+   speak multiple buyer contexts.
+3. **Paid feel.** `Every tap builds trust.` shifts attention from visuals to
+   tactile confidence.
+4. **Telegram reality.** `It still feels native when Telegram changes.` frames
+   platform constraints as trust, not engineering trivia.
+5. **Build proof.** UIKit internals become explicit: tokens, atoms, runtime,
+   stories, tests.
+6. **Proof card.** A share-ready proof link and live trail summarize the run.
 
-All six screens are drafted below. They remain review specs until the user
-approves or revises the motion direction.
+The older detailed Token Singularity sections below are historical design notes.
+They are superseded wherever they conflict with the buyer-first implementation
+and the checkpoint evidence above.
 
 
-## Screen 1: Token Singularity / UIKit Surface Composer
+## Screen 1: Buyer Launch / Surface Composer
 
-Status: drafted for user review. Do not implement until approved.
+Status: implemented as demo-only buyer-first Surface Composer scene.
 
 Purpose:
 
-Screen 1 must immediately sell the UIKit. It should not look like a component
-gallery, a Trailhead clone, a product landing page, or a custom business app.
-It is an interactive composer inside a Telegram Mini App: a polished TMA surface
-in the center, surrounded by compact controls that reveal how UIKit makes the
-surface feel alive.
+Screen 1 must immediately sell the buyer on ordering a Telegram Mini App. It
+should not look like a component gallery, a Trailhead clone, a developer lab, or
+a generic product landing page. It is an interactive composer inside a Telegram
+Mini App: a polished launch surface in the center, surrounded by a compact
+business-type switcher and a single buyer-readable primary action.
 
 The viewer should understand in the first 10 seconds:
 
 - this is running inside a Telegram Mini App frame;
 - the surface is touchable and alive;
-- the surface is built from UIKit primitives;
-- the surface was generated from semantic tokens, not revealed as a static mock;
-- every interaction can be inspected;
-- Telegram constraints are part of the design system.
+- it can become their shop, booking, wallet, or support flow;
+- the first desired action is `I want this Mini App`;
+- UIKit proof exists, but appears only after the buyer has touched the surface;
+- Telegram constraints are handled as trust, not as first-frame jargon.
 
 ### Physical Scene
 
-A senior product engineer or studio founder opens the demo on a phone-sized TMA
-surface during a client call. They are not browsing docs. They are trying to
-decide if this UIKit can make their next Telegram Mini App feel premium without
-building everything from scratch.
+A non-technical founder or buyer opens the demo on a phone-sized TMA surface
+during a client call. They are not browsing docs. They are trying to decide
+whether they want this kind of Telegram Mini App for their own business.
 
 This forces a product UI direction:
 
@@ -443,19 +677,12 @@ This forces a product UI direction:
 - no fake website or external Telegram chat;
 - enough magic to make the buyer want to touch the screen.
 
-### Why The Previous Visual References Failed
+### Why The Previous Technical Opening Failed
 
-The earlier image references looked like expensive UI posters, not like a UIKit
-generating a TMA. They were too complete at the first frame, so the viewer could
-not feel where the interface came from.
-
-They also separated the visual effect from the product value. A light sweep,
-depth lift, or premium dark frame could sell any app. The opening effect must
-instead make the buyer feel this exact system: semantic tokens, slots, safe-area
-rails, runtime state, accessibility, and deterministic motion.
-
-The new rule: the first page does not appear as a finished mockup. It is born
-from one center point, then settles into a usable surface.
+The earlier implementation led with `Surface birth`, `tokens`, `runtime`,
+`Surface A`, `tokenSeed`, and `Component contract`. That made the demo feel like
+a tool for engineers, not a product a buyer would want to order. The new rule:
+first sell the outcome, then expose the construction proof.
 
 ### First Viewport Composition
 
@@ -463,47 +690,61 @@ The first viewport uses one full-screen TMA frame.
 
 Top zone:
 
-- `TKHeader` with title `UIKit Surface Composer`.
-- Subtitle: `Build premium Telegram surfaces`.
+- `TKHeader` with title `Your Mini App in Telegram`.
+- Subtitle: `Shop, booking, wallet, support. Ready to launch.`
 - One `TKIconButton` for theme, one `TKIconButton` for reduced motion preview,
   one `TKIconButton` for recorder mode.
-- The header is compact and does not become a marketing hero.
+- The header is compact and supports the surface; the buyer promise sits below.
+
+Promise zone:
+
+- Label: `First launch`.
+- Main sentence: `Open. Trust. Order.`
+- This sentence must be the first strong text in the content area.
+- It must not be preceded by visible dev modes, token chips, or scene rails.
+
+Business switcher:
+
+- Four compact buttons: `Shop`, `Booking`, `Wallet`, `Support`.
+- These change the same live surface into buyer-recognizable business contexts.
+- The switcher reserves horizontal edge space and must not fight Telegram
+  edge-swipe behavior.
 
 Center zone:
 
-- A single live preview surface named **Surface A**.
-- Surface A is a realistic TMA mini screen, initially a premium checkout or
-  booking surface built from existing UIKit pieces.
-- Surface A uses `TKCard`, `TKCardCell`, `TKBadge`, `TKAvatarStack`,
-  `TKSegmented`, `TKProgress`, `TKBottomBar`, and `TKButton`.
+- A single live preview surface labelled `Client-ready Mini App`.
+- It starts in the `Shop` context with `Ready to sell`.
+- It shows buyer value chips: `Brand`, `Flow`, `Trust`, `Share`.
+- It shows buyer proof pills: `Open`, `Native`, `Order`, `Share`.
+- It uses existing UIKit exports such as `TKCard`, `TKCardCell`, `TKBadge`,
+  `TKAvatarStack`, `TKProgress`, `TKRing`, `TKBottomBar`, and `TKButton`.
 - The preview surface is not a screenshot. It is composed from real UIKit.
-
-Left or upper rail, depending on viewport:
-
-- A compact `TKSegmented` control: `Surface`, `Tokens`, `Runtime`.
-- On mobile width, this becomes a top segmented strip.
-- On wider demo/browser width, it can sit as a narrow side rail.
 
 Bottom zone:
 
 - `TKBottomBar` with one obvious first action:
-  - primary: `Remix surface`;
-- The secondary action `Show UIKit layers` is hidden during the first
-  Token Singularity birth.
-- After the first meaningful touch, the seed pulse travels into a compact
-  `Layers` affordance and the secondary action appears.
+  - primary: `I want this Mini App`;
+- The secondary action `Build proof` is hidden during first launch.
+- After the first meaningful touch, the second-layer inspector appears and the
+  secondary proof action becomes available.
 - If native chrome is available, primary action maps to `TKMainButton`, but
   the in-DOM fallback remains visible in browser demo mode.
-- MainButton is not the wow. It is proof that native chrome is integrated.
+- MainButton is not the wow. It is a buyer-readable commitment affordance.
 
 Floating detail layer:
 
-- Three `TKCardChip` tags pinned to real parts of Surface A:
-  - `tokens`;
-  - `safe area`;
-  - `state`.
-- Chips are not decorative. Tapping a chip highlights the exact UIKit layer it
-  represents.
+- The first visible proof strip reads as buyer proof, not event telemetry:
+  `READY`, `opens in Telegram`, `premium feel`, `order path`, `share proof`.
+- After touch, the inspector reads `Why it feels premium` and `UIKit proof
+  appears after the buyer cares.`
+- In the `Build proof` scene only, the surface can show `tokens`, `atoms`,
+  `runtime`, `stories`, and `tests`.
+
+Historical note:
+
+- The remaining `Token Singularity` motion notes below describe the previous
+  technical concept. They are not the active first-frame contract after the
+  buyer-first correction.
 
 ### Token Singularity Arrival
 
@@ -941,7 +1182,7 @@ Performance:
 
 ## Screen 2: Template Remix Studio
 
-Status: drafted for user review. Do not implement until approved.
+Status: implemented as demo-only Surface Composer capability scene.
 
 Purpose:
 
@@ -1097,7 +1338,7 @@ Performance:
 
 ## Screen 3: Interaction Microscope
 
-Status: drafted for user review. Do not implement until approved.
+Status: implemented as demo-only Surface Composer capability scene.
 
 Purpose:
 
@@ -1253,7 +1494,7 @@ Reduced motion:
 
 ## Screen 4: Telegram Runtime Stress
 
-Status: drafted for user review. Do not implement until approved.
+Status: implemented as demo-only Surface Composer capability scene.
 
 Purpose:
 
@@ -1409,7 +1650,7 @@ Reduced motion and performance:
 
 ## Screen 5: UIKit Layers / Build Proof
 
-Status: drafted for user review. Do not implement until approved.
+Status: implemented as demo-only Surface Composer capability scene.
 
 Purpose:
 
@@ -1553,7 +1794,7 @@ Reduced motion:
 
 ## Screen 6: Shareable Proof / Handoff
 
-Status: drafted for user review. Do not implement until approved.
+Status: implemented as demo-only Surface Composer capability scene.
 
 Purpose:
 
@@ -1692,11 +1933,12 @@ Accessibility and reduced motion:
 The demo has one continuous motion language. The center point from Screen 1 is
 not a one-time intro. It changes role on every screen:
 
-- Screen 1: seed token that generates the first TMA surface.
-- Screen 2: prism origin that remixes templates.
-- Screen 3: touch lens origin that exposes interaction state.
-- Screen 4: runtime pressure sensor that shows Telegram forces.
-- Screen 5: lattice core that separates build layers.
+- Screen 1: buyer launch pulse that settles the first TMA surface.
+- Screen 2: business context switch that remixes shop, booking, wallet, and
+  support.
+- Screen 3: touch trust lens that exposes interaction state.
+- Screen 4: Telegram fit pulse that shows platform forces.
+- Screen 5: build-proof core that separates UIKit layers.
 - Screen 6: proof seal that compresses the run into a shareable receipt.
 
 Allowed easing:
@@ -1740,17 +1982,16 @@ Every animated capability scene must be deterministic enough for automation.
 Minimum hooks:
 
 - `data-demo-frame` on the outer capture target.
-- `data-demo-screen` with one of:
+- `data-demo-screen` with one of the current internal screen ids:
   `token-singularity`, `template-remix`, `interaction-microscope`,
   `runtime-stress`, `layers-proof`, `shareable-proof`.
-- `data-motion-origin="token-singularity"`.
+- `data-motion-origin="buyer-launch"`.
 - `data-motion-state` with one of:
   `idle`, `seed`, `rails`, `tokens`, `components`, `runtime`, `entering`,
   `active`, `settling`, `settled`, `reduced`.
-- `data-motion-event` with one of:
-  `token-birth`, `template-remix`, `tap-lens`, `card-refraction`,
-  `runtime-pressure`, `theme-shockwave`, `surface-explode`,
-  `proof-compress`.
+- `data-motion-event` with one of the visible buyer-first events:
+  `buyer-ready`, `use-cases`, `tap-trust`, `telegram-ready`, `build-proof`,
+  `proof-ready`.
 - `data-demo-recorder-event` on visible recorder rows or chips.
 - `data-runtime-mode="native|mock|browser-fallback"`.
 - `data-reduced-motion="true|false"`.
@@ -1905,7 +2146,52 @@ The integrated line is:
   accessibility, reduced-motion, and package review.
   Date/Author: 2026-06-16 / Codex.
 
+- Decision: The first implemented Surface A content is a neutral premium app
+  shell.
+  Rationale: checkout, booking, wallet, and support are better as remix targets.
+  A neutral opening keeps the buyer focused on reusable UIKit capability instead
+  of assuming the kit is optimized for one business vertical.
+  Date/Author: 2026-06-16 / Codex under user-delegated `/goal`.
+
+- Decision: Surface Composer is the default launch at `/`; the previous
+  Trailhead app remains under `?legacy=1`.
+  Rationale: the user asked to sell the UIKit in one TMA launch. Keeping the
+  older demo available behind a query flag preserves existing regression
+  coverage without weakening the default first impression.
+  Date/Author: 2026-06-16 / Codex.
+
+- Decision: Implement Surface Composer as demo-only code in `examples/trailhead`
+  and do not add new public UIKit exports.
+  Rationale: role-agent review and the UIKit element-development rules both
+  agreed that `TKSurfaceComposer`-style APIs would become package contract too
+  early. The demo should first prove composition from existing UIKit exports.
+  Date/Author: 2026-06-16 / Codex plus role-agent review.
+
+- Decision: Use plain product labels in the UI while preserving the richer
+  capability motifs in this plan.
+  Rationale: Claude CLI critique correctly flagged that `Singularity`, `Prism`,
+  `Refraction`, `Tomography`, and `Forge` can read as agent-facing poetry. The
+  implementation uses shorter buyer-facing labels: surface birth, template
+  remix, touch contract, runtime stress, build proof, and proof card.
+  Date/Author: 2026-06-16 / Codex after Claude CLI critique.
+
 
 ## Outcomes & Retrospective
 
-This section is intentionally empty until Screen 1 is approved and work proceeds.
+Implemented outcome:
+
+- `/` now launches a demo-only UIKit Surface Composer rather than the legacy
+  Trailhead tabbed app.
+- `?legacy=1` preserves the older Trailhead app and its e2e regression path.
+- The new Composer uses existing UIKit exports and local demo-only helpers; no
+  public package API or Storybook coverage contract was expanded.
+- The first pass covers the six capability scenes as a compact interactive loop:
+  surface birth, template remix, touch contract, runtime stress, build proof,
+  and proof card.
+- The proof loop is intentionally deterministic through `data-demo-*`,
+  `data-motion-*`, `data-runtime-mode`, `data-reduced-motion`, and visible
+  recorder event chips.
+- Fresh evidence captured so far: the new Composer e2e test was red before
+  implementation, then passed after implementation; `npm run typecheck -w
+  trailhead` passed; a focused trailhead e2e slice covering Composer plus legacy
+  shell passed.

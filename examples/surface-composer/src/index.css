@@ -1,0 +1,22 @@
+/*
+ * Minimal app glue — all component styling comes from the kit tokens + the
+ * demo's surface.css. Lock body scroll so a stray overscroll never reads as the
+ * Telegram swipe-to-minimize gesture; the dark stage owns the full viewport.
+ */
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  overscroll-behavior: none;
+  background: #07080b;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}

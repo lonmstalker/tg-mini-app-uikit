@@ -20,14 +20,14 @@ export interface CartDraft {
   hue?: number;
 }
 
-/** Live theme + locale prefs, all driven by Platform Lab (M4) and persisted. */
+/** Live visual prefs. Color scheme is a local/mock demo control; real Telegram follows the client. */
 export interface ThemePrefs {
   accent: string;
   roundness: number;
   motion: TKMotion;
   fontSize: number;
   lang: Lang;
-  /** In-app appearance override; drives the kit theme in mock AND real clients. */
+  /** In-app appearance override for local/mock demos. */
   colorScheme: "light" | "dark";
 }
 

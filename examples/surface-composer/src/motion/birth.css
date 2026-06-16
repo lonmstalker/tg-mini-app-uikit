@@ -1,0 +1,249 @@
+/*
+ * US1 birth — the 70% wow (wow-brief §4, animation-brief §6, design-brief §6).
+ * The surface is BORN from one point: it is never shown, it assembles from the
+ * seed. Transform/opacity only (FR-013); no --tk-spring (overshoot banned).
+ *
+ *   seed         accent point pulses awake (scale 1→1.18→1, ease-out-expo)
+ *   rails        token grid + safe-area frame grow OUT of the seed origin
+ *   assembling   the whole surface scales up FROM the seed origin while each
+ *                slot resolves with a stagger (components find their slots)
+ *   light-sweep  one committed-accent sweep crosses from the seed
+ *   idle         surface breathes once, then rests (only the surface, not text)
+ *
+ * Motion-without-copy test: with all text hidden, the sequence still reads as
+ * "a system generated a live product from a single origin".
+ *
+ * [data-motion-state] lives on <main class="sc-surface">; selectors target its
+ * descendants. Durations come from --sc-* tokens so reduced motion collapses
+ * them; the guard at the bottom kills looping/decorative motion. The SAME
+ * recorder events fire either way (FR-010).
+ */
+
+/* ----------------------------- Seed pulse ----------------------------- */
+.sc-seed {
+  opacity: 0;
+  transform: scale(0.2);
+}
+[data-motion-state="seed"] .sc-seed {
+  animation: sc-seed-pulse var(--sc-duration-seed) var(--sc-ease-out-expo) both;
+}
+@keyframes sc-seed-pulse {
+  0% {
+    opacity: 0;
+    transform: scale(0.2);
+  }
+  55% {
+    opacity: 1;
+    transform: scale(1.18);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+[data-motion-state="rails"] .sc-seed {
+  opacity: 1;
+  transform: scale(1);
+}
+[data-motion-state="assembling"] .sc-seed {
+  opacity: 0.5;
+  transform: scale(0.82);
+  transition:
+    opacity var(--sc-duration-assemble) var(--sc-ease-out-quint),
+    transform var(--sc-duration-assemble) var(--sc-ease-out-quint);
+}
+[data-motion-state="light-sweep"] .sc-seed,
+[data-motion-state="idle"] .sc-seed,
+[data-motion-state="first-touch"] .sc-seed,
+[data-motion-state="inspector-open"] .sc-seed {
+  opacity: 0;
+  transform: scale(0.6);
+  transition:
+    opacity var(--sc-duration-settle) var(--sc-ease-out-quint),
+    transform var(--sc-duration-settle) var(--sc-ease-out-quint);
+}
+[data-origin-pulse="true"] .sc-seed {
+  animation: sc-seed-tap 560ms var(--sc-ease-out-expo);
+}
+@keyframes sc-seed-tap {
+  0% {
+    opacity: 0.9;
+    transform: scale(0.6);
+  }
+  40% {
+    opacity: 0.6;
+    transform: scale(1.4);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+
+/* ------------------- Rails: token grid grows from seed ------------------- */
+.sc-rails {
+  opacity: 0;
+  transform: scale(0.28);
+  transform-origin: var(--sc-origin-x) var(--sc-origin-y);
+  transition:
+    opacity var(--sc-duration-rails) var(--sc-ease-out-expo),
+    transform var(--sc-duration-rails) var(--sc-ease-out-expo);
+}
+[data-motion-state="rails"] .sc-rails {
+  opacity: 0.5;
+  transform: scale(1);
+}
+[data-motion-state="assembling"] .sc-rails {
+  opacity: 0.16;
+  transform: scale(1);
+}
+[data-motion-state="light-sweep"] .sc-rails,
+[data-motion-state="idle"] .sc-rails,
+[data-motion-state="first-touch"] .sc-rails,
+[data-motion-state="inspector-open"] .sc-rails {
+  opacity: 0;
+  transform: scale(1);
+}
+/* Empty-space recognition: a faint rail glow alongside the ring (FR-006). */
+[data-recognized="true"] .sc-rails {
+  animation: sc-rail-glow 480ms var(--sc-ease-out-expo);
+}
+@keyframes sc-rail-glow {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  45% {
+    opacity: 0.2;
+  }
+}
+
+/* ----------- Surface resolves FROM the seed origin (the assembly) ----------- */
+.sc-slots {
+  transform-origin: var(--sc-origin-x) var(--sc-origin-y);
+  transition:
+    opacity var(--sc-duration-assemble) var(--sc-ease-out-quint),
+    transform var(--sc-duration-assemble) var(--sc-ease-out-quint);
+}
+[data-motion-state="seed"] .sc-slots,
+[data-motion-state="rails"] .sc-slots {
+  opacity: 0;
+  transform: scale(0.66);
+}
+[data-motion-state="assembling"] .sc-slots,
+[data-motion-state="light-sweep"] .sc-slots {
+  opacity: 1;
+  transform: scale(1);
+}
+[data-motion-state="idle"] .sc-slots,
+[data-motion-state="first-touch"] .sc-slots,
+[data-motion-state="inspector-open"] .sc-slots {
+  opacity: 1;
+  transform: none;
+}
+
+/* Each slot resolves with a stagger on top of the container scale, so the
+ * components read as finding their slots one after another. */
+.sc-slot {
+  transition:
+    opacity var(--sc-duration-assemble) var(--sc-ease-out-quint),
+    transform var(--sc-duration-assemble) var(--sc-ease-out-quint);
+  transition-delay: calc(var(--sc-slot-index, 0) * var(--sc-stagger));
+}
+[data-motion-state="seed"] .sc-slot,
+[data-motion-state="rails"] .sc-slot {
+  opacity: 0;
+  transform: translateY(16px) scale(0.98);
+}
+[data-motion-state="assembling"] .sc-slot,
+[data-motion-state="light-sweep"] .sc-slot,
+[data-motion-state="idle"] .sc-slot,
+[data-motion-state="first-touch"] .sc-slot,
+[data-motion-state="inspector-open"] .sc-slot {
+  opacity: 1;
+  transform: none;
+}
+
+/* ---------------- Light sweep: one committed-accent sweep ---------------- */
+.sc-scene::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 5;
+  background: radial-gradient(
+    circle at var(--sc-origin-x) var(--sc-origin-y),
+    color-mix(in oklab, var(--sc-accent) 34%, transparent),
+    transparent 60%
+  );
+}
+[data-motion-state="light-sweep"] .sc-scene::after {
+  animation: sc-sweep var(--sc-duration-sweep) var(--sc-ease-out-expo);
+}
+@keyframes sc-sweep {
+  0% {
+    opacity: 0;
+  }
+  45% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* ----------------- Contact ring: <100ms feedback + recognition ----------------- */
+[data-contact="true"] .sc-ring,
+[data-recognized="true"] .sc-ring {
+  animation: sc-ring 380ms var(--sc-ease-out-expo);
+}
+@keyframes sc-ring {
+  0% {
+    opacity: 0.9;
+    transform: scale(0.35);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(3.6);
+  }
+}
+
+/* ----------------- Idle: surface breathes once, then rests ----------------- */
+[data-motion-state="idle"] .sc-slots {
+  animation: sc-breathe 1200ms var(--sc-ease-out-quint) 1;
+}
+@keyframes sc-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.004);
+  }
+}
+
+/* ------------- CTA gravity: fragments align toward the action ------------- */
+[data-gravity="active"] .sc-slot:not([data-slot="primaryAction"]) {
+  transform: translateY(8px) scale(0.985);
+  opacity: 0.82;
+}
+
+/* Reduced motion: designed static state — no looping/decorative motion, but the
+ * state-to-state opacity/transform still resolves instantly, so frames and
+ * recorder events are identical (FR-010). */
+@media (prefers-reduced-motion: reduce) {
+  [data-motion-state="seed"] .sc-seed {
+    animation: none;
+    opacity: 1;
+    transform: scale(1);
+  }
+  .sc-scene::after,
+  [data-contact="true"] .sc-ring,
+  [data-recognized="true"] .sc-ring,
+  [data-recognized="true"] .sc-rails,
+  [data-origin-pulse="true"] .sc-seed,
+  [data-motion-state="idle"] .sc-slots {
+    animation: none !important;
+  }
+}

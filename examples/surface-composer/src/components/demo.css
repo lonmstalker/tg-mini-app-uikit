@@ -1,0 +1,175 @@
+/*
+ * Static styling for the demo-only primitives (Seed, Rails, TactileRing,
+ * GravityLayer wrapper, switcher, action, proof strip). Motion lives in
+ * motion/birth.css. The committed accent (--sc-accent) defaults to the kit
+ * accent here and is refined to the OKLCH committed accent in T047.
+ */
+.sc-scene {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Decorative birth overlays — never block touches. */
+.sc-seed,
+.sc-rails,
+.sc-ring {
+  pointer-events: none;
+}
+
+.sc-seed {
+  position: absolute;
+  left: var(--sc-origin-x);
+  top: var(--sc-origin-y);
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  border-radius: 50%;
+  background: var(--sc-accent);
+  box-shadow:
+    0 0 0 4px color-mix(in oklab, var(--sc-accent) 28%, transparent),
+    0 0 22px 6px color-mix(in oklab, var(--sc-accent) 42%, transparent);
+  z-index: 6;
+}
+
+.sc-rails {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform-origin: var(--sc-origin-x) var(--sc-origin-y);
+  z-index: 2;
+}
+.sc-rail {
+  fill: none;
+  stroke: color-mix(in oklab, var(--sc-accent) 55%, transparent);
+  stroke-width: 1;
+  stroke-dasharray: 2 4;
+}
+.sc-rail--safe {
+  stroke: color-mix(in oklab, var(--tk-fg, #000) 14%, transparent);
+}
+
+.sc-ring {
+  position: absolute;
+  left: var(--sc-contact-x);
+  top: var(--sc-contact-y);
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  border-radius: 50%;
+  border: 2px solid var(--sc-accent);
+  opacity: 0;
+  z-index: 7;
+}
+
+.sc-gravity {
+  display: contents;
+}
+
+/* Switcher: a horizontal chip row that scrolls rather than overlaps when long
+ * Russian labels exceed 320px (SC-006). */
+.sc-switcher {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px 0;
+  scrollbar-width: none;
+}
+.sc-switcher::-webkit-scrollbar {
+  display: none;
+}
+
+/* The action lives in the pinned .sc-slots__footer (no layout shift, US2 sc.1);
+ * this is just the inner wrapper. The footer scopes the kit accent to the
+ * committed accent so the primary action matches the seed (D8) without touching
+ * the kit. */
+.sc-action {
+  position: relative;
+  z-index: 5;
+}
+.sc-slots__footer {
+  --tk-accent: var(--sc-accent);
+}
+
+.sc-proof-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 4px 0 0;
+}
+.sc-proof-pill {
+  font: 500 11px/1.4 var(--tk-font, system-ui);
+  padding: 4px 9px;
+  border-radius: 999px;
+  color: var(--sc-accent);
+  background: color-mix(in oklab, var(--sc-accent) 12%, transparent);
+  border: 1px solid color-mix(in oklab, var(--sc-accent) 28%, transparent);
+}
+
+/* Clean promo strip (replaces TKBannerCard — no decorative orbs). Accent-tinted
+ * surface, typographic hierarchy only. */
+.sc-promo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  border-radius: var(--tk-r3, 16px);
+  background: color-mix(in oklab, var(--sc-accent) 9%, var(--tk-bg, #fff));
+  border: 1px solid color-mix(in oklab, var(--sc-accent) 18%, transparent);
+}
+.sc-promo__title {
+  font-size: 16px;
+  font-weight: 650;
+  color: var(--tk-fg, #111);
+  letter-spacing: -0.01em;
+}
+.sc-promo__text {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.4;
+  color: var(--tk-fg-muted, #6b7280);
+}
+
+.sc-inspector__sub {
+  margin: 0 0 10px;
+  color: var(--tk-fg-muted, #6b7280);
+  font-size: 14px;
+}
+
+/* Dev-only recorder HUD on the dark stage (never in the buyer frame). */
+.sc-hud {
+  position: fixed;
+  left: 12px;
+  bottom: 12px;
+  width: 230px;
+  max-height: 40vh;
+  overflow: auto;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(8, 10, 14, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #cdd3df;
+  font: 500 11px/1.5 ui-monospace, monospace;
+  z-index: 50;
+}
+.sc-hud__head {
+  color: #8aa0c8;
+  margin-bottom: 6px;
+  font-size: 10px;
+}
+.sc-hud__log {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+}
+.sc-hud__n {
+  color: #5d6b86;
+  margin-right: 6px;
+}
+.sc-hud__src {
+  float: right;
+  color: #6b7a96;
+}

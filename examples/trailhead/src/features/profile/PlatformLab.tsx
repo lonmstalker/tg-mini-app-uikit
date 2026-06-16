@@ -12,6 +12,7 @@ import { useLang, useT, type Lang } from "../../i18n";
 import { DEFAULT_THEME_PREFS, useAppDispatch, useAppState, type ThemePrefs } from "../../store";
 import { useMockBackHeader } from "../../components/MockBackHeader";
 import { PrimaryAction } from "../../components/PrimaryAction";
+import { useMockHandle } from "../../telegram/mock-context";
 
 // All AA-compliant with white text (≥ 4.5:1), so any choice keeps contrast.
 const ACCENTS = [
@@ -38,6 +39,8 @@ export function PlatformLab({ active }: { active: boolean }) {
   const { lang, setLang } = useLang();
   const { themePrefs } = useAppState();
   const dispatch = useAppDispatch();
+  const mock = useMockHandle();
+  const canOverrideAppearance = !!mock;
   const set = (payload: Partial<ThemePrefs>) => dispatch({ type: "SET_THEME_PREF", payload });
   const header = useMockBackHeader(t("lab.title"));
 
@@ -53,15 +56,16 @@ export function PlatformLab({ active }: { active: boolean }) {
           active={active}
           testId="lab-reset"
           label={t("lab.reset")}
-          onClick={() =>
-            set({
+          onClick={() => {
+            const next: Partial<ThemePrefs> = {
               accent: DEFAULT_THEME_PREFS.accent,
               roundness: DEFAULT_THEME_PREFS.roundness,
               motion: DEFAULT_THEME_PREFS.motion,
               fontSize: DEFAULT_THEME_PREFS.fontSize,
-              colorScheme: "light",
-            })
-          }
+            };
+            if (canOverrideAppearance) next.colorScheme = "light";
+            set(next);
+          }}
         />
       }
     >
@@ -142,18 +146,20 @@ export function PlatformLab({ active }: { active: boolean }) {
             ]}
           />
         </Row>
-        <Row label={t("lab.appearance")}>
-          <TKSegmented
-            testId="lab-appearance"
-            full
-            value={themePrefs.colorScheme}
-            onChange={(s) => set({ colorScheme: s as "light" | "dark" })}
-            options={[
-              { value: "light", label: t("lab.appearance.light") },
-              { value: "dark", label: t("lab.appearance.dark") },
-            ]}
-          />
-        </Row>
+        {canOverrideAppearance ? (
+          <Row label={t("lab.appearance")}>
+            <TKSegmented
+              testId="lab-appearance"
+              full
+              value={themePrefs.colorScheme}
+              onChange={(s) => set({ colorScheme: s as "light" | "dark" })}
+              options={[
+                { value: "light", label: t("lab.appearance.light") },
+                { value: "dark", label: t("lab.appearance.dark") },
+              ]}
+            />
+          </Row>
+        ) : null}
         <Row label={t("lab.language")}>
           <TKSegmented
             testId="lab-language"
