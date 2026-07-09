@@ -33,6 +33,14 @@ export function useKeyboard(threshold = 80): TKKeyboardState {
     const sync = () => {
       const covered = Math.max(0, window.innerHeight - vv.height - (vv.offsetTop ?? 0));
       const editableFocused = tkIsEditableActive();
+      // Some WebViews (Telegram iOS) scroll the page to keep a focused input in
+      // view and never scroll back after the keyboard closes, leaving the app
+      // pinned to the top slice of the screen. A mini app never scrolls the
+      // window itself, so a leftover offset with no editable focused is always
+      // that stuck state — undo it.
+      if (!editableFocused && ((vv.offsetTop ?? 0) > 0 || window.scrollY > 0)) {
+        window.scrollTo(0, 0);
+      }
       setState((prev) => {
         const open = editableFocused && covered > threshold;
         const next = { visible: open, height: open ? Math.round(covered) : 0 };
@@ -78,13 +86,25 @@ function tkIsEditableActive(): boolean {
   return el instanceof HTMLElement && el.matches("input,textarea,[contenteditable]");
 }
 
-// Process-wide because the class is toggled on every `.tk` root; ref-counted so
-// concurrent consumers don't fight and the class is cleared only once they have
-// all unmounted.
+// Ref-counted so concurrent consumers don't fight and the class is cleared only
+// once they have all unmounted.
 let tkKbConsumers = 0;
 function tkSetKeyboardOpenClass(open: boolean): void {
   if (typeof document === "undefined") return;
-  document.querySelectorAll(".tk").forEach((el) => el.classList.toggle("tk-kb-open", open));
+  const roots = document.querySelectorAll<HTMLElement>(".tk");
+  if (!open) {
+    // Always clear every root so no subtree is left lifted by a phantom keyboard.
+    roots.forEach((el) => el.classList.remove("tk-kb-open"));
+    return;
+  }
+  // Scope the lift to the root that actually contains the focused editable, so a
+  // keyboard in one .tk subtree doesn't lift an unrelated one (FND-009).
+  const active = document.activeElement;
+  const target = active instanceof HTMLElement ? active.closest(".tk") : null;
+  // A portalled editable (focused element outside every .tk) in a single-root
+  // app still lifts that lone root, preserving the pre-scoping behavior.
+  const sole = !target && roots.length === 1 ? roots[0] : null;
+  roots.forEach((el) => el.classList.toggle("tk-kb-open", el === target || el === sole));
 }
 
 export function useHideKeyboard(): { hide: () => boolean; isSupported: boolean } {

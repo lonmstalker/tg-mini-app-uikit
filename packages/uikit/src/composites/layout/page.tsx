@@ -1,4 +1,4 @@
-import { useState, type CSSProperties, type ReactNode } from "react";
+import { forwardRef, useState, type CSSProperties, type ReactNode } from "react";
 import { useKeyboard, useSafeArea } from "../../foundation/telegram";
 import { TKPageScrollContext } from "../../internal/pageScroll";
 import { tkSafePad } from "./safe-area";
@@ -21,6 +21,12 @@ export interface TKPageProps {
   safeTop?: boolean;
   /** Respect the bottom safe area when there is no footer (default true). */
   safeBottom?: boolean;
+  /**
+   * Accessible name for the scroll region. Set it to make the scroller a named,
+   * keyboard-focusable `role="region"`; omitted, the scroller is NOT a tab stop
+   * (avoids an unnamed focusable region — LAY-004).
+   */
+  scrollLabel?: string;
   style?: CSSProperties;
   className?: string;
   testId?: string;
@@ -28,23 +34,31 @@ export interface TKPageProps {
 
 /**
  * Full-height mini app page: pinned header, scrollable content column,
- * pinned footer, with the safe-area plumbing done once.
+ * pinned footer, with the safe-area plumbing done once. The forwarded `ref`
+ * points at the SCROLL container (the most-needed handle — scroll-to-top,
+ * measurement; LAY-006).
  */
-export function TKPage({
-  header,
-  footer,
-  children,
-  padding = 16,
-  gap = 14,
-  safeTop = true,
-  safeBottom = true,
-  style,
-  className,
-  testId,
-}: TKPageProps) {
+export const TKPage = /* @__PURE__ */ forwardRef<HTMLDivElement, TKPageProps>(function TKPage(
+  {
+    header,
+    footer,
+    children,
+    padding = 16,
+    gap = 14,
+    safeTop = true,
+    safeBottom = true,
+    scrollLabel,
+    style,
+    className,
+    testId,
+  }: TKPageProps,
+  ref,
+) {
   const { inset, contentInset } = useSafeArea();
   const top = inset.top + contentInset.top;
   const bottom = inset.bottom + contentInset.bottom;
+  const left = inset.left + contentInset.left;
+  const right = inset.right + contentInset.right;
   const keyboard = useKeyboard();
   const [scrollTop, setScrollTop] = useState(0);
   return (
@@ -71,9 +85,14 @@ export function TKPage({
         </TKPageScrollContext.Provider>
       ) : null}
       <div
-        tabIndex={0}
+        ref={ref}
+        tabIndex={scrollLabel ? 0 : undefined}
+        role={scrollLabel ? "region" : undefined}
+        aria-label={scrollLabel}
         data-tk-page-scroll
-        onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
+        // Only track scroll position when a header consumes it — otherwise every
+        // scroll frame would re-render the whole page for nothing (LAY-001).
+        onScroll={header ? (e) => setScrollTop(e.currentTarget.scrollTop) : undefined}
         style={{
           flex: 1,
           minHeight: 0,
@@ -90,13 +109,21 @@ export function TKPage({
             flexDirection: "column",
             gap,
             padding,
+            // Clear side cutouts / rounded corners in landscape (LAY-003).
+            paddingLeft: tkSafePad("left", left, padding),
+            paddingRight: tkSafePad("right", right, padding),
             paddingBottom: !footer && safeBottom ? tkSafePad("bottom", bottom, padding) : padding,
           }}
         >
           {children}
         </div>
       </div>
-      {footer ? <div style={{ flexShrink: 0 }}>{footer}</div> : null}
+      {footer ? (
+        // While the keyboard is up the footer (tabbar/bottom bar) is useless and,
+        // riding on the shrunk page, would float right above the keyboard covering
+        // the focused input's results — hide it until typing ends.
+        <div style={{ flexShrink: 0, display: keyboard.visible ? "none" : undefined }}>{footer}</div>
+      ) : null}
     </div>
   );
-}
+});
