@@ -83,6 +83,31 @@ export const PageShell = {
   ),
 } satisfies Story;
 
+export const PageWithRefresh = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "TKPage onRefresh wires pull-to-refresh to the page's OWN scroller (the pit of success). Wrapping page content in TKPullToRefresh by hand puts the gesture inside the scroll container, where it can't see the scroll position — a mid-list swipe then hijacks scrolling and fires hidden refreshes.",
+      },
+    },
+  },
+  render: () => (
+    <DeviceFrame height={560}>
+      <TKPage
+        header={<div style={{ padding: "12px 16px", fontWeight: 700, fontSize: "var(--tk-fz-title3)" }}>Feed</div>}
+        onRefresh={() => new Promise((resolve) => setTimeout(resolve, 900))}
+      >
+        <TKCard>
+          {Array.from({ length: 12 }, (_, i) => (
+            <TKCardCell key={i} title={`Item ${i + 1}`} subtitle="Pull from the very top to refresh" />
+          ))}
+        </TKCard>
+      </TKPage>
+    </DeviceFrame>
+  ),
+} satisfies Story;
+
 export const SafeArea = {
   render: () => (
     <DeviceFrame height={360}>

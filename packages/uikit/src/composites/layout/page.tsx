@@ -1,6 +1,7 @@
 import { forwardRef, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { useKeyboard, useSafeArea } from "../../foundation/telegram";
 import { TKPageScrollContext } from "../../internal/pageScroll";
+import { TKPullToRefresh } from "../gestures/pull-to-refresh";
 import { tkSafePad } from "./safe-area";
 
 export interface TKPageProps {
@@ -27,6 +28,15 @@ export interface TKPageProps {
    * (avoids an unnamed focusable region — LAY-004).
    */
   scrollLabel?: string;
+  /**
+   * Pull-to-refresh for this page: TKPage wraps its OWN scroll container in a
+   * `TKPullToRefresh` wired to the correct scroll target. Prefer this over
+   * composing `TKPullToRefresh` yourself — wrapping a non-scroller (e.g. page
+   * content inside the scroller) is the classic anti-pattern: the gesture
+   * cannot see the scroll position, hijacks mid-list swipes and fires hidden
+   * refreshes (GES-103).
+   */
+  onRefresh?: () => Promise<void>;
   style?: CSSProperties;
   className?: string;
   testId?: string;
@@ -56,6 +66,7 @@ export const TKPage = /* @__PURE__ */ forwardRef<HTMLDivElement, TKPageProps>(fu
     safeTop = true,
     safeBottom = true,
     scrollLabel,
+    onRefresh,
     style,
     className,
     testId,
@@ -74,6 +85,52 @@ export const TKPage = /* @__PURE__ */ forwardRef<HTMLDivElement, TKPageProps>(fu
   // whole page (and every context consumer) on each scroll frame (LAY-001).
   const scrollTopRef = useRef(0);
   const [headerScroll, setHeaderScroll] = useState(0);
+  const scroller = (
+    <div
+      ref={ref}
+      tabIndex={scrollLabel ? 0 : undefined}
+      role={scrollLabel ? "region" : undefined}
+      aria-label={scrollLabel}
+      data-tk-page-scroll
+      // Only track scroll position when a header consumes it — otherwise every
+      // scroll frame would re-render the whole page for nothing (LAY-001).
+      onScroll={
+        header
+          ? (e) => {
+              const px = e.currentTarget.scrollTop;
+              scrollTopRef.current = px;
+              // Same quantized value → React bails out, no re-render.
+              setHeaderScroll(px <= 0 ? 0 : px >= 64 ? 64 : Math.floor(px / 4) * 4);
+            }
+          : undefined
+      }
+      style={{
+        // Inside the pull-to-refresh wrapper the scroller fills it by height
+        // (the wrapper owns the flex slot); standalone it takes the slot itself.
+        ...(onRefresh ? { height: "100%" } : { flex: 1, minHeight: 0 }),
+        overflowY: "auto",
+        WebkitOverflowScrolling: "touch",
+        // Keep an overscroll at the top/bottom edge from chaining to the body,
+        // which Telegram reads as the swipe-down-to-minimize gesture.
+        overscrollBehavior: "contain",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap,
+          padding,
+          // Clear side cutouts / rounded corners in landscape (LAY-003).
+          paddingLeft: tkSafePad("left", left, padding),
+          paddingRight: tkSafePad("right", right, padding),
+          paddingBottom: !footer && safeBottom ? tkSafePad("bottom", bottom, padding) : padding,
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  );
   return (
     <div
       className={["tk-page", className].filter(Boolean).join(" ")}
@@ -100,49 +157,13 @@ export const TKPage = /* @__PURE__ */ forwardRef<HTMLDivElement, TKPageProps>(fu
           <div style={{ flexShrink: 0, position: "relative", zIndex: 1 }}>{header}</div>
         </TKPageScrollContext.Provider>
       ) : null}
-      <div
-        ref={ref}
-        tabIndex={scrollLabel ? 0 : undefined}
-        role={scrollLabel ? "region" : undefined}
-        aria-label={scrollLabel}
-        data-tk-page-scroll
-        // Only track scroll position when a header consumes it — otherwise every
-        // scroll frame would re-render the whole page for nothing (LAY-001).
-        onScroll={
-          header
-            ? (e) => {
-                const px = e.currentTarget.scrollTop;
-                scrollTopRef.current = px;
-                // Same quantized value → React bails out, no re-render.
-                setHeaderScroll(px <= 0 ? 0 : px >= 64 ? 64 : Math.floor(px / 4) * 4);
-              }
-            : undefined
-        }
-        style={{
-          flex: 1,
-          minHeight: 0,
-          overflowY: "auto",
-          WebkitOverflowScrolling: "touch",
-          // Keep an overscroll at the top/bottom edge from chaining to the body,
-          // which Telegram reads as the swipe-down-to-minimize gesture.
-          overscrollBehavior: "contain",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap,
-            padding,
-            // Clear side cutouts / rounded corners in landscape (LAY-003).
-            paddingLeft: tkSafePad("left", left, padding),
-            paddingRight: tkSafePad("right", right, padding),
-            paddingBottom: !footer && safeBottom ? tkSafePad("bottom", bottom, padding) : padding,
-          }}
-        >
-          {children}
-        </div>
-      </div>
+      {onRefresh ? (
+        <TKPullToRefresh onRefresh={onRefresh} style={{ flex: 1, minHeight: 0, height: "auto" }}>
+          {scroller}
+        </TKPullToRefresh>
+      ) : (
+        scroller
+      )}
       {footer ? (
         // While the keyboard is up the footer (tabbar/bottom bar) is useless and,
         // riding on the shrunk page, would float right above the keyboard covering

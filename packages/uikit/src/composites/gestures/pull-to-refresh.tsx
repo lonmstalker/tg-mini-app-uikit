@@ -53,9 +53,26 @@ export function TKPullToRefresh({ children, onRefresh, threshold = 72, disabled,
     guardingRef.current = active;
     setGuarding(active);
   };
+  const warnedAncestorRef = useRef(false);
   const resolveScrollTarget = () => {
     if (scrollTargetRef.current?.isConnected) return scrollTargetRef.current;
-    const target = scrollRef.current?.querySelector<HTMLElement>("[data-tk-page-scroll]") ?? scrollRef.current ?? null;
+    // (1) The intended composition: PTR wraps the scroller (a TKPage inside).
+    const inner = scrollRef.current?.querySelector<HTMLElement>("[data-tk-page-scroll]");
+    // (2) PTR misplaced INSIDE a page scroller: the gate must read the ANCESTOR's
+    // scrollTop, or a mid-list pull hijacks the scroll (preventDefault) and
+    // fires hidden refreshes (GES-103).
+    const outer = inner ? null : rootRef.current?.parentElement?.closest<HTMLElement>("[data-tk-page-scroll]") ?? null;
+    if (outer && process.env.NODE_ENV !== "production" && !warnedAncestorRef.current) {
+      warnedAncestorRef.current = true;
+      // eslint-disable-next-line no-console
+      console.warn(
+        "TKPullToRefresh: the page scroller is an ANCESTOR of the gesture area. Wrap the scroller itself, or prefer TKPage onRefresh which wires this correctly.",
+      );
+    }
+    // (3) Otherwise PTR's own wrapper — only when it actually scrolls.
+    const own =
+      scrollRef.current && scrollRef.current.scrollHeight > scrollRef.current.clientHeight ? scrollRef.current : null;
+    const target = inner ?? outer ?? own;
     scrollTargetRef.current = target;
     return target;
   };
