@@ -204,6 +204,74 @@ describe("KB-1.5 --tk-kb-height on the .tk root drives the page shrink", () => {
   });
 });
 
+/* ---------------- KB-1.7 · pre-shrink is speculative, not sticky ---------------- */
+
+describe("KB-1.7 pre-shrink cannot outlive its focus or bypass the open threshold", () => {
+  it("(a) blur before the confirming resize reverts the pre-shrink promptly", () => {
+    window.localStorage.setItem("tk:kbHeight", "264");
+    installVV();
+    const { result } = renderHook(() => useKeyboard(80));
+    act(() => {
+      input.focus();
+      document.dispatchEvent(new FocusEvent("focusin", { bubbles: true }));
+    });
+    expect(result.current).toEqual({ visible: true, height: 264 });
+    // The keyboard never opened (no resize); focus leaves. The deferred
+    // focusout re-check must drop the speculative shrink — not hold the
+    // footer collapsed until the 600ms revert timer.
+    act(() => {
+      input.blur();
+      document.dispatchEvent(new FocusEvent("focusout", { bubbles: true }));
+      vi.advanceTimersByTime(150);
+    });
+    expect(result.current).toEqual({ visible: false, height: 0 });
+  });
+
+  it("(b) a sub-threshold gap after a pre-shrink cannot latch the hysteresis open", () => {
+    window.localStorage.setItem("tk:kbHeight", "264");
+    const { vv, fire, innerHeight } = installVV();
+    const { result } = renderHook(() => useKeyboard(80));
+    act(() => {
+      input.focus();
+      document.dispatchEvent(new FocusEvent("focusin", { bubbles: true }));
+    });
+    expect(result.current.visible).toBe(true);
+    // A non-keyboard viewport shift lands between the two thresholds
+    // (closeThreshold 40 < 60 < threshold 80) while the pre-shrink is live.
+    // The hysteresis latch must NOT adopt it: no resize ever crossed the FULL
+    // open threshold, so the 600ms revert returns the full layout.
+    act(() => {
+      vv.height = innerHeight - 60;
+      fire("resize");
+    });
+    act(() => {
+      vi.advanceTimersByTime(700);
+    });
+    expect(result.current).toEqual({ visible: false, height: 0 });
+  });
+
+  it("(c) hardware keyboard: focusin with no resize ever → full layout after 600ms", () => {
+    window.localStorage.setItem("tk:kbHeight", "264");
+    installVV();
+    const root = tkRoot();
+    root.append(input);
+    const { result } = renderHook(() => useKeyboard(80));
+    act(() => {
+      input.focus(); // focus STAYS (user is typing on the hardware keyboard)
+      document.dispatchEvent(new FocusEvent("focusin", { bubbles: true }));
+    });
+    expect(result.current.visible).toBe(true);
+    act(() => {
+      vi.advanceTimersByTime(600);
+    });
+    expect(result.current).toEqual({ visible: false, height: 0 });
+    expect(root.style.getPropertyValue("--tk-kb-height")).toBe("0px");
+    expect(document.activeElement).toBe(input);
+    root.remove();
+    input = document.createElement("input");
+  });
+});
+
 /* ---------------- KB-1.6 · scroll tracking decoupled from render ---------------- */
 
 describe("KB-1.6 page scroll commits only quantized header phases", () => {

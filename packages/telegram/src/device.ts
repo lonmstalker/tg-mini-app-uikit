@@ -86,6 +86,12 @@ export function useKeyboard(threshold = 80): TKKeyboardState {
     // keyboard instead of jumping after it.
     let knownKbHeight = tkReadStoredKbHeight();
     let preShrunk = false;
+    // The hysteresis latch (`visible ? covered > closeThreshold`) may only
+    // engage after the keyboard has ACTUALLY opened — i.e. covered crossed the
+    // full open threshold at least once since the pre-shrink. Without this a
+    // pre-shrink followed by a constant non-keyboard gap in the
+    // closeThreshold..threshold band would hold visible=true indefinitely.
+    let confirmed = false;
     let revertTimer: number | undefined;
     const sync = () => {
       // Height overlapped by the keyboard. `offsetTop` must NOT be subtracted:
@@ -94,16 +100,26 @@ export function useKeyboard(threshold = 80): TKKeyboardState {
       // keyboard closed while it was physically open.
       const covered = Math.max(0, window.innerHeight - vv.height);
       const editableFocused = tkIsEditableActive();
+      // The pre-shrink is speculative: focus gone before the confirming resize
+      // (deferred focusout re-check) means no keyboard is coming — drop it now
+      // instead of holding the layout shrunk until the 600ms revert.
+      if (preShrunk && !editableFocused && covered <= closeThreshold) {
+        preShrunk = false;
+        window.clearTimeout(revertTimer);
+      }
       if (covered > threshold) {
         knownKbHeight = Math.round(covered);
         tkStoreKbHeight(knownKbHeight);
+        confirmed = true;
         if (preShrunk) {
           // The real resize confirmed the pre-shrink; geometry owns the state now.
           preShrunk = false;
           window.clearTimeout(revertTimer);
         }
       }
-      const open = preShrunk || (visible ? covered > closeThreshold : editableFocused && covered > threshold);
+      const open =
+        preShrunk || (visible && confirmed ? covered > closeThreshold : editableFocused && covered > threshold);
+      if (!open) confirmed = false;
       visible = open;
       // Telegram iOS scrolls the page to keep a focused input in view and not
       // always back — the iOS keyboard chevron even closes the keyboard with NO
