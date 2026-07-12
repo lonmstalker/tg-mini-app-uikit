@@ -171,6 +171,22 @@ describe("NAV tk-nav-in settled-guard", () => {
     expect(panel().style.animation).toBe(""); // a later render must not bring it back
   });
 
+  it("fallback timer settles the entrance when animationend never fires (WKWebView in background)", () => {
+    vi.useFakeTimers();
+    render(stackOf("home", "home-next"));
+    fireEvent.click(screen.getByText("push-home"));
+    const panel = () => screen.getByTestId("nav").querySelector<HTMLElement>('[data-tk-nav-panel="home-next"]')!;
+    expect(panel().style.animation).toContain("tk-nav-in");
+    // No animationend ever arrives; the same duration+80ms policy as the exit
+    // layer must mark the panel settled and drop the inline animation —
+    // otherwise `animation … both` stays forever (permanent containing block
+    // for position:fixed children + a leaked compositor layer).
+    act(() => {
+      vi.advanceTimersByTime(260 + 80 + 10);
+    });
+    expect(panel().style.animation).toBe("");
+  });
+
   it("a newly pushed panel still gets the entrance animation", () => {
     render(stackOf("home", "home-next"));
     fireEvent.click(screen.getByText("push-home"));

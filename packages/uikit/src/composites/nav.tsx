@@ -102,6 +102,13 @@ export interface TKNavStackProps {
 
 const EDGE_ZONE = 28;
 
+// Resolved animation duration in ms, with the kit's default nav timing as the
+// fallback (jsdom / detached nodes report an empty string).
+function tkAnimationMs(node: Element | null): number {
+  const css = node ? getComputedStyle(node).animationDuration : "";
+  return css.endsWith("ms") ? parseFloat(css) : css.endsWith("s") ? parseFloat(css) * 1000 : 260;
+}
+
 /**
  * Screen stack with preserved panel state, directional transitions and an
  * interactive swipe-back gesture. Integrates with the Telegram Back button
@@ -327,9 +334,7 @@ export function TKNavStack({
     node?.addEventListener("animationend", onEnd);
     // Removal fallback: a backgrounded WKWebView swallows animation events, so
     // a timer at duration+80ms guarantees the panel leaves the DOM.
-    const css = node ? getComputedStyle(node).animationDuration : "";
-    const duration = css.endsWith("ms") ? parseFloat(css) : css.endsWith("s") ? parseFloat(css) * 1000 : 260;
-    const timer = window.setTimeout(() => setExiting(null), duration + 80);
+    const timer = window.setTimeout(() => setExiting(null), tkAnimationMs(node) + 80);
     return () => {
       node?.removeEventListener("animationend", onEnd);
       window.clearTimeout(timer);
@@ -405,6 +410,20 @@ export function TKNavStack({
     // or raise the keyboard on push.
     if (el && !el.contains(document.activeElement)) el.focus({ preventScroll: true });
   }, [navSig]);
+
+  // The entrance gets the same swallowed-event fallback as the exit layer: a
+  // backgrounded WKWebView drops animation events, which would otherwise leave
+  // `animation … both` on the panel forever — a permanent containing block for
+  // position:fixed children and a leaked compositor layer.
+  const topKey = stack[stack.length - 1]?.key;
+  useEffect(() => {
+    const node = topPanelRef.current;
+    if (topKey === undefined || !node || !String(node.style.animation).includes("tk-nav-in")) return;
+    const timer = window.setTimeout(() => {
+      setSettledKeys((prev) => (prev.has(topKey) ? prev : new Set(prev).add(topKey)));
+    }, tkAnimationMs(node) + 80);
+    return () => window.clearTimeout(timer);
+  }, [topKey]);
 
   // One keyed list for live AND exiting panels: reusing the departed entry's
   // key is what lets React move the subtree instead of remounting it. A key
