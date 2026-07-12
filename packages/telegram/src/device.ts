@@ -45,11 +45,22 @@ export function useKeyboard(threshold = 80): TKKeyboardState {
     // its own settle animation after the keyboard retracts, and a synchronous
     // scrollTo inside the event handler fights it (visible jump). The snapshot
     // re-check reschedules while vv is still moving.
+    let settlePending = false;
+    let settleH = 0;
+    let settleO = 0;
     const scheduleSettle = () => {
-      window.clearTimeout(settleTimer);
       const h0 = vv.height;
       const o0 = vv.offsetTop ?? 0;
+      // Restart the countdown only when the geometry moved — a re-sync at an
+      // unchanged viewport (deferred focusout, visibilitychange) must not keep
+      // pushing an already-armed settle further out.
+      if (settlePending && settleH === h0 && settleO === o0) return;
+      window.clearTimeout(settleTimer);
+      settlePending = true;
+      settleH = h0;
+      settleO = o0;
       settleTimer = window.setTimeout(() => {
+        settlePending = false;
         const stillShifted = (vv.offsetTop ?? 0) > 0 || window.scrollY > 0;
         const stillClosed = Math.max(0, window.innerHeight - vv.height) <= closeThreshold;
         if (!stillShifted || !stillClosed) return;
@@ -83,25 +94,32 @@ export function useKeyboard(threshold = 80): TKKeyboardState {
       // recipe hook: `.tk-kb-open` lets CSS lift bottom bars above the keyboard
       tkSetKeyboardOpenClass(open);
     };
-    const syncFocus = () => {
-      sync();
-      window.setTimeout(sync);
+    // focusout must NOT resync synchronously: when focus moves between fields
+    // the blur fires while activeElement is already body, so a synchronous sync
+    // saw "no editable + pan" and scrolled to 0 — then WebKit re-panned to the
+    // next field, jumping the screen on every form-field hop. Defer ~100ms and
+    // re-read activeElement: focus landing in another editable makes it a no-op.
+    let focusOutTimer: number | undefined;
+    const syncFocusOut = () => {
+      window.clearTimeout(focusOutTimer);
+      focusOutTimer = window.setTimeout(sync, 100);
     };
     sync();
     vv.addEventListener("resize", sync);
     vv.addEventListener("scroll", sync);
-    document.addEventListener("focusin", syncFocus);
-    document.addEventListener("focusout", syncFocus);
+    document.addEventListener("focusin", sync);
+    document.addEventListener("focusout", syncFocusOut);
     document.addEventListener("visibilitychange", sync);
     window.addEventListener("focus", sync);
     return () => {
       vv.removeEventListener("resize", sync);
       vv.removeEventListener("scroll", sync);
-      document.removeEventListener("focusin", syncFocus);
-      document.removeEventListener("focusout", syncFocus);
+      document.removeEventListener("focusin", sync);
+      document.removeEventListener("focusout", syncFocusOut);
       document.removeEventListener("visibilitychange", sync);
       window.removeEventListener("focus", sync);
       window.clearTimeout(settleTimer);
+      window.clearTimeout(focusOutTimer);
       tkKbConsumers -= 1;
       // Clear the global class once the LAST keyboard consumer unmounts, so a
       // screen that navigates away while the keyboard is still up doesn't leave

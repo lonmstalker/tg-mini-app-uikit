@@ -32,6 +32,7 @@ function installVV(innerHeight = 800) {
 let input: HTMLInputElement;
 
 beforeEach(() => {
+  vi.useFakeTimers();
   input = document.createElement("input");
   document.body.append(input);
   Object.defineProperty(window, "scrollY", { value: 0, configurable: true });
@@ -99,7 +100,6 @@ describe("KB-1.1 covered ignores offsetTop and open/close use split thresholds",
 
 describe("KB-1.2 leftover WebKit pan settles by keyboard geometry, not focus", () => {
   it("chevron close: no focus events, resize back → scrollTo(0,0) within ~150ms", () => {
-    vi.useFakeTimers();
     const { vv, fire, innerHeight } = installVV();
     const { result } = renderHook(() => useKeyboard(80));
     input.focus();
@@ -125,7 +125,6 @@ describe("KB-1.2 leftover WebKit pan settles by keyboard geometry, not focus", (
   });
 
   it("does not fight a native settle: no scrollTo while vv keeps moving", () => {
-    vi.useFakeTimers();
     const { vv, fire, innerHeight } = installVV();
     renderHook(() => useKeyboard(80));
     input.focus();
@@ -153,8 +152,67 @@ describe("KB-1.2 leftover WebKit pan settles by keyboard geometry, not focus", (
     expect(window.scrollTo).not.toHaveBeenCalled();
   });
 
+  it("focus hop between fields (KB-1.3): no scrollTo, no visible flip", () => {
+    const { vv, fire, innerHeight } = installVV();
+    const inputB = document.createElement("input");
+    document.body.append(inputB);
+    const flips: boolean[] = [];
+    const { result } = renderHook(() => {
+      const kb = useKeyboard(80);
+      if (flips[flips.length - 1] !== kb.visible) flips.push(kb.visible);
+      return kb;
+    });
+    input.focus();
+    act(() => {
+      vv.height = innerHeight - 300;
+      vv.offsetTop = 260; // panned to the field; keyboard stays up across the hop
+      fire("resize");
+    });
+    expect(result.current.visible).toBe(true);
+    const flipsBefore = flips.length;
+    act(() => {
+      input.blur();
+      document.dispatchEvent(new FocusEvent("focusout", { bubbles: true }));
+      vi.advanceTimersByTime(30);
+      inputB.focus();
+      document.dispatchEvent(new FocusEvent("focusin", { bubbles: true }));
+      vi.advanceTimersByTime(300); // deferred focusout re-check fires → no-op
+    });
+    expect(window.scrollTo).not.toHaveBeenCalled();
+    expect(flips.length).toBe(flipsBefore);
+    expect(result.current.visible).toBe(true);
+    inputB.remove();
+  });
+
+  it("focusout with no follow-up focus still resyncs (lost resize event)", () => {
+    const { vv, fire, innerHeight } = installVV();
+    const { result } = renderHook(() => useKeyboard(80));
+    input.focus();
+    act(() => {
+      vv.height = innerHeight - 300;
+      vv.offsetTop = 260;
+      fire("resize");
+    });
+    expect(result.current.visible).toBe(true);
+    // Keyboard closes and vv's resize event is swallowed — only blur arrives.
+    act(() => {
+      vv.height = innerHeight;
+      vv.offsetTop = 90;
+      input.blur();
+      document.dispatchEvent(new FocusEvent("focusout", { bubbles: true }));
+    });
+    expect(result.current.visible).toBe(true); // nothing observed yet
+    act(() => {
+      vi.advanceTimersByTime(100); // deferred re-check reads the geometry
+    });
+    expect(result.current.visible).toBe(false);
+    act(() => {
+      vi.advanceTimersByTime(150); // and the leftover pan settles
+    });
+    expect(window.scrollTo).toHaveBeenCalledWith(0, 0);
+  });
+
   it("settles a native settle that stalls mid-way", () => {
-    vi.useFakeTimers();
     const { vv, fire, innerHeight } = installVV();
     renderHook(() => useKeyboard(80));
     input.focus();
