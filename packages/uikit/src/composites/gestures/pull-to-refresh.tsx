@@ -23,6 +23,19 @@ export interface TKPullToRefreshProps {
 
 const resistPull = (delta: number) => Math.max(0, delta) * 0.5;
 
+// A hidden scroller (display:none keep-mount tab) pins scrollTop at 0 forever
+// and must not vote in the pull gate. checkVisibility where available (also
+// covers visibility/content-visibility); otherwise walk for display:none —
+// older WebKit and jsdom lack checkVisibility, and offsetParent is useless in
+// jsdom (always null).
+function tkIsVisible(el: HTMLElement): boolean {
+  if (typeof el.checkVisibility === "function") return el.checkVisibility();
+  for (let node: HTMLElement | null = el; node; node = node.parentElement) {
+    if (getComputedStyle(node).display === "none") return false;
+  }
+  return true;
+}
+
 /**
  * Wraps a scroll area with the pull-to-refresh gesture: a resisted pull from
  * the very top, a spinner while `onRefresh` runs, auto-hide afterwards.
@@ -34,7 +47,7 @@ export function TKPullToRefresh({ children, onRefresh, threshold = 72, disabled,
   const rootRef = useRef<HTMLDivElement>(null);
   const indicatorRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const scrollTargetRef = useRef<HTMLElement | null>(null);
+  const scrollTargetsRef = useRef<HTMLElement[] | null>(null);
   const pullRef = useRef(0);
   const armedRef = useRef(false);
   const guardingRef = useRef(false);
@@ -59,30 +72,47 @@ export function TKPullToRefresh({ children, onRefresh, threshold = 72, disabled,
     setGuarding(active);
   };
   const warnedAncestorRef = useRef(false);
-  const resolveScrollTarget = () => {
-    if (scrollTargetRef.current?.isConnected) return scrollTargetRef.current;
-    // (1) The intended composition: PTR wraps the scroller (a TKPage inside).
-    const inner = scrollRef.current?.querySelector<HTMLElement>("[data-tk-page-scroll]");
+  // The gate reads ALL plausible scrollers and takes the max scrollTop — a
+  // single "winner" target shadowed the real one twice (GES-103 recurrence):
+  // an at-top ancestor hid PTR's own mid-list wrapper, and a display:none
+  // keep-mount tab (scrollTop pinned at 0) hid the visible tab's scroller.
+  const resolveScrollTargets = () => {
+    if (scrollTargetsRef.current?.every((el) => el.isConnected)) return scrollTargetsRef.current;
+    const targets: HTMLElement[] = [];
+    // (1) The intended composition: PTR wraps the scroller (a TKPage inside) —
+    // every VISIBLE one; hidden keep-mount tabs are not scrolling anywhere.
+    const inner = [...(scrollRef.current?.querySelectorAll<HTMLElement>("[data-tk-page-scroll]") ?? [])].filter(
+      tkIsVisible,
+    );
+    targets.push(...inner);
     // (2) PTR misplaced INSIDE a page scroller: the gate must read the ANCESTOR's
     // scrollTop, or a mid-list pull hijacks the scroll (preventDefault) and
     // fires hidden refreshes (GES-103).
-    const outer = inner ? null : rootRef.current?.parentElement?.closest<HTMLElement>("[data-tk-page-scroll]") ?? null;
-    if (outer && process.env.NODE_ENV !== "production" && !warnedAncestorRef.current) {
-      warnedAncestorRef.current = true;
-      // eslint-disable-next-line no-console
-      console.warn(
-        "TKPullToRefresh: the page scroller is an ANCESTOR of the gesture area. Wrap the scroller itself, or prefer TKPage onRefresh which wires this correctly.",
-      );
+    if (inner.length === 0) {
+      const outer = rootRef.current?.parentElement?.closest<HTMLElement>("[data-tk-page-scroll]") ?? null;
+      if (outer) {
+        targets.push(outer);
+        if (process.env.NODE_ENV !== "production" && !warnedAncestorRef.current) {
+          warnedAncestorRef.current = true;
+          // eslint-disable-next-line no-console
+          console.warn(
+            "TKPullToRefresh: the page scroller is an ANCESTOR of the gesture area. Wrap the scroller itself, or prefer TKPage onRefresh which wires this correctly.",
+          );
+        }
+      }
     }
-    // (3) Otherwise PTR's own wrapper — only when it actually scrolls.
-    const own =
-      scrollRef.current && scrollRef.current.scrollHeight > scrollRef.current.clientHeight ? scrollRef.current : null;
-    const target = inner ?? outer ?? own;
-    scrollTargetRef.current = target;
-    return target;
+    // (3) PTR's own wrapper participates whenever it actually scrolls — it can
+    // out-scroll the page candidates, so it must never be shadowed by them.
+    if (scrollRef.current && scrollRef.current.scrollHeight > scrollRef.current.clientHeight) {
+      targets.push(scrollRef.current);
+    }
+    scrollTargetsRef.current = targets;
+    return targets;
   };
   const getScrollTop = () => {
-    return resolveScrollTarget()?.scrollTop ?? 0;
+    let top = 0;
+    for (const el of resolveScrollTargets()) top = Math.max(top, el.scrollTop);
+    return top;
   };
   const applyPull = (nextPull: number) => {
     const next = Math.max(0, nextPull);
@@ -109,7 +139,7 @@ export function TKPullToRefresh({ children, onRefresh, threshold = 72, disabled,
     if (!el) return;
     const onStart = (e: TouchEvent) => {
       touchStart.current = e.touches.length === 1 ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : null;
-      if (touchStart.current) resolveScrollTarget();
+      if (touchStart.current) resolveScrollTargets();
     };
     const onMove = (e: TouchEvent) => {
       const s = touchStart.current;
@@ -120,7 +150,7 @@ export function TKPullToRefresh({ children, onRefresh, threshold = 72, disabled,
     };
     const clear = () => {
       touchStart.current = null;
-      scrollTargetRef.current = null;
+      scrollTargetsRef.current = null;
     };
     el.addEventListener("touchstart", onStart, { passive: true });
     el.addEventListener("touchmove", onMove, { passive: false });
@@ -159,7 +189,7 @@ export function TKPullToRefresh({ children, onRefresh, threshold = 72, disabled,
     },
     onEnd(state) {
       const committed = getScrollTop() <= 0 && state.delta > 0 && resistPull(state.delta) >= threshold;
-      scrollTargetRef.current = null;
+      scrollTargetsRef.current = null;
       armedRef.current = false;
       if (!committed) {
         applyPull(0);
@@ -191,6 +221,7 @@ export function TKPullToRefresh({ children, onRefresh, threshold = 72, disabled,
   return (
     <div
       ref={rootRef}
+      data-tk-ptr=""
       data-testid={testId}
       aria-busy={refreshing || undefined}
       {...drag.bind()}

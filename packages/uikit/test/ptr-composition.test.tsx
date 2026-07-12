@@ -1,7 +1,7 @@
 import { StrictMode } from "react";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { TKPage, TKPullToRefresh } from "../src";
+import { TKKeepMountTab, TKKeepMountTabs, TKPage, TKPullToRefresh } from "../src";
 
 /* TKPullToRefresh scroll-target resolution (GES-103) + TKPage onRefresh. */
 
@@ -86,6 +86,66 @@ describe("GES-103 resolveScrollTarget", () => {
   });
 });
 
+describe("GES-103 recurrence: shadowed scrollers", () => {
+  it("(a) an at-top ANCESTOR must not unlock the gesture while PTR's OWN wrapper is mid-list", async () => {
+    const onRefresh = vi.fn(() => Promise.resolve());
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    render(
+      <div data-tk-page-scroll data-testid="pageScroller">
+        <TKPullToRefresh onRefresh={onRefresh} testId="ptr">
+          <div style={{ height: 2000 }}>tall content</div>
+        </TKPullToRefresh>
+      </div>,
+    );
+    const wrapper = screen.getByTestId("ptr").querySelector<HTMLElement>(":scope > div:last-child")!;
+    Object.defineProperty(wrapper, "scrollHeight", { value: 2000, configurable: true });
+    Object.defineProperty(wrapper, "clientHeight", { value: 400, configurable: true });
+    setScrollTop(wrapper, 200); // the wrapper is the REAL scroller, mid-list
+    setScrollTop(screen.getByTestId("pageScroller"), 0); // ancestor idles at 0
+    pull(screen.getByTestId("ptr"), 210);
+    expect(onRefresh).not.toHaveBeenCalled();
+    // Back at the very top the gesture arms again (not a dead gate).
+    setScrollTop(wrapper, 0);
+    pull(screen.getByTestId("ptr"), 210);
+    expect(onRefresh).toHaveBeenCalledOnce();
+    await act(async () => {});
+  });
+
+  it("(b) a hidden keep-mount tab (scrollTop pinned at 0) must not shadow the visible tab's scroller", async () => {
+    const onRefresh = vi.fn(() => Promise.resolve());
+    function Harness({ active }: { active: string }) {
+      return (
+        <TKPullToRefresh onRefresh={onRefresh} testId="ptr">
+          <TKKeepMountTabs active={active}>
+            <TKKeepMountTab id="t1">
+              <TKPage testId="p1">
+                <div style={{ height: 1200 }}>tab one</div>
+              </TKPage>
+            </TKKeepMountTab>
+            <TKKeepMountTab id="t2">
+              <TKPage testId="p2">
+                <div style={{ height: 1200 }}>tab two</div>
+              </TKPage>
+            </TKKeepMountTab>
+          </TKKeepMountTabs>
+        </TKPullToRefresh>
+      );
+    }
+    const { rerender } = render(<Harness active="t1" />);
+    rerender(<Harness active="t2" />); // t1 stays mounted, display:none
+    const visibleScroller = screen.getByTestId("p2").querySelector<HTMLElement>("[data-tk-page-scroll]")!;
+    setScrollTop(visibleScroller, 120); // the user has scrolled the VISIBLE tab
+    // The hidden t1 scroller sits first in the DOM with scrollTop 0 — the gate
+    // must read the visible tab's position, not the hidden one's.
+    pull(screen.getByTestId("ptr"), 210);
+    expect(onRefresh).not.toHaveBeenCalled();
+    setScrollTop(visibleScroller, 0);
+    pull(screen.getByTestId("ptr"), 210);
+    expect(onRefresh).toHaveBeenCalledOnce();
+    await act(async () => {});
+  });
+});
+
 describe("TKPage onRefresh (pit of success)", () => {
   it("wires its own scroller into a single TKPullToRefresh; the pull calls onRefresh", async () => {
     const onRefresh = vi.fn(() => Promise.resolve());
@@ -98,10 +158,31 @@ describe("TKPage onRefresh (pit of success)", () => {
     const scroller = page.querySelector("[data-tk-page-scroll]")!;
     expect(scroller).not.toBeNull();
     // Exactly one gesture wrapper, and the scroller lives INSIDE it.
-    const ptrs = page.querySelectorAll("[aria-busy], [data-tk-page-scroll]");
-    expect(ptrs.length).toBeGreaterThan(0);
-    const wrapper = scroller.parentElement?.parentElement as HTMLElement;
-    pull(wrapper, 210);
+    const ptrs = page.querySelectorAll("[data-tk-ptr]");
+    expect(ptrs).toHaveLength(1);
+    expect(ptrs[0].contains(scroller)).toBe(true);
+    expect(page.querySelectorAll("[data-tk-page-scroll]")).toHaveLength(1);
+    pull(ptrs[0] as HTMLElement, 210);
+    expect(onRefresh).toHaveBeenCalledOnce();
+    await act(async () => {});
+  });
+
+  it("composes with header AND footer: one wrapper around the scroller, slots outside it", async () => {
+    const onRefresh = vi.fn(() => Promise.resolve());
+    render(
+      <TKPage header={<div data-testid="hdr">H</div>} footer={<div data-testid="ftr">F</div>} onRefresh={onRefresh} testId="page">
+        <div style={{ height: 1200 }}>feed</div>
+      </TKPage>,
+    );
+    const page = screen.getByTestId("page");
+    const ptrs = page.querySelectorAll("[data-tk-ptr]");
+    expect(ptrs).toHaveLength(1);
+    const ptr = ptrs[0] as HTMLElement;
+    expect(ptr.contains(page.querySelector("[data-tk-page-scroll]"))).toBe(true);
+    // The pinned slots stay OUTSIDE the gesture wrapper.
+    expect(ptr.contains(screen.getByTestId("hdr"))).toBe(false);
+    expect(ptr.contains(screen.getByTestId("ftr"))).toBe(false);
+    pull(ptr, 210);
     expect(onRefresh).toHaveBeenCalledOnce();
     await act(async () => {});
   });
