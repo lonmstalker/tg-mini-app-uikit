@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import * as kit from "../src/index";
 
 /* M8-B — FND-DX-001: <TKApp> batteries-included root. */
@@ -82,5 +82,72 @@ describe("FND-DX-001 TKApp composes the provider ladder", () => {
       </kit.TKApp>,
     );
     expect(screen.getByTestId("probe").textContent).toBe("no-provider");
+  });
+});
+
+/* ---------------- TKApp full bootstrap (phase-3 audit) ---------------- */
+
+describe("TKApp WebView bootstrap", () => {
+  it("calls ready() before expand() on mount", () => {
+    const ready = vi.fn();
+    const expand = vi.fn();
+    const { unmount } = render(
+      <kit.TKApp webApp={{ ready, expand } as never}>
+        <div />
+      </kit.TKApp>,
+    );
+    expect(ready).toHaveBeenCalledOnce();
+    expect(expand).toHaveBeenCalledOnce();
+    expect(ready.mock.invocationCallOrder[0]).toBeLessThan(expand.mock.invocationCallOrder[0]);
+    unmount();
+  });
+
+  it("expand={false} skips expand()", () => {
+    const expand = vi.fn();
+    render(
+      <kit.TKApp webApp={{ expand } as never} signalReady={false} expand={false}>
+        <div />
+      </kit.TKApp>,
+    );
+    expect(expand).not.toHaveBeenCalled();
+  });
+
+  it("paints html/body in the theme underlay and disables overscroll, restoring on unmount", () => {
+    const { unmount } = render(
+      <kit.TKApp webApp={wa("light")} signalReady={false}>
+        <div />
+      </kit.TKApp>,
+    );
+    for (const el of [document.documentElement, document.body]) {
+      expect(el.style.background).toContain("--tg-theme-secondary-bg-color");
+      expect(el.style.overscrollBehavior).toBe("none");
+    }
+    unmount();
+    for (const el of [document.documentElement, document.body]) {
+      expect(el.style.background).toBe("");
+      expect(el.style.overscrollBehavior).toBe("");
+    }
+  });
+
+  it("syncs the native background color when the client supports it", () => {
+    const setBackgroundColor = vi.fn();
+    render(
+      <kit.TKApp webApp={{ setBackgroundColor } as never} signalReady={false}>
+        <div />
+      </kit.TKApp>,
+    );
+    expect(setBackgroundColor).toHaveBeenCalledWith("secondary_bg_color");
+  });
+
+  it("is a graceful no-op outside Telegram (no webApp at all)", () => {
+    expect(() => {
+      const { unmount } = render(
+        <kit.TKApp>
+          <div data-testid="ok" />
+        </kit.TKApp>,
+      );
+      expect(screen.getByTestId("ok")).toBeInTheDocument();
+      unmount();
+    }).not.toThrow();
   });
 });

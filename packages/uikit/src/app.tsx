@@ -1,7 +1,15 @@
-import { type CSSProperties, type ReactNode } from "react";
+import { useEffect, type CSSProperties, type ReactNode } from "react";
 import { TKProvider, type TKThemeKnobs, type TKThemePreset } from "./foundation/theme";
 import { TKLocaleProvider, type TKLocale } from "./foundation/i18n";
-import { TKTelegramProvider, useTelegramTheme, type TKTelegramProviderProps, type TKTheme } from "./foundation/telegram";
+import {
+  TKTelegramProvider,
+  getTelegramWebApp,
+  useKeyboard,
+  useWebApp,
+  type TKTelegramProviderProps,
+  type TKTheme,
+  useTelegramTheme,
+} from "./foundation/telegram";
 import { TKToastProvider, type TKToastProviderProps } from "./composites/overlays";
 
 export interface TKAppProps extends TKThemeKnobs {
@@ -10,6 +18,8 @@ export interface TKAppProps extends TKThemeKnobs {
   webApp?: TKTelegramProviderProps["webApp"];
   /** Call `WebApp.ready()` on mount (default true). */
   signalReady?: boolean;
+  /** Call `WebApp.expand()` right after `ready()` on mount (default true). */
+  expand?: boolean;
   /** Enable Telegram haptics for the kit's interactive components (default true). */
   haptics?: boolean;
   /** Partial locale dictionary (English fallback per key). */
@@ -42,16 +52,37 @@ export interface TKAppProps extends TKThemeKnobs {
 
 /**
  * Batteries-included mini-app root: composes `TKTelegramProvider` + `TKProvider` +
- * `TKLocaleProvider` (+ an optional `TKToastProvider`) and auto-syncs the visual
- * theme from the live Telegram scheme, collapsing the ~30-line three-provider
- * ladder into one element (FND-DX-001). The individual providers stay exported for
- * advanced nesting.
+ * `TKLocaleProvider` (+ an optional `TKToastProvider`), auto-syncs the visual
+ * theme from the live Telegram scheme (FND-DX-001), and bootstraps the WebView:
+ * `ready()` → `expand()`, the theme-colored `html`/`body` underlay (black
+ * WKWebView flashes otherwise), `overscroll-behavior: none` (rubber-band feeds
+ * Telegram's swipe-to-minimize), the native background color and the keyboard
+ * controller (one per app). The individual providers stay exported for
+ * advanced nesting. Everything degrades to a no-op outside Telegram.
+ *
+ * Minimal `main.tsx`:
+ * ```tsx
+ * createRoot(document.getElementById("root")!).render(
+ *   <TKApp><MyMiniApp /></TKApp>,
+ * );
+ * ```
  *
  * Pass an already-resolved `webApp` (TKApp does NOT strip a leftover
  * `telegram-web-app.js` browser stub — that bootstrap decision stays with the app).
  * `locale` is reactive: pass a changing dictionary to switch language live.
  */
-export function TKApp({ children, webApp, signalReady = true, haptics = true, ...rest }: TKAppProps) {
+export function TKApp({ children, webApp, signalReady = true, expand = true, haptics = true, ...rest }: TKAppProps) {
+  // Effects of children run first, so this always fires AFTER the provider's
+  // ready() — the ready→expand order Telegram clients expect.
+  useEffect(() => {
+    if (!expand) return;
+    const wa = webApp ?? getTelegramWebApp() ?? undefined;
+    try {
+      wa?.expand?.();
+    } catch {
+      /* older clients throw on unsupported calls */
+    }
+  }, [expand, webApp]);
   return (
     <TKTelegramProvider webApp={webApp} signalReady={signalReady} haptics={haptics}>
       <TKAppRoot {...rest}>{children}</TKAppRoot>
@@ -81,6 +112,36 @@ function TKAppRoot({
 }: Omit<TKAppProps, "webApp" | "signalReady" | "haptics">) {
   const liveTheme = useTelegramTheme(fallbackTheme);
   const resolved = theme === "auto" ? liveTheme : theme;
+  // One keyboard controller per app: maintains --tk-kb-height / .tk-kb-open on
+  // the .tk roots (ref-counted, nested useKeyboard consumers share it).
+  useKeyboard();
+  const wa = useWebApp();
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const html = document.documentElement;
+    const body = document.body;
+    // The WKWebView underlay is black: an iOS pan or a viewport-height jump
+    // exposed it as black flashes — paint it in the theme background. Rubber-
+    // band overscroll on the body feeds Telegram's swipe-to-minimize gesture.
+    const bg = "var(--tg-theme-secondary-bg-color, var(--tg-theme-bg-color, #eef1f6))";
+    const previous = [html.style.background, html.style.overscrollBehavior, body.style.background, body.style.overscrollBehavior] as const;
+    html.style.background = bg;
+    body.style.background = bg;
+    html.style.overscrollBehavior = "none";
+    body.style.overscrollBehavior = "none";
+    try {
+      // Keep the native chrome behind the app in the same color family.
+      wa?.setBackgroundColor?.("secondary_bg_color");
+    } catch {
+      /* older clients throw on unsupported calls */
+    }
+    return () => {
+      html.style.background = previous[0];
+      html.style.overscrollBehavior = previous[1];
+      body.style.background = previous[2];
+      body.style.overscrollBehavior = previous[3];
+    };
+  }, [wa]);
   return (
     <TKProvider
       theme={resolved}
