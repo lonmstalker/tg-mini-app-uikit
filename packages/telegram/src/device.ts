@@ -19,6 +19,13 @@ export interface TKKeyboardState {
   height: number;
 }
 
+// Two thresholds, not one: the OPEN threshold rejects non-keyboard viewport
+// noise (Telegram chrome, URL-bar shifts), while the lower CLOSE threshold
+// keeps an already-open keyboard from flipping shut when WebKit pans the page
+// (`covered` momentarily dips as `vv.height` wobbles mid-animation). A single
+// threshold made every wobble around it a visible open/close flicker.
+const TK_KB_CLOSE_RATIO = 0.5;
+
 /**
  * Keyboard-aware layout hook driven by `visualViewport` (M6.5): returns the
  * overlap height so inputs can stay above the keyboard. SSR- and
@@ -30,8 +37,14 @@ export function useKeyboard(threshold = 80): TKKeyboardState {
     const vv = typeof window !== "undefined" ? window.visualViewport : undefined;
     if (!vv) return;
     tkKbConsumers += 1;
+    const closeThreshold = threshold * TK_KB_CLOSE_RATIO;
+    let visible = false;
     const sync = () => {
-      const covered = Math.max(0, window.innerHeight - vv.height - (vv.offsetTop ?? 0));
+      // Height overlapped by the keyboard. `offsetTop` must NOT be subtracted:
+      // when WebKit pans the page toward a bottom field, `offsetTop` grows to
+      // roughly the keyboard height, which zeroed `covered` and reported the
+      // keyboard closed while it was physically open.
+      const covered = Math.max(0, window.innerHeight - vv.height);
       const editableFocused = tkIsEditableActive();
       // Some WebViews (Telegram iOS) scroll the page to keep a focused input in
       // view and never scroll back after the keyboard closes, leaving the app
@@ -41,13 +54,14 @@ export function useKeyboard(threshold = 80): TKKeyboardState {
       if (!editableFocused && ((vv.offsetTop ?? 0) > 0 || window.scrollY > 0)) {
         window.scrollTo(0, 0);
       }
+      const open = visible ? covered > closeThreshold : editableFocused && covered > threshold;
+      visible = open;
       setState((prev) => {
-        const open = editableFocused && covered > threshold;
         const next = { visible: open, height: open ? Math.round(covered) : 0 };
         return prev.visible === next.visible && prev.height === next.height ? prev : next;
       });
       // recipe hook: `.tk-kb-open` lets CSS lift bottom bars above the keyboard
-      tkSetKeyboardOpenClass(editableFocused && covered > threshold);
+      tkSetKeyboardOpenClass(open);
     };
     const syncFocus = () => {
       sync();

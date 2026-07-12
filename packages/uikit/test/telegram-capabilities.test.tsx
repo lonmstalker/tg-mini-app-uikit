@@ -556,15 +556,20 @@ describe("expanded Telegram capabilities", () => {
     expect(result.current).toEqual({ visible: true, height: 200 });
     expect(root.classList.contains("tk-kb-open")).toBe(true);
 
+    // Closing is geometry-driven (KB-1.1/1.2): blur alone no longer flips the
+    // state — the keyboard actually retracting (vv resize) does.
     focused.blur();
     act(() => {
       document.dispatchEvent(new FocusEvent("focusout", { bubbles: true }));
+      visualViewport.height = 800;
+      listeners.get("resize")?.();
     });
     expect(result.current).toEqual({ visible: false, height: 0 });
     expect(root.classList.contains("tk-kb-open")).toBe(false);
 
     focused.focus();
     act(() => {
+      visualViewport.height = 600;
       listeners.get("resize")?.();
     });
     expect(result.current).toEqual({ visible: true, height: 200 });
