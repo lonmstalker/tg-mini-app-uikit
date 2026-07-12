@@ -2,6 +2,7 @@ import "./tokens/tokens.css";
 
 export * from "./foundation/theme";
 export * from "./foundation/i18n";
+export * from "./foundation/a11y";
 export * from "./tokens/typography";
 export * from "./foundation/telegram";
 export * from "./foundation/chrome";
@@ -27,3 +28,4 @@ export * from "./templates/cards";
 export * from "./templates/chat";
 export * from "./templates/onboarding";
 export * from "./templates/confetti";
+export * from "./app";
