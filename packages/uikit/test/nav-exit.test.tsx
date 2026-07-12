@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { TKNavPanel, TKNavStack, useNav } from "../src";
@@ -34,6 +35,9 @@ function stackOf(a: string, b: string) {
 afterEach(() => {
   vi.useRealTimers();
   vi.restoreAllMocks();
+  // stubGlobal (matchMedia in the reduced-motion test) is NOT undone by
+  // restoreAllMocks — without this every later test runs "reduced motion".
+  vi.unstubAllGlobals();
 });
 
 const exitEl = () => screen.getByTestId("nav").querySelector<HTMLElement>("[data-tk-nav-exit]");
@@ -97,6 +101,61 @@ describe("NAV exit animation on pop", () => {
     fireEvent.click(screen.getByText("pop-home-next"));
     const topPanel = screen.getByTestId("nav").querySelector('[data-tk-nav-panel="home"]');
     expect(document.activeElement).toBe(topPanel);
+  });
+});
+
+describe("NAV exit layer preserves the dying panel's subtree", () => {
+  it("input state and mount effects survive the pop into the exit layer", () => {
+    const mounted = { count: 0 };
+    function Root() {
+      const nav = useNav();
+      return (
+        <button type="button" onClick={() => nav.push("form")}>
+          open-form
+        </button>
+      );
+    }
+    function Form() {
+      const nav = useNav();
+      const [value, setValue] = useState("");
+      useEffect(() => {
+        mounted.count += 1;
+      }, []);
+      return (
+        <>
+          <input aria-label="field" value={value} onChange={(e) => setValue(e.target.value)} />
+          <button type="button" onClick={() => nav.pop()}>
+            pop-form
+          </button>
+        </>
+      );
+    }
+    render(
+      <TKNavStack initial="home" testId="nav">
+        <TKNavPanel id="home" label="home">
+          <Root />
+        </TKNavPanel>
+        <TKNavPanel id="form" label="form">
+          <Form />
+        </TKNavPanel>
+      </TKNavStack>,
+    );
+    fireEvent.click(screen.getByText("open-form"));
+    const field = screen.getByLabelText("field") as HTMLInputElement;
+    fireEvent.change(field, { target: { value: "typed" } });
+    expect(field.value).toBe("typed");
+    expect(mounted.count).toBe(1);
+    fireEvent.click(screen.getByText("pop-form"));
+    // The panel is sliding out: its DOM must be the SAME subtree — typed value
+    // still there, mount effect NOT re-run for a screen dying in 260ms.
+    const exit = exitEl();
+    expect(exit).not.toBeNull();
+    const exitField = exit!.querySelector("input") as HTMLInputElement;
+    expect(exitField.value).toBe("typed");
+    expect(mounted.count).toBe(1);
+    fireAnimationEnd(exit!, "tk-nav-out");
+    expect(exitEl()).toBeNull();
+    expect(mounted.count).toBe(1); // cycle push→pop: exactly one mount, ever
   });
 });
 

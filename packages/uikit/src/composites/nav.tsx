@@ -366,6 +366,16 @@ export function TKNavStack({
     if (el && !el.contains(document.activeElement)) el.focus({ preventScroll: true });
   }, [navSig]);
 
+  // One keyed list for live AND exiting panels: reusing the departed entry's
+  // key is what lets React move the subtree instead of remounting it. A key
+  // collision with a live entry (controlled host re-feeding a popped depth
+  // mid-exit) drops the exit layer for that pop — instant swap, never a
+  // duplicate key.
+  const rendered: { entry: NavEntry; exit?: { fromX: number } }[] = stack.map((entry) => ({ entry }));
+  if (exiting && !stack.some((entry) => entry.key === exiting.entry.key)) {
+    rendered.push({ entry: exiting.entry, exit: { fromX: exiting.fromX } });
+  }
+
   return (
     <TKNavContext.Provider value={api}>
       <div
@@ -386,7 +396,38 @@ export function TKNavStack({
           ...style,
         }}
       >
-        {stack.map((entry, index) => {
+        {rendered.map(({ entry, exit }, index) => {
+          if (exit) {
+            // The dying panel stays in the SAME keyed array under its original
+            // key, so React keeps the live subtree (typed input, scroll,
+            // in-flight requests) instead of mounting a fresh clone whose
+            // mount effects (fetch!) would re-run for a screen gone in 260ms.
+            return (
+              <div
+                key={entry.key}
+                ref={exitRef}
+                data-tk-nav-exit={entry.panel}
+                aria-hidden
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  background: "var(--tk-bg)",
+                  zIndex: stack.length,
+                  pointerEvents: "none",
+                  // tk-nav-out has no `from`: the slide starts at the computed
+                  // transform, i.e. exactly where the finger / pop left the panel.
+                  transform: exit.fromX ? `translateX(${exit.fromX}px)` : undefined,
+                  animation: "tk-nav-out var(--tk-t2) var(--tk-ease) forwards",
+                }}
+              >
+                <TKNavContext.Provider
+                  value={{ ...api, activePanel: entry.panel, params: entry.params, depth: stack.length + 1 }}
+                >
+                  {panels.get(entry.panel) ?? null}
+                </TKNavContext.Provider>
+              </div>
+            );
+          }
           const top = index === stack.length - 1;
           const under = index === stack.length - 2;
           // Human label for the region landmark; the active region gets focus on
@@ -435,31 +476,6 @@ export function TKNavStack({
             </div>
           );
         })}
-        {exiting ? (
-          <div
-            key={`exit-${exiting.entry.key}`}
-            ref={exitRef}
-            data-tk-nav-exit={exiting.entry.panel}
-            aria-hidden
-            style={{
-              position: "absolute",
-              inset: 0,
-              background: "var(--tk-bg)",
-              zIndex: stack.length,
-              pointerEvents: "none",
-              // tk-nav-out has no `from`: the slide starts at the computed
-              // transform, i.e. exactly where the finger / pop left the panel.
-              transform: exiting.fromX ? `translateX(${exiting.fromX}px)` : undefined,
-              animation: "tk-nav-out var(--tk-t2) var(--tk-ease) forwards",
-            }}
-          >
-            <TKNavContext.Provider
-              value={{ ...api, activePanel: exiting.entry.panel, params: exiting.entry.params, depth: stack.length + 1 }}
-            >
-              {panels.get(exiting.entry.panel) ?? null}
-            </TKNavContext.Provider>
-          </div>
-        ) : null}
       </div>
     </TKNavContext.Provider>
   );
