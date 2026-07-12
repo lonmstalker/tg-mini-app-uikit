@@ -6,14 +6,15 @@ export interface TKConfettiProps {
   count?: number;
   /** Burst lifetime, ms (default 1800). */
   duration?: number;
-  /** Particle colors; defaults to the accent + festive palette. */
+  /** Particle colors; defaults to the live `--tk-accent` + a festive palette. */
   colors?: string[];
   onDone?: () => void;
   testId?: string;
   style?: CSSProperties;
 }
 
-const DEFAULT_COLORS = ["#3390ec", "#7c5cff", "#1fab66", "#ff7a45", "#e5484d", "#ffb224"];
+// Festive palette; the live brand accent is prepended at burst time (ONB-008).
+const FESTIVE_COLORS = ["#7c5cff", "#1fab66", "#ff7a45", "#e5484d", "#ffb224"];
 
 function prefersReducedMotion(): boolean {
   return typeof window !== "undefined" && !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
@@ -23,7 +24,10 @@ function prefersReducedMotion(): boolean {
  * One-shot canvas confetti for micro-rewards. It uses one canvas, removes
  * itself when the burst ends, and renders nothing under prefers-reduced-motion.
  */
-export function TKConfetti({ count = 150, duration = 1800, colors = DEFAULT_COLORS, onDone, testId, style }: TKConfettiProps) {
+export function TKConfetti({ count = 150, duration = 1800, colors, onDone, testId, style }: TKConfettiProps) {
+  // Clamp count: negatives/NaN → 0, fractional floored, capped so a bad number
+  // can't RangeError or freeze the device (ONB-010).
+  const n = Math.max(0, Math.min(Math.floor(count) || 0, 600));
   const [alive, setAlive] = useState(() => !prefersReducedMotion());
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const doneRef = useRef(onDone);
@@ -35,6 +39,12 @@ export function TKConfetti({ count = 150, duration = 1800, colors = DEFAULT_COLO
 
   useEffect(() => {
     if (!alive) return;
+    // Nothing to animate — settle immediately instead of waiting out `duration`.
+    if (n === 0) {
+      setAlive(false);
+      doneRef.current?.();
+      return;
+    }
     const timer = window.setTimeout(() => {
       setAlive(false);
       doneRef.current?.();
@@ -46,6 +56,10 @@ export function TKConfetti({ count = 150, duration = 1800, colors = DEFAULT_COLO
     if (canvas && ctx) {
       const width = (canvas.width = canvas.offsetWidth || 360);
       const height = (canvas.height = canvas.offsetHeight || 640);
+      // Resolve the live brand accent from CSS (canvas can't read CSS vars) and
+      // prepend it to the festive palette unless the consumer overrode colors.
+      const accent = getComputedStyle(canvas).getPropertyValue("--tk-accent").trim();
+      const palette = colors ?? [accent || "#3390ec", ...FESTIVE_COLORS];
       interface Particle {
         x: number;
         y: number;
@@ -56,8 +70,8 @@ export function TKConfetti({ count = 150, duration = 1800, colors = DEFAULT_COLO
         a: number;
         va: number;
       }
-      const parts: Particle[] = Array.from({ length: count }, (_, index) => {
-        const angle = (index / count) * Math.PI * 2 + (index % 7) * 0.13;
+      const parts: Particle[] = Array.from({ length: n }, (_, index) => {
+        const angle = (index / n) * Math.PI * 2 + (index % 7) * 0.13;
         const speed = 4 + (index % 5) * 1.7;
         return {
           x: width / 2,
@@ -65,7 +79,7 @@ export function TKConfetti({ count = 150, duration = 1800, colors = DEFAULT_COLO
           vx: Math.cos(angle) * speed,
           vy: Math.sin(angle) * speed - 5,
           r: 3 + (index % 4),
-          c: colors[index % colors.length],
+          c: palette[index % palette.length],
           a: (index % 360) * (Math.PI / 180),
           va: 0.1 + (index % 3) * 0.07,
         };

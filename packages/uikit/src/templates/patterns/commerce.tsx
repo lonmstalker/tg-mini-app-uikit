@@ -1,5 +1,19 @@
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { useControllable } from "../../internal/useControllable";
+import { useTKLocale } from "../../foundation/i18n";
+
+// Standard visually-hidden style: text reachable by AT, invisible on screen.
+const srOnly = {
+  position: "absolute",
+  width: 1,
+  height: 1,
+  margin: -1,
+  padding: 0,
+  overflow: "hidden",
+  clip: "rect(0,0,0,0)",
+  whiteSpace: "nowrap",
+  border: 0,
+} as const;
 
 export interface TKSlotDay {
   label: string;
@@ -16,6 +30,12 @@ export interface TKSlotPickerProps {
   onDayChange?: (index: number) => void;
   slot?: string;
   defaultSlot?: string;
+  /**
+   * Fired on selection. ALSO fired programmatically with `""` when the current
+   * slot is reconciled away (it left `slots` or entered `busy`, e.g. after a day
+   * change — PTN-004). Don't treat every call as a user tap (e.g. don't fire
+   * haptics on the `""` reconcile).
+   */
   onSlotChange?: (slot: string) => void;
   columns?: number;
   testId?: string;
@@ -34,18 +54,34 @@ export function TKSlotPicker({
   columns = 3,
   testId,
 }: TKSlotPickerProps) {
+  const locale = useTKLocale();
   const [dayIdx, setDayIdx] = useControllable(day, defaultDay, onDayChange);
   const [slotVal, setSlotVal] = useControllable(slot, defaultSlot ?? "", onSlotChange);
+  // Reconcile the selection when slots/busy change (e.g. the day switched): if the
+  // chosen slot is gone or now busy, clear it so the highlight and the parent's
+  // state never point at an absent/sold-out slot (PTN-004). Uncontrolled clears
+  // internal state; controlled emits the cleared value via onSlotChange.
+  // Key on content, not array identity, so an inline `slots`/`busy` (new ref each
+  // render) doesn't re-run the body every commit.
+  const slotsKey = slots.join("|");
+  const busyKey = busy.join("|");
+  useEffect(() => {
+    if (slotVal && (!slots.includes(slotVal) || busy.includes(slotVal))) setSlotVal("");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slotsKey, busyKey, slotVal, setSlotVal]);
+  // Clamp the active day so an out-of-range index still highlights a real day (PTN-005).
+  const activeDay = days.length > 0 ? Math.max(0, Math.min(dayIdx, days.length - 1)) : -1;
   return (
     <div data-testid={testId} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <div style={{ display: "flex", gap: 7 }}>
         {days.map((dayItem, index) => {
-          const on = index === dayIdx;
+          const on = index === activeDay;
           return (
             <button
               type="button"
               key={`${dayItem.label}-${index}`}
               className="tk-press"
+              aria-pressed={on}
               onClick={() => setDayIdx(index)}
               style={{
                 flex: 1,
@@ -89,8 +125,15 @@ export function TKSlotPicker({
               type="button"
               key={slotItem}
               className={disabled ? undefined : "tk-press"}
-              disabled={disabled}
-              onClick={() => setSlotVal(slotItem)}
+              // ponytail: a Tab-navigated group of selectable toggle buttons (aria-pressed),
+              // not an arrow-key radiogroup — so no roving/role=radio here. Busy slots drop
+              // aria-pressed (they aren't selectable) and stay focusable with aria-disabled +
+              // a non-color "unavailable" cue so AT perceives them, not only line-through (PTN-002).
+              aria-pressed={disabled ? undefined : on}
+              aria-disabled={disabled || undefined}
+              onClick={() => {
+                if (!disabled) setSlotVal(slotItem);
+              }}
               style={{
                 padding: "10px 0",
                 border: "none",
@@ -109,6 +152,7 @@ export function TKSlotPicker({
               }}
             >
               {slotItem}
+              {disabled ? <span style={srOnly}> — {locale.unavailable}</span> : null}
             </button>
           );
         })}
@@ -118,6 +162,8 @@ export function TKSlotPicker({
 }
 
 export interface TKSummaryRow {
+  /** Stable identity for React keys (CC-11/PTN-008) — falls back to index. */
+  id?: string;
   label: ReactNode;
   value: ReactNode;
   /** Render the value in green (discounts, promos). */
@@ -147,7 +193,9 @@ export function TKPaymentSummary({ rows, children, testId }: TKPaymentSummaryPro
       }}
     >
       {rows.map((row, index) => (
-        <span key={index} style={{ display: "contents" }}>
+        // A real flex wrapper keyed by stable identity (not index + display:contents)
+        // so reorder/removal keeps each row's node and its divider together (PTN-008).
+        <div key={row.id ?? index} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {row.total ? <div style={{ height: 0.5, background: "var(--tk-sep)", margin: "2px 0" }} /> : null}
           <div
             style={{
@@ -170,7 +218,7 @@ export function TKPaymentSummary({ rows, children, testId }: TKPaymentSummaryPro
               {row.value}
             </span>
           </div>
-        </span>
+        </div>
       ))}
       {children}
     </div>

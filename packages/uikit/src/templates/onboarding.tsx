@@ -23,6 +23,17 @@ export interface TKOnboardingTooltipProps {
   storageKey?: string;
   storage?: TKOnboardingStorage;
   onFinish?: () => void;
+  /** Fired when the tour is dismissed early (Skip button, scrim tap, Escape). Falls back to `onFinish` if unset (ONB-001). */
+  onSkip?: () => void;
+  /** Allow dismissing by tapping the scrim / pressing Escape (default true). Set false to force a deliberate Skip/Done (ONB-001). */
+  dismissable?: boolean;
+  /**
+   * Trap focus inside the coach-mark (default true) — a modal walkthrough. Set
+   * false when the step points at a control the user should interact with during
+   * the tour: focus stays put, the bubble is still Escape/scrim-dismissable and
+   * announced, but Tab can reach the highlighted target (ONB-002).
+   */
+  trapFocus?: boolean;
   nextLabel?: ReactNode;
   doneLabel?: ReactNode;
   skipLabel?: ReactNode;
@@ -39,6 +50,9 @@ export function TKOnboardingTooltip({
   storageKey,
   storage,
   onFinish,
+  onSkip,
+  dismissable = true,
+  trapFocus = true,
   nextLabel,
   doneLabel,
   skipLabel,
@@ -69,6 +83,10 @@ export function TKOnboardingTooltip({
   useEffect(() => {
     if (status !== "open") return;
     steps[index]?.target.current?.scrollIntoView?.({ block: "center", behavior: "instant" as ScrollBehavior });
+    // Refs are null during the first render; bump once after commit so the
+    // anchored popper path is chosen over the no-target fallback when the target
+    // actually resolves (and the fallback only shows for a genuinely null target).
+    bumpRect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [index, status]);
 
@@ -97,60 +115,122 @@ export function TKOnboardingTooltip({
     };
   }, [status]);
 
+  const persistSeen = () => {
+    if (storage && storageKey) void storage.set(storageKey, "1").catch(() => {});
+  };
   const finish = () => {
     setStatus("done");
-    if (storage && storageKey) void storage.set(storageKey, "1").catch(() => {});
+    persistSeen();
     onFinish?.();
   };
+  // Early dismiss (Skip button, scrim tap, Escape): persist seen and notify via
+  // onSkip, falling back to onFinish so a gating flag still advances (ONB-001).
+  const skip = () => {
+    setStatus("done");
+    persistSeen();
+    (onSkip ?? onFinish)?.();
+  };
 
-  const step = steps[index];
+  // Keep `index` valid when the step set shrinks under it, and finish cleanly on an
+  // empty set so a consumer's seen-flag still flips (ONB-003).
+  useEffect(() => {
+    if (status !== "open") return;
+    if (steps.length === 0) finish();
+    else if (index > steps.length - 1) setIndex(steps.length - 1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status, steps.length, index]);
+
+  const safeIndex = steps.length ? Math.min(index, steps.length - 1) : 0;
+  const step = steps[safeIndex];
   if (status !== "open" || !step) return null;
 
   const rect = step.target.current?.getBoundingClientRect();
-  const last = index === steps.length - 1;
+  const last = safeIndex === steps.length - 1;
+  const ariaLabel = typeof step.title === "string" ? step.title : undefined;
+
+  const bubble = (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: 4, minWidth: 200 }}>
+      {/* Step content as a polite live region so advancing a step is announced (ONB-002). */}
+      <div role="status" aria-live="polite" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        {step.title ? <div style={{ fontWeight: 700, fontSize: "var(--tk-fz-body)" }}>{step.title}</div> : null}
+        {step.text ? (
+          <div style={{ fontSize: "var(--tk-fz-sub)", color: "var(--tk-text-2)", lineHeight: 1.35 }}>{step.text}</div>
+        ) : null}
+      </div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 2 }}>
+        <span style={{ fontSize: "var(--tk-fz-caption)", color: "var(--tk-text-3)" }}>
+          {safeIndex + 1} / {steps.length}
+        </span>
+        <span style={{ display: "inline-flex", gap: 6 }}>
+          {!last ? (
+            <TKButton size="sm" variant="plain" onClick={skip}>
+              {skipLabel ?? locale.skip}
+            </TKButton>
+          ) : null}
+          <TKButton size="sm" onClick={() => (last ? finish() : setIndex(safeIndex + 1))}>
+            {last ? (doneLabel ?? locale.done) : (nextLabel ?? locale.next)}
+          </TKButton>
+        </span>
+      </div>
+    </div>
+  );
 
   return (
     <div>
-      <div
-        style={
-          rect
-            ? {
-                position: "fixed",
-                zIndex: tkZ.popper,
-                pointerEvents: "auto",
-                boxShadow: "0 0 0 100vmax var(--tk-scrim)",
-                left: rect.left - 6,
-                top: rect.top - 6,
-                width: rect.width + 12,
-                height: rect.height + 12,
-                borderRadius: "var(--tk-r-md)",
-              }
-            : { position: "fixed", inset: 0, zIndex: tkZ.popper, pointerEvents: "auto", background: "var(--tk-scrim)" }
-        }
-      />
-      <TKPopper open anchorRef={step.target} placement={step.placement ?? "bottom"} arrow autoFlip testId={testId}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: 4, minWidth: 200 }}>
-          {step.title ? <div style={{ fontWeight: 700, fontSize: "var(--tk-fz-body)" }}>{step.title}</div> : null}
-          {step.text ? (
-            <div style={{ fontSize: "var(--tk-fz-sub)", color: "var(--tk-text-2)", lineHeight: 1.35 }}>{step.text}</div>
-          ) : null}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginTop: 2 }}>
-            <span style={{ fontSize: "var(--tk-fz-caption)", color: "var(--tk-text-3)" }}>
-              {index + 1} / {steps.length}
-            </span>
-            <span style={{ display: "inline-flex", gap: 6 }}>
-              {!last ? (
-                <TKButton size="sm" variant="plain" onClick={finish}>
-                  {skipLabel ?? locale.skip}
-                </TKButton>
-              ) : null}
-              <TKButton size="sm" onClick={() => (last ? finish() : setIndex(index + 1))}>
-                {last ? (doneLabel ?? locale.done) : (nextLabel ?? locale.next)}
-              </TKButton>
-            </span>
+      {rect ? (
+        <>
+          {/* Spotlight cutout only when the target is actually measured. */}
+          <div
+            style={{
+              position: "fixed",
+              zIndex: tkZ.popper,
+              pointerEvents: "auto",
+              boxShadow: "0 0 0 100vmax var(--tk-scrim)",
+              left: rect.left - 6,
+              top: rect.top - 6,
+              width: rect.width + 12,
+              height: rect.height + 12,
+              borderRadius: "var(--tk-r-md)",
+            }}
+          />
+          {/* trapFocus → role="dialog" (focus moves in, Tab trapped, focus restored
+              on close). Otherwise role="tooltip": no focus steal so the highlighted
+              target stays reachable; Escape/outside-tap still dismiss via onClose,
+              and the bubble still announces via its live region (ONB-001/002). */}
+          <TKPopper
+            open
+            anchorRef={step.target}
+            placement={step.placement ?? "bottom"}
+            arrow
+            autoFlip
+            role={trapFocus ? "dialog" : "tooltip"}
+            ariaLabel={ariaLabel}
+            onClose={dismissable ? skip : undefined}
+            testId={testId}
+          >
+            {bubble}
+          </TKPopper>
+        </>
+      ) : (
+        // No measurable target: TKPopper needs an anchor, so it would render NOTHING
+        // and strand the user with no Skip/Next. Fall back to a centered dialog card
+        // over a transparent interceptor — no opaque blackout (ONB-004); a tap outside
+        // the card dismisses it when dismissable (ONB-001).
+        <div
+          data-testid={testId}
+          onClick={dismissable ? skip : undefined}
+          style={{ position: "fixed", inset: 0, zIndex: tkZ.popper, display: "flex", alignItems: "center", justifyContent: "center", padding: 24, pointerEvents: "auto" }}
+        >
+          <div
+            role="dialog"
+            aria-label={ariaLabel}
+            onClick={(e) => e.stopPropagation()}
+            style={{ background: "var(--tk-surface)", color: "var(--tk-text)", borderRadius: "var(--tk-r-lg)", boxShadow: "var(--tk-shadow-lg)", padding: 16, maxWidth: 320 }}
+          >
+            {bubble}
           </div>
         </div>
-      </TKPopper>
+      )}
     </div>
   );
 }

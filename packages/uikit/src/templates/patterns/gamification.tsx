@@ -15,6 +15,8 @@ export interface TKXPHeaderProps {
 
 export function TKXPHeader({ name, initials = "", level, xp = 0, hint, testId }: TKXPHeaderProps) {
   const locale = useTKLocale();
+  // Single clamped value for the visual fill AND the announced progress (PTN-003).
+  const pct = Number.isFinite(xp) ? Math.min(100, Math.max(0, xp)) : 0;
   return (
     <div
       data-testid={testId}
@@ -23,7 +25,7 @@ export function TKXPHeader({ name, initials = "", level, xp = 0, hint, testId }:
         overflow: "hidden",
         borderRadius: "var(--tk-r-lg)",
         padding: 16,
-        color: "#fff",
+        color: "var(--tk-on-accent, #fff)",
         background: "var(--tk-accent)",
         boxShadow: "0 14px 30px -12px var(--tk-accent-35)",
         display: "flex",
@@ -31,7 +33,7 @@ export function TKXPHeader({ name, initials = "", level, xp = 0, hint, testId }:
         gap: 14,
       }}
     >
-      <TKAvatar initials={initials} size={54} tone="rgba(255,255,255,.22)" />
+      <TKAvatar initials={initials} size={54} tone="color-mix(in srgb, var(--tk-on-accent) 22%, transparent)" />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ fontSize: "var(--tk-fz-body)", fontWeight: 700 }}>{name}</span>
@@ -42,20 +44,27 @@ export function TKXPHeader({ name, initials = "", level, xp = 0, hint, testId }:
                 fontWeight: 700,
                 padding: "2px 8px",
                 borderRadius: "var(--tk-r-pill)",
-                background: "rgba(255,255,255,.22)",
+                background: "color-mix(in srgb, var(--tk-on-accent) 22%, transparent)",
               }}
             >
               {locale.lvl} {level}
             </span>
           ) : null}
         </div>
-        <div style={{ marginTop: 8, height: 7, borderRadius: 4, background: "rgba(255,255,255,.25)", overflow: "hidden" }}>
+        <div
+          role="progressbar"
+          aria-valuenow={pct}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label={typeof hint === "string" ? hint : locale.progress}
+          style={{ marginTop: 8, height: 7, borderRadius: 4, background: "color-mix(in srgb, var(--tk-on-accent) 25%, transparent)", overflow: "hidden" }}
+        >
           <div
             style={{
               height: "100%",
-              width: `${Math.min(100, Math.max(0, xp))}%`,
+              width: `${pct}%`,
               borderRadius: 4,
-              background: "#fff",
+              background: "var(--tk-on-accent, #fff)",
               transition: "width var(--tk-t3) var(--tk-spring)",
             }}
           />

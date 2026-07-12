@@ -1,4 +1,4 @@
-import { type ReactNode } from "react";
+import { forwardRef, type HTMLAttributes, type ReactNode } from "react";
 import { TKButton, TKIconButton } from "../../atoms/buttons";
 import { TKBadge, TKImage, TKImg } from "../../atoms/display";
 import { TKIcon } from "../../atoms/icons";
@@ -7,7 +7,7 @@ import { useControllable } from "../../internal/useControllable";
 
 /* ---------------- Product card · A (minimal) ---------------- */
 
-export interface TKProductCardAProps {
+export interface TKProductCardAProps extends Omit<HTMLAttributes<HTMLDivElement>, "onClick" | "title"> {
   title?: ReactNode;
   price?: ReactNode;
   /** Placeholder label when there is no photo. */
@@ -19,13 +19,18 @@ export interface TKProductCardAProps {
   testId?: string;
 }
 
-export function TKProductCardA({ title = "Product", price, img = "product photo", src, onAdd, onClick, testId }: TKProductCardAProps) {
+export const TKProductCardA = /* @__PURE__ */ forwardRef<HTMLDivElement, TKProductCardAProps>(function TKProductCardA(
+  { title = "Product", price, img = "product photo", src, onAdd, onClick, className, style, testId, ...rest },
+  ref,
+) {
   const locale = useTKLocale();
+  const titleName = typeof title === "string" ? title : undefined;
   return (
     <div
+      ref={ref}
+      {...rest}
       data-testid={testId}
-      className="tk-press tk-press-soft"
-      onClick={onClick}
+      className={[onClick ? "tk-press tk-press-soft" : "", className ?? ""].filter(Boolean).join(" ")}
       style={{
         background: "var(--tk-surface)",
         borderRadius: "var(--tk-r-lg)",
@@ -34,9 +39,29 @@ export function TKProductCardA({ title = "Product", price, img = "product photo"
         display: "flex",
         flexDirection: "column",
         gap: 10,
-        cursor: onClick ? "pointer" : "default",
+        // Anchor the keyboard-operable overlay button (TCRD-004) without nesting the
+        // add-to-cart button inside a role=button (the nested-interactive a11y bug).
+        position: onClick ? "relative" : undefined,
+        ...style,
       }}
     >
+      {onClick ? (
+        <button
+          type="button"
+          aria-label={titleName}
+          onClick={onClick}
+          style={{
+            position: "absolute",
+            inset: 0,
+            zIndex: 1,
+            border: "none",
+            background: "transparent",
+            borderRadius: "inherit",
+            cursor: "pointer",
+            padding: 0,
+          }}
+        />
+      ) : null}
       {src ? (
         <TKImage src={src} alt={typeof title === "string" ? title : ""} radius="var(--tk-r-md)" fallbackLabel={img} />
       ) : (
@@ -66,25 +91,28 @@ export function TKProductCardA({ title = "Product", price, img = "product photo"
           <div style={{ fontSize: "var(--tk-fz-body)", fontWeight: 700 }}>{price}</div>
         </div>
         {onAdd ? (
-          <TKIconButton
-            icon="plus"
-            size={34}
-            variant="filled"
-            label={locale.addToCart}
-            onClick={(e) => {
-              e.stopPropagation();
-              onAdd();
-            }}
-          />
+          // Above the overlay (zIndex 2) so it's an independent control, not nested.
+          <span style={{ position: "relative", zIndex: 2 }}>
+            <TKIconButton
+              icon="plus"
+              size={34}
+              variant="filled"
+              label={locale.addToCart}
+              onClick={(e) => {
+                e.stopPropagation();
+                onAdd();
+              }}
+            />
+          </span>
         ) : null}
       </div>
     </div>
   );
-}
+});
 
 /* ---------------- Product card · B (rich) ---------------- */
 
-export interface TKProductCardBProps {
+export interface TKProductCardBProps extends Omit<HTMLAttributes<HTMLDivElement>, "title"> {
   title?: ReactNode;
   price?: ReactNode;
   oldPrice?: ReactNode;
@@ -103,27 +131,36 @@ export interface TKProductCardBProps {
   testId?: string;
 }
 
-export function TKProductCardB({
-  title = "Product",
-  price,
-  oldPrice,
-  rating,
-  reviews,
-  img = "product photo",
-  src,
-  discount,
-  fav,
-  defaultFav = false,
-  onFavChange,
-  onAdd,
-  addLabel,
-  testId,
-}: TKProductCardBProps) {
+export const TKProductCardB = /* @__PURE__ */ forwardRef<HTMLDivElement, TKProductCardBProps>(function TKProductCardB(
+  {
+    title = "Product",
+    price,
+    oldPrice,
+    rating,
+    reviews,
+    img = "product photo",
+    src,
+    discount,
+    fav,
+    defaultFav = false,
+    onFavChange,
+    onAdd,
+    addLabel,
+    className,
+    style,
+    testId,
+    ...rest
+  },
+  ref,
+) {
   const locale = useTKLocale();
   const [isFav, setFav] = useControllable(fav, defaultFav, onFavChange);
   return (
     <div
+      ref={ref}
+      className={className}
       data-testid={testId}
+      {...rest}
       style={{
         background: "var(--tk-surface)",
         borderRadius: "var(--tk-r-lg)",
@@ -132,6 +169,7 @@ export function TKProductCardB({
         display: "flex",
         flexDirection: "column",
         gap: 10,
+        ...style,
       }}
     >
       <div style={{ position: "relative" }}>
@@ -205,4 +243,4 @@ export function TKProductCardB({
       </div>
     </div>
   );
-}
+});

@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { memo, type ReactNode } from "react";
 import { TKIcon } from "../../atoms/icons";
 
 export type TKMessageStatus = "sent" | "delivered" | "read";
@@ -20,7 +20,17 @@ export interface TKMessageBubbleProps extends Omit<TKMessage, "id"> {
   testId?: string;
 }
 
-export function TKMessageBubble({ text, out, time, status, tail = true, children, testId }: TKMessageBubbleProps) {
+// Memoized so an unchanged bubble doesn't re-render when its TKMessages parent
+// updates (a long thread re-rendered every bubble on each new message — CHT-005).
+export const TKMessageBubble = /* @__PURE__ */ memo(function TKMessageBubble({
+  text,
+  out,
+  time,
+  status,
+  tail = true,
+  children,
+  testId,
+}: TKMessageBubbleProps) {
   return (
     <div
       data-tk-bubble
@@ -31,6 +41,10 @@ export function TKMessageBubble({ text, out, time, status, tail = true, children
       <div
         style={{
           maxWidth: "78%",
+          minWidth: 0,
+          // Long unbroken text / URLs wrap inside the bubble instead of overflowing
+          // the narrow WebView (CHT-003).
+          overflowWrap: "anywhere",
           padding: "8px 12px",
           borderRadius: "var(--tk-r-lg)",
           ...(tail
@@ -75,4 +89,4 @@ export function TKMessageBubble({ text, out, time, status, tail = true, children
       </div>
     </div>
   );
-}
+});

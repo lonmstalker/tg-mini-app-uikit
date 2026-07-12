@@ -1,10 +1,25 @@
-import { useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useLayoutEffect, useMemo, useRef, type CSSProperties, type ReactNode, type Ref } from "react";
 import { TKIcon, type TKIconName } from "../../atoms/icons";
 import { useTKLocale } from "../../foundation/i18n";
 import { useSafeArea } from "../../foundation/telegram";
+import { mergeRefs } from "../../internal/dom";
+import { useControllable } from "../../internal/useControllable";
 
 export interface TKWriteBarProps {
   onSend: (text: string) => void;
+  /** Draft text (controlled). Omit for an uncontrolled bar (CHT-002). */
+  value?: string;
+  /** Initial draft when uncontrolled. */
+  defaultValue?: string;
+  /**
+   * Fired as the draft changes. Note `onSend` is followed by `onChange("")` — in
+   * controlled mode the bar does NOT own the value, so your store must apply that
+   * empty string to actually clear the draft (CHT-002).
+   */
+  onChange?: (value: string) => void;
+  /** Forwarded to the underlying `<textarea>` for focus (imperative `.value`
+   *  clear only works uncontrolled — controlled value wins on the next render). */
+  inputRef?: Ref<HTMLTextAreaElement>;
   placeholder?: string;
   /** Leading slot (attach button, custom action, etc.). */
   before?: ReactNode;
@@ -18,19 +33,42 @@ export interface TKWriteBarProps {
 }
 
 /** Message input bar: auto-growing textarea, Enter sends, Shift+Enter breaks. */
-export function TKWriteBar({ onSend, placeholder, before, sendIcon = "send", disabled, safeArea = true, testId, style }: TKWriteBarProps) {
+export function TKWriteBar({
+  onSend,
+  value,
+  defaultValue,
+  onChange,
+  inputRef,
+  placeholder,
+  before,
+  sendIcon = "send",
+  disabled,
+  safeArea = true,
+  testId,
+  style,
+}: TKWriteBarProps) {
   const locale = useTKLocale();
-  const [text, setText] = useState("");
+  const [text, setText] = useControllable(value, defaultValue ?? "", onChange);
   const areaRef = useRef<HTMLTextAreaElement>(null);
+  const setAreaRef = useMemo(() => mergeRefs(areaRef, inputRef), [inputRef]);
   const { inset, contentInset } = useSafeArea();
   const bottom = inset.bottom + contentInset.bottom;
 
+  // Keep the auto-grow height in sync with the value — including an external
+  // (controlled) clear, which onChange alone wouldn't catch (CHT-002). useLayoutEffect
+  // so the collapse paints in the same frame as the value change — no tall-box flash (CHT-006).
+  useLayoutEffect(() => {
+    const el = areaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    if (text) el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
+  }, [text]);
+
   const send = () => {
-    const value = text.trim();
-    if (!value) return;
-    onSend(value);
+    const next = text.trim();
+    if (!next) return;
+    onSend(next);
     setText("");
-    if (areaRef.current) areaRef.current.style.height = "auto";
   };
 
   return (
@@ -51,20 +89,17 @@ export function TKWriteBar({ onSend, placeholder, before, sendIcon = "send", dis
     >
       {before}
       <textarea
-        ref={areaRef}
+        ref={setAreaRef}
         rows={1}
         value={text}
         placeholder={placeholder}
         disabled={disabled}
-        aria-label={placeholder}
-        onChange={(event) => {
-          setText(event.target.value);
-          const el = event.currentTarget;
-          el.style.height = "auto";
-          el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
-        }}
+        // Always a non-empty accessible name even without a placeholder (CHT-001).
+        aria-label={placeholder ?? locale.composeMessage}
+        onChange={(event) => setText(event.target.value)}
         onKeyDown={(event) => {
-          if (event.key === "Enter" && !event.shiftKey) {
+          // Don't send on the Enter that confirms an IME candidate (CHT-004).
+          if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
             event.preventDefault();
             send();
           }
