@@ -1,15 +1,18 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import {
   TKButton,
   TKCategoryTabs,
   TKHeader,
   TKIconButton,
+  TKKeepMountTab,
+  TKKeepMountTabs,
   TKPageDots,
   TKSegmented,
   TKSteps,
   TKTabbar,
   TKTabView,
+  useTabActive,
 } from "tg-mini-app-uikit";
 import { AppScreen, Narrow, Row, Screen, options } from "../story-helpers";
 
@@ -108,4 +111,54 @@ export const TabView = {
   // on a deep screen or when the keyboard is up.
   parameters: { fullBleed: true },
   render: () => <TabViewDemo />,
+} satisfies Story;
+
+function PollingScreen({ label }: { label: string }) {
+  const active = useTabActive();
+  const [ticks, setTicks] = useState(0);
+  // The whole point of useTabActive: a hidden-but-mounted tab stops polling.
+  useEffect(() => {
+    if (!active) return;
+    const id = window.setInterval(() => setTicks((t) => t + 1), 1000);
+    return () => window.clearInterval(id);
+  }, [active]);
+  return (
+    <div style={{ padding: 20, display: "grid", gap: 8 }}>
+      <strong>{label}</strong>
+      <span>
+        polling ticks: {ticks} ({active ? "polling" : "paused — tab hidden"})
+      </span>
+      <input placeholder="type here, switch tabs, come back" style={{ padding: 8 }} />
+    </div>
+  );
+}
+
+function KeepMountDemo() {
+  const [tab, setTab] = useState("a");
+  return (
+    <Narrow>
+      <TKSegmented
+        value={tab}
+        onChange={setTab}
+        options={[
+          { value: "a", label: "Tab A" },
+          { value: "b", label: "Tab B" },
+        ]}
+      />
+      <TKKeepMountTabs active={tab}>
+        <TKKeepMountTab id="a">
+          <PollingScreen label="Tab A" />
+        </TKKeepMountTab>
+        <TKKeepMountTab id="b">
+          <PollingScreen label="Tab B" />
+        </TKKeepMountTab>
+      </TKKeepMountTabs>
+    </Narrow>
+  );
+}
+
+export const KeepMountTabs = {
+  // Visited tabs stay mounted (input/scroll state survives a switch); a hidden
+  // tab reads useTabActive()=false and pauses its polling.
+  render: () => <KeepMountDemo />,
 } satisfies Story;
