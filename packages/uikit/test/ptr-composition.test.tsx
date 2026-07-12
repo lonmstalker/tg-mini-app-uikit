@@ -1,3 +1,4 @@
+import { StrictMode } from "react";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { TKPage, TKPullToRefresh } from "../src";
@@ -114,5 +115,29 @@ describe("TKPage onRefresh (pit of success)", () => {
     const page = screen.getByTestId("page");
     expect(page.querySelector(".tk-ptr")).toBeNull();
     expect(page.querySelector("[data-tk-page-scroll]")).not.toBeNull();
+  });
+});
+
+describe("GES-011 mounted-flag survives a StrictMode double-mount", () => {
+  it("clears the refreshing state after onRefresh settles under StrictMode", async () => {
+    let resolve!: () => void;
+    const onRefresh = vi.fn(() => new Promise<void>((r) => (resolve = r)));
+    render(
+      <StrictMode>
+        <TKPullToRefresh onRefresh={onRefresh} testId="ptr">
+          <div>content</div>
+        </TKPullToRefresh>
+      </StrictMode>,
+    );
+    const area = screen.getByTestId("ptr");
+    pull(area, 210);
+    expect(onRefresh).toHaveBeenCalledOnce();
+    expect(area.getAttribute("aria-busy")).toBe("true");
+    await act(async () => {
+      resolve();
+    });
+    // The StrictMode dev cleanup must not latch the mounted flag to false —
+    // otherwise the spinner never clears after the refresh settles.
+    expect(area.getAttribute("aria-busy")).toBeNull();
   });
 });

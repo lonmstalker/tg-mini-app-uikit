@@ -95,7 +95,7 @@ test("guide: long-press opens the action sheet", async ({ page }) => {
     const el = document.querySelector('[data-testid="guide-row-g-ilya"]') as HTMLElement;
     const r = el.getBoundingClientRect();
     el.dispatchEvent(
-      new PointerEvent("pointerdown", { bubbles: true, pointerId: 1, clientX: r.left + 40, clientY: r.top + 30 }),
+      new PointerEvent("pointerdown", { bubbles: true, pointerId: 1, isPrimary: true, clientX: r.left + 40, clientY: r.top + 30 }),
     );
   });
   await expect(page.getByTestId("guide-actions")).toBeVisible({ timeout: 2000 });

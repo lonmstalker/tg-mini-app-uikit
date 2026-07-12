@@ -69,14 +69,18 @@ export function TKToastProvider({ children, offset = 14, duration = 2400, max = 
   // A late-settling `promise()` (or any deferred caller) must not setState or queue
   // a timer after the provider unmounts (OVL-DX-002).
   const mountedRef = useRef(true);
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    // Re-arm on mount: StrictMode runs the cleanup once during its dev
+    // double-invoke, and a ref initializer alone would leave this false forever
+    // (every toast silently dropped in dev).
+    mountedRef.current = true;
+    const timers = { auto: autoTimers.current, removal: removalTimers.current };
+    return () => {
       mountedRef.current = false;
-      autoTimers.current.forEach((t) => window.clearTimeout(t));
-      removalTimers.current.forEach((t) => window.clearTimeout(t));
-    },
-    [],
-  );
+      timers.auto.forEach((t) => window.clearTimeout(t));
+      timers.removal.forEach((t) => window.clearTimeout(t));
+    };
+  }, []);
 
   const dismiss = useCallback((id: number) => {
     if (!mountedRef.current) return;

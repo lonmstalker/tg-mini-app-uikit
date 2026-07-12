@@ -20,7 +20,7 @@ const compositeStories = [
   { id: "composites-lists--accordion-list", text: "Delivery window" },
   { id: "composites-lists--loading-and-virtualization", text: "Feed item" },
   { id: "composites-navigation--header-and-tabbar", text: "Orders" },
-  { id: "composites-navigation--segmented-and-tabs", role: "button", name: "Two" },
+  { id: "composites-navigation--segmented-and-tabs", role: "radio", name: "Two" },
   { id: "composites-navigation--steps-and-dots", text: "Confirm" },
   { id: "composites-nav--stack-flow", text: "Inbox" },
   { id: "composites-carousel--product-slides", text: "Matte case" },

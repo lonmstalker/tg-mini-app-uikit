@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 const atomStories = [
   { id: "atoms-buttons--button-variants", role: "button", name: "Filled" },
   { id: "atoms-buttons--icon-buttons", role: "button", name: "Favorite" },
-  { id: "atoms-buttons--inline-buttons", role: "button", name: "Daily" },
+  { id: "atoms-buttons--inline-buttons", role: "radio", name: "Daily" },
   { id: "atoms-buttons--main-button-and-spinner", role: "button", name: "Pay" },
   { id: "atoms-controls--binary-controls", role: "checkbox", name: "Selected" },
   { id: "atoms-controls--chips", text: "Featured" },

@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { StrictMode, useRef } from "react";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import * as kit from "../src/index";
@@ -140,5 +140,24 @@ describe("OVL-DX-002 promise() swaps loading → success / error", () => {
       fireEvent.click(screen.getByRole("button", { name: "go" }));
     });
     expect(screen.getByText("err nope")).toBeInTheDocument();
+  });
+});
+
+describe("OVL-011 toasts survive a StrictMode double-mount", () => {
+  it("show() still renders a toast after StrictMode re-runs the provider effects", () => {
+    function Trigger() {
+      const toast = kit.useTKToast();
+      return (
+        <button type="button" onClick={() => toast.show({ text: "undo me", action: "Undo", onAction: () => {} })}>
+          fire
+        </button>
+      );
+    }
+    render(<StrictMode>{wrap(<Trigger />)}</StrictMode>);
+    // StrictMode has already mounted → cleaned up → re-mounted the provider.
+    // The mounted flag must be re-armed, or every show() is silently dropped.
+    fireEvent.click(screen.getByRole("button", { name: "fire" }));
+    expect(screen.getByText("undo me")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Undo" })).toBeInTheDocument();
   });
 });

@@ -40,8 +40,13 @@ export function TKPullToRefresh({ children, onRefresh, threshold = 72, disabled,
   const guardingRef = useRef(false);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   // Skip the post-refresh setState if the host unmounted mid-flight (GES-011).
+  // Re-armed on mount: StrictMode runs the cleanup once during its dev
+  // double-invoke, and a ref initializer alone would leave this false forever.
   const mountedRef = useRef(true);
-  useEffect(() => () => void (mountedRef.current = false), []);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => void (mountedRef.current = false);
+  }, []);
   const haptics = useOptionalHaptics();
   // The pull is a top-edge swipe-down — exactly Telegram's minimize gesture. Mute
   // it while pulling/refreshing so the gesture refreshes instead of collapsing
