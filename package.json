@@ -24,7 +24,7 @@
     "check:boundaries": "depcruise --config .dependency-cruiser.cjs packages/*/src",
     "check:api": "node scripts/check-api-surface.mjs",
     "check:api:update": "node scripts/check-api-surface.mjs --update",
-    "typecheck": "npm run typecheck -w tg-mini-app-uikit",
+    "typecheck": "npm run typecheck -w @tg-mini-app/telegram && npm run typecheck -w tg-mini-app-uikit",
     "check:stories": "node scripts/check-stories-coverage.mjs",
     "changeset": "changeset",
     "version-packages": "changeset version",

@@ -4,6 +4,11 @@ on:
   push:
     tags: ["v*"]
 
+# One release train at a time; never cancel a publish mid-flight.
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
 jobs:
   publish:
     name: gates & npm publish
@@ -26,20 +31,52 @@ jobs:
           git fetch origin main
           git merge-base --is-ancestor HEAD origin/main || {
             echo "::error::tag does not point at a commit on main"; exit 1; }
+      # The tag names the uikit version; both packages must agree with their
+      # CHANGELOGs — otherwise any v* tag would publish whatever package.json
+      # happens to contain.
+      - name: verify tag matches package versions and CHANGELOGs
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          UIKIT="$(node -p "require('./packages/uikit/package.json').version")"
+          TELEGRAM="$(node -p "require('./packages/telegram/package.json').version")"
+          [ "$TAG" = "v$UIKIT" ] || {
+            echo "::error::tag $TAG does not match tg-mini-app-uikit version $UIKIT"; exit 1; }
+          grep -q "^## ${UIKIT}$" packages/uikit/CHANGELOG.md || {
+            echo "::error::packages/uikit/CHANGELOG.md has no '## ${UIKIT}' entry"; exit 1; }
+          grep -q "^## ${TELEGRAM}$" packages/telegram/CHANGELOG.md || {
+            echo "::error::packages/telegram/CHANGELOG.md has no '## ${TELEGRAM}' entry"; exit 1; }
       - run: npm ci
       - run: npm run build
       - name: verify clean tree after build
         run: |
-          git diff --quiet || { echo "::error::build left the tree dirty"; git status --porcelain; exit 1; }
+          test -z "$(git status --porcelain)" || {
+            echo "::error::build left the tree dirty"; git status --porcelain; exit 1; }
       - run: npm run typecheck
       - run: npm run check:cycles
       - run: npm run test:unit
       - run: npm run check:package
       - run: npm run check:api
-      # Topological publish: uikit resolves its @tg-mini-app/telegram peer from dist.
-      - run: npm publish --provenance --access public -w @tg-mini-app/telegram
+      # Topological publish: uikit resolves its @tg-mini-app/telegram peer from
+      # dist. Each publish is guarded so a re-run after a partial failure (or a
+      # release where one package's version is already on npm) skips instead of
+      # failing with E403.
+      - name: publish @tg-mini-app/telegram
+        run: |
+          VER="$(node -p "require('./packages/telegram/package.json').version")"
+          if npm view "@tg-mini-app/telegram@$VER" version >/dev/null 2>&1; then
+            echo "@tg-mini-app/telegram@$VER is already on npm — skipping"
+          else
+            npm publish --provenance --access public -w @tg-mini-app/telegram
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-      - run: npm publish --provenance --access public -w tg-mini-app-uikit
+      - name: publish tg-mini-app-uikit
+        run: |
+          VER="$(node -p "require('./packages/uikit/package.json').version")"
+          if npm view "tg-mini-app-uikit@$VER" version >/dev/null 2>&1; then
+            echo "tg-mini-app-uikit@$VER is already on npm — skipping"
+          else
+            npm publish --provenance --access public -w tg-mini-app-uikit
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

@@ -28,9 +28,11 @@ if (badPeers.length > 0) {
 }
 console.log("✓ zero runtime dependencies");
 
-if (!existsSync(new URL("../packages/uikit/dist/index.js", import.meta.url))) {
-  console.error("✖ packages/uikit/dist is missing — run `npm run build -w tg-mini-app-uikit` first");
-  process.exit(1);
+for (const dist of ["uikit", "telegram"]) {
+  if (!existsSync(new URL(`../packages/${dist}/dist/index.js`, import.meta.url))) {
+    console.error(`✖ packages/${dist}/dist is missing — run \`npm run build\` first`);
+    process.exit(1);
+  }
 }
 
 const run = (label, cmd) => {
@@ -41,6 +43,10 @@ const run = (label, cmd) => {
 run("publint", "npx publint packages/uikit --strict");
 // `./style.css` is a styles-only entrypoint — no JS/types to analyze there.
 run("arethetypeswrong", "npx attw --pack packages/uikit --entrypoints . --format table");
+// The platform peer publishes from the same tag — gate it the same way
+// (all entrypoints: `.` and `./testing`).
+run("publint (telegram)", "npx publint packages/telegram --strict");
+run("arethetypeswrong (telegram)", "npx attw --pack packages/telegram --format table");
 run("size-limit", "npx size-limit");
 run("docs gate", "node scripts/check-docs.mjs");
 
