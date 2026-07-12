@@ -138,19 +138,28 @@ export function TKNavStack({
   const isControlled = stackProp !== undefined;
   const isControlledRef = useRef(isControlled);
   isControlledRef.current = isControlled;
-  // Controlled entries get MONOTONIC keys via an append/truncate diff against
+  // Controlled entries get stable keys via an append/truncate diff against
   // the previously keyed stack — never the array index: an index key returns
   // on the next push to the same depth, which poisons the settled-guard (a
   // "warmed" depth loses its entrance animation forever) and could collide
-  // with the exit layer's preserved key. Ref writes here are idempotent per
-  // content, so a discarded concurrent render cannot corrupt the mapping.
-  const controlledRef = useRef<NavEntry[]>([]);
+  // with the exit layer's preserved key. The mapping (and its key counter)
+  // lives in STATE adjusted during render — the prevStack pattern below — so
+  // a discarded concurrent render discards its mapping too; a render-body ref
+  // mutation would leak keys from the discarded pass and remount a live panel
+  // on the next one. Controlled keys count down from -1: they can never
+  // collide with the handler-issued keyRef keys (positive) or the initial
+  // internal entry (0) across a controlled/uncontrolled flip.
+  const [controlledKeyed, setControlledKeyed] = useState<{ entries: NavEntry[]; nextKey: number }>({
+    entries: [],
+    nextKey: -1,
+  });
   let stack: NavEntry[];
   if (isControlled) {
     // Fall back to `initial` if a controlled host transiently feeds an empty
     // stack (e.g. mid-hydration) so the api's `top` never reads undefined.
     const entries: TKNavStackEntry[] = stackProp!.length > 0 ? stackProp! : [{ panel: initial }];
-    const prev = controlledRef.current;
+    const prev = controlledKeyed.entries;
+    let nextKey = controlledKeyed.nextKey;
     let changed = entries.length !== prev.length;
     const next = entries.map((entry, index) => {
       const kept = prev[index];
@@ -160,12 +169,12 @@ export function TKNavStack({
         return { panel: entry.panel, params: entry.params, key: kept.key };
       }
       changed = true;
-      return { panel: entry.panel, params: entry.params, key: keyRef.current++ };
+      return { panel: entry.panel, params: entry.params, key: nextKey-- };
     });
     // Same content → keep the previous array identity so the render-adjust
     // below reads "no navigation happened".
-    if (changed) controlledRef.current = next;
-    stack = controlledRef.current;
+    if (changed) setControlledKeyed({ entries: next, nextKey });
+    stack = changed ? next : prev;
   } else {
     stack = internalStack;
   }

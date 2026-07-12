@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { StrictMode, useRef, useState } from "react";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { TKNavPanel, TKNavStack, useNav, type TKNavStackEntry } from "../src";
@@ -51,6 +51,43 @@ describe("A4 controlled stack: settled-guard survives a pop→push to the same d
     // b is a brand-new entry: it must animate in — a reused index key would
     // have inherited a's settled state and skipped the entrance.
     expect(panelEl("b")!.style.animation).toContain("tk-nav-in");
+  });
+});
+
+describe("A4 controlled key mapping is state-adjusted in render (no remount across renders)", () => {
+  // Ключи controlled-режима живут в state (adjust-state-during-render, как
+  // prevStack), не в render-мутируемом ref: отброшенный concurrent-рендер
+  // отбрасывает и свой маппинг. Пиннинг: локальный стейт панели переживает
+  // push поверх, смену params и pop обратно — в том числе под StrictMode,
+  // где каждый рендер прогоняется дважды.
+  function Stateful() {
+    const [value, setValue] = useState("");
+    return <input aria-label="draft" value={value} onChange={(e) => setValue(e.target.value)} />;
+  }
+
+  function Harness({ entries }: { entries: TKNavStackEntry[] }) {
+    return (
+      <StrictMode>
+        <TKNavStack initial="h" stack={entries} testId="nav">
+          {panel("h", <Stateful />)}
+          {panel("a")}
+        </TKNavStack>
+      </StrictMode>
+    );
+  }
+
+  it("panel-local state survives push, params change and pop under StrictMode", () => {
+    const { rerender } = render(<Harness entries={[{ panel: "h" }]} />);
+    const draft = screen.getByLabelText("draft");
+    fireEvent.change(draft, { target: { value: "черновик" } });
+    expect(screen.getByLabelText("draft")).toHaveValue("черновик");
+    // push поверх: у нижней панели должен сохраниться ключ (и стейт)
+    rerender(<Harness entries={[{ panel: "h" }, { panel: "a" }]} />);
+    // смена params верхней записи: kept-ветка (тот же ключ), не новый ключ
+    rerender(<Harness entries={[{ panel: "h" }, { panel: "a", params: { x: 1 } }]} />);
+    // pop назад
+    rerender(<Harness entries={[{ panel: "h" }]} />);
+    expect(screen.getByLabelText("draft")).toHaveValue("черновик");
   });
 });
 
