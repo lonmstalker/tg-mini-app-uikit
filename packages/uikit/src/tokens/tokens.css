@@ -23,6 +23,34 @@
   --tk-spring: cubic-bezier(.34, 1.45, .58, 1);
   --tk-ease: cubic-bezier(.22, .61, .36, 1);
 
+  /* ---- safe color defaults (light) ----
+     so a bare `.tk` (no data-theme, no .tk-tg, no provider) still paints text
+     and surfaces instead of rendering transparent/black (TYP-001). The
+     `[data-theme]` and `.tk-tg` blocks override every one of these. */
+  --tk-bg: #eef1f6;
+  --tk-surface: #ffffff;
+  --tk-surface-2: #f2f4f8;
+  --tk-surface-3: #e8ebf1;
+  --tk-text: #131c26;
+  --tk-text-2: #57636f;
+  --tk-text-3: #646e79;
+  --tk-sep: rgba(19, 28, 38, .08);
+  --tk-on-accent: #ffffff;
+  /* Control puck (switch knob, slider thumb) — a light puck on a colored track,
+     independent of --tk-on-accent (ink ON accent); CTL-003 review. */
+  --tk-knob: #ffffff;
+  --tk-green: #2fae5d;
+  --tk-red: #e5484d;
+  --tk-orange: #e89623;
+  --tk-green-12: rgba(47, 174, 93, .12);
+  --tk-red-12: rgba(229, 72, 77, .12);
+  --tk-orange-12: rgba(232, 150, 35, .14);
+  --tk-glass: rgba(255, 255, 255, .72);
+  --tk-scrim: rgba(13, 19, 26, .42);
+  --tk-shadow-sm: 0 1px 2px rgba(16, 24, 40, .05), 0 4px 14px rgba(16, 24, 40, .05);
+  --tk-shadow-md: 0 2px 4px rgba(16, 24, 40, .05), 0 12px 32px rgba(16, 24, 40, .10);
+  --tk-shadow-lg: 0 6px 16px rgba(16, 24, 40, .08), 0 24px 60px rgba(16, 24, 40, .16);
+
   /* ---- radii ---- */
   --tk-r-xs: calc(7px  * var(--tk-rx));
   --tk-r-sm: calc(10px * var(--tk-rx));
@@ -30,6 +58,10 @@
   --tk-r-lg: calc(18px * var(--tk-rx));
   --tk-r-xl: calc(24px * var(--tk-rx));
   --tk-r-pill: 999px;
+
+  /* Minimum comfortable touch target (Telegram/iOS — CC-03). Override to resize
+     token-driven hit areas (e.g. calendar day cells — FRM-007). */
+  --tk-tap-min: 44px;
 
   /* ---- motion ---- */
   --tk-t1: calc(140ms / var(--tk-ms));
@@ -117,6 +149,9 @@
   --tk-text-3: #646e79;
   --tk-sep: rgba(19, 28, 38, .08);
   --tk-on-accent: #ffffff;
+  /* Control puck (switch knob, slider thumb) — a light puck on a colored track,
+     independent of --tk-on-accent (ink ON accent); CTL-003 review. */
+  --tk-knob: #ffffff;
   --tk-green: #2fae5d;
   --tk-red: #e5484d;
   --tk-orange: #e89623;
@@ -192,11 +227,28 @@
 .tk-press:active { transform: scale(.96); transition-duration: var(--tk-t1); }
 .tk-press-soft:active { transform: scale(.985); }
 
+/* OTP active-cell caret: a static bar by default; only blinks when motion is
+   allowed (INP-002 — no infinite animation under prefers-reduced-motion). */
+.tk-otp-caret { width: 2px; height: 24px; background: var(--tk-accent); border-radius: 1px; }
+
+/* Accordion reveal/chevron transitions live in classes (not inline) so the
+   reduced-motion paths below can switch them off entirely (LST-008). */
+.tk-accordion-chevron { transition: transform var(--tk-t2) var(--tk-spring); }
+.tk-accordion-panel { transition: grid-template-rows var(--tk-t3) var(--tk-ease); }
+
+/* Screen-reader-only text; the -focusable variant reveals on keyboard focus
+   (skip links etc.) — needs a real :focus rule, so it lives here, not inline (SVC-002). */
+.tk-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+.tk-sr-only-focusable:focus, .tk-sr-only-focusable:focus-within {
+  position: static; width: auto; height: auto; margin: 0; overflow: visible; clip: auto; white-space: normal;
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .tk-pop    { animation: tk-pop var(--tk-t2) var(--tk-spring) both; }
   .tk-pop-lg { animation: tk-pop var(--tk-t3) var(--tk-spring) both; }
   .tk-rise   { animation: tk-rise var(--tk-t3) var(--tk-ease) both; }
   .tk-shake  { animation: tk-shake calc(360ms / var(--tk-ms)) var(--tk-ease); }
+  .tk-otp-caret { animation: tk-fade-in calc(900ms / var(--tk-ms)) ease-in-out infinite alternate; }
 }
 
 @keyframes tk-pop {
@@ -339,6 +391,83 @@
   }
   .tk .tk-skel::after { animation: none; }
   .tk .tk-pulse::after { animation: none; opacity: 0; }
+  /* Drop the press-scale entirely, not just speed it up (CRD-004). */
+  .tk .tk-press:active,
+  .tk .tk-press-soft:active { transform: none; }
+  /* Accordion reveal/chevron change state instantly (LST-008). */
+  .tk .tk-accordion-chevron,
+  .tk .tk-accordion-panel { transition: none; }
+}
+
+/* Explicit, OS-independent motion-off path driven by TKProvider's reduceMotion
+   prop (data-tk-motion="off"). Mirrors the @media block above so an in-app
+   accessibility toggle works without touching the OS setting (CC-09 / FND-DX-002). */
+.tk[data-tk-motion="off"] {
+  --tk-spring: linear;
+  --tk-ease: linear;
+  --tk-t1: 1ms;
+  --tk-t2: 1ms;
+  --tk-t3: 1ms;
+}
+.tk[data-tk-motion="off"] .tk-press:active,
+.tk[data-tk-motion="off"] .tk-press-soft:active { transform: none; }
+.tk[data-tk-motion="off"] .tk-accordion-chevron,
+.tk[data-tk-motion="off"] .tk-accordion-panel { transition: none; }
+.tk[data-tk-motion="off"] .tk-skel::after { animation: none; }
+.tk[data-tk-motion="off"] .tk-pulse::after { animation: none; opacity: 0; }
+
+/* color-mix() landed in stable WebViews relatively late; on older in-app
+   Telegram browsers every color-mix token would resolve invalid and disappear
+   (text loses ink color, modals lose their scrim). Provide solid rgba fallbacks
+   so the kit degrades gracefully (TYP-009). Progressive enhancement: the
+   color-mix declarations above still win where supported. */
+@supports not (color: color-mix(in srgb, red, blue)) {
+  .tk {
+    --tk-accent-06: rgba(51, 144, 236, .06);
+    --tk-accent-12: rgba(51, 144, 236, .12);
+    --tk-accent-20: rgba(51, 144, 236, .20);
+    --tk-accent-35: rgba(51, 144, 236, .35);
+    --tk-accent-grad: linear-gradient(180deg, #4a9eef 0%, #3390ec 100%);
+    --tk-accent-ink: #1f6dc0;
+    --tk-red-ink: #b3373b;
+    --tk-green-ink: #1f7d43;
+    --tk-orange-ink: #9c6418;
+  }
+  /* dark theme needs lighter inks (the base fallbacks above are tuned for light
+     text); without this a legacy dark client gets dark-on-dark ink. */
+  .tk[data-theme="dark"] {
+    --tk-accent-ink: #79b8f5;
+    --tk-red-ink: #ff8a8e;
+    --tk-green-ink: #74d391;
+    --tk-orange-ink: #ffc266;
+  }
+  .tk.tk-tg {
+    --tk-surface-2: rgba(0, 0, 0, .04);
+    --tk-surface-3: rgba(0, 0, 0, .08);
+    --tk-glass: rgba(255, 255, 255, .8);
+    --tk-scrim: rgba(5, 8, 12, .55);
+  }
+  .tk[data-theme="dark"].tk-tg {
+    --tk-surface-2: rgba(255, 255, 255, .06);
+    --tk-surface-3: rgba(255, 255, 255, .12);
+    --tk-glass: rgba(23, 33, 43, .8);
+  }
 }
 
 } /* @layer tk */
+
+/* Glass relies on backdrop-filter to stay legible. Where it's unsupported, or the
+   user asked for reduced transparency, fall back to the opaque surface so text over
+   a bottom bar / header never sits on a see-through panel (LAY-007). Declared OUTSIDE
+   @layer tk on purpose: unlayered rules beat every themed `--tk-glass` inside the
+   layer regardless of selector specificity (`.tk[data-theme="dark"].tk-tg` etc.). */
+@supports not (backdrop-filter: blur(1px)) {
+  .tk {
+    --tk-glass: var(--tk-bg);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .tk {
+    --tk-glass: var(--tk-bg);
+  }
+}
