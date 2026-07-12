@@ -53,4 +53,26 @@ describe("nav module reorganization", () => {
     expect(onStackChange).toHaveBeenLastCalledWith(["home"]);
     expect(screen.getByTestId("nav-stack").querySelector('[data-tk-nav-panel="home"]')).not.toBeNull();
   });
+
+  it("INT-003 sets touch-action: pan-y on the swipe-back surface", () => {
+    const { rerender } = render(
+      <TKNavStack initial="home" swipeBack="edge" testId="nav-stack">
+        <TKNavPanel id="home">
+          <Home />
+        </TKNavPanel>
+      </TKNavStack>,
+    );
+    // x-axis swipe-back must release vertical pan to native scroll / minimize.
+    expect(screen.getByTestId("nav-stack").style.touchAction).toBe("pan-y");
+
+    rerender(
+      <TKNavStack initial="home" swipeBack={false} testId="nav-stack">
+        <TKNavPanel id="home">
+          <Home />
+        </TKNavPanel>
+      </TKNavStack>,
+    );
+    // no swipe-back -> no touch-action override (native behavior preserved).
+    expect(screen.getByTestId("nav-stack").style.touchAction).toBe("");
+  });
 });
