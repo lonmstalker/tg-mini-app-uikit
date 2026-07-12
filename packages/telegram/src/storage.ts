@@ -76,11 +76,23 @@ export function createStorageApi(
   if (supported && storageApi?.getItem && storageApi.setItem) {
     return {
       get: (key: string) =>
-        new Promise<string | null>((resolve, reject) =>
-          storageApi.getItem!(key, (err, value) => (err ? reject(err) : resolve(value ?? null))),
-        ),
+        new Promise<string | null>((resolve, reject) => {
+          try {
+            assertValidEntry(key); // FND-008: validate on read like set() does
+          } catch (err) {
+            reject(err);
+            return;
+          }
+          storageApi.getItem!(key, (err, value) => (err ? reject(err) : resolve(value ?? null)));
+        }),
       getMany: (keys: string[]) =>
         new Promise<Record<string, string | null>>((resolve, reject) => {
+          try {
+            keys.forEach((key) => assertValidEntry(key)); // FND-008
+          } catch (err) {
+            reject(err);
+            return;
+          }
           if (storageApi.getItems) {
             storageApi.getItems(keys, (err, values) => (err ? reject(err) : resolve(values ?? {})));
             return;
@@ -102,11 +114,23 @@ export function createStorageApi(
           storageApi.setItem!(key, value, (err) => (err ? reject(err) : resolve()));
         }),
       remove: (key: string) =>
-        new Promise<void>((resolve, reject) =>
-          storageApi.removeItem ? storageApi.removeItem(key, (err) => (err ? reject(err) : resolve())) : resolve(),
-        ),
+        new Promise<void>((resolve, reject) => {
+          try {
+            assertValidEntry(key); // FND-008
+          } catch (err) {
+            reject(err);
+            return;
+          }
+          storageApi.removeItem ? storageApi.removeItem(key, (err) => (err ? reject(err) : resolve())) : resolve();
+        }),
       removeMany: (keys: string[]) =>
         new Promise<void>((resolve, reject) => {
+          try {
+            keys.forEach((key) => assertValidEntry(key)); // FND-008
+          } catch (err) {
+            reject(err);
+            return;
+          }
           if (storageApi.removeItems) {
             storageApi.removeItems(keys, (err) => (err ? reject(err) : resolve()));
             return;
@@ -135,14 +159,16 @@ export function createStorageApi(
   }
   return {
     get: async (key: string) => {
+      assertValidEntry(key); // FND-008: reject a bad key like the native path
       try {
         return getLocalStorage()?.getItem(localPrefix + key) ?? null;
       } catch {
         return null;
       }
     },
-    getMany: async (keys: string[]) =>
-      Object.fromEntries(
+    getMany: async (keys: string[]) => {
+      keys.forEach((key) => assertValidEntry(key)); // FND-008
+      return Object.fromEntries(
         keys.map((key) => {
           try {
             return [key, getLocalStorage()?.getItem(localPrefix + key) ?? null];
@@ -150,7 +176,8 @@ export function createStorageApi(
             return [key, null];
           }
         }),
-      ),
+      );
+    },
     set: async (key: string, value: string) => {
       // Validate first so the same input rejects in both environments.
       assertValidEntry(key, value);
@@ -161,6 +188,7 @@ export function createStorageApi(
       }
     },
     remove: async (key: string) => {
+      assertValidEntry(key); // FND-008
       try {
         getLocalStorage()?.removeItem(localPrefix + key);
       } catch {
@@ -168,6 +196,7 @@ export function createStorageApi(
       }
     },
     removeMany: async (keys: string[]) => {
+      keys.forEach((key) => assertValidEntry(key)); // FND-008
       keys.forEach((key) => {
         try {
           getLocalStorage()?.removeItem(localPrefix + key);

@@ -16,6 +16,71 @@ import { TK_MIN_VERSION, tkSupports } from "./version";
 
 /* ---------------- Expanded WebApp capabilities ---------------- */
 
+// Schemes the kit will hand to a native opener / window.open / location.href.
+// Everything else (javascript:, data:, vbscript:, file:, …) is rejected so a
+// server- or user-derived URL can't become a DOM-XSS / redirect vector (FND-007).
+const TK_SAFE_LINK_SCHEMES = new Set(["http:", "https:", "tg:", "mailto:", "tel:"]);
+
+/** True when `url` parses to an allowlisted scheme. Trusts only absolute URLs. */
+export function tkIsAllowedLinkUrl(url: string): boolean {
+  if (typeof url !== "string" || url.trim() === "") return false;
+  try {
+    const base = typeof window !== "undefined" ? window.location?.href : undefined;
+    return TK_SAFE_LINK_SCHEMES.has(new URL(url, base).protocol.toLowerCase());
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Stricter check for `openTelegramLink`, whose no-WebApp fallback does a same-tab
+ * `location.href` navigation: only `tg:` deep links or absolute `t.me` URLs are
+ * allowed, so an arbitrary `https://evil.com` (or a relative path riding the
+ * current origin) can't navigate the whole app away (FND-007 review).
+ */
+export function tkIsTelegramDeepLink(url: string): boolean {
+  if (typeof url !== "string" || url.trim() === "") return false;
+  try {
+    const u = new URL(url); // no base → a relative path throws → rejected
+    if (u.protocol.toLowerCase() === "tg:") return true;
+    if (u.protocol === "https:" || u.protocol === "http:") {
+      const host = u.hostname.toLowerCase();
+      return host === "t.me" || host === "telegram.me" || host === "telegram.dog";
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+/** Dev-only breadcrumb so a blocked link isn't silently swallowed (FND-007 review). */
+function tkWarnBlockedLink(method: string, url: string): void {
+  if (process.env.NODE_ENV !== "production") {
+    // eslint-disable-next-line no-console
+    console.warn(`${method}: blocked a URL with a disallowed scheme: ${url}`);
+  }
+}
+
+export interface TKTelegramEnvironment {
+  /** True when a Telegram WebApp (real client or injected mock) is present. */
+  inside: boolean;
+  /** `'webapp'` when a WebApp is available, `'browser'` otherwise. */
+  reason: "webapp" | "browser";
+}
+
+/**
+ * One obvious "am I really inside Telegram?" primitive (FND-DX-005). Hooks like
+ * `useViewport`/`useActivity` return confident fallbacks (isExpanded:true,
+ * isActive:true) outside Telegram — branch on this instead of trusting those.
+ */
+export function useTelegramEnvironment(): TKTelegramEnvironment {
+  const wa = useWebApp();
+  return useMemo<TKTelegramEnvironment>(
+    () => (wa ? { inside: true, reason: "webapp" } : { inside: false, reason: "browser" }),
+    [wa],
+  );
+}
+
 export interface TKActivity {
   isActive: boolean;
   isSupported: boolean;
@@ -94,6 +159,10 @@ export function useTelegramLinks(): TKTelegramLinks {
   return useMemo(
     () => ({
       openLink: (url, options) => {
+        if (!tkIsAllowedLinkUrl(url)) {
+          tkWarnBlockedLink("openLink", url); // FND-007
+          return false;
+        }
         if (wa?.openLink) {
           wa.openLink(url, options?.tryInstantView ? { try_instant_view: true } : undefined);
           return true;
@@ -103,6 +172,10 @@ export function useTelegramLinks(): TKTelegramLinks {
         return true;
       },
       openTelegramLink: (url) => {
+        if (!tkIsTelegramDeepLink(url)) {
+          tkWarnBlockedLink("openTelegramLink", url); // FND-007: tg:/t.me only
+          return false;
+        }
         if (wa?.openTelegramLink) {
           wa.openTelegramLink(url);
           return true;
@@ -195,6 +268,10 @@ export function useInvoice(): TKInvoice {
     () => ({
       open: (url) =>
         new Promise<TelegramInvoiceStatus>((resolve) => {
+          if (!tkIsAllowedLinkUrl(url)) {
+            resolve("failed"); // FND-007: never forward an unvalidated invoice URL
+            return;
+          }
           if (!wa?.openInvoice) {
             resolve("unsupported");
             return;
@@ -220,16 +297,39 @@ export function useShare(): TKShare {
   const canShareToStory = !!wa?.shareToStory && tkSupports(wa, TK_MIN_VERSION.shareToStory);
   const isSupported =
     canShareMessage || canShareToStory || (typeof navigator !== "undefined" && "share" in navigator);
-  // `shareToStory` is fire-and-forget (no callback); resolve the optimistic
-  // call through the shareMessage* events instead of assuming success.
+  // `shareToStory` is fire-and-forget (no callback) and most clients emit no
+  // story-result event, so the promise can't wait on an event alone or it hangs
+  // forever (FND-001). A bounded timeout settles it optimistically, and an
+  // unmount settles any still-pending promise instead of leaking the resolver.
   const pendingStory = useRef<((ok: boolean) => void) | null>(null);
+  const storyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Guards against a late shareMessage* event re-settling an already-resolved
+  // story share (e.g. the optimistic timeout fired, then a delayed `failed`
+  // arrives) and flipping a reported success to error (FND-001 review).
+  const storyActive = useRef(false);
   const settleStory = useCallback((ok: boolean, error?: TelegramShareError) => {
+    if (!storyActive.current) return; // already settled — ignore late events
+    storyActive.current = false;
+    if (storyTimer.current != null) {
+      clearTimeout(storyTimer.current);
+      storyTimer.current = null;
+    }
     setState(ok ? { status: "success" } : { status: "error", error: error ?? "MESSAGE_SEND_FAILED" });
     pendingStory.current?.(ok);
     pendingStory.current = null;
   }, []);
   useTelegramEvent("shareMessageSent", () => settleStory(true));
   useTelegramEvent("shareMessageFailed", (payload) => settleStory(false, payload?.error));
+  useEffect(
+    () => () => {
+      if (storyTimer.current != null) clearTimeout(storyTimer.current);
+      // settle (not leak) any await that's still hanging when we unmount
+      storyActive.current = false;
+      pendingStory.current?.(false);
+      pendingStory.current = null;
+    },
+    [],
+  );
   return useMemo(
     () => ({
       shareMessage: (messageId) => {
@@ -254,6 +354,7 @@ export function useShare(): TKShare {
       shareToStory: async (mediaUrl, params) => {
         setState({ status: "pending" });
         if (canShareToStory && wa?.shareToStory) {
+          storyActive.current = true; // arm settle guard before the call can settle
           try {
             wa.shareToStory(
               mediaUrl,
@@ -263,11 +364,12 @@ export function useShare(): TKShare {
             settleStory(false, "UNSUPPORTED");
             return false;
           }
-          // Leave status pending — never report a synthetic success. The
-          // shareMessageSent/shareMessageFailed events resolve this promise;
-          // if the client emits neither, the status stays neutral (pending).
+          // The shareMessageSent/shareMessageFailed events settle this if the
+          // client emits them; otherwise the timeout resolves optimistically so
+          // the await never hangs (FND-001).
           return new Promise<boolean>((resolve) => {
             pendingStory.current = resolve;
+            storyTimer.current = setTimeout(() => settleStory(true), 1500);
           });
         }
         if (typeof navigator !== "undefined" && "share" in navigator) {

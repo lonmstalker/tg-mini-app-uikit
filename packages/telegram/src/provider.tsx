@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { TelegramEventMap, TelegramEventName, TelegramWebApp } from "./types";
+import { tkBackState } from "./back-registry";
 
 /* ---------------- Provider & access ---------------- */
 
@@ -18,28 +19,23 @@ const TKTelegramContext = /* @__PURE__ */ createContext<TelegramWebApp | undefin
  * the nav stack pops (M6.3).
  */
 type BackHandler = () => void;
-const backQueue: BackHandler[] = [];
-// How many active interceptors want the native Back button visible. Overlays
-// (sheets, dialogs, action sheets) and the nav stack bump this so the provider
-// can show the button whenever something is listening — otherwise Telegram's
-// Back press/edge-swipe is never delivered to the queue and instead closes the
-// whole Mini App.
-let backButtonWant = 0;
-const backButtonListeners = new Set<() => void>();
+// Queue / want-count / listeners live on a globalThis singleton (back-registry)
+// so a duplicated package copy can't desync them (FND-004).
 function notifyBackButton(): void {
-  for (const listener of backButtonListeners) listener();
+  for (const listener of tkBackState().listeners) listener();
 }
 
 /** True while at least one active interceptor wants the native Back button shown. */
 function backButtonWanted(): boolean {
-  return backButtonWant > 0;
+  return tkBackState().want > 0;
 }
 
 /** Subscribe to changes in `backButtonWanted()`; returns an unsubscribe. */
 function subscribeBackButton(listener: () => void): () => void {
-  backButtonListeners.add(listener);
+  const { listeners } = tkBackState();
+  listeners.add(listener);
   return () => {
-    backButtonListeners.delete(listener);
+    listeners.delete(listener);
   };
 }
 
@@ -55,17 +51,18 @@ export function useBackIntercept(active: boolean, handler: BackHandler, showNati
   ref.current = handler;
   useEffect(() => {
     if (!active) return;
+    const state = tkBackState();
     const entry: BackHandler = () => ref.current();
-    backQueue.push(entry);
+    state.queue.push(entry);
     if (showNativeButton) {
-      backButtonWant += 1;
+      state.want += 1;
       notifyBackButton();
     }
     return () => {
-      const i = backQueue.indexOf(entry);
-      if (i >= 0) backQueue.splice(i, 1);
+      const i = state.queue.indexOf(entry);
+      if (i >= 0) state.queue.splice(i, 1);
       if (showNativeButton) {
-        backButtonWant = Math.max(0, backButtonWant - 1);
+        state.want = Math.max(0, state.want - 1);
         notifyBackButton();
       }
     };
@@ -78,7 +75,8 @@ export function useBackIntercept(active: boolean, handler: BackHandler, showNati
  */
 export function useBackDispatcher(): () => boolean {
   return useCallback(() => {
-    const top = backQueue[backQueue.length - 1];
+    const { queue } = tkBackState();
+    const top = queue[queue.length - 1];
     if (!top) return false;
     top();
     return true;
@@ -144,7 +142,8 @@ export function TKTelegramProvider({ webApp, signalReady = true, haptics = false
     const btn = wa?.BackButton;
     if (!btn?.onClick) return;
     const handler = () => {
-      backQueue[backQueue.length - 1]?.();
+      const { queue } = tkBackState();
+      queue[queue.length - 1]?.();
     };
     btn.onClick(handler);
     return () => {
