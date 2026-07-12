@@ -259,6 +259,44 @@ describe("design token contract", () => {
     }
   });
 
+  /* Acceptance 1.5 — the keyboard-driven page geometry is a CSS contract: the
+     .tk-page/.tk-page-footer block is what turns every --tk-kb-height change
+     into ONE animated movement. Nothing else asserted it — deleting the whole
+     block kept every unit and e2e test green (mutation survives). */
+  it("KB-CSS keeps the .tk-page height transition at ~200ms", () => {
+    const m = tokensCss.match(/\.tk-page\s*\{[^}]*\}/);
+    expect(m, "missing .tk-page rule").not.toBeNull();
+    expect(m![0]).toMatch(/transition:\s*height\s+200ms/);
+  });
+
+  it("KB-CSS collapses the footer via grid-template-rows 1fr→0fr, never display:none", () => {
+    const footer = tokensCss.match(/\.tk-page-footer\s*\{[^}]*\}/);
+    expect(footer, "missing .tk-page-footer rule").not.toBeNull();
+    expect(footer![0]).toMatch(/grid-template-rows:\s*1fr/);
+    expect(footer![0]).toMatch(/transition:[^;]*grid-template-rows\s+200ms/);
+    const open = tokensCss.match(/\.tk-page-footer\[data-kb-open\]\s*\{[^}]*\}/);
+    expect(open, "missing .tk-page-footer[data-kb-open] rule").not.toBeNull();
+    expect(open![0]).toMatch(/grid-template-rows:\s*0fr/);
+    expect(open![0]).not.toContain("display");
+    // visibility flips only at the END of the collapse (discrete transition
+    // delayed by the full duration) — never in the frame the keyboard opens.
+    expect(open![0]).toMatch(/transition:[^;]*visibility\s+0s\s+200ms/);
+  });
+
+  it("KB-CSS switches the page/footer transitions off under prefers-reduced-motion", () => {
+    expect(tokensCss).toMatch(
+      /@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{\s*\.tk-page,\s*\.tk-page-footer,\s*\.tk-page-footer\[data-kb-open\]\s*\{\s*transition:\s*none;?\s*\}/,
+    );
+  });
+
+  it("B1 underlay literals in app.tsx mirror the --tk-bg theme values", () => {
+    const app = readFileSync(join(packageRoot, "src/app.tsx"), "utf8");
+    const light = tokensCss.match(/\.tk\[data-theme="light"\]\s*\{[\s\S]*?--tk-bg:\s*(#[0-9a-fA-F]+)/)![1];
+    const dark = tokensCss.match(/\.tk\[data-theme="dark"\]\s*\{[\s\S]*?--tk-bg:\s*(#[0-9a-fA-F]+)/)![1];
+    expect(app).toContain(`"${dark}"`);
+    expect(app).toContain(`"${light}"`);
+  });
+
   it("TOK-CONTRACT-013 keeps the package CSS entrypoint available in package exports and build output", () => {
     const packageJson = JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8")) as {
       exports?: Record<string, unknown>;
