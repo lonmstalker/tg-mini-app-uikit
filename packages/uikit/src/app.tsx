@@ -60,6 +60,12 @@ export interface TKAppProps extends TKThemeKnobs {
  * controller (one per app). The individual providers stay exported for
  * advanced nesting. Everything degrades to a no-op outside Telegram.
  *
+ * Underlay contract: the `html`/`body` background prefers the host's global
+ * `--tg-theme-*` variables — those exist only where the external
+ * `telegram-web-app.js` script ran (real Telegram). Outside it the fallback
+ * follows the kit's resolved theme (light/dark), so a browser launch with
+ * `theme="dark"` / `fallbackTheme="dark"` never flashes a light page.
+ *
  * Minimal `main.tsx`:
  * ```tsx
  * createRoot(document.getElementById("root")!).render(
@@ -123,7 +129,13 @@ function TKAppRoot({
     // The WKWebView underlay is black: an iOS pan or a viewport-height jump
     // exposed it as black flashes — paint it in the theme background. Rubber-
     // band overscroll on the body feeds Telegram's swipe-to-minimize gesture.
-    const bg = "var(--tg-theme-secondary-bg-color, var(--tg-theme-bg-color, #eef1f6))";
+    // The --tg-theme-* globals exist only when the host telegram-web-app.js
+    // script ran; outside real Telegram the fallback must follow the kit's
+    // RESOLVED theme, or a dark app sits on a light-flashing page.
+    // #0e1621/#eef1f6 mirror --tk-bg in tokens.css (pinned by tokens-contract);
+    // --tk-bg itself is scoped to .tk and cannot be read from html/body.
+    const fallback = resolved === "dark" ? "#0e1621" : "#eef1f6";
+    const bg = `var(--tg-theme-secondary-bg-color, var(--tg-theme-bg-color, ${fallback}))`;
     const previous = [html.style.background, html.style.overscrollBehavior, body.style.background, body.style.overscrollBehavior] as const;
     html.style.background = bg;
     body.style.background = bg;
@@ -141,7 +153,7 @@ function TKAppRoot({
       body.style.background = previous[2];
       body.style.overscrollBehavior = previous[3];
     };
-  }, [wa]);
+  }, [wa, resolved]);
   return (
     <TKProvider
       theme={resolved}

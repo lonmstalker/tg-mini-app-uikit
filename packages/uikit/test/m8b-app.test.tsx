@@ -129,6 +129,34 @@ describe("TKApp WebView bootstrap", () => {
     }
   });
 
+  it("the underlay follows the kit's RESOLVED theme outside real Telegram", () => {
+    // Browser launch with the kit owning a dark theme: the host script that
+    // writes --tg-theme-* never ran, so the var() fallback must be the kit's
+    // dark bg — not the hardcoded light #eef1f6 flashing under a dark app.
+    const { unmount } = render(
+      <kit.TKApp signalReady={false} theme="dark" telegram={false}>
+        <div />
+      </kit.TKApp>,
+    );
+    for (const el of [document.documentElement, document.body]) {
+      expect(el.style.background).toContain("#0e1621");
+      expect(el.style.background).not.toContain("#eef1f6");
+      // Host variables (written on :root by telegram-web-app.js) still win.
+      expect(el.style.background).toContain("--tg-theme-secondary-bg-color");
+    }
+    unmount();
+  });
+
+  it("fallbackTheme='dark' in a plain browser darkens the underlay too", () => {
+    const { unmount } = render(
+      <kit.TKApp signalReady={false} fallbackTheme="dark">
+        <div />
+      </kit.TKApp>,
+    );
+    expect(document.documentElement.style.background).toContain("#0e1621");
+    unmount();
+  });
+
   it("syncs the native background color when the client supports it", () => {
     const setBackgroundColor = vi.fn();
     render(
