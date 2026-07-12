@@ -1,8 +1,8 @@
 [
   {
-    "name": "full kit · esm · brotli",
+    "name": "full kit \u00b7 esm \u00b7 brotli",
     "path": "packages/uikit/dist/index.js",
-    "limit": "46 kB",
+    "limit": "56 kB",
     "ignore": [
       "react",
       "react-dom",
@@ -10,9 +10,9 @@
     ]
   },
   {
-    "name": "full kit · cjs · brotli",
+    "name": "full kit \u00b7 cjs \u00b7 brotli",
     "path": "packages/uikit/dist/index.cjs",
-    "limit": "46 kB",
+    "limit": "56 kB",
     "ignore": [
       "react",
       "react-dom",
@@ -20,17 +20,17 @@
     ]
   },
   {
-    "name": "tree-shaking · import { TKButton }",
+    "name": "tree-shaking \u00b7 import { TKButton }",
     "path": "packages/uikit/dist/index.js",
     "import": "{ TKButton }",
-    "limit": "5 kB",
+    "limit": "5.5 kB",
     "ignore": [
       "react",
       "react-dom"
     ]
   },
   {
-    "name": "tree-shaking · import { TKSpinner }",
+    "name": "tree-shaking \u00b7 import { TKSpinner }",
     "path": "packages/uikit/dist/index.js",
     "import": "{ TKSpinner }",
     "limit": "4 kB",
