@@ -1,19 +1,23 @@
-import type { CSSProperties, ReactNode } from "react";
+import { forwardRef, type BlockquoteHTMLAttributes, type ReactNode } from "react";
 
-export interface TKBlockquoteProps {
-  children?: ReactNode;
+export interface TKBlockquoteProps extends BlockquoteHTMLAttributes<HTMLQuoteElement> {
   author?: ReactNode;
   /** Optional leading icon name shown next to the author line. */
   icon?: ReactNode;
   testId?: string;
-  style?: CSSProperties;
 }
 
 /** Quote block with the Telegram-style vertical accent bar. */
-export function TKBlockquote({ children, author, icon, testId, style }: TKBlockquoteProps) {
+export const TKBlockquote = /* @__PURE__ */ forwardRef<HTMLQuoteElement, TKBlockquoteProps>(function TKBlockquote(
+  { children, author, icon, className, style, testId, ...rest },
+  ref,
+) {
   return (
     <blockquote
+      ref={ref}
+      className={className}
       data-testid={testId}
+      {...rest}
       style={{
         margin: 0,
         padding: "8px 12px",
@@ -35,4 +39,4 @@ export function TKBlockquote({ children, author, icon, testId, style }: TKBlockq
       <span style={{ fontSize: "var(--tk-fz-sub)", lineHeight: 1.4, color: "var(--tk-text)" }}>{children}</span>
     </blockquote>
   );
-}
+});

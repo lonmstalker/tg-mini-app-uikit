@@ -92,12 +92,28 @@ export interface TKIconProps {
   strokeWidth?: number;
   style?: CSSProperties;
   className?: string;
+  /**
+   * Render the glyph as a solid fill instead of a stroke. Intended for shape
+   * glyphs (badges, dots, pins); line-only icons (chevrons, arrows) have no
+   * enclosed area and render as a blob when filled. `fill-rule: evenodd` keeps
+   * the inner cut-out on overlapping-subpath glyphs like `verified` (SVC-003).
+   */
   filled?: boolean;
+  /**
+   * Accessible name. When set, the icon becomes a labelled `role="img"` (with a
+   * `<title>`); without it the icon stays decorative `aria-hidden` (SVC-004).
+   */
+  label?: string;
   /** Rendered as `data-testid`. */
   testId?: string;
 }
 
-export function TKIcon({ name, size = 22, strokeWidth = 2, style, className, filled, testId }: TKIconProps) {
+export function TKIcon({ name, size = 22, strokeWidth = 2, style, className, filled, label, testId }: TKIconProps) {
+  const path = TK_ICON_PATHS[name];
+  if (process.env.NODE_ENV !== "production" && path == null) {
+    // eslint-disable-next-line no-console
+    console.warn(`TKIcon: unknown icon name "${String(name)}" — rendering a placeholder (SVC-007).`);
+  }
   return (
     <svg
       data-testid={testId}
@@ -107,13 +123,20 @@ export function TKIcon({ name, size = 22, strokeWidth = 2, style, className, fil
       height={size}
       viewBox="0 0 24 24"
       fill={filled ? "currentColor" : "none"}
+      fillRule={filled ? "evenodd" : undefined}
+      clipRule={filled ? "evenodd" : undefined}
       stroke="currentColor"
       strokeWidth={filled ? 0 : strokeWidth}
       strokeLinecap="round"
       strokeLinejoin="round"
-      aria-hidden="true"
+      role={label ? "img" : undefined}
+      // Single accessible-name source: aria-label only (a <title> alongside it would
+      // double-announce on some screen readers) (SVC-004).
+      aria-label={label}
+      aria-hidden={label ? undefined : "true"}
     >
-      {TK_ICON_PATHS[name] ?? null}
+      {/* A visible placeholder box (not an empty svg) so a typo'd name is noticeable. */}
+      {path ?? <rect x="3.5" y="3.5" width="17" height="17" rx="3" />}
     </svg>
   );
 }

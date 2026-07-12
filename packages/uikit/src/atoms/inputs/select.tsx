@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { forwardRef, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { TKIcon } from "../icons";
 import { mergeRefs, tkZ } from "../../internal/dom";
 import { useControllable } from "../../internal/useControllable";
@@ -29,12 +29,16 @@ export const TKSelect = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKSelectPr
   const items = query
     ? allItems.filter((item) => String(typeof item.label === "string" ? item.label : item.value).toLowerCase().includes(query.toLowerCase()))
     : allItems;
-  const firstEnabled = allItems.find((item) => !item.disabled);
-  const [val, setVal] = useControllable(value, defaultValue ?? firstEnabled?.value ?? "", onChange);
+  // Default to "" (not the first option) so the placeholder shows and the
+  // parent's state isn't silently out of sync (INP-001). Auto-first would also
+  // never fire onChange. Pass defaultValue to pre-select intentionally.
+  const [val, setVal] = useControllable(value, defaultValue ?? "", onChange);
   const [open, setOpenRaw] = useState(false);
   const [active, setActive] = useState(-1);
   const ref = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  // Stable merged ref so a parent re-render doesn't detach/reattach the trigger (INP-006).
+  const mergedRef = useMemo(() => mergeRefs(buttonRef, forwardedRef), [forwardedRef]);
   const searchRef = useRef<HTMLInputElement>(null);
   const id = useId();
   const listId = `${id}-list`;
@@ -126,7 +130,7 @@ export const TKSelect = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKSelectPr
         </div>
       ) : null}
       <button
-        ref={mergeRefs(buttonRef, forwardedRef)}
+        ref={mergedRef}
         type="button"
         role="combobox"
         aria-expanded={open}
@@ -172,11 +176,13 @@ export const TKSelect = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKSelectPr
           <TKIcon name="chevronDown" size={17} />
         </span>
       </button>
+      {/* Popup shell: the filter combobox lives here, OUTSIDE role=listbox, so the
+          listbox holds only option/group children (valid combobox/listbox — INP-004). */}
       <div
-        role="listbox"
-        id={listId}
-        aria-labelledby={labelId}
-        aria-hidden={!open}
+        // inert (not aria-hidden) when closed: removes the focusable tabIndex=-1
+        // option buttons from focus + the a11y tree without the aria-hidden-on-
+        // focusable violation that aria-hidden would trigger here.
+        inert={!open || undefined}
         style={{
           position: "absolute",
           left: 0,
@@ -192,8 +198,6 @@ export const TKSelect = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKSelectPr
           opacity: open ? 1 : 0,
           pointerEvents: open ? "auto" : "none",
           transition: "transform var(--tk-t2) var(--tk-spring), opacity var(--tk-t2) var(--tk-ease)",
-          maxHeight: 280,
-          overflowY: "auto",
         }}
       >
         {searchable && open ? (
@@ -215,6 +219,9 @@ export const TKSelect = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKSelectPr
               ref={searchRef}
               value={query}
               placeholder={locale.search}
+              // A filter textbox that drives the listbox — NOT a second combobox (the
+              // trigger button is the combobox); aria-controls + aria-activedescendant
+              // link it to the options it filters (INP-004).
               aria-label={locale.search}
               aria-controls={listId}
               aria-activedescendant={active >= 0 ? `${id}-opt-${active}` : undefined}
@@ -251,7 +258,19 @@ export const TKSelect = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKSelectPr
             />
           </div>
         ) : null}
-        {items.map((item, i) => (
+        {items.length === 0 ? (
+          // No empty role=listbox (that breaks aria-required-children): announce
+          // "nothing found" as a status instead (A11Y-202).
+          <div
+            id={listId}
+            role="status"
+            style={{ padding: "12px", textAlign: "center", color: "var(--tk-text-3)", fontSize: "var(--tk-fz-sub)" }}
+          >
+            {locale.noResults}
+          </div>
+        ) : (
+          <div role="listbox" id={listId} aria-labelledby={labelId} style={{ maxHeight: 280, overflowY: "auto" }}>
+            {items.map((item, i) => (
           <span key={item.value} style={{ display: "contents" }}>
             {item.group != null && (i === 0 || items[i - 1].group !== item.group) ? (
               <div
@@ -304,8 +323,10 @@ export const TKSelect = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKSelectPr
                 </span>
               ) : null}
             </button>
-          </span>
-        ))}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

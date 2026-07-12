@@ -48,7 +48,7 @@ export const TKSwitch = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKSwitchPr
           width: K,
           height: K,
           borderRadius: "50%",
-          background: "#fff",
+          background: "var(--tk-knob, #fff)",
           boxShadow: "0 2px 6px rgba(0,0,0,.22)",
           transform: on ? `translateX(${W - K - 4}px)` : "translateX(0)",
           transition: "transform var(--tk-t2) var(--tk-spring)",
@@ -69,6 +69,10 @@ export const TKSwitch = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKSwitchPr
         aria-label={dom["aria-label"] ?? ariaLabel}
         style={{
           display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          minWidth: 44, // CC-03 / CTL-004 touch target
+          minHeight: 44,
           padding: 0,
           border: "none",
           background: "transparent",

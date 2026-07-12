@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState, type KeyboardEvent } from "react";
 import { TKIcon } from "../icons";
 import { useControllable } from "../../internal/useControllable";
 import { tkFormat, useTKLocale } from "../../foundation/i18n";
@@ -20,8 +20,27 @@ export function TKRating({ max = 5, value, defaultValue = 0, onChange, readonly,
   const [v, setV] = useControllable(value, defaultValue, onChange);
   const [hov, setHov] = useState(0);
   const shown = hov || v;
+  const refs = useRef<(HTMLButtonElement | null)[]>([]);
+  // Single tab stop on the currently-selected star (roving), else the first.
+  const selectedStar = v > 0 ? Math.min(max, Math.ceil(v)) - 1 : 0;
+  const focusStar = (val: number) => refs.current[Math.max(0, Math.min(max - 1, Math.ceil(val) - 1))]?.focus();
+  // Keyboard sets the VALUE (never clientX): Arrow ±1, Shift+Arrow ±0.5 when
+  // allowHalf, Home/End to the bounds — so half values are reachable (CTL-001).
+  const onKeyDown = (e: KeyboardEvent<HTMLButtonElement>) => {
+    if (readonly) return;
+    const step = allowHalf && e.shiftKey ? 0.5 : 1;
+    let nv = v;
+    if (e.key === "ArrowRight" || e.key === "ArrowUp") nv = Math.min(max, v + step);
+    else if (e.key === "ArrowLeft" || e.key === "ArrowDown") nv = Math.max(0, v - step);
+    else if (e.key === "Home") nv = allowHalf ? 0.5 : 1;
+    else if (e.key === "End") nv = max;
+    else return;
+    e.preventDefault();
+    setV(nv);
+    focusStar(nv);
+  };
   return (
-    <div role="group" aria-label={locale.rating} data-testid={testId} style={{ display: "flex", gap: 4 }}>
+    <div role="radiogroup" aria-label={locale.rating} data-testid={testId} style={{ display: "flex", gap: 4 }}>
       {Array.from({ length: max }).map((_, i) => {
         const fill = Math.min(Math.max(shown - i, 0), 1); // 0 | 0.5 | 1 per star
         const on = fill > 0;
@@ -30,10 +49,15 @@ export function TKRating({ max = 5, value, defaultValue = 0, onChange, readonly,
           <button
             type="button"
             key={i}
+            ref={(el) => {
+              refs.current[i] = el;
+            }}
+            role="radio"
             aria-label={tkFormat(locale.ratingValue, { value: i + 1, max })}
-            aria-pressed={!readonly && v >= i + 1}
+            aria-checked={!readonly && Math.ceil(v) === i + 1}
             aria-disabled={readonly || undefined}
-            tabIndex={readonly ? -1 : 0}
+            tabIndex={readonly ? -1 : i === selectedStar ? 0 : -1}
+            onKeyDown={readonly ? undefined : onKeyDown}
             onClick={
               readonly
                 ? undefined
@@ -50,9 +74,15 @@ export function TKRating({ max = 5, value, defaultValue = 0, onChange, readonly,
               border: "none",
               background: "transparent",
               padding: 2,
+              // Interactive stars get a 44px touch target with a vertical hit-slop
+              // so an inline rating in a list row keeps its compact height (CTL-004);
+              // a readonly rating is a display-only indicator and needs no target.
+              ...(readonly ? null : { minWidth: 44, minHeight: 44, marginTop: -7, marginBottom: -7 }),
               color: on ? "var(--tk-orange)" : "var(--tk-text-3)",
               transition: "color var(--tk-t1) var(--tk-ease)",
               display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
               position: "relative",
               cursor: readonly ? "default" : "pointer",
             }}

@@ -1,4 +1,10 @@
-import { forwardRef, type CSSProperties, type MouseEvent } from "react";
+import {
+  forwardRef,
+  type CSSProperties,
+  type KeyboardEventHandler,
+  type MouseEvent,
+  type MouseEventHandler,
+} from "react";
 import { TKIcon, type TKIconName } from "../icons";
 import { tkDomProps, type TKDomProps } from "../../internal/dom";
 import { ICON_BTN_SIZES, tkButtonVariantStyle, type TKButtonVariant, type TKIconButtonSize } from "./shared";
@@ -22,29 +28,68 @@ export interface TKIconButtonProps extends TKDomProps<HTMLButtonElement> {
   label?: string;
   /** Corner badge: a number renders a counter, `true` renders a dot. */
   badge?: number | boolean;
+  // Native button props the vetted TKDomProps set doesn't cover (BTN-005).
+  type?: "button" | "submit" | "reset";
+  name?: string;
+  value?: string;
+  form?: string;
+  title?: string;
+  onKeyDown?: KeyboardEventHandler<HTMLButtonElement>;
+  onMouseEnter?: MouseEventHandler<HTMLButtonElement>;
+  onMouseLeave?: MouseEventHandler<HTMLButtonElement>;
 }
 
 export const TKIconButton = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKIconButtonProps>(function TKIconButton(
-  { icon, variant = "tonal", size = "md", onClick, style, active, disabled, label, badge, ...dom },
+  {
+    icon,
+    variant = "tonal",
+    size = "md",
+    onClick,
+    style,
+    active,
+    disabled,
+    label,
+    badge,
+    type = "button",
+    name,
+    value,
+    form,
+    title,
+    onKeyDown,
+    onMouseEnter,
+    onMouseLeave,
+    ...dom
+  },
   ref,
 ) {
   const px = typeof size === "number" ? size : (ICON_BTN_SIZES[size] ?? ICON_BTN_SIZES.md);
+  // A counter only shows when > 0; a dot shows for any truthy non-number (BTN-006).
+  const hasBadge = typeof badge === "number" ? badge > 0 : !!badge;
   return (
     <button
-      type="button"
+      type={type}
       ref={ref}
       className="tk-press"
       onClick={onClick}
+      onKeyDown={onKeyDown}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+      name={name}
+      value={value}
+      form={form}
+      title={title}
       disabled={disabled}
       {...tkDomProps(dom)}
       aria-label={dom["aria-label"] ?? label}
       style={{
-        position: badge != null && badge !== false ? "relative" : undefined,
+        position: hasBadge ? "relative" : undefined,
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
         width: px,
         height: px,
+        minWidth: 44, // CC-03 / BTN-004 touch target
+        minHeight: 44,
         border: "none",
         borderRadius: "var(--tk-r-pill)",
         opacity: disabled ? 0.45 : 1,
@@ -55,7 +100,8 @@ export const TKIconButton = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKIcon
       }}
     >
       <TKIcon name={icon} size={Math.round(px * 0.52)} />
-      {typeof badge === "number" ? (
+      {/* Clamp to "99+" and hide the bubble for 0/negative counts (BTN-006). */}
+      {typeof badge === "number" && badge > 0 ? (
         <span
           style={{
             position: "absolute",
@@ -69,15 +115,16 @@ export const TKIconButton = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKIcon
             color: "#fff",
             fontSize: "var(--tk-fz-caption2)",
             fontWeight: 700,
+            lineHeight: 1,
             display: "inline-flex",
             alignItems: "center",
             justifyContent: "center",
             boxShadow: "0 0 0 2px var(--tk-surface)",
           }}
         >
-          {badge}
+          {badge > 99 ? "99+" : badge}
         </span>
-      ) : badge ? (
+      ) : typeof badge !== "number" && badge ? (
         <span
           data-tk-badge-dot
           style={{

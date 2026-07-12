@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useRef, type ReactNode } from "react";
+import { forwardRef, useEffect, useMemo, useRef, type ReactNode } from "react";
 import { TKIcon, type TKIconName } from "../icons";
 import { mergeRefs } from "../../internal/dom";
 import { useControllable } from "../../internal/useControllable";
@@ -37,6 +37,8 @@ export const TKSelectable = /* @__PURE__ */ forwardRef<HTMLInputElement, TKSelec
 ) {
   const [isChecked, setChecked] = useControllable(checked, defaultChecked, onChange);
   const inputRef = useRef<HTMLInputElement>(null);
+  // Stable merged ref so a parent re-render doesn't detach/reattach the node (INP-006).
+  const mergedRef = useMemo(() => mergeRefs(inputRef, ref), [ref]);
 
   useEffect(() => {
     if (type !== "radio" || !name || checked !== undefined) return;
@@ -66,7 +68,7 @@ export const TKSelectable = /* @__PURE__ */ forwardRef<HTMLInputElement, TKSelec
       }}
     >
       <input
-        ref={mergeRefs(inputRef, ref)}
+        ref={mergedRef}
         type={type}
         name={name}
         value={value}

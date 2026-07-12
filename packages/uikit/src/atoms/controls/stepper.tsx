@@ -57,6 +57,8 @@ export function TKStepper({ value, defaultValue = 1, min = 0, max = 99, onChange
         justifyContent: "center",
         width: 34,
         height: 34,
+        minWidth: 44, // CC-03 / CTL-004 touch target
+        minHeight: 44,
         border: "none",
         borderRadius: "var(--tk-r-sm)",
         background: "var(--tk-surface)",
@@ -83,19 +85,28 @@ export function TKStepper({ value, defaultValue = 1, min = 0, max = 99, onChange
       {editable ? (
         <input
           type="number"
+          inputMode="numeric"
+          enterKeyHint="done"
           role="spinbutton"
           aria-label={locale.quantity}
           value={draft ?? String(v)}
           min={min}
           max={max}
-          onChange={(e) => setDraft(e.target.value)}
-          onBlur={() => {
-            if (draft != null) {
-              const parsed = Number(draft);
-              if (Number.isFinite(parsed)) setV(Math.min(max, Math.max(min, Math.round(parsed))));
+          // Clamp + commit on every change so live consumers never read a stale or
+          // out-of-range draft; keep only a transient empty/invalid draft visible (CTL-006).
+          onChange={(e) => {
+            const raw = e.target.value;
+            const parsed = Number(raw);
+            if (raw !== "" && Number.isFinite(parsed)) {
+              setV(Math.min(max, Math.max(min, Math.round(parsed))));
+              setDraft(null);
+            } else {
+              setDraft(raw);
             }
-            setDraft(null);
           }}
+          // An empty/invalid field reverts to the last committed value on blur — never
+          // clobber a valid quantity with `min` just because the field was cleared (CTL-006).
+          onBlur={() => setDraft(null)}
           onKeyDown={(e) => {
             if (e.key === "Enter") (e.target as HTMLInputElement).blur();
           }}

@@ -1,6 +1,15 @@
 import { useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { useControllable } from "../../internal/useControllable";
 import { useOptionalHaptics } from "../../foundation/telegram";
+import { useTKLocale, tkFormat } from "../../foundation/i18n";
+
+// Dev-only nudge: a slider with no `label` has no accessible name (CTL-005).
+function tkWarnSliderName(label?: string) {
+  if (process.env.NODE_ENV !== "production" && !label) {
+    // eslint-disable-next-line no-console
+    console.warn("TKSlider: pass `label` so the slider has an accessible name (CTL-005).");
+  }
+}
 
 /* ---------------- Slider ---------------- */
 
@@ -33,7 +42,7 @@ export function TKSlider(props: TKSliderProps) {
 function TKRangeSliderImpl({
   min = 0,
   max = 100,
-  step = 1,
+  step: stepProp = 1,
   rangeValue,
   defaultRange,
   onRangeChange,
@@ -43,6 +52,10 @@ function TKRangeSliderImpl({
   marks,
   testId,
 }: TKSliderProps) {
+  const locale = useTKLocale();
+  tkWarnSliderName(label);
+  // A non-positive step would divide-by-zero in the snap math → NaN (CTL-009).
+  const step = stepProp > 0 ? stepProp : 1;
   const [val, setVal] = useControllable<[number, number]>(rangeValue, defaultRange ?? [min, max], onRangeChange);
   const [drag, setDrag] = useState<-1 | 0 | 1>(-1);
   const ref = useRef<HTMLDivElement>(null);
@@ -81,7 +94,8 @@ function TKRangeSliderImpl({
       key={i}
       role="slider"
       tabIndex={disabled ? -1 : 0}
-      aria-label={label}
+      // Per-thumb names so the two range thumbs aren't both announced identically (CTL-005).
+      aria-label={label ? tkFormat(i === 0 ? locale.sliderMin : locale.sliderMax, { label }) : undefined}
       aria-valuemin={min}
       aria-valuemax={max}
       aria-valuenow={val[i]}
@@ -95,7 +109,7 @@ function TKRangeSliderImpl({
         width: 28,
         height: 28,
         borderRadius: "50%",
-        background: "#fff",
+        background: "var(--tk-knob, #fff)",
         boxShadow: "0 2px 8px rgba(0,0,0,.25)",
         transform: drag === i ? "scale(1.15)" : "scale(1)",
         transition: drag === i ? "transform var(--tk-t1) var(--tk-ease)" : "left var(--tk-t2) var(--tk-ease), transform var(--tk-t2) var(--tk-spring)",
@@ -120,7 +134,7 @@ function TKRangeSliderImpl({
           setVal(clampThumb(drag as 0 | 1, fromEvent(e)));
         }}
         onPointerUp={() => setDrag(-1)}
-        style={{ position: "relative", height: 28, cursor: disabled ? "default" : "pointer", touchAction: "none", pointerEvents: disabled ? "none" : undefined }}
+        style={{ position: "relative", height: 28, cursor: disabled ? "default" : "pointer", touchAction: "pan-y", pointerEvents: disabled ? "none" : undefined }}
       >
         <div style={{ position: "absolute", top: 12, left: 0, right: 0, height: 4, borderRadius: 2, background: "var(--tk-surface-3)" }} />
         <div
@@ -156,7 +170,10 @@ function TKRangeSliderImpl({
   );
 }
 
-function TKSingleSliderImpl({ min = 0, max = 100, step = 1, value, defaultValue, onChange, suffix = "", disabled, label, marks, testId }: TKSliderProps) {
+function TKSingleSliderImpl({ min = 0, max = 100, step: stepProp = 1, value, defaultValue, onChange, suffix = "", disabled, label, marks, testId }: TKSliderProps) {
+  tkWarnSliderName(label);
+  // Guard non-positive step against divide-by-zero/NaN in the snap math (CTL-009).
+  const step = stepProp > 0 ? stepProp : 1;
   const [val, setVal] = useControllable(value, defaultValue ?? min, onChange);
   const [drag, setDrag] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -223,7 +240,7 @@ function TKSingleSliderImpl({ min = 0, max = 100, step = 1, value, defaultValue,
           position: "relative",
           height: 28,
           cursor: disabled ? "default" : "pointer",
-          touchAction: "none",
+          touchAction: "pan-y",
           borderRadius: "var(--tk-r-pill)",
           pointerEvents: disabled ? "none" : undefined,
         }}
@@ -267,7 +284,7 @@ function TKSingleSliderImpl({ min = 0, max = 100, step = 1, value, defaultValue,
             width: 28,
             height: 28,
             borderRadius: "50%",
-            background: "#fff",
+            background: "var(--tk-knob, #fff)",
             boxShadow: "0 2px 8px rgba(0,0,0,.25)",
             transform: drag ? "scale(1.15)" : "scale(1)",
             transition: drag

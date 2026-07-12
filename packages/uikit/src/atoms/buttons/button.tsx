@@ -3,11 +3,14 @@ import {
   type CSSProperties,
   type ElementType,
   type ForwardedRef,
+  type KeyboardEventHandler,
+  type MouseEventHandler,
   type ReactElement,
   type ReactNode,
 } from "react";
 import { TKIcon, type TKIconName } from "../icons";
-import type { TKPolymorphicProps } from "../../internal/polymorphic";
+import type { TKPolymorphicProps, TKPolymorphicRef } from "../../internal/polymorphic";
+import { useTKLocale } from "../../foundation/i18n";
 import { TKSpinner } from "./spinner";
 import { BTN_SIZES, tkButtonVariantStyle, type TKButtonSize, type TKButtonVariant } from "./shared";
 
@@ -47,17 +50,38 @@ function TKButtonImpl(
     style,
     className,
     ...rest
-  }: TKButtonOwnProps & { as?: ElementType } & Record<string, unknown>,
+  }: TKPolymorphicProps<ElementType, TKButtonOwnProps>,
   ref: ForwardedRef<HTMLElement>,
 ) {
+  const locale = useTKLocale();
   const Tag = as ?? "button";
   const s = BTN_SIZES[size] ?? BTN_SIZES.md;
   const blocked = disabled || loading;
+  const isButton = Tag === "button";
+  // A blocked non-button (`as="a"`) must be truly inert: no href, out of tab
+  // order, no activation — not just visually dimmed (BTN-001 / CC-07).
+  const inertAnchor = !isButton && blocked;
+  const { href: _href, onClick: userClick, onKeyDown: userKeyDown, ...restProps } = rest as {
+    href?: string;
+    onClick?: MouseEventHandler<HTMLElement>;
+    onKeyDown?: KeyboardEventHandler<HTMLElement>;
+  };
+  const handleKeyDown: KeyboardEventHandler<HTMLElement> = (e) => {
+    if (inertAnchor && (e.key === "Enter" || e.key === " ")) {
+      e.preventDefault();
+      return;
+    }
+    userKeyDown?.(e);
+  };
   return (
     <Tag
-      {...(Tag === "button" ? { type: "button", disabled: blocked } : { "aria-disabled": blocked || undefined })}
-      {...rest}
-      ref={ref as never}
+      {...(isButton
+        ? { type: "button", disabled: blocked }
+        : { "aria-disabled": blocked || undefined, ...(inertAnchor ? { tabIndex: -1 } : { href: _href }) })}
+      {...restProps}
+      onClick={inertAnchor ? undefined : userClick}
+      onKeyDown={handleKeyDown}
+      ref={ref}
       data-testid={testId}
       className={["tk-press", className ?? ""].filter(Boolean).join(" ")}
       aria-busy={loading || undefined}
@@ -116,11 +140,34 @@ function TKButtonImpl(
           {children}
         </>
       )}
+      {/* Polite announcement of the busy state; the spinner itself is decorative
+          (aria-hidden) and aria-busy alone isn't announced by most SRs (BTN-009).
+          Mounted only while loading — matching AsyncBoundary, so a non-loading button
+          never carries a stray empty live region. */}
+      {loading ? (
+        <span
+          role="status"
+          aria-live="polite"
+          style={{
+            position: "absolute",
+            width: 1,
+            height: 1,
+            margin: -1,
+            padding: 0,
+            overflow: "hidden",
+            clip: "rect(0,0,0,0)",
+            whiteSpace: "nowrap",
+            border: 0,
+          }}
+        >
+          {locale.loading}
+        </span>
+      ) : null}
     </Tag>
   );
 }
 
 /** Polymorphic action button: `<TKButton as="a" href="...">` renders a styled link. */
 export const TKButton = /* @__PURE__ */ forwardRef(TKButtonImpl) as <T extends ElementType = "button">(
-  props: TKButtonProps<T> & { ref?: ForwardedRef<HTMLElement> },
+  props: TKButtonProps<T> & { ref?: TKPolymorphicRef<T> },
 ) => ReactElement;

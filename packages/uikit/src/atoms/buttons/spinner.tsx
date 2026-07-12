@@ -1,13 +1,18 @@
 export interface TKSpinnerProps {
   color?: string;
   size?: number;
+  /** Accessible busy label. Omitted → the spinner is decorative `aria-hidden` (BTN-009). */
+  label?: string;
   testId?: string;
 }
 
-export function TKSpinner({ color = "var(--tk-accent)", size = 20, testId }: TKSpinnerProps) {
+export function TKSpinner({ color = "var(--tk-accent)", size = 20, label, testId }: TKSpinnerProps) {
   return (
     <span
       data-testid={testId}
+      role={label ? "status" : undefined}
+      aria-label={label}
+      aria-hidden={label ? undefined : true}
       style={{
         width: size,
         height: size,

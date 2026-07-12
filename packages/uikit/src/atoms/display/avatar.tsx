@@ -1,6 +1,7 @@
-import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { forwardRef, useEffect, useState, type HTMLAttributes, type ReactNode } from "react";
+import { useTKLocale } from "../../foundation/i18n";
 
-export interface TKAvatarProps {
+export interface TKAvatarProps extends HTMLAttributes<HTMLSpanElement> {
   initials?: string;
   size?: number;
   /** Any CSS background - color or gradient. Defaults to the accent gradient. */
@@ -15,40 +16,57 @@ export interface TKAvatarProps {
   testId?: string;
 }
 
-export function TKAvatar({ initials = "", size = 40, tone, src, alt = "", status, shape = "circle", testId }: TKAvatarProps) {
+export const TKAvatar = /* @__PURE__ */ forwardRef<HTMLSpanElement, TKAvatarProps>(function TKAvatar(
+  { initials = "", size = 40, tone, src, alt = "", status, shape = "circle", className, style, testId, ...rest },
+  ref,
+) {
+  const locale = useTKLocale();
   const [failed, setFailed] = useState(false);
   useEffect(() => setFailed(false), [src]);
-  if (status != null) {
-    const dot =
-      status === "online" || status === "offline" ? (
-        <span
-          data-tk-avatar-status
-          style={{
-            position: "absolute",
-            right: 0,
-            bottom: 0,
-            width: Math.max(9, size * 0.24),
-            height: Math.max(9, size * 0.24),
-            borderRadius: "50%",
-            background: status === "online" ? "var(--tk-green)" : "var(--tk-text-3)",
-            border: "2px solid var(--tk-surface)",
-            boxSizing: "border-box",
-            transform: "translate(20%, 20%)",
-          }}
-        />
-      ) : (
-        <span data-tk-avatar-status style={{ position: "absolute", right: -2, bottom: -2 }}>{status}</span>
-      );
-    return (
-      <span data-testid={testId} style={{ position: "relative", display: "inline-flex", width: size, height: size, flexShrink: 0 }}>
-        <TKAvatar initials={initials} size={size} tone={tone} src={src} alt={alt} shape={shape} />
-        {dot}
+  const showingPhoto = !!(src && !failed);
+  // One accessible name for the whole atom: the photo's `alt`, else the initials
+  // when there's no photo. A loaded photo without `alt` is left unnamed rather than
+  // announcing the now-stale placeholder initials (DSP-001).
+  const accessibleName = alt || (showingPhoto ? undefined : initials) || undefined;
+  // Render the dot as a sibling of the body within ONE component instance —
+  // never recurse into a second <TKAvatar> (which doubled the failed-state/effect
+  // and remounted the <img> — DSP-011).
+  const dot =
+    status == null ? null : status === "online" || status === "offline" ? (
+      <span
+        data-tk-avatar-status
+        role="img"
+        aria-label={status === "online" ? locale.online : locale.offline}
+        style={{
+          position: "absolute",
+          // Logical inset so the presence dot flips to the leading corner under RTL (DSP-010).
+          insetInlineEnd: 0,
+          bottom: 0,
+          width: Math.max(9, size * 0.24),
+          height: Math.max(9, size * 0.24),
+          borderRadius: "50%",
+          background: status === "online" ? "var(--tk-green)" : "var(--tk-text-3)",
+          border: "2px solid var(--tk-surface)",
+          boxSizing: "border-box",
+          transform: "translate(20%, 20%)",
+        }}
+      />
+    ) : (
+      <span data-tk-avatar-status style={{ position: "absolute", insetInlineEnd: -2, bottom: -2 }}>
+        {status}
       </span>
     );
-  }
-  return (
+  // The body is the root only when there is no dot; otherwise the wrapper below is,
+  // so ref/className/native props land on whichever element is actually returned.
+  const bodyIsRoot = !dot;
+  const body = (
     <span
-      data-testid={testId}
+      ref={bodyIsRoot ? ref : undefined}
+      className={bodyIsRoot ? className : undefined}
+      data-testid={bodyIsRoot ? testId : undefined}
+      {...(bodyIsRoot ? rest : {})}
+      role="img"
+      aria-label={accessibleName}
       style={{
         position: "relative",
         display: "inline-flex",
@@ -59,18 +77,20 @@ export function TKAvatar({ initials = "", size = 40, tone, src, alt = "", status
         borderRadius: shape === "rounded" ? "var(--tk-r-md)" : "50%",
         overflow: "hidden",
         background: tone || "var(--tk-accent-grad)",
-        color: "#fff",
+        color: "var(--tk-on-accent, #fff)",
         fontWeight: 700,
         fontSize: size * 0.38,
         letterSpacing: ".02em",
         flexShrink: 0,
+        ...(bodyIsRoot ? style : null),
       }}
     >
       {initials}
       {src && !failed ? (
         <img
           src={src}
-          alt={alt}
+          alt=""
+          aria-hidden="true"
           loading="lazy"
           onError={() => setFailed(true)}
           style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
@@ -78,33 +98,58 @@ export function TKAvatar({ initials = "", size = 40, tone, src, alt = "", status
       ) : null}
     </span>
   );
-}
+  if (!dot) return body;
+  return (
+    <span
+      ref={ref}
+      className={className}
+      data-testid={testId}
+      {...rest}
+      style={{ position: "relative", display: "inline-flex", width: size, height: size, flexShrink: 0, ...style }}
+    >
+      {body}
+      {dot}
+    </span>
+  );
+});
 
 export interface TKAvatarStackItem {
+  /** Stable identity for React keys (CC-11/DSP-007) — falls back to src+initials. */
+  id?: string;
   initials?: string;
   src?: string;
   tone?: string;
   alt?: string;
 }
 
-export interface TKAvatarStackProps {
+export interface TKAvatarStackProps extends HTMLAttributes<HTMLSpanElement> {
   avatars: TKAvatarStackItem[];
   /** Visible avatars before the `+N` tail (default 4). */
   max?: number;
   size?: number;
   testId?: string;
-  style?: CSSProperties;
 }
 
 /** Overlapping avatar row with a `+N` overflow chip. */
-export function TKAvatarStack({ avatars, max = 4, size = 32, testId, style }: TKAvatarStackProps) {
+export const TKAvatarStack = /* @__PURE__ */ forwardRef<HTMLSpanElement, TKAvatarStackProps>(function TKAvatarStack(
+  { avatars, max = 4, size = 32, className, style, testId, ...rest },
+  ref,
+) {
   const shown = avatars.slice(0, max);
-  const rest = avatars.length - shown.length;
+  const overflow = avatars.length - shown.length;
   return (
-    <span data-testid={testId} style={{ display: "inline-flex", alignItems: "center", ...style }}>
+    <span
+      ref={ref}
+      className={className}
+      data-testid={testId}
+      {...rest}
+      style={{ display: "inline-flex", alignItems: "center", ...style }}
+    >
       {shown.map((a, i) => (
         <span
-          key={i}
+          // Key by stable identity so removing/reordering doesn't flash the wrong
+          // avatar (CC-11/DSP-007); fall back to src+initials, then index.
+          key={a.id ?? (a.src || a.initials ? `${a.src ?? ""}|${a.initials ?? ""}` : i)}
           style={{
             display: "inline-flex",
             marginLeft: i ? -size * 0.3 : 0,
@@ -116,7 +161,7 @@ export function TKAvatarStack({ avatars, max = 4, size = 32, testId, style }: TK
           <TKAvatar initials={a.initials} src={a.src} tone={a.tone} alt={a.alt} size={size} />
         </span>
       ))}
-      {rest > 0 ? (
+      {overflow > 0 ? (
         <span
           style={{
             display: "inline-flex",
@@ -133,9 +178,9 @@ export function TKAvatarStack({ avatars, max = 4, size = 32, testId, style }: TK
             boxShadow: "0 0 0 2px var(--tk-surface)",
           }}
         >
-          +{rest}
+          +{overflow}
         </span>
       ) : null}
     </span>
   );
-}
+});

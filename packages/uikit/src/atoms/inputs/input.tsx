@@ -1,4 +1,4 @@
-import { forwardRef, useId, useRef, useState, type ChangeEvent, type FocusEvent, type ReactNode } from "react";
+import { forwardRef, useId, useMemo, useRef, useState, type ChangeEvent, type FocusEvent, type ReactNode } from "react";
 import { TKIcon, type TKIconName } from "../icons";
 import { mergeRefs } from "../../internal/dom";
 import { useControllable } from "../../internal/useControllable";
@@ -41,6 +41,8 @@ export interface TKInputProps {
    * `type="email"` gets a built-in format check unless you pass your own.
    */
   validate?: (value: string) => ReactNode;
+  /** Fallback accessible name for the `<input>` when there's no visible `label`. */
+  "aria-label"?: string;
   testId?: string;
 }
 
@@ -70,6 +72,7 @@ export const TKInput = /* @__PURE__ */ forwardRef<HTMLInputElement, TKInputProps
     suffix,
     inputMode,
     validate,
+    "aria-label": ariaLabel,
     testId,
   },
   ref,
@@ -82,6 +85,9 @@ export const TKInput = /* @__PURE__ */ forwardRef<HTMLInputElement, TKInputProps
   const [reveal, setReveal] = useState(false);
   const [touched, setTouched] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  // Memoize so a parent re-render doesn't detach/reattach the forwarded ref (null
+  // then node) every render — a stable identity unless the forwarded ref changes (INP-006).
+  const mergedRef = useMemo(() => mergeRefs(inputRef, ref), [ref]);
   const autoId = useId();
   const inputId = id ?? autoId;
   const isPassword = type === "password";
@@ -129,10 +135,11 @@ export const TKInput = /* @__PURE__ */ forwardRef<HTMLInputElement, TKInputProps
         ) : null}
         {prefix}
         <input
-          ref={mergeRefs(inputRef, ref)}
+          ref={mergedRef}
           id={inputId}
           type={isPassword && reveal ? "text" : type}
           name={name}
+          aria-label={ariaLabel}
           value={val}
           placeholder={placeholder}
           disabled={disabled}
@@ -180,17 +187,29 @@ export const TKInput = /* @__PURE__ */ forwardRef<HTMLInputElement, TKInputProps
               display: "inline-flex",
               alignItems: "center",
               justifyContent: "center",
-              width: 20,
-              height: 20,
+              minWidth: 44, // CC-03 / INP-009: 44px hit area, 20px visual glyph
+              minHeight: 44,
+              margin: "-12px", // absorb the hit-slop so the field layout is unchanged
               border: "none",
-              borderRadius: "50%",
-              background: "var(--tk-surface-3)",
+              background: "transparent",
               color: "var(--tk-text-2)",
               cursor: "pointer",
               padding: 0,
             }}
           >
-            <TKIcon name="close" size={11} strokeWidth={2.6} />
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 20,
+                height: 20,
+                borderRadius: "50%",
+                background: "var(--tk-surface-3)",
+              }}
+            >
+              <TKIcon name="close" size={11} strokeWidth={2.6} />
+            </span>
           </button>
         ) : null}
         {isPassword ? (
@@ -203,6 +222,11 @@ export const TKInput = /* @__PURE__ */ forwardRef<HTMLInputElement, TKInputProps
             }}
             style={{
               display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              minWidth: 44, // CC-03 / INP-009 touch target
+              minHeight: 44,
+              margin: "-12px",
               border: "none",
               background: "transparent",
               color: "var(--tk-text-2)",

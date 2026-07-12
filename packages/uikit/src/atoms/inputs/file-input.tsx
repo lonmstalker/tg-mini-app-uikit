@@ -1,8 +1,33 @@
-import { forwardRef, useEffect, useRef, useState, type ReactNode } from "react";
+import { forwardRef, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { TKIcon } from "../icons";
 import { mergeRefs } from "../../internal/dom";
 import { useTKLocale } from "../../foundation/i18n";
 import { TKFormField } from "./form-field";
+
+/**
+ * Best-effort UX filter matching the `accept` syntax (extension globs ".png",
+ * type globs "image/*", exact MIME, and "*"/"*\/*"). Used to filter dropped files,
+ * which — unlike the picker — the browser does NOT filter by `accept` (INP-005).
+ *
+ * NOT a security boundary: a drop's `file.name`/`file.type` are supplied by the
+ * drag source and fully spoofable, and an extension never proves the content. Use
+ * this for UX only and validate uploads server-side.
+ */
+function tkFileMatchesAccept(file: File, accept?: string): boolean {
+  const tokens = (accept ?? "").split(",").map((t) => t.trim().toLowerCase()).filter(Boolean);
+  if (!tokens.length) return true;
+  const name = file.name.toLowerCase();
+  const type = file.type.toLowerCase();
+  return tokens.some((tok) =>
+    tok === "*" || tok === "*/*"
+      ? true
+      : tok.startsWith(".")
+        ? name.endsWith(tok)
+        : tok.endsWith("/*")
+          ? type.startsWith(tok.slice(0, -1))
+          : type === tok,
+  );
+}
 
 export interface TKFileInputProps {
   label?: ReactNode;
@@ -43,6 +68,8 @@ export const TKFileInput = /* @__PURE__ */ forwardRef<HTMLInputElement, TKFileIn
 ) {
   const locale = useTKLocale();
   const ref = useRef<HTMLInputElement>(null);
+  // Stable merged ref so a parent re-render doesn't detach/reattach the file input (INP-006).
+  const mergedRef = useMemo(() => mergeRefs(ref, forwardedRef), [forwardedRef]);
   const [files, setFiles] = useState<File[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -56,7 +83,9 @@ export const TKFileInput = /* @__PURE__ */ forwardRef<HTMLInputElement, TKFileIn
     setFiles(next);
     onFilesChange?.(next);
     revokePreviewUrl();
-    const img = preview ? next.find((f) => f.type.startsWith("image/")) : undefined;
+    // Skip SVG in the auto-preview: a spoofed image/svg+xml could slip through an
+    // extension-only `accept`, and we don't want to hand it to createObjectURL here.
+    const img = preview ? next.find((f) => f.type.startsWith("image/") && f.type !== "image/svg+xml") : undefined;
     const nextPreviewUrl = img && typeof URL.createObjectURL === "function" ? URL.createObjectURL(img) : null;
     previewUrlRef.current = nextPreviewUrl;
     setPreviewUrl(nextPreviewUrl);
@@ -84,7 +113,11 @@ export const TKFileInput = /* @__PURE__ */ forwardRef<HTMLInputElement, TKFileIn
                 event.preventDefault();
                 setDragOver(false);
                 if (disabled) return;
-                const dropped = Array.from(event.dataTransfer?.files ?? []);
+                // Enforce `accept` ourselves — a drop bypasses the picker's native
+                // filter, so unfiltered files of any type would slip through (INP-005).
+                const dropped = Array.from(event.dataTransfer?.files ?? []).filter((f) =>
+                  tkFileMatchesAccept(f, accept),
+                );
                 if (dropped.length) commit(multiple ? dropped : dropped.slice(0, 1));
               }
             : undefined
@@ -116,7 +149,7 @@ export const TKFileInput = /* @__PURE__ */ forwardRef<HTMLInputElement, TKFileIn
         }}
       >
         <input
-          ref={mergeRefs(ref, forwardedRef)}
+          ref={mergedRef}
           type="file"
           accept={accept}
           multiple={multiple}

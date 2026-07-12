@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { forwardRef, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { TKIcon } from "../icons";
 import { mergeRefs } from "../../internal/dom";
 import { useControllable } from "../../internal/useControllable";
@@ -15,6 +15,8 @@ export interface TKOTPProps {
   successText?: ReactNode;
   resendPrompt?: ReactNode;
   resendLabel?: ReactNode;
+  /** Name for form submission of the assembled code. */
+  name?: string;
   testId?: string;
   style?: CSSProperties;
 }
@@ -30,6 +32,7 @@ export const TKOTP = /* @__PURE__ */ forwardRef<HTMLInputElement, TKOTPProps>(fu
     successText,
     resendPrompt,
     resendLabel,
+    name,
     testId,
     style,
   },
@@ -39,6 +42,8 @@ export const TKOTP = /* @__PURE__ */ forwardRef<HTMLInputElement, TKOTPProps>(fu
   const [v, setV] = useControllable(value, defaultValue, onChange);
   const [focus, setFocus] = useState(false);
   const ref = useRef<HTMLInputElement>(null);
+  // Stable merged ref so a parent re-render doesn't remount/refocus the hidden input (INP-006).
+  const mergedRef = useMemo(() => mergeRefs(ref, forwardedRef), [forwardedRef]);
   const done = v.length === length;
 
   const completeRef = useRef(onComplete);
@@ -51,14 +56,21 @@ export const TKOTP = /* @__PURE__ */ forwardRef<HTMLInputElement, TKOTPProps>(fu
   return (
     <div data-testid={testId} onClick={() => ref.current?.focus()} style={{ cursor: "text", position: "relative", ...style }}>
       <input
-        ref={mergeRefs(ref, forwardedRef)}
+        ref={mergedRef}
         value={v}
         onChange={(e) => setV(e.target.value.replace(/\D/g, "").slice(0, length))}
         onFocus={() => setFocus(true)}
         onBlur={() => setFocus(false)}
         inputMode="numeric"
+        // Let the OS surface the SMS one-time-code suggestion and let it autofill —
+        // so the field stays focusable/autofillable, just visually hidden (INP-003).
+        autoComplete="one-time-code"
+        name={name}
         aria-label={locale.oneTimeCode}
-        style={{ position: "absolute", opacity: 0, pointerEvents: "none", width: 1, height: 1 }}
+        // Cover the whole row (transparent), not a 1×1px speck: WebKit shows its
+        // SMS one-time-code chip more reliably for a real-sized field, and a tap
+        // anywhere lands on the input directly (INP-003).
+        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: 0 }}
       />
       <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
         {Array.from({ length }).map((_, i) => {
@@ -92,15 +104,7 @@ export const TKOTP = /* @__PURE__ */ forwardRef<HTMLInputElement, TKOTPProps>(fu
                   {v[i]}
                 </span>
               ) : active ? (
-                <span
-                  style={{
-                    width: 2,
-                    height: 24,
-                    background: "var(--tk-accent)",
-                    borderRadius: 1,
-                    animation: "tk-fade-in calc(900ms / var(--tk-ms)) ease-in-out infinite alternate",
-                  }}
-                />
+                <span className="tk-otp-caret" />
               ) : null}
             </div>
           );

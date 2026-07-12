@@ -1,25 +1,33 @@
-import { useEffect, useState, type CSSProperties } from "react";
+import { forwardRef, useEffect, useState, type HTMLAttributes } from "react";
 import { useTKLocale } from "../../foundation/i18n";
 
-export interface TKImgProps {
+export interface TKImgProps extends HTMLAttributes<HTMLDivElement> {
   label?: string;
   ratio?: string;
   radius?: string;
-  style?: CSSProperties;
   testId?: string;
 }
 
 /** Striped wireframe placeholder. For real photos use `TKImage`. */
-export function TKImg({ label, ratio = "1 / 1", radius = "var(--tk-r-md)", style, testId }: TKImgProps) {
+export const TKImg = /* @__PURE__ */ forwardRef<HTMLDivElement, TKImgProps>(function TKImg(
+  { label, ratio = "1 / 1", radius = "var(--tk-r-md)", className, style, testId, ...rest },
+  ref,
+) {
   const locale = useTKLocale();
   return (
-    <div className="tk-img-ph" data-testid={testId} style={{ aspectRatio: ratio, borderRadius: radius, width: "100%", ...style }}>
+    <div
+      ref={ref}
+      className={["tk-img-ph", className ?? ""].filter(Boolean).join(" ")}
+      data-testid={testId}
+      {...rest}
+      style={{ aspectRatio: ratio, borderRadius: radius, width: "100%", ...style }}
+    >
       {label ?? locale.image}
     </div>
   );
-}
+});
 
-export interface TKImageProps {
+export interface TKImageProps extends Omit<HTMLAttributes<HTMLDivElement>, "onLoad" | "onError"> {
   src?: string;
   srcSet?: string;
   sizes?: string;
@@ -35,28 +43,30 @@ export interface TKImageProps {
   fallbackLabel?: string;
   onLoad?: () => void;
   onError?: () => void;
-  style?: CSSProperties;
-  className?: string;
   testId?: string;
 }
 
-export function TKImage({
-  src,
-  srcSet,
-  sizes,
-  placeholderSrc,
-  alt = "",
-  ratio = "1 / 1",
-  radius = "var(--tk-r-md)",
-  fit = "cover",
-  lazy = true,
-  fallbackLabel,
-  onLoad,
-  onError,
-  style,
-  className,
-  testId,
-}: TKImageProps) {
+export const TKImage = /* @__PURE__ */ forwardRef<HTMLDivElement, TKImageProps>(function TKImage(
+  {
+    src,
+    srcSet,
+    sizes,
+    placeholderSrc,
+    alt = "",
+    ratio = "1 / 1",
+    radius = "var(--tk-r-md)",
+    fit = "cover",
+    lazy = true,
+    fallbackLabel,
+    onLoad,
+    onError,
+    style,
+    className,
+    testId,
+    ...rest
+  },
+  ref,
+) {
   const locale = useTKLocale();
   const [state, setState] = useState<"loading" | "ready" | "error">(src ? "loading" : "error");
   useEffect(() => setState(src ? "loading" : "error"), [src]);
@@ -64,10 +74,12 @@ export function TKImage({
   if (!src || state === "error") {
     return (
       <div
+        ref={ref}
         className={["tk-img-ph", className ?? ""].filter(Boolean).join(" ")}
         data-testid={testId}
         role={alt ? "img" : undefined}
         aria-label={alt || undefined}
+        {...rest}
         style={{ aspectRatio: ratio, borderRadius: radius, width: "100%", ...style }}
       >
         {fallbackLabel ?? locale.image}
@@ -76,8 +88,10 @@ export function TKImage({
   }
   return (
     <div
+      ref={ref}
       className={className}
       data-testid={testId}
+      {...rest}
       style={{
         position: "relative",
         aspectRatio: ratio,
@@ -132,4 +146,4 @@ export function TKImage({
       />
     </div>
   );
-}
+});

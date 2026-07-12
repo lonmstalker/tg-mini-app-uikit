@@ -19,6 +19,15 @@ export interface TKInlineButtonsProps {
   onChange?: (id: string) => void;
   equal?: boolean;
   size?: "sm" | "md";
+  /** Accessible name for the group/tablist (CC-04). */
+  ariaLabel?: string;
+  /**
+   * Independent multi-toggle instead of a single-select switcher. Single-select
+   * (default) exposes a `radiogroup`/`radio` + `aria-checked` (it switches a
+   * value, not tab panels); `multiple` keeps the `group` + `aria-pressed` toggle
+   * semantics (BTN-002).
+   */
+  multiple?: boolean;
   testId?: string;
   style?: CSSProperties;
 }
@@ -30,6 +39,8 @@ export function TKInlineButtons({
   onChange,
   equal = true,
   size = "md",
+  ariaLabel,
+  multiple = false,
   testId,
   style,
 }: TKInlineButtonsProps) {
@@ -39,11 +50,30 @@ export function TKInlineButtons({
   const fontSize = size === "sm" ? "var(--tk-fz-caption)" : "var(--tk-fz-sub)";
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
   const disabledAt = (i: number) => !!items[i]?.disabled;
-  const [focusIdx, setFocusIdx] = useState(() => tkTabbableIndex(0, items.length, disabledAt));
+  // Seed the roving tab-stop on the SELECTED item (WAI-ARIA: the checked radio is
+  // the tab-stop), not always item 0 (BTN-003).
+  const [focusIdx, setFocusIdx] = useState(() => {
+    const initialActive = value ?? defaultValue;
+    const sel = items.findIndex((it) => it.selected ?? it.id === initialActive);
+    return tkTabbableIndex(sel >= 0 ? sel : 0, items.length, disabledAt);
+  });
+  // Keep the tab-stop valid as items shrink / get disabled (BTN-003). Stale refs
+  // self-heal: React nulls a removed item's callback ref, and the clamped index
+  // below never targets an out-of-range slot — so no manual ref truncation needed.
+  const safeFocus = focusIdx < items.length && !disabledAt(focusIdx) ? focusIdx : tkTabbableIndex(0, items.length, disabledAt);
+  if (process.env.NODE_ENV !== "production" && !multiple && !ariaLabel) {
+    // eslint-disable-next-line no-console
+    console.warn("TKInlineButtons: pass `ariaLabel` so the radiogroup has an accessible name (CC-04).");
+  }
+  const select = (id: string) => {
+    if (value === undefined) setInner(id);
+    onChange?.(id);
+  };
 
   return (
     <div
-      role="group"
+      role={multiple ? "group" : "radiogroup"}
+      aria-label={ariaLabel}
       data-testid={testId}
       style={{
         display: "flex",
@@ -64,7 +94,7 @@ export function TKInlineButtons({
             ref={(el) => {
               refs.current[i] = el;
             }}
-            tabIndex={i === focusIdx ? 0 : -1}
+            tabIndex={i === safeFocus ? 0 : -1}
             onFocus={() => setFocusIdx(i)}
             onKeyDown={(e) => {
               const next = tkRovingNext(e.key, i, items.length, disabledAt, "horizontal");
@@ -72,20 +102,24 @@ export function TKInlineButtons({
               e.preventDefault();
               setFocusIdx(next);
               refs.current[next]?.focus();
+              // radiogroup: selection follows focus (WAI-ARIA), multi-toggle does not
+              if (!multiple) select(items[next].id);
             }}
-            aria-pressed={selected}
+            role={multiple ? undefined : "radio"}
+            aria-pressed={multiple ? selected : undefined}
+            aria-checked={multiple ? undefined : selected}
             disabled={item.disabled}
             className="tk-press"
             onClick={() => {
               if (item.disabled) return;
-              if (value === undefined) setInner(item.id);
-              onChange?.(item.id);
+              select(item.id);
               item.onClick?.();
             }}
             style={{
               flex: equal ? 1 : "0 0 auto",
               minWidth: 0,
               height,
+              minHeight: 44, // CC-03 / BTN-004 touch target
               display: "inline-flex",
               alignItems: "center",
               justifyContent: "center",

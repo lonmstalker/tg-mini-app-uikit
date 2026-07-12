@@ -118,7 +118,9 @@ export const TKChip = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKChipProps>
             justifyContent: "center",
             width: 22,
             height: 22,
-            marginRight: -4,
+            minWidth: 44, // CC-03 / CTL-004 touch target (hit area > visual glyph)
+            minHeight: 44,
+            margin: "-11px -11px -11px 0", // absorb the extra hit area so the chip keeps its height
             padding: 0,
             border: "none",
             borderRadius: "50%",
@@ -159,10 +161,16 @@ export interface TKChipGroupProps {
   value?: string | string[];
   defaultValue?: string | string[];
   onChange?: (value: string | string[]) => void;
+  /** Accessible name for the chip group landmark (CTL-010). */
+  "aria-label"?: string;
+  "aria-labelledby"?: string;
   testId?: string;
 }
 
-export function TKChipGroup({ items, multi, value, defaultValue, onChange, testId }: TKChipGroupProps) {
+export const TKChipGroup = /* @__PURE__ */ forwardRef<HTMLDivElement, TKChipGroupProps>(function TKChipGroup(
+  { items, multi, value, defaultValue, onChange, "aria-label": ariaLabel, "aria-labelledby": ariaLabelledby, testId },
+  ref,
+) {
   const [sel, setSel] = useControllable<string | string[]>(
     value,
     defaultValue ?? (multi ? [] : ""),
@@ -180,7 +188,18 @@ export function TKChipGroup({ items, multi, value, defaultValue, onChange, testI
     setSel(list.includes(item) ? list.filter((x) => x !== item) : [...list, item]);
   };
   return (
-    <div data-testid={testId} style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+    <div
+      ref={ref}
+      // A toolbar of toggle chips: horizontal focus roving without changing selection
+      // (each chip carries its own aria-pressed). `role="toolbar"` (not generic group)
+      // reliably announces the accessible name on entry (CTL-010).
+      role="toolbar"
+      aria-orientation="horizontal"
+      aria-label={ariaLabel}
+      aria-labelledby={ariaLabelledby}
+      data-testid={testId}
+      style={{ display: "flex", flexWrap: "wrap", gap: 8 }}
+    >
       {normalized.map((item, i) => (
         <TKChip
           key={item.value}
@@ -206,4 +225,4 @@ export function TKChipGroup({ items, multi, value, defaultValue, onChange, testI
       ))}
     </div>
   );
-}
+});
