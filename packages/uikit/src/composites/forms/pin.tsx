@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { TKIcon } from "../../atoms/icons";
-import { useTKLocale } from "../../foundation/i18n";
+import { tkFormat, useTKLocale } from "../../foundation/i18n";
 import { useOptionalHaptics } from "../../foundation/telegram";
 
 /* ---------------- Pin input ---------------- */
@@ -72,6 +72,17 @@ export function TKPinInput({
     if (!maxLength && next.length === length) complete(next);
   };
 
+  // Reconcile when `length`/`maxLength` change after digits were entered: truncate
+  // to the new capacity and re-evaluate auto-complete for the fixed-length path, so
+  // shrinking the length doesn't leave a too-long code or a missed complete (FRM-005).
+  useEffect(() => {
+    if (error) return; // the error effect owns clearing the pin — don't fight it / re-complete a rejected code
+    const truncated = pin.slice(0, maxDigits);
+    if (truncated !== pin) setPin(truncated);
+    if (!maxLength && truncated.length === length && truncated.length > 0) complete(truncated);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [maxDigits, length, maxLength]);
+
   const push = (digit: string) => {
     if (pin.length >= maxDigits) return;
     setDigits(pin + digit);
@@ -114,6 +125,16 @@ export function TKPinInput({
         onChange={(e) => setDigits(e.target.value)}
         style={SR_ONLY}
       />
+      {/* Announce entry progress (polite) and rejection (assertive) to AT, which
+          a visual-only dot+shake leaves silent (FRM-004 / CC-05). */}
+      <span role="status" aria-live="polite" style={SR_ONLY}>
+        {pin.length > 0 ? tkFormat(locale.pinProgress, { n: pin.length, length: maxDigits }) : ""}
+      </span>
+      {error ? (
+        <span role="alert" style={SR_ONLY}>
+          {locale.error}
+        </span>
+      ) : null}
       {/* `key={shakeKey}` remounts this block on every error so the one-shot
           `tk-shake` animation re-plays even when `error` stays `true`. */}
       <div

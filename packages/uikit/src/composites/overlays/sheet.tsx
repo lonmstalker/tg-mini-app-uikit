@@ -2,12 +2,8 @@ import { forwardRef, useCallback, useEffect, useId, useImperativeHandle, useRef,
 import { TKIconButton } from "../../atoms/buttons";
 import { mergeRefs } from "../../internal/dom";
 import { tkShouldCommit, useDragGesture } from "../../internal/useDragGesture";
-import { useScrollLock } from "../../internal/useScrollLock";
-import { useOverlayLayer } from "../../internal/useOverlayLayer";
-import { useVerticalSwipeGuard } from "../../internal/useVerticalSwipeGuard";
 import { useTKLocale } from "../../foundation/i18n";
-import { useBackIntercept } from "../../foundation/telegram";
-import { Scrim, useMountTransition, useOverlayA11y } from "./shared";
+import { Scrim, useModalOverlay, useMountTransition } from "./shared";
 
 /* ---------------- Bottom sheet ---------------- */
 
@@ -60,9 +56,21 @@ export const TKSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSheetProps>(
   forwardedRef,
 ) {
   const locale = useTKLocale();
-  const { mounted, closing } = useMountTransition(open, 380);
   const ref = useRef<HTMLDivElement>(null);
+  const { mounted, closing } = useMountTransition(open, 380, ref);
   const titleId = useId();
+  // Dev guard: the swipe/snap math needs snapPoints to be ascending fractions in
+  // (0,1]; descending/out-of-range values are silently clamped and misbehave, so
+  // warn once instead of leaving the misconfig invisible (OVL-012).
+  const snapWarnedRef = useRef(false);
+  useEffect(() => {
+    if (process.env.NODE_ENV === "production" || !snapPoints || snapWarnedRef.current) return;
+    const bad = snapPoints.some((p, i) => p <= 0 || p > 1 || (i > 0 && p <= snapPoints[i - 1]));
+    if (bad) {
+      snapWarnedRef.current = true;
+      console.warn(`TKSheet: snapPoints must be ascending fractions within (0,1]; got [${snapPoints.join(", ")}]`);
+    }
+  }, [snapPoints]);
   const [snap, setSnap] = useState(() =>
     snapPoints ? Math.min(Math.max(defaultSnap, 0), snapPoints.length - 1) : 0,
   );
@@ -80,16 +88,15 @@ export const TKSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSheetProps>(
     closeRequest.current?.();
   }, []);
 
-  useOverlayA11y(mounted && !closing, ref, dismissible ? requestClose : undefined);
-  // lock page scroll while the sheet is mounted (covers the closing animation)
-  useScrollLock(mounted);
-  // disable Telegram's swipe-down-to-minimize so a downward drag / overscroll
-  // here steps snap points or closes the sheet instead of collapsing the app
-  useVerticalSwipeGuard(mounted);
-  // stack above any overlay opened before this one (scrim covers it too)
-  const layer = useOverlayLayer(mounted);
-  // an open sheet handles the Telegram Back button before the nav stack
-  useBackIntercept(mounted && !closing && dismissible, requestClose);
+  // Five modal hooks (focus-trap, scroll-lock, swipe-guard, z-stack, Back) in one
+  // ordered call; `onClose` is gated by `dismissible` so the a11y Escape and the
+  // Back button both no-op when the sheet is non-dismissible (INT-DX-001).
+  const { scrimZ, panelZ } = useModalOverlay({
+    mounted,
+    active: mounted && !closing,
+    ref,
+    onClose: dismissible ? requestClose : undefined,
+  });
 
   const openChangeRef = useRef(onOpenChange);
   openChangeRef.current = onOpenChange;
@@ -165,7 +172,7 @@ export const TKSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSheetProps>(
       : "tk-sheet-up var(--tk-t3) var(--tk-spring) both";
   return (
     <>
-      <Scrim closing={closing} onClick={dismissible ? requestClose : undefined} z={layer.scrimZ} />
+      <Scrim closing={closing} onClick={dismissible ? requestClose : undefined} z={scrimZ} />
       <div
         ref={mergeRefs(ref, forwardedRef)}
         data-testid={testId}
@@ -182,7 +189,7 @@ export const TKSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSheetProps>(
           left: 0,
           right: 0,
           bottom: 0,
-          zIndex: layer.panelZ,
+          zIndex: panelZ,
           height,
           maxHeight,
           display: "flex",
@@ -201,7 +208,8 @@ export const TKSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSheetProps>(
           animation,
         }}
       >
-        <div {...grabDrag} style={{ flexShrink: 0, touchAction: "none", margin: "-8px -16px 0", padding: "8px 16px 0" }}>
+        {/* Full-claim surface: override drag.style's pan-x with touch-action:none. */}
+        <div {...grabDrag.bind()} style={{ flexShrink: 0, touchAction: "none", margin: "-8px -16px 0", padding: "8px 16px 0" }}>
           {!noGrabber ? (
             <div
               style={{

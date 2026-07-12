@@ -14,6 +14,7 @@ import {
 import { createPortal } from "react-dom";
 import { tkZ } from "../../internal/dom";
 import { useSafeArea } from "../../foundation/telegram";
+import { useOverlayA11y } from "./shared";
 
 /* ---------------- Anchored popper / tooltip ---------------- */
 
@@ -33,11 +34,14 @@ export interface TKPopperProps {
   /**
    * ARIA role for the popper surface. Default `"tooltip"` (non-modal anchored
    * content). Pass `"menu"` for an actionable list, or `"dialog"` for a modal
-   * popover that traps focus.
+   * popover: focus moves in on open, Tab is trapped, Escape closes and restores
+   * focus to the anchor, and the background is inert (OVL-002).
    */
   role?: "tooltip" | "menu" | "dialog";
   /** Forwarded to the popper surface so an anchor can `aria-describedby` it. */
   id?: string;
+  /** Accessible name for the surface — useful with `role="dialog"`/`"menu"`. */
+  ariaLabel?: string;
   testId?: string;
   style?: CSSProperties;
 }
@@ -60,7 +64,7 @@ interface PopperLayout {
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), Math.max(min, max));
 
-export function TKPopper({ open, anchorRef, children, placement: preferred = "bottom", offset = 8, onClose, arrow, autoFlip = true, role = "tooltip", id, testId, style }: TKPopperProps) {
+export function TKPopper({ open, anchorRef, children, placement: preferred = "bottom", offset = 8, onClose, arrow, autoFlip = true, role = "tooltip", id, ariaLabel, testId, style }: TKPopperProps) {
   const [layout, setLayout] = useState<PopperLayout | null>(null);
   const [popperSize, setPopperSize] = useState({ width: 220, height: 80 });
   const ref = useRef<HTMLDivElement>(null);
@@ -138,13 +142,21 @@ export function TKPopper({ open, anchorRef, children, placement: preferred = "bo
     return () => document.removeEventListener("pointerdown", close);
   }, [anchorRef, onClose, open]);
   useEffect(() => {
-    if (!open) return;
+    // role="dialog" runs the full modal a11y (focus move + Tab trap + Escape +
+    // background inert) below, so skip this non-modal Escape-only path for it.
+    if (!open || role === "dialog") return;
     const onKey = (e: globalThis.KeyboardEvent) => {
       if (e.key === "Escape") onClose?.();
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [onClose, open]);
+  }, [onClose, open, role]);
+  // A role="dialog" popper traps focus, moves focus in and restores it on close
+  // (OVL-002). It does NOT inert the background: an anchored popover has no scrim,
+  // so click-outside-to-close and the anchor itself must stay reachable. Gated on
+  // `layout` so the trap engages only once the node is mounted. tooltip/menu stay
+  // non-modal.
+  useOverlayA11y(open && role === "dialog" && !!layout, ref, onClose, undefined, false);
   if (!open || !layout) return null;
   // Safe-area insets (device cutouts + Telegram chrome) carve the usable box in
   // from each edge so a flipped/clamped popper never lands under the header,
@@ -188,6 +200,9 @@ export function TKPopper({ open, anchorRef, children, placement: preferred = "bo
       id={id}
       data-testid={testId}
       role={role}
+      aria-label={ariaLabel}
+      aria-modal={role === "dialog" ? true : undefined}
+      tabIndex={role === "dialog" ? -1 : undefined}
       style={
         {
           "--tk-popper-offset": `${offset}px`,

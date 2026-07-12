@@ -10,10 +10,12 @@ export interface TKSegmentedProps {
   defaultValue?: string;
   onChange?: (value: string) => void;
   full?: boolean;
+  /** Accessible name for the radiogroup (CC-04 / NAV-002). */
+  ariaLabel?: string;
   testId?: string;
 }
 
-export function TKSegmented({ options, value, defaultValue, onChange, full, testId }: TKSegmentedProps) {
+export function TKSegmented({ options, value, defaultValue, onChange, full, ariaLabel, testId }: TKSegmentedProps) {
   const items = options.map(tkOptionItem);
   const firstEnabled = items.find((item) => !item.disabled);
   const [val, setVal] = useControllable(value, defaultValue ?? firstEnabled?.value ?? "", onChange);
@@ -23,6 +25,10 @@ export function TKSegmented({ options, value, defaultValue, onChange, full, test
   const haptics = useOptionalHaptics();
   const disabledAt = (index: number) => !!items[index]?.disabled;
   const tabbable = tkTabbableIndex(idx, n, disabledAt);
+  if (process.env.NODE_ENV !== "production" && !ariaLabel) {
+    // eslint-disable-next-line no-console
+    console.warn("TKSegmented: pass `ariaLabel` so the radiogroup has an accessible name (CC-04).");
+  }
   // Measured geometry of the active button. `null` until the first layout pass
   // (and during SSR) — we fall back to the even-grid translate so there is no
   // flash. Measuring offsetLeft/offsetWidth keeps the indicator aligned for any
@@ -45,6 +51,8 @@ export function TKSegmented({ options, value, defaultValue, onChange, full, test
 
   return (
     <div
+      role="radiogroup"
+      aria-label={ariaLabel}
       data-testid={testId}
       style={{
         position: "relative",
@@ -77,9 +85,10 @@ export function TKSegmented({ options, value, defaultValue, onChange, full, test
           ref={(el) => {
             refs.current[index] = el;
           }}
+          role="radio"
           tabIndex={index === tabbable ? 0 : -1}
           disabled={item.disabled}
-          aria-pressed={item.value === val}
+          aria-checked={item.value === val}
           onClick={() => {
             haptics.selection();
             setVal(item.value);
@@ -94,6 +103,7 @@ export function TKSegmented({ options, value, defaultValue, onChange, full, test
           style={{
             position: "relative",
             zIndex: 1,
+            minHeight: 44, // CC-03 / CTL-004 touch target
             border: "none",
             background: "transparent",
             padding: "7px 16px",

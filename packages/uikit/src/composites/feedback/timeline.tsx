@@ -1,4 +1,4 @@
-import { type CSSProperties, type ReactNode } from "react";
+import { forwardRef, type CSSProperties, type HTMLAttributes, type ReactNode } from "react";
 import { TKIcon } from "../../atoms/icons";
 
 /* ---------------- Timeline ---------------- */
@@ -11,14 +11,17 @@ export interface TKTimelineStep {
   status: TKTimelineStatus;
 }
 
-export interface TKTimelineProps {
+export interface TKTimelineProps extends HTMLAttributes<HTMLDivElement> {
   steps: TKTimelineStep[];
   testId?: string;
 }
 
-export function TKTimeline({ steps, testId }: TKTimelineProps) {
+export const TKTimeline = /* @__PURE__ */ forwardRef<HTMLDivElement, TKTimelineProps>(function TKTimeline(
+  { steps, className, style, testId, ...rest },
+  ref,
+) {
   return (
-    <div data-testid={testId} style={{ display: "flex", flexDirection: "column" }}>
+    <div ref={ref} className={className} data-testid={testId} {...rest} style={{ display: "flex", flexDirection: "column", ...style }}>
       {steps.map((step, i) => (
         <div key={i} style={{ display: "flex", gap: 12 }}>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 22 }}>
@@ -38,7 +41,7 @@ export function TKTimeline({ steps, testId }: TKTimelineProps) {
                     : step.status === "active"
                       ? "var(--tk-accent)"
                       : "var(--tk-surface-3)",
-                color: "#fff",
+                color: "var(--tk-on-accent, #fff)",
                 ...(step.status === "active" ? ({ "--tk-pulse-scale": 1.4 } as CSSProperties) : null),
               }}
             >
@@ -75,4 +78,4 @@ export function TKTimeline({ steps, testId }: TKTimelineProps) {
       ))}
     </div>
   );
-}
+});

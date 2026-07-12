@@ -1,11 +1,7 @@
-import { forwardRef, useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { Children, forwardRef, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { TKIcon, type TKIconName } from "../../atoms/icons";
 import { mergeRefs } from "../../internal/dom";
-import { useScrollLock } from "../../internal/useScrollLock";
-import { useOverlayLayer } from "../../internal/useOverlayLayer";
-import { useVerticalSwipeGuard } from "../../internal/useVerticalSwipeGuard";
-import { Scrim, useMountTransition, useOverlayA11y } from "./shared";
-import { useBackIntercept } from "../../foundation/telegram";
+import { Scrim, useModalOverlay, useMountTransition } from "./shared";
 
 /**
  * Keeps the dialog centered in the *visual* viewport so the on-screen keyboard
@@ -59,41 +55,41 @@ export interface TKDialogProps {
   title?: ReactNode;
   text?: ReactNode;
   children?: ReactNode;
-  /** Action buttons, laid out in equal columns. */
+  /** Action buttons. */
   actions?: ReactNode;
+  /**
+   * Action layout: `"row"` = equal columns, `"stacked"` = full-width rows,
+   * `"auto"` (default) stacks when there are more than two actions so 3+ buttons
+   * or long localized labels don't truncate in a narrow WebView (OVL-005).
+   */
+  actionsLayout?: "row" | "stacked" | "auto";
   testId?: string;
 }
 
 export const TKDialog = /* @__PURE__ */ forwardRef<HTMLDivElement, TKDialogProps>(function TKDialog(
-  { open, onClose, onConfirm, icon, tone = "accent", title, text, children, actions, testId },
+  { open, onClose, onConfirm, icon, tone = "accent", title, text, children, actions, actionsLayout = "auto", testId },
   forwardedRef,
 ) {
-  const { mounted, closing } = useMountTransition(open, 260);
   const ref = useRef<HTMLDivElement>(null);
+  const { mounted, closing } = useMountTransition(open, 260, ref);
   const titleId = useId();
   const textId = useId();
-  useOverlayA11y(mounted && !closing, ref, onClose, onConfirm);
-  // lock page scroll while the dialog is mounted (covers the closing animation)
-  useScrollLock(mounted);
-  // disable Telegram's swipe-down-to-minimize so a downward swipe over the
-  // dialog/scrim dismisses nothing instead of collapsing the whole Mini App
-  useVerticalSwipeGuard(mounted);
-  // stack above any overlay opened before this one (scrim covers it too)
-  const layer = useOverlayLayer(mounted);
+  // One ordered call for the five modal hooks: focus-trap + Escape, scroll-lock,
+  // swipe-guard, z-stacking and the Telegram Back button (INT-DX-001).
+  const { scrimZ, panelZ } = useModalOverlay({ mounted, active: mounted && !closing, ref, onClose, onConfirm });
   const keyboardCenter = useViewportCenter(mounted && !closing);
-  useBackIntercept(mounted && !closing && !!onClose, () => onClose?.());
   if (!mounted) return null;
   const [color, bg] = DIALOG_TONES[tone] ?? DIALOG_TONES.accent;
   return (
     <>
-      <Scrim closing={closing} onClick={onClose} z={layer.scrimZ} />
+      <Scrim closing={closing} onClick={onClose} z={scrimZ} />
       <div
         style={{
           position: "absolute",
           left: 24,
           right: 24,
           top: keyboardCenter != null ? keyboardCenter : "50%",
-          zIndex: layer.panelZ,
+          zIndex: panelZ,
           transform: "translateY(-50%)",
         }}
       >
@@ -140,7 +136,15 @@ export const TKDialog = /* @__PURE__ */ forwardRef<HTMLDivElement, TKDialogProps
           ) : null}
           {children}
           {actions ? (
-            <div style={{ display: "grid", gridAutoColumns: "1fr", gridAutoFlow: "column", gap: 8 }}>{actions}</div>
+            <div
+              style={
+                actionsLayout === "stacked" || (actionsLayout === "auto" && Children.toArray(actions).length > 2)
+                  ? { display: "grid", gridAutoFlow: "row", gap: 8 }
+                  : { display: "grid", gridAutoColumns: "1fr", gridAutoFlow: "column", gap: 8 }
+              }
+            >
+              {actions}
+            </div>
           ) : null}
         </div>
       </div>

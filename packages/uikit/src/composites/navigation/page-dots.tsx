@@ -26,7 +26,13 @@ export function TKPageDots({ count, page, defaultPage = 0, onChange, testId }: T
   };
 
   return (
-    <div data-testid={testId} style={{ display: "flex", gap: 7 }}>
+    <div
+      data-testid={testId}
+      // Named group with the positional total so AT announces "Slide 3 of 5" (NAV-003).
+      role="group"
+      aria-label={tkFormat(locale.slidePosition, { page: cur + 1, total: count })}
+      style={{ display: "flex", gap: 7 }}
+    >
       {Array.from({ length: count }).map((_, index) => (
         <button
           type="button"

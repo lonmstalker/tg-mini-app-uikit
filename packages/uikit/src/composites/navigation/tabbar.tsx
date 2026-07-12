@@ -2,6 +2,7 @@ import { useRef, type KeyboardEvent } from "react";
 import { TKCounter } from "../../atoms/display";
 import { TKIcon, type TKIconName } from "../../atoms/icons";
 import { useSafeArea, useOptionalHaptics } from "../../foundation/telegram";
+import { useTKLocale } from "../../foundation/i18n";
 import { useControllable } from "../../internal/useControllable";
 import { tkRovingNext, tkTabbableIndex } from "../../internal/roving";
 
@@ -9,6 +10,9 @@ export interface TKTabItem {
   icon: TKIconName;
   label: string;
   count?: number;
+  /** Stable identity for React keys — needed only if tabs are reordered/removed
+   *  (CC-11/NAV-007); falls back to index, which already handles duplicate labels. */
+  id?: string;
 }
 
 export interface TKTabbarProps {
@@ -18,11 +22,14 @@ export interface TKTabbarProps {
   onChange?: (index: number) => void;
   /** Extend the bar below the home indicator (`env(safe-area-inset-bottom)`). */
   safeArea?: boolean;
+  /** Accessible name for the navigation landmark (NAV-001); defaults to `locale.tabs`. */
+  ariaLabel?: string;
   testId?: string;
 }
 
-export function TKTabbar({ tabs, value, defaultValue = 0, onChange, safeArea, testId }: TKTabbarProps) {
+export function TKTabbar({ tabs, value, defaultValue = 0, onChange, safeArea, ariaLabel, testId }: TKTabbarProps) {
   const [active, setActive] = useControllable(value, defaultValue, onChange);
+  const locale = useTKLocale();
   const haptics = useOptionalHaptics();
   const { inset, contentInset } = useSafeArea();
   const safeBottom = inset.bottom + contentInset.bottom;
@@ -43,6 +50,7 @@ export function TKTabbar({ tabs, value, defaultValue = 0, onChange, safeArea, te
     <div
       data-testid={testId}
       role="navigation"
+      aria-label={ariaLabel ?? locale.tabs}
       style={{
         display: "grid",
         gridTemplateColumns: `repeat(${tabs.length}, 1fr)`,
@@ -60,7 +68,7 @@ export function TKTabbar({ tabs, value, defaultValue = 0, onChange, safeArea, te
         return (
           <button
             type="button"
-            key={tab.label}
+            key={tab.id ?? index}
             ref={(el) => {
               btnRefs.current[index] = el;
             }}

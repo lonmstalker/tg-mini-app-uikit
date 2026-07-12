@@ -1,8 +1,8 @@
-import { type CSSProperties, type ReactNode } from "react";
+import { type HTMLAttributes, type ReactNode } from "react";
 import { useSafeArea } from "../../foundation/telegram";
 import { tkSafePad } from "./safe-area";
 
-export interface TKBottomBarProps {
+export interface TKBottomBarProps extends HTMLAttributes<HTMLElement> {
   children?: ReactNode;
   /** Frosted-glass background (default true). */
   blur?: boolean;
@@ -14,12 +14,14 @@ export interface TKBottomBarProps {
   paddingTop?: number;
   /** Bottom padding before the safe-area inset is added, px (default 10). */
   paddingBottom?: number;
-  style?: CSSProperties;
-  className?: string;
   testId?: string;
 }
 
-/** Pinned bottom action bar (main buttons, totals) that clears the home indicator. */
+/**
+ * Pinned bottom action bar (main buttons, totals) that clears the home indicator.
+ * Renders a `<footer>` landmark by default; pass `role`/`aria-label` (or any other
+ * native attribute) to relabel it (LAY-005).
+ */
 export function TKBottomBar({
   children,
   blur = true,
@@ -30,11 +32,15 @@ export function TKBottomBar({
   style,
   className,
   testId,
+  ...rest
 }: TKBottomBarProps) {
   const { inset, contentInset } = useSafeArea();
   const bottom = inset.bottom + contentInset.bottom;
+  const left = inset.left + contentInset.left;
+  const right = inset.right + contentInset.right;
   return (
-    <div
+    <footer
+      {...rest}
       className={className}
       data-testid={testId}
       style={{
@@ -42,12 +48,16 @@ export function TKBottomBar({
         backdropFilter: blur ? "blur(14px)" : undefined,
         WebkitBackdropFilter: blur ? "blur(14px)" : undefined,
         borderTop: separator ? "0.5px solid var(--tk-sep)" : "none",
-        padding: `${paddingTop}px ${paddingX}px`,
+        paddingTop,
         paddingBottom: tkSafePad("bottom", bottom, paddingBottom),
+        // Clear a side cutout / rounded corner in landscape so actions don't get
+        // clipped under the notch (LAY-003).
+        paddingLeft: tkSafePad("left", left, paddingX),
+        paddingRight: tkSafePad("right", right, paddingX),
         ...style,
       }}
     >
       {children}
-    </div>
+    </footer>
   );
 }

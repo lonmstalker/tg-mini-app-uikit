@@ -351,8 +351,12 @@ export function TKCalendar({
                     className={disabled ? undefined : "tk-press"}
                     style={{
                       position: "relative",
-                      width: 38,
-                      height: 38,
+                      // Touch height always meets the 44px minimum; width fills the 1fr
+                      // column but caps at the token so 7×cells never overflow a ≤320px
+                      // viewport. Override --tk-tap-min to resize the grid (FRM-007).
+                      width: "100%",
+                      maxWidth: "var(--tk-tap-min)",
+                      height: "var(--tk-tap-min)",
                       border: "none",
                       borderRadius: mid ? 0 : "var(--tk-r-pill)",
                       fontFamily: "inherit",

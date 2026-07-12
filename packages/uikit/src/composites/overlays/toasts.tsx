@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { TKIcon, type TKIconName } from "../../atoms/icons";
 import { tkZ } from "../../internal/dom";
 
@@ -16,10 +17,26 @@ export interface TKToastOptions {
   assertive?: boolean;
 }
 
+/** Messages for `TKToastApi.promise` — strings or functions of the settled value/error. */
+export interface TKToastPromiseMessages<T> {
+  loading: ReactNode;
+  success: ReactNode | ((value: T) => ReactNode);
+  error: ReactNode | ((error: unknown) => ReactNode);
+}
+
 export interface TKToastApi {
-  show: (toast: TKToastOptions) => void;
-  success: (text: ReactNode) => void;
-  error: (text: ReactNode) => void;
+  /** Show a toast; returns its id so it can be dismissed early. A non-finite `duration` makes it sticky (no auto-dismiss). */
+  show: (toast: TKToastOptions) => number;
+  /** Dismiss a specific toast by id. */
+  dismiss: (id: number) => void;
+  success: (text: ReactNode, opts?: Partial<TKToastOptions>) => number;
+  error: (text: ReactNode, opts?: Partial<TKToastOptions>) => number;
+  /** Neutral/info toast (accent, polite). */
+  info: (text: ReactNode, opts?: Partial<TKToastOptions>) => number;
+  /** Warning toast (orange, polite). */
+  warning: (text: ReactNode, opts?: Partial<TKToastOptions>) => number;
+  /** Sticky loading toast that swaps to success/error when the promise settles (OVL-DX-002). The returned promise mirrors the input — it REJECTS on failure, so handle it (`.catch`/`await try`). */
+  promise: <T>(p: Promise<T> | T, messages: TKToastPromiseMessages<T>) => Promise<T>;
 }
 
 interface ToastItem extends TKToastOptions {
@@ -44,19 +61,69 @@ export interface TKToastProviderProps {
 export function TKToastProvider({ children, offset = 14, duration = 2400, max = 3, position = "bottom", testId }: TKToastProviderProps) {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const idRef = useRef(0);
-  const timersRef = useRef<number[]>([]);
-  useEffect(() => () => timersRef.current.forEach((t) => window.clearTimeout(t)), []);
+  // Per-toast auto-dismiss timers, keyed by id, so dismiss() can cancel the
+  // pending one instead of leaking a second removal (OVL-009).
+  const autoTimers = useRef(new Map<number, number>());
+  const removalTimers = useRef<number[]>([]);
+  const dismissingRef = useRef(new Set<number>());
+  // A late-settling `promise()` (or any deferred caller) must not setState or queue
+  // a timer after the provider unmounts (OVL-DX-002).
+  const mountedRef = useRef(true);
+  useEffect(
+    () => () => {
+      mountedRef.current = false;
+      autoTimers.current.forEach((t) => window.clearTimeout(t));
+      removalTimers.current.forEach((t) => window.clearTimeout(t));
+    },
+    [],
+  );
 
   const dismiss = useCallback((id: number) => {
+    if (!mountedRef.current) return;
+    // Idempotent: an action tap and the auto-dismiss timeout must not both
+    // schedule a removal (OVL-009).
+    if (dismissingRef.current.has(id)) return;
+    dismissingRef.current.add(id);
+    const auto = autoTimers.current.get(id);
+    if (auto != null) {
+      window.clearTimeout(auto);
+      autoTimers.current.delete(id);
+    }
     setToasts((t) => t.map((x) => (x.id === id ? { ...x, out: true } : x)));
-    timersRef.current.push(window.setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 350));
+    removalTimers.current.push(
+      window.setTimeout(() => {
+        setToasts((t) => t.filter((x) => x.id !== id));
+        dismissingRef.current.delete(id);
+      }, 350),
+    );
   }, []);
 
   const show = useCallback(
     (toast: TKToastOptions) => {
+      if (!mountedRef.current) return -1;
       const id = ++idRef.current;
-      setToasts((t) => [...t.slice(-(max - 1)), { ...toast, id, out: false }]);
-      timersRef.current.push(window.setTimeout(() => dismiss(id), toast.duration ?? duration));
+      // Cap the WHOLE stack at `max`; `slice(-(max-1))` was `slice(-0)`=keep-all
+      // for max=1, so the bound never applied (OVL-001).
+      setToasts((t) => {
+        const next = [...t, { ...toast, id, out: false }].slice(-Math.max(1, max));
+        // Clear the auto-dismiss timer of any toast evicted by the cap so it can't
+        // later fire a no-op dismiss + stray removal timer (OVL-009). Idempotent,
+        // so a StrictMode double-invoke is harmless.
+        const kept = new Set(next.map((x) => x.id));
+        for (const x of t) {
+          if (kept.has(x.id)) continue;
+          const at = autoTimers.current.get(x.id);
+          if (at != null) {
+            window.clearTimeout(at);
+            autoTimers.current.delete(x.id);
+          }
+        }
+        return next;
+      });
+      // A non-finite duration (used by `promise`) is sticky — no auto-dismiss timer.
+      const d = toast.duration ?? duration;
+      if (Number.isFinite(d)) autoTimers.current.set(id, window.setTimeout(() => dismiss(id), d));
+      return id;
     },
     [dismiss, duration, max],
   );
@@ -64,24 +131,57 @@ export function TKToastProvider({ children, offset = 14, duration = 2400, max = 
   const api = useMemo<TKToastApi>(
     () => ({
       show,
-      success: (text) => show({ text, icon: "check", color: "var(--tk-green)" }),
-      error: (text) => show({ text, icon: "close", color: "var(--tk-red)", assertive: true }),
+      dismiss,
+      success: (text, opts) => show({ text, icon: "check", color: "var(--tk-green)", ...opts }),
+      error: (text, opts) => show({ text, icon: "close", color: "var(--tk-red)", assertive: true, ...opts }),
+      info: (text, opts) => show({ text, color: "var(--tk-accent)", ...opts }),
+      warning: (text, opts) => show({ text, color: "var(--tk-orange)", ...opts }),
+      promise: <T,>(p: Promise<T> | T, messages: TKToastPromiseMessages<T>) => {
+        // Sticky loading toast (Infinity = no auto-dismiss), swapped on settle.
+        const id = show({ text: messages.loading, duration: Infinity });
+        return Promise.resolve(p).then(
+          (value) => {
+            dismiss(id);
+            show({ text: typeof messages.success === "function" ? messages.success(value) : messages.success, icon: "check", color: "var(--tk-green)" });
+            return value;
+          },
+          (err) => {
+            dismiss(id);
+            show({ text: typeof messages.error === "function" ? messages.error(err) : messages.error, icon: "close", color: "var(--tk-red)", assertive: true });
+            throw err;
+          },
+        );
+      },
     }),
-    [show],
+    [show, dismiss],
   );
 
-  return (
-    <TKToastContext.Provider value={api}>
-      {children}
-      {/* Presentational stack: each toast is its own live region (below) so an
-          error can announce `assertive` while a success stays `polite` — a
-          single container can't carry both politenesses. */}
-      <div
-        data-testid={testId}
-        style={{
-          position: "absolute",
-          left: 14,
-          right: 14,
+  // Portal the stack to the nearest `.tk` root (or body) so a transformed /
+  // positioned ancestor between the provider and the root can't re-anchor the
+  // toasts mid-screen or clip them (OVL-010). A hidden marker locates the host.
+  const [host, setHost] = useState<HTMLElement | null>(null);
+  const markerRef = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    // Nearest token scope OR an explicit portal root (e.g. TKFrame in demos), so
+    // framed showcases keep their toasts inside the frame instead of escaping to
+    // the page root (OVL-010).
+    setHost(
+      markerRef.current?.closest<HTMLElement>(".tk, [data-tk-portal-root]") ??
+        (typeof document !== "undefined" ? document.body : null),
+    );
+  }, []);
+
+  const stack = (
+    <div
+      data-testid={testId}
+      // Marks the stack as a live region that stays above modals — an open
+      // dialog/sheet must NOT inert it, or a toast over a dialog goes mute and
+      // unclickable (OVL-006 × OVL-010).
+      data-tk-live
+      style={{
+        position: "absolute",
+        left: 14,
+        right: 14,
           top: position === "top" ? `calc(${offset}px + var(--tk-safe-top))` : undefined,
           bottom: position === "bottom" ? `calc(${offset}px + var(--tk-safe-bottom))` : undefined,
           display: "flex",
@@ -139,9 +239,14 @@ export function TKToastProvider({ children, offset = 14, duration = 2400, max = 
                   dismiss(t.id);
                 }}
                 style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  minHeight: 44, // CC-03 / OVL-008 touch target
+                  marginTop: -12, // absorb the hit-slop vertically so the row keeps its height
+                  marginBottom: -12,
                   border: "none",
                   padding: 0,
-                  margin: 0,
                   background: "none",
                   font: "inherit",
                   fontSize: "var(--tk-fz-sub)",
@@ -156,7 +261,15 @@ export function TKToastProvider({ children, offset = 14, duration = 2400, max = 
             ) : null}
           </div>
         ))}
-      </div>
+    </div>
+  );
+
+  return (
+    <TKToastContext.Provider value={api}>
+      {children}
+      {/* hidden marker locates the nearest `.tk` host for the portal (OVL-010) */}
+      <span ref={markerRef} aria-hidden style={{ display: "none" }} />
+      {host ? createPortal(stack, host) : null}
     </TKToastContext.Provider>
   );
 }

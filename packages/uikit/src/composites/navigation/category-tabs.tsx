@@ -2,12 +2,15 @@ import { useEffect, useRef, type CSSProperties } from "react";
 import { tkOptionItem, type TKOption } from "../../foundation/options";
 import { useControllable } from "../../internal/useControllable";
 import { tkRovingNext, tkTabbableIndex } from "../../internal/roving";
+import { useTKLocale } from "../../foundation/i18n";
 
 export interface TKCategoryTabsProps {
   tabs: TKOption[];
   value?: number;
   defaultValue?: number;
   onChange?: (index: number) => void;
+  /** Accessible name for the category group (NAV-003); defaults to `locale.tabs`. */
+  ariaLabel?: string;
   style?: CSSProperties;
   testId?: string;
 }
@@ -16,7 +19,8 @@ function prefersReducedMotion(): boolean {
   return typeof window !== "undefined" && !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 }
 
-export function TKCategoryTabs({ tabs, value, defaultValue = 0, onChange, style, testId }: TKCategoryTabsProps) {
+export function TKCategoryTabs({ tabs, value, defaultValue = 0, onChange, ariaLabel, style, testId }: TKCategoryTabsProps) {
+  const locale = useTKLocale();
   const [active, setActive] = useControllable(value, defaultValue, onChange);
   const items = tabs.map(tkOptionItem);
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -36,6 +40,9 @@ export function TKCategoryTabs({ tabs, value, defaultValue = 0, onChange, style,
   return (
     <div
       data-testid={testId}
+      // Named group so AT announces what the category buttons belong to (NAV-003).
+      role="group"
+      aria-label={ariaLabel ?? locale.categories}
       style={{ display: "flex", gap: 4, overflowX: "auto", scrollbarWidth: "none", padding: "0 12px", ...style }}
     >
       {items.map((item, index) => {

@@ -1,27 +1,43 @@
-import { type CSSProperties } from "react";
+import { forwardRef, type HTMLAttributes } from "react";
 
 /* ---------------- Skeletons ---------------- */
 
-export interface TKSkeletonProps {
+export interface TKSkeletonProps extends HTMLAttributes<HTMLDivElement> {
   width?: number | string;
   height?: number | string;
   radius?: number | string;
-  style?: CSSProperties;
   testId?: string;
 }
 
-export function TKSkeleton({ width, height = 13, radius, style, testId }: TKSkeletonProps) {
-  return <div className="tk-skel" data-testid={testId} style={{ width, height, borderRadius: radius, ...style }} />;
-}
-
-export interface TKSkeletonCardProps {
-  testId?: string;
-}
-
-export function TKSkeletonCard({ testId }: TKSkeletonCardProps = {}) {
+export const TKSkeleton = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSkeletonProps>(function TKSkeleton(
+  { width, height = 13, radius, className, style, testId, ...rest },
+  ref,
+) {
   return (
     <div
+      ref={ref}
+      className={["tk-skel", className ?? ""].filter(Boolean).join(" ")}
       data-testid={testId}
+      {...rest}
+      style={{ width, height, borderRadius: radius, ...style }}
+    />
+  );
+});
+
+export interface TKSkeletonCardProps extends HTMLAttributes<HTMLDivElement> {
+  testId?: string;
+}
+
+export const TKSkeletonCard = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSkeletonCardProps>(function TKSkeletonCard(
+  { className, style, testId, ...rest } = {},
+  ref,
+) {
+  return (
+    <div
+      ref={ref}
+      className={className}
+      data-testid={testId}
+      {...rest}
       style={{
         background: "var(--tk-surface)",
         borderRadius: "var(--tk-r-lg)",
@@ -30,6 +46,7 @@ export function TKSkeletonCard({ testId }: TKSkeletonCardProps = {}) {
         display: "flex",
         flexDirection: "column",
         gap: 10,
+        ...style,
       }}
     >
       <div className="tk-skel" style={{ aspectRatio: "1.4 / 1", borderRadius: "var(--tk-r-md)" }} />
@@ -37,12 +54,23 @@ export function TKSkeletonCard({ testId }: TKSkeletonCardProps = {}) {
       <div className="tk-skel" style={{ height: 13, width: "45%" }} />
     </div>
   );
+});
+
+export interface TKSkeletonListProps extends HTMLAttributes<HTMLDivElement> {
+  rows?: number;
+  testId?: string;
 }
 
-export function TKSkeletonList({ rows = 3, testId }: { rows?: number; testId?: string }) {
+export const TKSkeletonList = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSkeletonListProps>(function TKSkeletonList(
+  { rows = 3, className, style, testId, ...rest },
+  ref,
+) {
   return (
     <div
+      ref={ref}
+      className={className}
       data-testid={testId}
+      {...rest}
       style={{
         width: "100%",
         boxSizing: "border-box",
@@ -50,6 +78,7 @@ export function TKSkeletonList({ rows = 3, testId }: { rows?: number; testId?: s
         borderRadius: "var(--tk-r-md)",
         boxShadow: "var(--tk-shadow-sm)",
         overflow: "hidden",
+        ...style,
       }}
     >
       {Array.from({ length: rows }).map((_, i) => (
@@ -72,9 +101,9 @@ export function TKSkeletonList({ rows = 3, testId }: { rows?: number; testId?: s
       ))}
     </div>
   );
-}
+});
 
-export interface TKSkeletonTableProps {
+export interface TKSkeletonTableProps extends HTMLAttributes<HTMLDivElement> {
   /** Body rows (default 4). */
   rows?: number;
   /** Columns per row (default 3). */
@@ -82,17 +111,22 @@ export interface TKSkeletonTableProps {
   /** Render a stronger header row (default true). */
   header?: boolean;
   testId?: string;
-  style?: CSSProperties;
 }
 
 /** Placeholder for a loading data table: a header row plus body rows of cells. */
-export function TKSkeletonTable({ rows = 4, columns = 3, header = true, testId, style }: TKSkeletonTableProps) {
+export const TKSkeletonTable = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSkeletonTableProps>(function TKSkeletonTable(
+  { rows = 4, columns = 3, header = true, className, style, testId, ...rest },
+  ref,
+) {
   const cols = Math.max(1, columns);
   // The first column is wider (label-like), the rest share the remaining space.
   const template = `minmax(0, 1.6fr) ${Array.from({ length: cols - 1 }, () => "minmax(0, 1fr)").join(" ")}`.trim();
   return (
     <div
+      ref={ref}
+      className={className}
       data-testid={testId}
+      {...rest}
       style={{
         background: "var(--tk-surface)",
         borderRadius: "var(--tk-r-md)",
@@ -127,21 +161,29 @@ export function TKSkeletonTable({ rows = 4, columns = 3, header = true, testId, 
       ))}
     </div>
   );
-}
+});
 
-export interface TKSkeletonTextProps {
+export interface TKSkeletonTextProps extends HTMLAttributes<HTMLDivElement> {
   /** Number of text lines (default 3); the last one renders shorter. */
   lines?: number;
   testId?: string;
-  style?: CSSProperties;
 }
 
-export function TKSkeletonText({ lines = 3, testId, style }: TKSkeletonTextProps) {
+export const TKSkeletonText = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSkeletonTextProps>(function TKSkeletonText(
+  { lines = 3, className, style, testId, ...rest },
+  ref,
+) {
   return (
-    <div data-testid={testId} style={{ display: "flex", flexDirection: "column", gap: 8, ...style }}>
+    <div
+      ref={ref}
+      className={className}
+      data-testid={testId}
+      {...rest}
+      style={{ display: "flex", flexDirection: "column", gap: 8, ...style }}
+    >
       {Array.from({ length: lines }).map((_, i) => (
         <div key={i} className="tk-skel" style={{ height: 12, width: i === lines - 1 ? "62%" : "100%" }} />
       ))}
     </div>
   );
-}
+});

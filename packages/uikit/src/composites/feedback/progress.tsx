@@ -1,30 +1,38 @@
-import { type CSSProperties, type ReactNode } from "react";
+import { forwardRef, type HTMLAttributes, type ReactNode } from "react";
 import { useTKLocale } from "../../foundation/i18n";
 
 /* ---------------- Linear progress ---------------- */
 
-export interface TKProgressProps {
+export interface TKProgressProps extends HTMLAttributes<HTMLDivElement> {
   /** 0-100 */
   value: number;
   /** Accessible name of the progress bar. */
   label?: string;
   /** Bar thickness (default md). */
   size?: "sm" | "md" | "lg";
-  style?: CSSProperties;
   testId?: string;
 }
 
 const PROGRESS_H = { sm: 4, md: 7, lg: 12 } as const;
 
-export function TKProgress({ value, label, size = "md", style, testId }: TKProgressProps) {
+export const TKProgress = /* @__PURE__ */ forwardRef<HTMLDivElement, TKProgressProps>(function TKProgress(
+  { value, label, size = "md", className, style, testId, ...rest },
+  ref,
+) {
   const locale = useTKLocale();
   const h = PROGRESS_H[size] ?? PROGRESS_H.md;
+  // Clamp once and report the SAME value to AT as the visual fill — an out-of-range
+  // or NaN `value` no longer leaks an unclamped aria-valuenow (FBK-002).
+  const v = Number.isFinite(value) ? Math.min(100, Math.max(0, value)) : 0;
   return (
     <div
+      ref={ref}
+      className={className}
       data-testid={testId}
+      {...rest}
       role="progressbar"
       aria-label={label ?? locale.progress}
-      aria-valuenow={value}
+      aria-valuenow={v}
       aria-valuemin={0}
       aria-valuemax={100}
       style={{ height: h, borderRadius: h / 2, background: "var(--tk-surface-3)", overflow: "hidden", ...style }}
@@ -32,7 +40,7 @@ export function TKProgress({ value, label, size = "md", style, testId }: TKProgr
       <div
         style={{
           height: "100%",
-          width: `${Math.min(100, Math.max(0, value))}%`,
+          width: `${v}%`,
           borderRadius: h / 2,
           background: "var(--tk-accent-grad)",
           transition: "width var(--tk-t3) var(--tk-spring)",
@@ -40,11 +48,11 @@ export function TKProgress({ value, label, size = "md", style, testId }: TKProgr
       />
     </div>
   );
-}
+});
 
 /* ---------------- Progress ring ---------------- */
 
-export interface TKRingProps {
+export interface TKRingProps extends HTMLAttributes<HTMLDivElement> {
   /** 0-1 */
   value: number;
   size?: number;
@@ -55,7 +63,10 @@ export interface TKRingProps {
   testId?: string;
 }
 
-export function TKRing({ value, size = 92, label, children, testId }: TKRingProps) {
+export const TKRing = /* @__PURE__ */ forwardRef<HTMLDivElement, TKRingProps>(function TKRing(
+  { value, size = 92, label, children, className, style, testId, ...rest },
+  ref,
+) {
   const locale = useTKLocale();
   const r = (size - 12) / 2;
   const C = 2 * Math.PI * r;
@@ -63,13 +74,16 @@ export function TKRing({ value, size = 92, label, children, testId }: TKRingProp
   const percent = Math.round(clamped * 100);
   return (
     <div
+      ref={ref}
+      className={className}
       data-testid={testId}
+      {...rest}
       role="progressbar"
       aria-label={label ?? locale.progress}
       aria-valuemin={0}
       aria-valuemax={100}
       aria-valuenow={percent}
-      style={{ position: "relative", width: size, height: size }}
+      style={{ position: "relative", width: size, height: size, ...style }}
     >
       <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
         <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--tk-surface-3)" strokeWidth="9" />
@@ -102,4 +116,4 @@ export function TKRing({ value, size = 92, label, children, testId }: TKRingProp
       </div>
     </div>
   );
-}
+});

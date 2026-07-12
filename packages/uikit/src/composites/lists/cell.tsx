@@ -1,6 +1,7 @@
 import {
   forwardRef,
   useEffect,
+  type CSSProperties,
   type ElementType,
   type ForwardedRef,
   type KeyboardEvent,
@@ -55,6 +56,11 @@ export interface TKCellOwnProps {
   onToggle?: (on: boolean) => void;
   /** Free-form trailing content (steppers, custom icons, ...). */
   after?: ReactNode;
+  /** Let the title/subtitle wrap instead of truncating to one line (LST-006). */
+  wrap?: boolean;
+  /** Clamp the title/subtitle to N lines with an ellipsis (implies multi-line).
+   *  Applied to title and subtitle independently. */
+  lines?: number;
   testId?: string;
 }
 
@@ -76,6 +82,8 @@ function TKCellImpl(
     defaultToggle,
     onToggle,
     after,
+    wrap,
+    lines,
     testId,
     className,
     ...rest
@@ -86,8 +94,17 @@ function TKCellImpl(
   const Tag = as ?? "div";
   const hasToggle = toggle !== undefined || defaultToggle !== undefined;
   const actionable = Boolean(onClick) && Tag !== "a" && !hasToggle;
-  // Tappable surfaces (link / click / chevron) get the CSS press feedback.
-  const tappable = Boolean(onClick) || Tag === "a" || Boolean(chevron);
+  // Press feedback ONLY for genuinely actionable rows (click / link) — a decorative
+  // chevron alone must not look tappable when it does nothing (LST-007).
+  const tappable = Boolean(onClick) || Tag === "a";
+  // Title/subtitle truncation: single-line ellipsis by default; `lines` clamps to N
+  // lines, `wrap` lets it flow freely (LST-006).
+  const textClamp: CSSProperties =
+    lines && lines > 1
+      ? { display: "-webkit-box", WebkitBoxOrient: "vertical", WebkitLineClamp: lines, overflow: "hidden", whiteSpace: "normal" }
+      : wrap
+        ? { whiteSpace: "normal" }
+        : { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
   const activateFromKeyboard = (event: KeyboardEvent<HTMLElement>) => {
     if (!actionable) return;
     if (event.key !== "Enter" && event.key !== " ") return;
@@ -125,7 +142,7 @@ function TKCellImpl(
             height: 30,
             borderRadius: "var(--tk-r-xs)",
             background: iconBg,
-            color: "#fff",
+            color: "var(--tk-on-accent, #fff)",
             flexShrink: 0,
           }}
         >
@@ -138,30 +155,31 @@ function TKCellImpl(
             fontSize: "var(--tk-fz-body)",
             fontWeight: 500,
             color: danger ? "var(--tk-red)" : "var(--tk-text)",
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
+            ...textClamp,
           }}
         >
           {title}
         </div>
-        {subtitle ? (
+        {/* `!= null` (not truthiness) so a subtitle of 0 or "" still renders, matching
+            value/badge (LST-003 consistency). */}
+        {subtitle != null ? (
           <div
             style={{
               fontSize: "var(--tk-fz-caption)",
               color: "var(--tk-text-2)",
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
+              ...textClamp,
             }}
           >
             {subtitle}
           </div>
         ) : null}
       </div>
-      {badge ? <TKBadge tone="red">{badge}</TKBadge> : null}
-      {value ? (
-        <span style={{ fontSize: "var(--tk-fz-body)", color: "var(--tk-text-2)", flexShrink: 0 }}>{value}</span>
+      {/* `!= null` (not truthiness) so a legitimate value/badge of 0 or "" renders (LST-003) */}
+      {badge != null ? <TKBadge tone="red">{badge}</TKBadge> : null}
+      {value != null ? (
+        <span data-tk-cell-value style={{ fontSize: "var(--tk-fz-body)", color: "var(--tk-text-2)", flexShrink: 0 }}>
+          {value}
+        </span>
       ) : null}
       {hasToggle ? (
         <span
@@ -189,6 +207,10 @@ function TKCellImpl(
 }
 
 /** Settings-style row; `<TKCell as="a" href="...">` renders a link row. */
+// ponytail: kept on the older `Record<string,unknown>`/`as never` polymorphic
+// shape on purpose — LST-002 (its CC-12 typing finding) was refuted/skipped; the
+// other polymorphic atoms (TKButton/TKTappable/TKCardCell) carry the clean
+// `TKPolymorphicProps`/`TKPolymorphicRef` pattern.
 export const TKCell = /* @__PURE__ */ forwardRef(TKCellImpl as never) as unknown as <T extends ElementType = "div">(
   props: TKCellProps<T> & { ref?: ForwardedRef<HTMLElement> },
 ) => ReactElement;

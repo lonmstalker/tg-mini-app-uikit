@@ -1,4 +1,6 @@
 import { Children, useCallback, useEffect, useRef, type CSSProperties, type ReactNode } from "react";
+import { TKVisuallyHidden } from "../../atoms/service";
+import { useTKLocale } from "../../foundation/i18n";
 
 /* ---------------- Infinite list ---------------- */
 
@@ -21,6 +23,8 @@ export interface TKInfiniteListProps {
   loading?: boolean;
   /** Custom loader row shown while more content is expected. */
   loader?: ReactNode;
+  /** SR announcement while a page loads (default `locale.loadingMore`). */
+  loadingLabel?: ReactNode;
   /** Root margin of the IntersectionObserver (default `240px`). */
   margin?: string;
   testId?: string;
@@ -34,6 +38,7 @@ export function TKInfiniteList({
   hasMore = true,
   loading = false,
   loader,
+  loadingLabel,
   margin = "240px",
   testId,
   style,
@@ -116,12 +121,23 @@ export function TKInfiniteList({
     return () => io.disconnect();
   }, [loading, hasMore, margin, maybeLoad, childCount]);
 
+  const locale = useTKLocale();
   return (
-    <div data-testid={testId} style={style}>
+    <div data-testid={testId} aria-busy={loading || undefined} style={style}>
       {children}
       {hasMore ? (
-        <div ref={sentinelRef} data-tk-sentinel style={{ width: "100%", padding: 12, boxSizing: "border-box" }}>
-          {loader ?? <span className="tk-skel" style={{ display: "block", width: 120, height: 12, borderRadius: 6, margin: "0 auto" }} />}
+        <div
+          ref={sentinelRef}
+          data-tk-sentinel
+          role="status"
+          aria-live="polite"
+          style={{ width: "100%", padding: 12, boxSizing: "border-box" }}
+        >
+          {/* Announce new-content loading to AT; the skeleton stays decorative (LST-004 / CC-05). */}
+          {loading ? <TKVisuallyHidden>{loadingLabel ?? locale.loadingMore}</TKVisuallyHidden> : null}
+          <span aria-hidden="true">
+            {loader ?? <span className="tk-skel" style={{ display: "block", width: 120, height: 12, borderRadius: 6, margin: "0 auto" }} />}
+          </span>
         </div>
       ) : null}
     </div>

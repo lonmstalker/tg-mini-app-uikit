@@ -16,7 +16,11 @@ export function TKSteps({ steps, current, onStepClick, testId }: TKStepsProps) {
   // Roving tabindex over the clickable step circles: one tab stop (the current
   // step), arrows move focus; Enter/Space activates via the native button.
   const btnRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const tabbable = tkTabbableIndex(current, steps.length);
+  // Clamp so an out-of-range/negative/complete `current` still resolves to a real
+  // step for the rail, aria-current and roving tab stop (NAV-004). `length` (all
+  // done) lands on the last step.
+  const cur = steps.length > 0 ? Math.max(0, Math.min(Math.floor(current) || 0, steps.length - 1)) : 0;
+  const tabbable = tkTabbableIndex(cur, steps.length);
   const onKeyDown = (e: KeyboardEvent<HTMLButtonElement>, index: number) => {
     const next = tkRovingNext(e.key, index, steps.length, undefined, "horizontal");
     if (next == null) return;
@@ -26,8 +30,8 @@ export function TKSteps({ steps, current, onStepClick, testId }: TKStepsProps) {
   return (
     <div data-testid={testId} style={{ display: "flex", alignItems: "flex-start" }}>
       {steps.map((step, index) => {
-        const done = index < current;
-        const active = index === current;
+        const done = index < cur;
+        const active = index === cur;
         const innerStyle: CSSProperties = {
           display: "flex",
           flexDirection: "column",
@@ -100,7 +104,7 @@ export function TKSteps({ steps, current, onStepClick, testId }: TKStepsProps) {
                     height: "100%",
                     borderRadius: 2,
                     background: "var(--tk-accent)",
-                    width: index <= current ? "100%" : "0%",
+                    width: index <= cur ? "100%" : "0%",
                     transition: "width var(--tk-t3) var(--tk-ease)",
                   }}
                 />

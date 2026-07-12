@@ -165,6 +165,7 @@ export const TKMaskedInput = /* @__PURE__ */ forwardRef<HTMLInputElement, TKMask
       {...rest}
       ref={inputRef}
       type="text"
+      inputMode={inputMode}
       value={formatted}
       onChange={(next, event) => {
         const raw = planCaret(formatted, toRaw(next), event);
@@ -245,7 +246,19 @@ const TKPhoneSimpleField = /* @__PURE__ */ forwardRef<HTMLInputElement, TKPhoneI
     onChange?.(next.formatted, next.raw);
   };
 
-  return <TKInput {...rest} ref={inputRef} value={display} onChange={commit} inputMode="tel" />;
+  const locale = useTKLocale();
+  // Fallback name when no visible label (FRM-002); before the spread so a
+  // consumer-supplied aria-label/label still wins.
+  return (
+    <TKInput
+      aria-label={rest.label ? undefined : locale.phoneNumber}
+      {...rest}
+      ref={inputRef}
+      value={display}
+      onChange={commit}
+      inputMode="tel"
+    />
+  );
 });
 
 /** Country-picker variant: native `<select>` for the dial code + national field. */
@@ -374,6 +387,9 @@ const TKPhoneCountryField = /* @__PURE__ */ forwardRef<HTMLInputElement, TKPhone
           disabled={disabled}
           value={national}
           placeholder={placeholder ?? mask}
+          // Fallback name when no visible label — the only other label sits on the
+          // country <select>, leaving the number field unnamed otherwise (FRM-002).
+          aria-label={label ? undefined : locale.phoneNumber}
           aria-invalid={!!error}
           onChange={(e) => onTypeNumber(e.target.value, e)}
           onFocus={() => setFocus(true)}

@@ -1,12 +1,8 @@
 import { forwardRef, useRef, type ReactNode } from "react";
 import { TKIcon, type TKIconName } from "../../atoms/icons";
 import { mergeRefs } from "../../internal/dom";
-import { useScrollLock } from "../../internal/useScrollLock";
-import { useOverlayLayer } from "../../internal/useOverlayLayer";
-import { useVerticalSwipeGuard } from "../../internal/useVerticalSwipeGuard";
 import { useTKLocale } from "../../foundation/i18n";
-import { useBackIntercept } from "../../foundation/telegram";
-import { Scrim, useMountTransition, useOverlayA11y } from "./shared";
+import { Scrim, useModalOverlay, useMountTransition } from "./shared";
 
 /* ---------------- Action sheet ---------------- */
 
@@ -22,45 +18,37 @@ export interface TKActionSheetProps {
   onClose?: () => void;
   items: TKActionItem[];
   cancelLabel?: ReactNode;
-  /** Accessible name for the dialog (default `"Actions"`); localize as needed. */
+  /** Accessible name for the dialog (defaults to the localized `locale.actions`). */
   ariaLabel?: string;
   testId?: string;
 }
 
 export const TKActionSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKActionSheetProps>(function TKActionSheet(
-  { open, onClose, items, cancelLabel, ariaLabel = "Actions", testId },
+  { open, onClose, items, cancelLabel, ariaLabel, testId },
   forwardedRef,
 ) {
   const locale = useTKLocale();
-  const { mounted, closing } = useMountTransition(open, 360);
   const ref = useRef<HTMLDivElement>(null);
-  useOverlayA11y(mounted && !closing, ref, onClose);
-  // lock page scroll while the action sheet is mounted (covers the close anim)
-  useScrollLock(mounted);
-  // disable Telegram's swipe-down-to-minimize so a downward swipe over this
-  // bottom-anchored sheet dismisses nothing instead of collapsing the Mini App
-  useVerticalSwipeGuard(mounted);
-  // stack above any overlay opened before this one (scrim covers it too)
-  const layer = useOverlayLayer(mounted);
-  useBackIntercept(mounted && !closing && !!onClose, () => onClose?.());
+  const { mounted, closing } = useMountTransition(open, 360, ref);
+  // Five modal hooks in one ordered call; panelProps pre-builds role/aria-modal/
+  // tabIndex/z so the panel is spread-ready (INT-DX-001).
+  const { scrimZ, panelProps } = useModalOverlay({ mounted, active: mounted && !closing, ref, onClose });
   if (!mounted) return null;
   return (
     <>
-      <Scrim closing={closing} onClick={onClose} z={layer.scrimZ} />
+      <Scrim closing={closing} onClick={onClose} z={scrimZ} />
       <div
         ref={mergeRefs(ref, forwardedRef)}
         data-testid={testId}
-        role="dialog"
-        aria-modal="true"
-        aria-label={ariaLabel}
-        tabIndex={-1}
+        {...panelProps}
+        aria-label={ariaLabel ?? locale.actions}
         style={{
+          ...panelProps.style,
           outline: "none",
           position: "absolute",
           left: 10,
           right: 10,
           bottom: "calc(10px + var(--tk-safe-bottom))",
-          zIndex: layer.panelZ,
           display: "flex",
           flexDirection: "column",
           gap: 8,
@@ -68,10 +56,17 @@ export const TKActionSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKAction
         }}
       >
         <div
+          data-tk-actions-list
           style={{
             background: "var(--tk-surface)",
             borderRadius: "var(--tk-r-lg)",
-            overflow: "hidden",
+            // Cap the list and scroll it so a long item set (share targets, etc.)
+            // can't push the top items / cancel button off-screen in a short
+            // WebView; the cancel button is a sibling below, so it stays pinned
+            // (OVL-004).
+            maxHeight: "calc(100% - var(--tk-safe-top) - var(--tk-safe-bottom) - 96px)",
+            overflowY: "auto",
+            overscrollBehavior: "contain",
             boxShadow: "var(--tk-shadow-lg)",
           }}
         >

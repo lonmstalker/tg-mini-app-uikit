@@ -1,5 +1,7 @@
 import { type ReactNode } from "react";
 import { type TKIconName } from "../../atoms/icons";
+import { TKVisuallyHidden } from "../../atoms/service";
+import { useTKLocale } from "../../foundation/i18n";
 import { TKEmptyState } from "./empty-state";
 import { TKSkeletonList } from "./skeletons";
 
@@ -19,6 +21,8 @@ export interface TKAsyncStateProps {
   status: TKAsyncStatus;
   /** Shown while loading (default: a skeleton list). */
   loader?: ReactNode;
+  /** SR announcement while loading (default `locale.loading`). */
+  loadingLabel?: ReactNode;
   onRetry?: () => void;
   errorTitle?: ReactNode;
   errorText?: ReactNode;
@@ -35,33 +39,49 @@ export interface TKAsyncStateProps {
 export function TKAsyncState({
   status,
   loader,
+  loadingLabel,
   onRetry,
-  errorTitle = "Something went wrong",
-  errorText = "Please try again.",
-  retryLabel = "Retry",
+  errorTitle,
+  errorText,
+  retryLabel,
   emptyIcon = "search",
-  emptyTitle = "Nothing here yet",
+  emptyTitle,
   emptyText,
   emptyCta,
   onEmptyCta,
   testId,
 }: TKAsyncStateProps) {
-  if (status === "loading") return <>{loader ?? <TKSkeletonList rows={4} testId={testId} />}</>;
+  const locale = useTKLocale();
+  // Default copy follows the app locale (FBK-005) — props still override per call.
+  const resolvedErrorTitle = errorTitle ?? locale.asyncErrorTitle;
+  const resolvedErrorText = errorText ?? locale.asyncErrorText;
+  const resolvedRetry = retryLabel ?? locale.asyncRetry;
+  const resolvedEmptyTitle = emptyTitle ?? locale.asyncEmptyTitle;
+  if (status === "loading") {
+    // Announce loading to AT and hide the decorative skeleton (FBK-001 / CC-05).
+    return (
+      <div role="status" aria-live="polite" aria-busy="true" data-testid={testId}>
+        <TKVisuallyHidden>{loadingLabel ?? locale.loading}</TKVisuallyHidden>
+        <div aria-hidden="true">{loader ?? <TKSkeletonList rows={4} />}</div>
+      </div>
+    );
+  }
   if (status === "error") {
     return (
-      <TKEmptyState
-        testId={testId}
-        icon="warning"
-        tone="red"
-        title={errorTitle}
-        text={errorText}
-        cta={onRetry ? retryLabel : undefined}
-        onCta={onRetry}
-      />
+      <div role="alert" data-testid={testId}>
+        <TKEmptyState
+          icon="warning"
+          tone="red"
+          title={resolvedErrorTitle}
+          text={resolvedErrorText}
+          cta={onRetry ? resolvedRetry : undefined}
+          onCta={onRetry}
+        />
+      </div>
     );
   }
   return (
-    <TKEmptyState testId={testId} icon={emptyIcon} title={emptyTitle} text={emptyText} cta={emptyCta} onCta={onEmptyCta} />
+    <TKEmptyState testId={testId} icon={emptyIcon} title={resolvedEmptyTitle} text={emptyText} cta={emptyCta} onCta={onEmptyCta} />
   );
 }
 
