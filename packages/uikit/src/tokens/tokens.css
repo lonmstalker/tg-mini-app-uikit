@@ -14,7 +14,20 @@
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "Segoe UI", Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   text-wrap: pretty;
+  font-size: var(--tk-fz-body);
+  line-height: 1.45;
+  color: var(--tk-text);
+  background: var(--tk-bg);
+}
 
+/* ---- default palette & knobs — TOP-LEVEL .tk roots only ----
+   `:where(:not(.tk .tk))` keeps the old (0,1,0) specificity, so the
+   [data-theme] / .tk-tg blocks below still override by order. A bare
+   top-level `.tk` (no provider) stays fully painted (TYP-001), while a
+   NESTED `.tk` (e.g. a standalone-mounted TKNavStack, NAV2-003) INHERITS the
+   host palette instead of re-declaring the light defaults over a dark root
+   and resetting host-tuned --tk-safe-* / knobs. */
+.tk:where(:not(.tk .tk)) {
   /* ---- knobs (Tweaks) ---- */
   --tk-accent: #3390ec;
   --tk-rx: 1;            /* radius scale */
@@ -132,11 +145,6 @@
   --tk-green-ink: color-mix(in srgb, var(--tk-green) 58%, var(--tk-text));
   --tk-orange-ink: color-mix(in srgb, var(--tk-orange) 50%, var(--tk-text));
   --tk-ring: 0 0 0 3.5px var(--tk-accent-20);
-
-  font-size: var(--tk-fz-body);
-  line-height: 1.45;
-  color: var(--tk-text);
-  background: var(--tk-bg);
   --tk-separator: var(--tk-sep);
 }
 
