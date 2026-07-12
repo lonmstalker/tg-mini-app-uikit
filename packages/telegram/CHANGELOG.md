@@ -1,5 +1,22 @@
 # @tg-mini-app/telegram
 
+## 0.2.1
+
+### Fixed
+
+- Adversarial review remediation: the pan settle no longer fires on a
+  legitimately scrolled page (it arms on the pan signal `offsetTop > 0`, or
+  on a scrollY the user could not have produced, and its stability snapshot
+  now includes `scrollY`); the focusin pre-shrink is dropped as soon as
+  focus leaves before the confirming resize, and it can no longer latch the
+  hysteresis open without `covered` ever crossing the full threshold;
+  non-text inputs (checkbox/radio/button/…) and `contenteditable="false"`
+  no longer count as editable (no phantom pre-shrink on Tab); `state.height`
+  is quantized to the same 4px steps as `--tk-kb-height`, killing re-render
+  noise on visualViewport jitter.
+- Packaging: `./testing` now resolves under node10 module resolution
+  (`typesVersions`), and the package is gated by publint/attw in CI.
+
 ## 0.2.0
 
 ### Breaking

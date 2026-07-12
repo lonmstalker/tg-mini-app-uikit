@@ -1,5 +1,24 @@
 # tg-mini-app-uikit
 
+## 0.3.1
+
+### Fixed
+
+- Adversarial review remediation: the nav exit layer keeps the dying panel's
+  live subtree (typed input/scroll preserved, mount effects don't re-run)
+  instead of mounting a fresh clone; controlled-mode stack entries get
+  monotonic keys, so a push to a previously "warmed" depth animates again
+  and a host-rejected swipe-back can't leak its finger offset into a later
+  exit; the entrance settled-guard gets the same swallowed-`animationend`
+  fallback timer as the exit layer; `TKPullToRefresh` gates on the max
+  `scrollTop` of all VISIBLE candidate scrollers (an at-top ancestor no
+  longer unlocks a mid-list pull, a hidden keep-mount tab no longer shadows
+  the visible one) and exposes a stable `[data-tk-ptr]` marker; the `TKApp`
+  html/body underlay follows the kit's resolved theme outside real Telegram
+  (no light flash under a dark app); `TKPage` scopes the footer collapse to
+  its own `.tk` root (a keyboard in one root no longer collapses another
+  root's footers).
+
 ## 0.3.0
 
 ### Breaking

@@ -1,6 +1,6 @@
 {
   "name": "@tg-mini-app/telegram",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Typed React bridge for the Telegram Mini Apps WebApp API (Bot API 9.6) — provider, back-button queue, native buttons, storage, capabilities, sensors, layout/theme.",
   "license": "MIT",
   "type": "module",

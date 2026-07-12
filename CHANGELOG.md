@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.3.1 — 2026-07-12
+
+Patch release: the adversarial review remediation for the 0.3.0 wave —
+keyboard settle vs. page scroll, pre-shrink lifecycle, nav exit subtree
+preservation, controlled-mode nav keys, the pull-to-refresh scroller gate,
+the theme-correct html/body underlay, and the hardened tag-driven release
+pipeline (tag↔version gate, idempotent publish guards, both packages under
+publint/attw). Ships `tg-mini-app-uikit@0.3.1` and
+`@tg-mini-app/telegram@0.2.1`; per-package notes in
+`packages/uikit/CHANGELOG.md` and `packages/telegram/CHANGELOG.md`.
+
 ## 0.3.0 — 2026-07-12
 
 This release also ships the m2–m10 audit wave and the keyboard/viewport/nav

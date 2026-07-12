@@ -76,7 +76,13 @@ mustContain("docs/site/pages/recipes.md", [
 mustContain(".github/workflows/docs.yml", ["npm run docs:check", "npm run docs:build"]);
 
 mustContain("CHANGELOG.md", ["0.2.0", "forwardRef", "TKLocaleProvider", "breaking"]);
-mustContain("packages/uikit/package.json", ['"version": "0.3.0"']);
+// Version coherence, not a hardcoded pin: every package version must have a
+// matching CHANGELOG heading in its own package AND the root release notes.
+for (const pkg of ["uikit", "telegram"]) {
+  const version = JSON.parse(read(`packages/${pkg}/package.json`)).version;
+  mustContain(`packages/${pkg}/CHANGELOG.md`, [`## ${version}`]);
+}
+mustContain("CHANGELOG.md", [`## ${JSON.parse(read("packages/uikit/package.json")).version}`]);
 
 if (failures.length > 0) {
   console.error("Docs gate failed:");
