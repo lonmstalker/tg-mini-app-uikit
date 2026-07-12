@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { TKSpinner } from "../../atoms/buttons";
+import { TKVisuallyHidden } from "../../atoms/service";
+import { useTKLocale } from "../../foundation/i18n";
 import { useOptionalHaptics } from "../../foundation/telegram";
 import { useDragGesture } from "../../internal/useDragGesture";
 import { useVerticalSwipeGuard } from "../../internal/useVerticalSwipeGuard";
@@ -13,6 +15,8 @@ export interface TKPullToRefreshProps {
   /** Resisted pull distance that arms the refresh, px. */
   threshold?: number;
   disabled?: boolean;
+  /** SR announcement while refreshing (default `locale.refreshing`). */
+  refreshingLabel?: ReactNode;
   testId?: string;
   style?: CSSProperties;
 }
@@ -23,7 +27,8 @@ const resistPull = (delta: number) => Math.max(0, delta) * 0.5;
  * Wraps a scroll area with the pull-to-refresh gesture: a resisted pull from
  * the very top, a spinner while `onRefresh` runs, auto-hide afterwards.
  */
-export function TKPullToRefresh({ children, onRefresh, threshold = 72, disabled, testId, style }: TKPullToRefreshProps) {
+export function TKPullToRefresh({ children, onRefresh, threshold = 72, disabled, refreshingLabel, testId, style }: TKPullToRefreshProps) {
+  const locale = useTKLocale();
   const [guarding, setGuarding] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -34,6 +39,9 @@ export function TKPullToRefresh({ children, onRefresh, threshold = 72, disabled,
   const armedRef = useRef(false);
   const guardingRef = useRef(false);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
+  // Skip the post-refresh setState if the host unmounted mid-flight (GES-011).
+  const mountedRef = useRef(true);
+  useEffect(() => () => void (mountedRef.current = false), []);
   const haptics = useOptionalHaptics();
   // The pull is a top-edge swipe-down — exactly Telegram's minimize gesture. Mute
   // it while pulling/refreshing so the gesture refreshes instead of collapsing
@@ -150,6 +158,7 @@ export function TKPullToRefresh({ children, onRefresh, threshold = 72, disabled,
       Promise.resolve(result)
         .catch(() => {})
         .finally(() => {
+          if (!mountedRef.current) return; // host unmounted mid-refresh (GES-011)
           applyPull(0);
           setRefreshing(false);
           setGuardingActive(false);
@@ -161,9 +170,16 @@ export function TKPullToRefresh({ children, onRefresh, threshold = 72, disabled,
     <div
       ref={rootRef}
       data-testid={testId}
-      {...drag}
-      style={{ position: "relative", overflow: "hidden", height: "100%", touchAction: "pan-y", ...style }}
+      aria-busy={refreshing || undefined}
+      {...drag.bind()}
+      // axis:"y" defaults to pan-x, but PTR deliberately keeps pan-y: its own
+      // non-passive touchmove listener does the top-edge arbitration (INT-DX-002).
+      style={{ position: "relative", overflow: "hidden", height: "100%", ...drag.style, touchAction: "pan-y", ...style }}
     >
+      {/* Announce refresh start/finish to AT; the spinner stays decorative (GES-005 / CC-05). */}
+      <span role="status" aria-live="polite">
+        {refreshing ? <TKVisuallyHidden>{refreshingLabel ?? locale.refreshing}</TKVisuallyHidden> : null}
+      </span>
       <div
         style={{
           position: "absolute",
