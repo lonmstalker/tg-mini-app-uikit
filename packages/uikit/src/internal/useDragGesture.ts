@@ -1,4 +1,4 @@
-import { useRef, type PointerEvent } from "react";
+import { useEffect, useRef, type PointerEvent } from "react";
 
 /*
  * Internal drag-gesture plumbing (NOT exported from the package until the
@@ -15,8 +15,11 @@ export interface TKDragSample {
 export function tkDragVelocity(samples: TKDragSample[]): number {
   if (samples.length < 2) return 0;
   const last = samples[samples.length - 1];
-  // walk back to the oldest sample within the window
-  let first = samples[0];
+  // Walk back over samples within the 100ms window. `first` starts at `last`
+  // so when every prior sample predates the window there is no in-window pair
+  // and dt stays 0 (velocity 0) — instead of silently spanning the whole
+  // buffer (the INT-011 off-by-one).
+  let first = last;
   for (let i = samples.length - 2; i >= 0; i--) {
     if (last.t - samples[i].t > 100) break;
     first = samples[i];
@@ -26,13 +29,35 @@ export function tkDragVelocity(samples: TKDragSample[]): number {
 }
 
 /**
- * Commit heuristic shared by all swipe gestures: the gesture "lands" when it
- * traveled past half the size OR was flicked faster than 0.5 px/ms in the
- * positive direction. Negative offsets (moved back) never commit.
+ * Tunable thresholds for {@link tkShouldCommit}. Lets a sheet, swipe-cell and
+ * nav-back each express their own commit feel (INT-DX-004).
  */
-export function tkShouldCommit(offset: number, velocity: number, size: number): boolean {
+export interface TKCommitPolicy {
+  /** Fraction of `size` the gesture must travel to commit on distance alone. */
+  distanceRatio?: number;
+  /** px/ms flick speed that can commit a shorter (but non-trivial) travel. */
+  velocity?: number;
+  /**
+   * Minimum travel before the velocity branch may commit. Defaults to a
+   * size-relative floor `min(size * 0.15, 48)` so a micro-flick never lands
+   * (INT-001): velocity alone can no longer close a sheet or pop nav.
+   */
+  minDistance?: number;
+}
+
+/**
+ * Commit heuristic shared by all swipe gestures: the gesture "lands" when it
+ * travels past `distanceRatio` of the size, OR clears a minimum distance AND
+ * is flicked faster than the velocity threshold. Negative offsets (moved back)
+ * never commit. A bare flick that barely moves can no longer commit — that was
+ * the INT-001 micro-flick defect that closed sheets / popped nav from a tap.
+ */
+export function tkShouldCommit(offset: number, velocity: number, size: number, policy?: TKCommitPolicy): boolean {
   if (offset <= 0) return false;
-  return offset > size * 0.5 || velocity > 0.5;
+  const distanceRatio = policy?.distanceRatio ?? 0.5;
+  const velocityThreshold = policy?.velocity ?? 0.5;
+  const minDistance = policy?.minDistance ?? Math.min(size * 0.15, 48);
+  return offset > size * distanceRatio || (offset > minDistance && velocity > velocityThreshold);
 }
 
 export interface TKDragState {
@@ -40,6 +65,18 @@ export interface TKDragState {
   delta: number;
   /** Current velocity, px/ms (sign matches delta). */
   velocity: number;
+  /**
+   * True when the browser stole the gesture (pointercancel, common on iOS
+   * Telegram) or it was disabled mid-drag. `delta`/`velocity` are zeroed so a
+   * consumer that ignores the flag never auto-commits a stolen gesture; the
+   * last good values are preserved in `lastDelta`/`lastVelocity` for a consumer
+   * that DOES want to commit despite the cancel (INT-008).
+   */
+  canceled?: boolean;
+  /** Last delta seen before a cancel/disable — only set when `canceled`. */
+  lastDelta?: number;
+  /** Last velocity seen before a cancel/disable — only set when `canceled`. */
+  lastVelocity?: number;
 }
 
 export interface TKDragOptions {
@@ -61,9 +98,35 @@ export interface TKDragHandlers {
   onPointerCancel: (e: PointerEvent<HTMLElement>) => void;
 }
 
+export interface TKDragBinding {
+  /**
+   * Pointer handlers for the dragged element. Pass consumer props to merge them:
+   * the consumer's pointer handler runs FIRST and the drag handler is then skipped
+   * if the consumer called `preventDefault()` — a veto that only matters BEFORE the
+   * drag activates (it gates `pointerdown`). Non-pointer props (e.g. `onClick`)
+   * pass through untouched; a consumer handler that throws skips the drag handler.
+   * For "run my handler AFTER the drag", wrap the returned handler yourself. Set
+   * `ref` directly on the element — the hook tracks via `e.currentTarget`, not a
+   * ref (INT-DX-005). Spread: `<div {...bind()} />`.
+   */
+  bind: (userProps?: Partial<TKDragHandlers> & Record<string, unknown>) => TKDragHandlers;
+  /**
+   * Axis-correct `touch-action` so the common case is right with zero per-call
+   * thought (INT-DX-002): `pan-y` for `axis:'x'` and `pan-x` for `axis:'y'` —
+   * claims the cross-axis, releases the drag axis to native scroll. For a
+   * full-claim surface (a sheet) override with `touchAction:'none'`.
+   */
+  style: { touchAction: "pan-x" | "pan-y" };
+}
+
 /**
  * Pointer-events drag tracker with rAF-throttled move callbacks, an
  * activation threshold and velocity tracking.
+ *
+ * Returns `{ bind, style }`: spread `bind()` for the pointer handlers and `style`
+ * for the axis-correct `touch-action`, so a swipe never fights native scroll /
+ * Telegram's swipe-to-minimize by default (INT-DX-002, was the INT-003 footgun).
+ * `bind(userProps)` composes consumer pointer handlers cleanly (INT-DX-005).
  */
 export function useDragGesture({
   axis,
@@ -73,16 +136,24 @@ export function useDragGesture({
   onStart,
   onMove,
   onEnd,
-}: TKDragOptions): TKDragHandlers {
+}: TKDragOptions): TKDragBinding {
   const drag = useRef<{
     startMain: number;
     startCross: number;
+    pointerId: number;
     active: boolean;
     canceled: boolean;
     samples: TKDragSample[];
     raf: number;
     pending: TKDragState | null;
+    /** Last good delta/velocity, preserved for the canceled-end payload. */
+    last: { delta: number; velocity: number };
   } | null>(null);
+
+  // `enabled` is snapshotted into a ref so a mid-gesture flip is honored — not
+  // just read once at pointerdown (INT-002).
+  const enabledRef = useRef(enabled);
+  enabledRef.current = enabled;
 
   const read = (e: PointerEvent<HTMLElement>) => ({
     main: axis === "x" ? e.clientX : e.clientY,
@@ -99,23 +170,50 @@ export function useDragGesture({
     }
   };
 
-  return {
+  // Cancel any queued frame and drop in-flight state on unmount so a pending
+  // rAF never fires onMove against a dead render (INT-009).
+  useEffect(
+    () => () => {
+      const d = drag.current;
+      if (d?.raf) cancelAnimationFrame(d.raf);
+      drag.current = null;
+    },
+    [],
+  );
+
+  const handlers: TKDragHandlers = {
     onPointerDown(e) {
-      if (!enabled) return;
+      if (!enabledRef.current) return;
+      // Flush+drop any in-flight drag (multi-touch / synthetic re-fire) so its
+      // pending rAF can't leak onto the new gesture (INT-008).
+      const prev = drag.current;
+      if (prev?.raf) cancelAnimationFrame(prev.raf);
       const { main, cross } = read(e);
       drag.current = {
         startMain: main,
         startCross: cross,
+        pointerId: e.pointerId,
         active: false,
         canceled: false,
         samples: [{ pos: main, t: e.timeStamp }],
         raf: 0,
         pending: null,
+        last: { delta: 0, velocity: 0 },
       };
     },
     onPointerMove(e) {
       const d = drag.current;
       if (!d || d.canceled) return;
+      // Disabled mid-drag: cancel cleanly, never commit, release capture (INT-002).
+      if (!enabledRef.current) {
+        if (d.raf) cancelAnimationFrame(d.raf);
+        drag.current = null;
+        if (d.active) {
+          e.currentTarget.releasePointerCapture?.(d.pointerId);
+          onEnd?.({ delta: 0, velocity: 0, canceled: true, lastDelta: d.last.delta, lastVelocity: d.last.velocity });
+        }
+        return;
+      }
       const { main, cross } = read(e);
       const delta = main - d.startMain;
       const crossDelta = cross - d.startCross;
@@ -131,7 +229,8 @@ export function useDragGesture({
       }
       d.samples.push({ pos: main, t: e.timeStamp });
       if (d.samples.length > 24) d.samples.shift();
-      d.pending = { delta, velocity: tkDragVelocity(d.samples) };
+      d.last = { delta, velocity: tkDragVelocity(d.samples) };
+      d.pending = d.last;
       if (typeof requestAnimationFrame === "function" && typeof window !== "undefined") {
         if (!d.raf) d.raf = requestAnimationFrame(flush);
       } else {
@@ -143,16 +242,50 @@ export function useDragGesture({
       drag.current = null;
       if (!d || !d.active) return;
       if (d.raf) cancelAnimationFrame(d.raf);
+      e.currentTarget.releasePointerCapture?.(d.pointerId);
+      // Disabled before the finger lifted (e.g. nav stack dropped to one panel
+      // mid-swipe): never commit (INT-002).
+      if (!enabledRef.current) {
+        onEnd?.({ delta: 0, velocity: 0, canceled: true, lastDelta: d.last.delta, lastVelocity: d.last.velocity });
+        return;
+      }
       const main = axis === "x" ? e.clientX : e.clientY;
       d.samples.push({ pos: main, t: e.timeStamp });
       onEnd?.({ delta: main - d.startMain, velocity: tkDragVelocity(d.samples) });
     },
-    onPointerCancel() {
+    onPointerCancel(e) {
       const d = drag.current;
       drag.current = null;
       if (!d || !d.active) return;
       if (d.raf) cancelAnimationFrame(d.raf);
-      onEnd?.({ delta: 0, velocity: 0 });
+      e.currentTarget.releasePointerCapture?.(d.pointerId);
+      // Reset to origin (delta 0 → no commit) so a browser-stolen gesture is
+      // never auto-committed, but flag it `canceled` and preserve the last good
+      // delta/velocity so a consumer CAN opt into committing (INT-008).
+      onEnd?.({ delta: 0, velocity: 0, canceled: true, lastDelta: d.last.delta, lastVelocity: d.last.velocity });
     },
   };
+
+  const POINTER_KEYS = ["onPointerDown", "onPointerMove", "onPointerUp", "onPointerCancel"] as const;
+  const bind = (userProps?: Partial<TKDragHandlers> & Record<string, unknown>): TKDragHandlers => {
+    if (!userProps) return handlers;
+    // Non-pointer props (onClick, data-*, etc.) pass through; pointer handlers are
+    // chained user-first below.
+    const out = { ...userProps } as TKDragHandlers;
+    for (const key of POINTER_KEYS) {
+      const own = handlers[key];
+      const user = userProps[key];
+      out[key] = user
+        ? (e) => {
+            user(e);
+            // Respect a consumer veto (e.g. nav's edge-zone gate) — skip the drag
+            // handler when the consumer handled/blocked the event (INT-DX-005).
+            if (!e.defaultPrevented) own(e);
+          }
+        : own;
+    }
+    return out;
+  };
+
+  return { bind, style: { touchAction: axis === "x" ? "pan-y" : "pan-x" } };
 }

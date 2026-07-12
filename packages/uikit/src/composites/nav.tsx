@@ -165,18 +165,19 @@ export function TKNavStack({
     },
   });
 
+  const dragHandlers = drag.bind();
   const handlers =
     swipeBack === "edge"
       ? {
-          ...drag,
-          onPointerDown: (event: Parameters<typeof drag.onPointerDown>[0]) => {
+          ...dragHandlers,
+          onPointerDown: (event: Parameters<typeof dragHandlers.onPointerDown>[0]) => {
             const left = rootRef.current?.getBoundingClientRect().left ?? 0;
             if (event.clientX - left > EDGE_ZONE) return;
-            drag.onPointerDown(event);
+            dragHandlers.onPointerDown(event);
           },
         }
       : swipeBack === "anywhere"
-        ? drag
+        ? dragHandlers
         : {};
 
   return (

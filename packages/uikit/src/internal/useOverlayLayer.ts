@@ -1,4 +1,7 @@
-import { useEffect, useState } from "react";
+import { useRef, useState } from "react";
+import { tkZIndex } from "./dom";
+import { tkSharedState } from "./registry";
+import { useIsomorphicLayoutEffect } from "./useIsomorphicLayoutEffect";
 
 /*
  * Stacking-order manager for the modal overlays (TKSheet, TKDialog,
@@ -12,15 +15,19 @@ import { useEffect, useState } from "react";
  * The levels live below `--tk-z-toast`/`--tk-z-tooltip`/`--tk-z-popper` (raised
  * far above this band in tokens.css) so toasts, tooltips and anchored poppers
  * still float over every modal. The counter resets to zero once the last
- * overlay closes, so it can never drift upward across a session.
+ * overlay closes, so it can never drift upward across a session. State lives on
+ * the shared globalThis registry (INT-005) and the slot is claimed in a layout
+ * effect (INT-006) so the first painted frame already has the correct z.
  */
 
 // Mirrors `--tk-z-overlay`; the first overlay keeps the historical 10/11 pair.
-const TK_LAYER_BASE = 10;
+const TK_LAYER_BASE = tkZIndex("overlay");
 const TK_LAYER_STEP = 2;
 
-let tkActiveLayers = 0;
-let tkTopLayer = 0;
+interface OverlayLayerState {
+  active: number;
+  top: number;
+}
 
 export interface TKOverlayLayer {
   /** z-index for this overlay's scrim. */
@@ -31,21 +38,26 @@ export interface TKOverlayLayer {
 
 /**
  * Returns the z-index pair for an overlay that is mounted while `active` is
- * true. Until the mount effect assigns a slot the overlay behaves like the
+ * true. Until the layout effect assigns a slot the overlay behaves like the
  * first layer, so a lone overlay matches the historical z-index exactly.
  */
 export function useOverlayLayer(active: boolean): TKOverlayLayer {
   const [level, setLevel] = useState(0);
-  useEffect(() => {
+  // Slot held by THIS instance — reused across a StrictMode double-invoke so the
+  // re-mount does not claim a fresh (higher) slot and inflate z (INT-006).
+  const slotRef = useRef(0);
+  useIsomorphicLayoutEffect(() => {
     if (!active) return;
-    tkActiveLayers += 1;
-    const assigned = ++tkTopLayer;
-    setLevel(assigned);
+    const s = tkSharedState<OverlayLayerState>("overlay", () => ({ active: 0, top: 0 }));
+    s.active += 1;
+    if (slotRef.current === 0) slotRef.current = ++s.top;
+    setLevel(slotRef.current);
     return () => {
-      tkActiveLayers -= 1;
-      if (tkActiveLayers <= 0) {
-        tkActiveLayers = 0;
-        tkTopLayer = 0;
+      s.active -= 1;
+      if (s.active <= 0) {
+        s.active = 0;
+        s.top = 0;
+        slotRef.current = 0;
       }
     };
   }, [active]);
