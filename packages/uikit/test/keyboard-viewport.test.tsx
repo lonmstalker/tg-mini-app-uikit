@@ -1,7 +1,8 @@
-import { act, render, renderHook, screen } from "@testing-library/react";
+import { act, fireEvent, render, renderHook, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useKeyboard } from "@tg-mini-app/telegram";
 import { TKPage } from "../src";
+import { usePageScrollTop } from "../src/internal/pageScroll";
 
 /* Keyboard/viewport controller (KB-1.x): covered formula, open/close
    hysteresis, geometry-driven pan settle, deferred focusout. */
@@ -200,6 +201,39 @@ describe("KB-1.5 --tk-kb-height on the .tk root drives the page shrink", () => {
       fire("resize");
     });
     expect(footer.hasAttribute("data-kb-open")).toBe(false);
+  });
+});
+
+/* ---------------- KB-1.6 · scroll tracking decoupled from render ---------------- */
+
+describe("KB-1.6 page scroll commits only quantized header phases", () => {
+  it("a 0→500px scroll re-renders the header consumer per 4px quantum, not per frame", () => {
+    installVV();
+    let headerRenders = 0;
+    const seen: number[] = [];
+    function CountingHeader() {
+      headerRenders += 1;
+      const scrollTop = usePageScrollTop();
+      if (seen[seen.length - 1] !== scrollTop) seen.push(scrollTop);
+      return <div data-testid="hdr">{scrollTop}</div>;
+    }
+    render(
+      <TKPage header={<CountingHeader />} testId="page">
+        <div style={{ height: 2000 }} />
+      </TKPage>,
+    );
+    const scroller = screen.getByTestId("page").querySelector("[data-tk-page-scroll]") as HTMLElement;
+    const before = headerRenders;
+    // 50 scroll frames, 10px apart — a fast flick through the whole band.
+    for (let px = 10; px <= 500; px += 10) {
+      Object.defineProperty(scroller, "scrollTop", { value: px, configurable: true });
+      fireEvent.scroll(scroller);
+    }
+    // ≤ one commit per quantum crossed inside 0..64 (16 quanta), not 50 frames.
+    expect(headerRenders - before).toBeLessThanOrEqual(17);
+    // The header still sees the full collapse band it needs (36/20 hysteresis).
+    expect(seen).toContain(64);
+    expect(Math.max(...seen)).toBe(64); // clamp: deep scroll stays 64
   });
 });
 

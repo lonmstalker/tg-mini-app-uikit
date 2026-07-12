@@ -1,4 +1,4 @@
-import { forwardRef, useState, type CSSProperties, type ReactNode } from "react";
+import { forwardRef, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { useKeyboard, useSafeArea } from "../../foundation/telegram";
 import { TKPageScrollContext } from "../../internal/pageScroll";
 import { tkSafePad } from "./safe-area";
@@ -68,7 +68,12 @@ export const TKPage = /* @__PURE__ */ forwardRef<HTMLDivElement, TKPageProps>(fu
   const left = inset.left + contentInset.left;
   const right = inset.right + contentInset.right;
   const keyboard = useKeyboard();
-  const [scrollTop, setScrollTop] = useState(0);
+  // The raw scroll position lives in a ref; state (→ TKPageScrollContext) only
+  // carries the 0..64px band quantized to 4px steps — all TKHeader's collapse
+  // hysteresis (36/20px) ever reads. Committing the raw px re-rendered the
+  // whole page (and every context consumer) on each scroll frame (LAY-001).
+  const scrollTopRef = useRef(0);
+  const [headerScroll, setHeaderScroll] = useState(0);
   return (
     <div
       className={["tk-page", className].filter(Boolean).join(" ")}
@@ -91,7 +96,7 @@ export const TKPage = /* @__PURE__ */ forwardRef<HTMLDivElement, TKPageProps>(fu
       }}
     >
       {header ? (
-        <TKPageScrollContext.Provider value={scrollTop}>
+        <TKPageScrollContext.Provider value={headerScroll}>
           <div style={{ flexShrink: 0, position: "relative", zIndex: 1 }}>{header}</div>
         </TKPageScrollContext.Provider>
       ) : null}
@@ -103,7 +108,16 @@ export const TKPage = /* @__PURE__ */ forwardRef<HTMLDivElement, TKPageProps>(fu
         data-tk-page-scroll
         // Only track scroll position when a header consumes it — otherwise every
         // scroll frame would re-render the whole page for nothing (LAY-001).
-        onScroll={header ? (e) => setScrollTop(e.currentTarget.scrollTop) : undefined}
+        onScroll={
+          header
+            ? (e) => {
+                const px = e.currentTarget.scrollTop;
+                scrollTopRef.current = px;
+                // Same quantized value → React bails out, no re-render.
+                setHeaderScroll(px <= 0 ? 0 : px >= 64 ? 64 : Math.floor(px / 4) * 4);
+              }
+            : undefined
+        }
         style={{
           flex: 1,
           minHeight: 0,
