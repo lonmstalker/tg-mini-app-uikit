@@ -80,8 +80,9 @@ export interface TKNavStackProps {
    * Controlled stack (deep-link / history sync — NAV2-007). When set, the panels
    * render from it and every `useNav()` call becomes a REQUEST: it fires
    * `onChange` with the next stack but does not move until you feed that stack
-   * back. Treat it append/truncate-style (keys are by index); reordering can
-   * mis-key panels. An empty array falls back to `initial`.
+   * back. Treat it append/truncate-style (entries are matched to their mount
+   * keys positionally by panel id); reordering can mis-key panels. An empty
+   * array falls back to `initial`.
    */
   stack?: TKNavStackEntry[];
   /** Fired with the new stack on any navigation (controlled change callback). */
@@ -130,14 +131,37 @@ export function TKNavStack({
   const isControlled = stackProp !== undefined;
   const isControlledRef = useRef(isControlled);
   isControlledRef.current = isControlled;
-  // Fall back to `initial` if a controlled host transiently feeds an empty stack
-  // (e.g. mid-hydration) so the api's `top` never reads undefined and crashes.
-  const stack: NavEntry[] =
-    isControlled && stackProp!.length > 0
-      ? stackProp!.map((entry, index) => ({ panel: entry.panel, params: entry.params, key: index }))
-      : isControlled
-        ? [{ panel: initial, key: 0 }]
-        : internalStack;
+  // Controlled entries get MONOTONIC keys via an append/truncate diff against
+  // the previously keyed stack — never the array index: an index key returns
+  // on the next push to the same depth, which poisons the settled-guard (a
+  // "warmed" depth loses its entrance animation forever) and could collide
+  // with the exit layer's preserved key. Ref writes here are idempotent per
+  // content, so a discarded concurrent render cannot corrupt the mapping.
+  const controlledRef = useRef<NavEntry[]>([]);
+  let stack: NavEntry[];
+  if (isControlled) {
+    // Fall back to `initial` if a controlled host transiently feeds an empty
+    // stack (e.g. mid-hydration) so the api's `top` never reads undefined.
+    const entries: TKNavStackEntry[] = stackProp!.length > 0 ? stackProp! : [{ panel: initial }];
+    const prev = controlledRef.current;
+    let changed = entries.length !== prev.length;
+    const next = entries.map((entry, index) => {
+      const kept = prev[index];
+      if (kept && kept.panel === entry.panel) {
+        if (kept.params === entry.params) return kept;
+        changed = true;
+        return { panel: entry.panel, params: entry.params, key: kept.key };
+      }
+      changed = true;
+      return { panel: entry.panel, params: entry.params, key: keyRef.current++ };
+    });
+    // Same content → keep the previous array identity so the render-adjust
+    // below reads "no navigation happened".
+    if (changed) controlledRef.current = next;
+    stack = controlledRef.current;
+  } else {
+    stack = internalStack;
+  }
   const [dragX, setDragX] = useState(0);
   const [dragging, setDragging] = useState(false);
   // Once a panel's push entrance has played, never re-apply the animation on
@@ -259,21 +283,37 @@ export function TKNavStack({
   // rendering on top of the stack and slides out to the right.
   const [exiting, setExiting] = useState<{ entry: NavEntry; fromX: number } | null>(null);
   const exitRef = useRef<HTMLDivElement>(null);
-  const exitFromXRef = useRef(0);
+  // The committed swipe-back's finger offset, handed to the NEXT departure so
+  // the exit picks the slide up from under the finger. State (not a ref): it
+  // must be consumed/dropped through the render-adjust below, or a
+  // host-rejected pop would leak the offset into a later unrelated exit.
+  const [pendingFromX, setPendingFromX] = useState(0);
   const reducedMotion = useReducedMotion();
   // Detect the departure against the previous stack IN RENDER (an effect would
-  // still flash the old screen for one commit). Comparing stacks (not hooking
-  // pop()) also covers controlled mode, where a pop() is only a request until
-  // the host feeds the shorter stack back.
-  const prevStackRef = useRef(stack);
-  if (prevStackRef.current !== stack) {
-    const prev = prevStackRef.current;
-    prevStackRef.current = stack;
-    const prevTop = prev[prev.length - 1];
-    if (prevTop && stack.length < prev.length && !stack.some((entry) => entry.key === prevTop.key)) {
-      if (!reducedMotion) setExiting({ entry: prevTop, fromX: exitFromXRef.current });
-      exitFromXRef.current = 0;
+  // still flash the old screen for one commit), via the canonical
+  // adjust-state-during-render pattern — state, not a render-body ref
+  // mutation, so a discarded concurrent render cannot eat the exit animation.
+  // Comparing stacks (not hooking pop()) also covers controlled mode, where a
+  // pop() is only a request until the host feeds the shorter stack back.
+  const [prevStack, setPrevStack] = useState(stack);
+  if (prevStack !== stack) {
+    setPrevStack(stack);
+    const prevTop = prevStack[prevStack.length - 1];
+    if (prevTop && stack.length < prevStack.length && !stack.some((entry) => entry.key === prevTop.key)) {
+      if (!reducedMotion) setExiting({ entry: prevTop, fromX: pendingFromX });
     }
+    if (pendingFromX !== 0) setPendingFromX(0);
+    // Keys are monotonic, so a departed key never comes back: drop it from the
+    // settled set to keep the set from growing for the app's whole lifetime.
+    setSettledKeys((prev) => {
+      if (prev.size === 0) return prev;
+      const alive = new Set([...prev].filter((key) => stack.some((entry) => entry.key === key)));
+      return alive.size === prev.size ? prev : alive;
+    });
+  } else if (pendingFromX !== 0) {
+    // The stack did not shrink after the swipe committed (host rejected the
+    // pop) — drop the finger offset so a later button pop exits from 0.
+    setPendingFromX(0);
   }
   useEffect(() => {
     if (!exiting) return;
@@ -323,7 +363,7 @@ export function TKNavStack({
       const width = rootRef.current?.clientWidth ?? 360;
       if (tkShouldCommit(state.delta, state.velocity, width)) {
         // The exit layer picks the slide up from under the finger, not from 0.
-        exitFromXRef.current = state.delta;
+        setPendingFromX(state.delta);
         api.pop();
       }
     },
