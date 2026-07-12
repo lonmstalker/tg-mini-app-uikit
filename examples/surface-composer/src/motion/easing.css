@@ -26,12 +26,9 @@
   --sc-contact-y: 50%;
   --sc-motion-intensity: 1;
 
-  /* Committed accent (D8): derived from --tk-accent toward OKLCH 0.62 0.17 250,
-   * stable across theme. Applied ONLY to the seed and the primary action. The
-   * hex is the fallback for engines without oklch(); both clear 4.5:1 with white
-   * text on the light surface and a Telegram-dark inner surface. */
-  --sc-accent: #2f7ddb;
-  --sc-accent: oklch(0.62 0.17 250);
+  /* Committed accent (D8): seeded by the kit/Telegram accent and scoped to
+   * seed, active context, CTA, and contact feedback. */
+  --sc-accent: var(--tk-accent, #3390ec);
 }
 
 /*

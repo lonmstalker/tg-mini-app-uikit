@@ -9,8 +9,8 @@ import type { Lang } from "../../i18n";
 import type { SurfaceContent } from "../../surface/SurfaceSlots";
 
 export const firstLaunchPromise: Record<Lang, { title: string; sub: string }> = {
-  en: { title: "Open. Trust. Order.", sub: "A premium storefront your customers open right inside Telegram." },
-  ru: { title: "Открой. Доверься. Закажи.", sub: "Премиальная витрина, которую клиенты открывают прямо в Telegram." },
+  en: { title: "Your Mini App in Telegram", sub: "Open. Trust. Order." },
+  ru: { title: "Ваш Mini App в Telegram", sub: "Открой. Доверься. Закажи." },
 };
 
 export const firstLaunchCta: Record<Lang, string> = {

@@ -36,7 +36,7 @@ export interface RecorderEventLite {
   reaction: string;
   status: string;
   motionState: string;
-  businessContext?: string;
+  context: string;
   timestamp: number;
 }
 

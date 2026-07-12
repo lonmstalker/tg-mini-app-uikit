@@ -15,15 +15,37 @@ import {
  */
 
 test.describe("US1 first launch — behaviour", () => {
-  test("opens a buyer-first viewport: no tech vocabulary, no proof affordance, key parts present", async ({ page }) => {
+  test("desktop shell is a dark cinematic stage with a centered phone frame", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 880 });
+    await page.goto("/");
+    await waitForMotionState(page, "idle");
+
+    const stage = await page.getByTestId("sc-stage").evaluate((el) => {
+      const bg = getComputedStyle(el).backgroundColor;
+      const m = bg.match(/\d+(\.\d+)?/g)?.map(Number) ?? [];
+      const luma = m.length >= 3 ? (0.2126 * m[0] + 0.7152 * m[1] + 0.0722 * m[2]) / 255 : 1;
+      return { bg, luma };
+    });
+    expect(stage.luma, `stage must be dark, got ${stage.bg}`).toBeLessThan(0.28);
+
+    const frame = await page.locator(".sc-frame").boundingBox();
+    expect(frame?.width ?? 0).toBeGreaterThanOrEqual(380);
+    expect(frame?.width ?? 0).toBeLessThanOrEqual(430);
+    const center = (frame?.x ?? 0) + (frame?.width ?? 0) / 2;
+    expect(Math.abs(center - 640)).toBeLessThanOrEqual(2);
+  });
+
+  test("opens a buyer-first viewport: no tech vocabulary, buyer proof visible, build proof hidden", async ({ page }) => {
     await page.goto("/");
     await waitForMotionState(page, "idle");
 
     // Buyer-first gate (Principle III, SC-002).
+    await expect(page.getByTestId("buyer-proof-strip")).toBeVisible();
     await expect(page.getByTestId("proof-strip")).toHaveCount(0);
     await expectNoForbiddenTerms(page);
 
     // Promise + switcher + live surface + single action, all present & readable.
+    await expect(page.getByText("Your Mini App in Telegram")).toBeVisible();
     await expect(page.getByText("Open. Trust. Order.")).toBeVisible();
     await expect(page.getByTestId("switcher")).toBeVisible();
     await expect(page.getByTestId("primary-action")).toBeVisible();
@@ -47,17 +69,55 @@ test.describe("US1 first launch — behaviour", () => {
     await page.goto("/");
     await waitForMotionState(page, "idle");
 
-    await page.locator('[data-slot="hero"]').click();
-    await waitForMotionState(page, "inspector-open");
+    await page.locator('[data-slot="content"]').click();
+    await waitForMotionState(page, "first-touch");
 
     const inspector = page.getByTestId("inspector");
     await expect(inspector).toBeVisible();
+    await expect(inspector.getByText("Why it feels premium")).toBeVisible();
+    await expect(inspector.getByText("UIKit proof appears after the buyer cares")).toBeVisible();
     await expect(inspector.getByText("TKHeader")).toBeVisible(); // a named UIKit proof element
     await expect(page.getByTestId("proof-strip")).toBeVisible(); // affordance now present
 
     const rec = await getRecorder(page);
     expect(rec.map((e) => e.reaction)).toContain("first-touch");
     expect(rec.map((e) => e.reaction)).toContain("inspector-open");
+    expect(await surfaceAttr(page, "data-motion-state")).toBe("first-touch");
+  });
+
+  test("post-touch inspector includes alive loading, empty, and error states", async ({ page }) => {
+    await page.goto("/");
+    await waitForMotionState(page, "idle");
+
+    await page.locator('[data-slot="content"]').click();
+    await waitForMotionState(page, "first-touch");
+
+    const states = page.getByTestId("state-strip");
+    await expect(states.getByText("Loading")).toBeVisible();
+    await expect(states.getByText("Empty")).toBeVisible();
+    await expect(states.getByText("Error")).toBeVisible();
+    await expect(states.getByRole("button", { name: "Retry" })).toBeVisible();
+  });
+
+  test("recorder events expose the deterministic public event shape", async ({ page }) => {
+    await page.goto("/");
+    await waitForMotionState(page, "idle");
+
+    const rec = await getRecorder(page);
+    expect(rec[0]).toEqual(
+      expect.objectContaining({
+        source: "system",
+        target: "surface.birth",
+        reaction: "birth-seed",
+        status: "mock",
+        scene: "firstLaunch",
+        context: "shop",
+        timestamp: 0,
+      }),
+    );
+    expect(rec.every((e) => ["native", "mock", "fallback"].includes(e.status))).toBe(true);
+    expect(rec.every((e) => typeof e.context === "string")).toBe(true);
+    expect(rec.map((e) => e.motionState)).toEqual(["seed", "rails", "assembling", "idle"]);
   });
 
   test("empty-space tap is recognized with no state change (FR-006)", async ({ page }) => {
@@ -84,10 +144,10 @@ test.describe("US1 first launch — behaviour", () => {
 });
 
 /*
- * Visual snapshot gate (SC-011). Transient frames are frozen via `?motion=…`
- * (animations disabled globally). Excluded transition frame: light-sweep.
+ * Visual snapshot gate (SC-011). Transient frames are frozen via `?motion=…`.
+ * The light sweep is a visual effect during assembly, not a public motion state.
  */
-const SNAPSHOT_STATES = ["seed", "rails", "assembling", "idle", "first-touch", "inspector-open"] as const;
+const SNAPSHOT_STATES = ["seed", "rails", "assembling", "idle", "first-touch"] as const;
 
 test.describe("US1 first launch — visual snapshots", () => {
   for (const state of SNAPSHOT_STATES) {

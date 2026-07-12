@@ -9,11 +9,12 @@ describe("recorder accessor", () => {
       {
         id: "evt-0",
         scene: "firstLaunch",
+        context: "shop",
         source: "pointer",
         target: "surface.preview.media",
-        reaction: "contact-highlight+inspector-open",
+        reaction: "inspector-open",
         status: "mock",
-        motionState: "inspector-open",
+        motionState: "first-touch",
         timestamp: 0,
       },
     ];

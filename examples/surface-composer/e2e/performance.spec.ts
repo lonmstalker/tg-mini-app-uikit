@@ -33,7 +33,7 @@ test("first primary touch feedback < 100ms at the contact point", async ({ page 
   await waitForMotionState(page, "idle");
 
   const result = await page.evaluate(() => {
-    const hero = document.querySelector('[data-slot="hero"]') as HTMLElement;
+    const hero = document.querySelector('[data-slot="content"]') as HTMLElement;
     const surface = document.querySelector('[data-testid="surface"]') as HTMLElement;
     const r = hero.getBoundingClientRect();
     const t0 = performance.now();

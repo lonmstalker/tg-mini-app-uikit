@@ -15,7 +15,12 @@ export interface ContextChipProps {
 
 export function ContextChip({ selected, icon, onClick, children }: ContextChipProps) {
   return (
-    <TKChip selected={selected} icon={icon} onClick={onClick}>
+    <TKChip
+      selected={selected}
+      icon={icon}
+      onClick={onClick}
+      style={{ padding: "0 10px", gap: 5, fontSize: 13, whiteSpace: "nowrap" }}
+    >
       {children}
     </TKChip>
   );

@@ -11,6 +11,7 @@ export type RecorderSource = "pointer" | "keyboard" | "runtime" | "system";
 export interface RecorderEvent {
   id: string;
   scene: SceneId;
+  context: BusinessContext;
   source: RecorderSource;
   /** e.g. 'surface.preview.media' */
   target: string;
@@ -19,8 +20,6 @@ export interface RecorderEvent {
   /** = runtime mode at emit time */
   status: RuntimeMode;
   motionState: MotionState;
-  /** present for remix events */
-  businessContext?: BusinessContext;
   /** deterministic (= log index), not wall-clock */
   timestamp: number;
 }

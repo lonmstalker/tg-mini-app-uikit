@@ -11,7 +11,6 @@ export const BIRTH_SEQUENCE = [
   "birth-seed",
   "birth-rails",
   "birth-assembling",
-  "birth-light-sweep",
   "birth-idle",
 ] as const;
 
@@ -20,7 +19,10 @@ export const REMIX_STEP_SEQUENCE = [
   "remix-start",
   "remix-separating",
   "remix-rotating",
-  "remix-recomposing",
+  "templateChanged",
+  "tokensPreserved",
+  "safeAreaPreserved",
+  "runtimePreserved",
   "remix-locked",
   "remix-continuity",
 ] as const;
@@ -29,4 +31,4 @@ export const REMIX_STEP_SEQUENCE = [
 export const REMIX_ORDER = ["shop", "booking", "wallet", "support", "community"] as const;
 
 /** Under `?mock=1` the honest runtime label must be exactly this (Principle V). */
-export const RUNTIME_FIXTURE = { mock: "mock", fallback: "browser-fallback" } as const;
+export const RUNTIME_FIXTURE = { mock: "mock", fallback: "fallback" } as const;

@@ -1,6 +1,6 @@
 /*
  * US1 birth choreography (animation-brief §6, FR-003): a chained scheduler that
- * walks the surface through seed → rails → assembling → light-sweep → idle,
+ * walks the surface through seed → rails → assembling → idle,
  * dispatching one recorder event per step (the BIRTH_SEQUENCE fixture). All
  * timing is deferred via timers so React StrictMode's mount/unmount/mount cycle
  * cancels the first run cleanly — the recorder log stays byte-deterministic.
@@ -23,7 +23,6 @@ const STEPS: readonly BirthStep[] = [
   { motionState: "seed", reaction: "birth-seed", hold: SC_DURATION.seed },
   { motionState: "rails", reaction: "birth-rails", hold: SC_DURATION.rails },
   { motionState: "assembling", reaction: "birth-assembling", hold: SC_DURATION.assemble },
-  { motionState: "light-sweep", reaction: "birth-light-sweep", hold: SC_DURATION.sweep },
   { motionState: "idle", reaction: "birth-idle", hold: 0 },
 ];
 

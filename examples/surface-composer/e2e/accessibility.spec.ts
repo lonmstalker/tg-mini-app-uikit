@@ -49,8 +49,8 @@ test("US1: Escape closes the inspector before navigating (FR-011)", async ({ pag
   await page.goto("/");
   await waitForMotionState(page, "idle");
 
-  await page.locator('[data-slot="hero"]').click();
-  await waitForMotionState(page, "inspector-open");
+  await page.locator('[data-slot="content"]').click();
+  await waitForMotionState(page, "first-touch");
 
   await page.keyboard.press("Escape");
   await waitForMotionState(page, "idle"); // closed, returned to the surface

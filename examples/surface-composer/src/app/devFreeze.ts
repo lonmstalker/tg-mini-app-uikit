@@ -10,14 +10,11 @@ const MOTION_STATES: readonly MotionState[] = [
   "seed",
   "rails",
   "assembling",
-  "light-sweep",
   "idle",
   "first-touch",
-  "inspector-open",
   "remix-start",
   "separating",
   "rotating",
-  "recomposing",
   "locked",
   "continuity",
 ];
@@ -36,8 +33,8 @@ function readParam(name: string): string | null {
 /** The frozen motion state, or null when the timeline should play normally. */
 export const FROZEN_MOTION = read();
 export const IS_FROZEN = FROZEN_MOTION !== null;
-/** Proof must be revealed for the frozen first-touch/inspector frames to render. */
-export const FROZEN_PROOF = FROZEN_MOTION === "first-touch" || FROZEN_MOTION === "inspector-open";
+/** Proof must be revealed for the frozen first-touch frame to render. */
+export const FROZEN_PROOF = FROZEN_MOTION === "first-touch";
 
 const SCENES: readonly SceneId[] = ["firstLaunch", "rangeRemix"];
 const CONTEXTS: readonly BusinessContext[] = ["shop", "booking", "wallet", "support", "community"];

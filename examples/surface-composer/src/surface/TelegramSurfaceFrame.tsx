@@ -10,23 +10,35 @@
  */
 import type { ReactNode } from "react";
 import { TKProvider } from "tg-mini-app-uikit";
+import { useComposer } from "../app/composerStore";
+import { useT } from "../i18n";
 import { useTelegramThemeBridge } from "../runtime/useTelegramThemeBridge";
 
 export function TelegramSurfaceFrame({ children }: { children: ReactNode }) {
   const { theme, inset } = useTelegramThemeBridge();
+  const { runtimeMode } = useComposer();
+  const t = useT();
   return (
     <div className="sc-frame" data-frame-theme={theme}>
       <TKProvider theme={theme} telegram testId="surface-provider" className="sc-frame__tk">
-        <div
-          className="sc-frame__safe"
-          style={{
-            paddingTop: Math.max(inset.top, 0),
-            paddingBottom: Math.max(inset.bottom, 0),
-            paddingLeft: Math.max(inset.left, 0),
-            paddingRight: Math.max(inset.right, 0),
-          }}
-        >
-          {children}
+        <div className="sc-frame__shell">
+          <header className="sc-telegram-header" aria-label="Telegram">
+            <span className="sc-telegram-header__brand">Telegram</span>
+            <span className="sc-runtime-badge" data-testid="runtime-badge" data-runtime-mode={runtimeMode}>
+              {t(`runtime.${runtimeMode}`)}
+            </span>
+          </header>
+          <div
+            className="sc-frame__safe"
+            style={{
+              paddingTop: Math.max(inset.top, 0),
+              paddingBottom: Math.max(inset.bottom, 0),
+              paddingLeft: Math.max(inset.left, 0),
+              paddingRight: Math.max(inset.right, 0),
+            }}
+          >
+            {children}
+          </div>
         </div>
       </TKProvider>
     </div>

@@ -1,6 +1,6 @@
 /*
  * The proof layer (US1 sc.3): a TKSheet composed from TKListGroup + TKCell that
- * opens at `inspector-open` and names the reusable kit elements the surface is
+ * opens after `first-touch` and names the reusable kit elements the surface is
  * built from (≥1 named UIKit proof element). Kit/component vocabulary is allowed
  * HERE because it is post-touch proof, not the buyer-first viewport (Principle
  * III). TKSheet closes on Escape / Back / scrim before any navigation (FR-011).
@@ -25,7 +25,7 @@ export function PremiumInspectorSheet() {
   const dispatch = useComposerDispatch();
   const t = useT();
 
-  const open = proofRevealed && motionState === "inspector-open";
+  const open = proofRevealed && motionState === "first-touch";
 
   const close = () => {
     dispatch({
@@ -47,6 +47,22 @@ export function PremiumInspectorSheet() {
           <TKCell key={el.id} icon={el.icon} title={el.name} subtitle={el.note} />
         ))}
       </TKListGroup>
+      <div className="sc-state-strip" data-testid="state-strip" role="group" aria-label="Live service states">
+        <div className="sc-state-strip__item">
+          <span className="sc-state-strip__label">Loading</span>
+          <span className="sc-state-strip__bar" aria-hidden="true" />
+        </div>
+        <div className="sc-state-strip__item">
+          <span className="sc-state-strip__label">Empty</span>
+          <span className="sc-state-strip__note">Suggest the next tap</span>
+        </div>
+        <div className="sc-state-strip__item">
+          <span className="sc-state-strip__label">Error</span>
+          <button className="sc-state-strip__retry" type="button">
+            Retry
+          </button>
+        </div>
+      </div>
     </TKSheet>
   );
 }

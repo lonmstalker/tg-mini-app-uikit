@@ -19,13 +19,13 @@ export const en = {
   "switcher.support": "Support",
 
   // Revealed only after first meaningful touch (proof layer).
-  "inspector.title": "Built from one kit",
-  "inspector.subtitle": "Each part is a reusable element.",
+  "inspector.title": "Why it feels premium",
+  "inspector.subtitle": "UIKit proof appears after the buyer cares",
   "inspector.close": "Close",
   "proof.strip.aria": "What this surface is made of",
-  "runtime.native-mirror": "Native",
+  "runtime.native": "Native",
   "runtime.mock": "Simulated",
-  "runtime.browser-fallback": "Browser",
+  "runtime.fallback": "Browser",
 } as const;
 
 export type DictKey = keyof typeof en;

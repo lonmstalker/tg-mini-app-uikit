@@ -17,7 +17,7 @@ export interface PrimaryActionBarProps {
 
 export function PrimaryActionBar({ label, onCommit }: PrimaryActionBarProps) {
   const { runtimeMode } = useComposer();
-  const isNative = runtimeMode === "native-mirror";
+  const isNative = runtimeMode === "native";
 
   // Bind the native Telegram MainButton; visible only when we are truly native,
   // so we never claim a native control where only a fallback exists (Principle V).

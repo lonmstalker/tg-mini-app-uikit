@@ -18,9 +18,9 @@ describe("useRuntimeMode (honest labelling, D4)", () => {
     expect(result.current).toBe("mock");
   });
 
-  it("reports 'browser-fallback' with neither a real bridge nor a mock", () => {
+  it("reports 'fallback' with neither a real bridge nor a mock", () => {
     const wrapper = ({ children }: { children: ReactNode }) => <MockProvider value={null}>{children}</MockProvider>;
     const { result } = renderHook(() => useRuntimeMode(), { wrapper });
-    expect(result.current).toBe("browser-fallback");
+    expect(result.current).toBe("fallback");
   });
 });

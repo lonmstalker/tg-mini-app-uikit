@@ -69,13 +69,15 @@ export interface SurfaceSlotsProps {
   content: SurfaceContent;
   /** Live business-context switcher (US1) placed under the header. */
   switcher?: ReactNode;
+  /** Buyer-facing trust proof pinned above the action when the scene needs it. */
+  footerLead?: ReactNode;
   /** The single primary commitment action (PrimaryActionBar) — pinned footer. */
   primaryAction?: ReactNode;
   /** Extra content rendered in the scroll region below the surface (e.g. proof strip). */
   belowContent?: ReactNode;
 }
 
-export function SurfaceSlots({ content, switcher, primaryAction, belowContent }: SurfaceSlotsProps) {
+export function SurfaceSlots({ content, switcher, footerLead, primaryAction, belowContent }: SurfaceSlotsProps) {
   const { header, media, hero, primaryMetric, supportingList, trustStrip } = content;
   return (
     <div className="sc-slots">
@@ -84,24 +86,20 @@ export function SurfaceSlots({ content, switcher, primaryAction, belowContent }:
         <TKHeader title={header.title} subtitle={header.subtitle} back={false} />
       </Slot>
 
-      {switcher ? (
-        <Slot id="switcher" index={1}>
-          {switcher}
-        </Slot>
-      ) : null}
+      {switcher ? <div className="sc-context-control">{switcher}</div> : null}
 
-      <Slot id="media" index={2} meaningful>
-        <TKImage src={media.src} alt={media.alt} fallbackLabel={media.fallbackLabel} ratio="16 / 9" radius="var(--tk-r3, 16px)" />
-      </Slot>
-
-      <Slot id="hero" index={3} meaningful>
+      <Slot id="content" index={1} meaningful>
         <div className="sc-promo">
           <strong className="sc-promo__title">{hero.title}</strong>
           <p className="sc-promo__text">{hero.text}</p>
         </div>
       </Slot>
 
-      <Slot id="primaryMetric" index={4} meaningful>
+      <Slot id="media" index={2} meaningful>
+        <TKImage src={media.src} alt={media.alt} fallbackLabel={media.fallbackLabel} ratio="16 / 9" radius="var(--tk-r3, 16px)" />
+      </Slot>
+
+      <Slot id="metric" index={3} meaningful>
         <TKStatTile
           label={primaryMetric.label}
           value={primaryMetric.value}
@@ -111,7 +109,7 @@ export function SurfaceSlots({ content, switcher, primaryAction, belowContent }:
         />
       </Slot>
 
-      <Slot id="supportingList" index={5} meaningful>
+      <Slot id="list" index={4} meaningful>
         <TKListGroup title={supportingList.title}>
           {supportingList.rows.map((row) => (
             <TKCell key={row.id} icon={row.icon} title={row.title} subtitle={row.subtitle} value={row.value} />
@@ -119,11 +117,11 @@ export function SurfaceSlots({ content, switcher, primaryAction, belowContent }:
         </TKListGroup>
       </Slot>
 
-        <Slot id="trustStrip" index={6} meaningful>
-          <div className="sc-trust">
+        <Slot id="trust" index={5} meaningful>
+          <div className="sc-trust" role="group" aria-label="Buyer proof">
             <TKAvatarStack avatars={trustStrip.avatars} size={28} />
             <TKRating value={trustStrip.rating} readonly allowHalf />
-            <TKBadge tone="accent" soft>
+            <TKBadge tone="gray" soft>
               {trustStrip.badge}
             </TKBadge>
           </div>
@@ -134,7 +132,10 @@ export function SurfaceSlots({ content, switcher, primaryAction, belowContent }:
 
       {primaryAction ? (
         <div className="sc-slots__footer">
-          <Slot id="primaryAction" index={7}>
+          <Slot id="bottom" index={6}>
+            {footerLead ?? <span className="sc-bottom-slot" aria-hidden="true" />}
+          </Slot>
+          <Slot id="action" index={7}>
             {primaryAction}
           </Slot>
         </div>

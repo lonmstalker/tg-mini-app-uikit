@@ -22,6 +22,7 @@ import { TactileRing } from "../../components/TactileRing";
 import { GravityLayer } from "../../components/GravityLayer";
 import { PremiumInspectorSheet } from "../../proof/PremiumInspectorSheet";
 import { BuyerProofStrip } from "../../surface/BuyerProofStrip";
+import { BuyerTrustStrip } from "../../surface/BuyerTrustStrip";
 import { PrimaryActionBar } from "../../surface/PrimaryActionBar";
 import { SurfaceContextSwitcher } from "../../surface/SurfaceContextSwitcher";
 import { SurfaceSlots } from "../../surface/SurfaceSlots";
@@ -36,7 +37,7 @@ export function FirstLaunchScene() {
   const { businessContext, proofRevealed, reducedMotion } = useComposer();
   const dispatch = useComposerDispatch();
   const surface = useSurfaceElement();
-  const onContact = useContactHighlight();
+  const contact = useContactHighlight();
   const advance = useAdvanceScene();
 
   const content = firstLaunchContent(lang);
@@ -66,7 +67,7 @@ export function FirstLaunchScene() {
   };
 
   return (
-    <div className="sc-scene" onPointerDown={onContact}>
+    <div className="sc-scene" {...contact}>
       <Seed />
       <Rails />
       <TactileRing />
@@ -74,6 +75,7 @@ export function FirstLaunchScene() {
         <SurfaceSlots
           content={content}
           switcher={<SurfaceContextSwitcher value={businessContext} onSelect={onSelect} />}
+          footerLead={<BuyerTrustStrip {...content.trustStrip} />}
           primaryAction={<PrimaryActionBar label={firstLaunchCta[lang]} onCommit={onCommit} />}
           belowContent={proofRevealed ? <BuyerProofStrip items={PROOF_PILLS} /> : null}
         />

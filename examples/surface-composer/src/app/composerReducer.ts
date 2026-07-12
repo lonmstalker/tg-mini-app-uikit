@@ -41,20 +41,17 @@ export type MotionState =
   | "seed"
   | "rails"
   | "assembling"
-  | "light-sweep"
   | "idle"
   | "first-touch"
-  | "inspector-open"
   // US2 — range remix
   | "remix-start"
   | "separating"
   | "rotating"
-  | "recomposing"
   | "locked"
   | "continuity";
 
 /** Honest runtime label — a mock is never reported as native (FR-014, Principle V). */
-export type RuntimeMode = "native-mirror" | "mock" | "browser-fallback";
+export type RuntimeMode = "native" | "mock" | "fallback";
 
 export interface ComposerState {
   scene: SceneId;
@@ -70,7 +67,7 @@ export const initialComposerState: ComposerState = {
   scene: "firstLaunch",
   businessContext: "shop",
   motionState: "seed",
-  runtimeMode: "browser-fallback",
+  runtimeMode: "fallback",
   reducedMotion: false,
   recorder: [],
   proofRevealed: false,
@@ -91,17 +88,17 @@ export type ComposerAction =
  * (scene, runtime status, the resulting motion state, the active context) is
  * filled here so the recorder vocabulary always matches the DOM (FR-005 ↔ FR-019).
  */
-function appendEvent(next: ComposerState, input: RecorderInput, withContext = false): RecorderEvent[] {
+function appendEvent(next: ComposerState, input: RecorderInput): RecorderEvent[] {
   const event: RecorderEvent = {
     id: `evt-${next.recorder.length}`,
     timestamp: next.recorder.length,
     scene: next.scene,
+    context: next.businessContext,
     source: input.source,
     target: input.target,
     reaction: input.reaction,
     status: next.runtimeMode,
     motionState: next.motionState,
-    ...(withContext ? { businessContext: next.businessContext } : {}),
   };
   return [...next.recorder, event];
 }
@@ -118,7 +115,7 @@ export function composerReducer(state: ComposerState, action: ComposerAction): C
     }
     case "remix": {
       const next = { ...state, businessContext: action.businessContext, motionState: action.motionState };
-      return action.record ? { ...next, recorder: appendEvent(next, action.record, true) } : next;
+      return action.record ? { ...next, recorder: appendEvent(next, action.record) } : next;
     }
     case "runtimeMode":
       return state.runtimeMode === action.runtimeMode ? state : { ...state, runtimeMode: action.runtimeMode };

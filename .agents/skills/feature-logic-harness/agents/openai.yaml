@@ -1,0 +1,4 @@
+interface:
+  display_name: "Feature Logic Harness"
+  short_description: "Builds structured feature logic: scope, actors, states, dimensions, values, contracts, invariants, and scenario cells"
+  default_prompt: "Use $feature_logic_harness to build a feature_logic_harness for this feature, PR, product idea, design, workflow, or implementation plan. First gather product context from PRODUCT.md/product.md or supplied context. If context is incomplete, mark the harness as draft and make the missing product decisions explicit. Model intended behavior, dimensions, values, states, contracts, invariants, scenario cells, assumptions, and open questions in human-readable Markdown with stable IDs. Keep observations neutral and represent uncertainty as assumptions, open questions, missing contracts, or scenario cells needing verification."

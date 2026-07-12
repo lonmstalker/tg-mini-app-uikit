@@ -15,11 +15,11 @@ export const ru: Dict = {
   "switcher.wallet": "Кошелёк",
   "switcher.support": "Поддержка",
 
-  "inspector.title": "Собрано из одного набора",
-  "inspector.subtitle": "Каждая часть — переиспользуемый элемент.",
+  "inspector.title": "Почему это ощущается премиально",
+  "inspector.subtitle": "UIKit-доказательства появляются после интереса покупателя",
   "inspector.close": "Закрыть",
   "proof.strip.aria": "Из чего собрана поверхность",
-  "runtime.native-mirror": "Нативно",
+  "runtime.native": "Нативно",
   "runtime.mock": "Симуляция",
-  "runtime.browser-fallback": "Браузер",
+  "runtime.fallback": "Браузер",
 };

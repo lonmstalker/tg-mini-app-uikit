@@ -19,7 +19,8 @@ describe("composerReducer", () => {
       timestamp: 0,
       motionState: "rails",
       scene: "firstLaunch",
-      status: "browser-fallback",
+      status: "fallback",
+      context: "shop",
       reaction: "r",
     });
     const s2 = composerReducer(s1, { type: "motion", motionState: "assembling", record: rec });
@@ -36,7 +37,7 @@ describe("composerReducer", () => {
     expect(run().recorder).toEqual(run().recorder);
   });
 
-  it("remix events carry the active businessContext", () => {
+  it("recorder events carry the active context", () => {
     const s = composerReducer(initialComposerState, {
       type: "remix",
       businessContext: "wallet",
@@ -44,7 +45,7 @@ describe("composerReducer", () => {
       record: rec,
     });
     expect(s.businessContext).toBe("wallet");
-    expect(s.recorder[0].businessContext).toBe("wallet");
+    expect(s.recorder[0].context).toBe("wallet");
   });
 
   it("a transition without a record does not append (no phantom events)", () => {

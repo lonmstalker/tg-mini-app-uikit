@@ -1,18 +1,13 @@
 /*
  * US2 remix choreography, keyed off the surface root [data-motion-state] (D6).
- * One object morphing in place: compress → slots separate → rotate around the
- * seed axis → recompose → lock → continuity. Transform/opacity only (FR-013).
+ * One object morphing in place: compress → slots separate → slot reflow around
+ * the seed axis → lock → continuity. Transform/opacity only (FR-013).
  * Slot transitions (with stagger) come from motion/birth.css; these rules supply
  * the per-state transforms for the six remix states.
  *
- * Reduced motion (bottom): the rotation/perspective is replaced by a stepped
- * opacity crossfade — same states, same recorder events (FR-010), no depth.
+ * Reduced motion (bottom): the reflow is replaced by a stepped opacity change
+ * — same states, same recorder events (FR-010), no depth.
  */
-
-/* The surface gives the rotation its depth; the axis is the seed's vertical. */
-.sc-scene {
-  perspective: 1100px;
-}
 
 [data-motion-state="remix-start"] .sc-slots {
   transform: scale(0.992);
@@ -28,18 +23,14 @@
   opacity: 0.92;
 }
 
-/* Rotate around the seed axis (transform-origin pinned to the seed x). */
+/* Slot-level reflow around the seed axis. No rotateY/page flip. */
 [data-motion-state="rotating"] .sc-slot {
-  transform: rotateY(9deg);
+  transform: translateX(calc((var(--sc-slot-index, 0) - 3.5) * -4px)) scale(0.996);
   transform-origin: var(--sc-origin-x) center;
-  opacity: 0.62;
+  opacity: 0.72;
 }
 
 /* New content inherits the old bounds and settles back to identity. */
-[data-motion-state="recomposing"] .sc-slot {
-  transform: none;
-  opacity: 1;
-}
 [data-motion-state="locked"] .sc-slot,
 [data-motion-state="continuity"] .sc-slot {
   transform: none;
@@ -48,8 +39,7 @@
 
 /* Seed stays present through the remix (the morph axis), subtle. */
 [data-motion-state="separating"] .sc-seed,
-[data-motion-state="rotating"] .sc-seed,
-[data-motion-state="recomposing"] .sc-seed {
+[data-motion-state="rotating"] .sc-seed {
   opacity: 0.5;
   transform: scale(0.85);
 }
@@ -61,9 +51,6 @@
 /* Reduced-motion substitute: stepped crossfade, no rotation/perspective. The
  * continuity marks stay visible; events are identical (FR-010, SC-011). */
 @media (prefers-reduced-motion: reduce) {
-  .sc-scene {
-    perspective: none;
-  }
   [data-motion-state="remix-start"] .sc-slots {
     transform: none;
   }
@@ -71,9 +58,5 @@
   [data-motion-state="rotating"] .sc-slot {
     transform: none;
     opacity: 0.5;
-  }
-  [data-motion-state="recomposing"] .sc-slot {
-    transform: none;
-    opacity: 1;
   }
 }

@@ -12,6 +12,6 @@ export function useRuntimeMode(): RuntimeMode {
   const wa = useWebApp();
   const mock = useMockHandle();
   if (mock) return "mock";
-  if (wa?.initData) return "native-mirror";
-  return "browser-fallback";
+  if (wa?.initData) return "native";
+  return "fallback";
 }

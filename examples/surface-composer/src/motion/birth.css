@@ -7,7 +7,7 @@
  *   rails        token grid + safe-area frame grow OUT of the seed origin
  *   assembling   the whole surface scales up FROM the seed origin while each
  *                slot resolves with a stagger (components find their slots)
- *   light-sweep  one committed-accent sweep crosses from the seed
+ *                one committed-accent sweep crosses from the seed
  *   idle         surface breathes once, then rests (only the surface, not text)
  *
  * Motion-without-copy test: with all text hidden, the sequence still reads as
@@ -52,10 +52,8 @@
     opacity var(--sc-duration-assemble) var(--sc-ease-out-quint),
     transform var(--sc-duration-assemble) var(--sc-ease-out-quint);
 }
-[data-motion-state="light-sweep"] .sc-seed,
 [data-motion-state="idle"] .sc-seed,
-[data-motion-state="first-touch"] .sc-seed,
-[data-motion-state="inspector-open"] .sc-seed {
+[data-motion-state="first-touch"] .sc-seed {
   opacity: 0;
   transform: scale(0.6);
   transition:
@@ -97,10 +95,8 @@
   opacity: 0.16;
   transform: scale(1);
 }
-[data-motion-state="light-sweep"] .sc-rails,
 [data-motion-state="idle"] .sc-rails,
-[data-motion-state="first-touch"] .sc-rails,
-[data-motion-state="inspector-open"] .sc-rails {
+[data-motion-state="first-touch"] .sc-rails {
   opacity: 0;
   transform: scale(1);
 }
@@ -130,14 +126,12 @@
   opacity: 0;
   transform: scale(0.66);
 }
-[data-motion-state="assembling"] .sc-slots,
-[data-motion-state="light-sweep"] .sc-slots {
+[data-motion-state="assembling"] .sc-slots {
   opacity: 1;
   transform: scale(1);
 }
 [data-motion-state="idle"] .sc-slots,
-[data-motion-state="first-touch"] .sc-slots,
-[data-motion-state="inspector-open"] .sc-slots {
+[data-motion-state="first-touch"] .sc-slots {
   opacity: 1;
   transform: none;
 }
@@ -156,10 +150,8 @@
   transform: translateY(16px) scale(0.98);
 }
 [data-motion-state="assembling"] .sc-slot,
-[data-motion-state="light-sweep"] .sc-slot,
 [data-motion-state="idle"] .sc-slot,
-[data-motion-state="first-touch"] .sc-slot,
-[data-motion-state="inspector-open"] .sc-slot {
+[data-motion-state="first-touch"] .sc-slot {
   opacity: 1;
   transform: none;
 }
@@ -174,11 +166,11 @@
   z-index: 5;
   background: radial-gradient(
     circle at var(--sc-origin-x) var(--sc-origin-y),
-    color-mix(in oklab, var(--sc-accent) 34%, transparent),
+    color-mix(in oklab, var(--tk-fg, #111827) 12%, transparent),
     transparent 60%
   );
 }
-[data-motion-state="light-sweep"] .sc-scene::after {
+[data-motion-state="assembling"] .sc-scene::after {
   animation: sc-sweep var(--sc-duration-sweep) var(--sc-ease-out-expo);
 }
 @keyframes sc-sweep {
@@ -224,7 +216,7 @@
 }
 
 /* ------------- CTA gravity: fragments align toward the action ------------- */
-[data-gravity="active"] .sc-slot:not([data-slot="primaryAction"]) {
+[data-gravity="active"] .sc-slot:not([data-slot="action"]) {
   transform: translateY(8px) scale(0.985);
   opacity: 0.82;
 }

@@ -17,6 +17,35 @@ import {
  */
 
 test.describe("US2 range remix — behaviour", () => {
+  test("keeps the shared surface slots stable across contexts", async ({ page }) => {
+    await gotoRemix(page);
+
+    const readSlots = () =>
+      page.locator(".sc-slot").evaluateAll((nodes) =>
+        nodes.map((node) => ({
+          slot: (node as HTMLElement).dataset.slot,
+          flip: (node as HTMLElement).dataset.flipId,
+        })),
+      );
+
+    const before = await readSlots();
+    expect(before.map((x) => x.slot)).toEqual([
+      "header",
+      "content",
+      "media",
+      "metric",
+      "list",
+      "trust",
+      "bottom",
+      "action",
+    ]);
+    expect(before.every((x) => x.slot === x.flip)).toBe(true);
+
+    await page.getByTestId("primary-action").click();
+    await waitForBusinessContext(page, "booking");
+    expect(await readSlots()).toEqual(before);
+  });
+
   test("remixes in the fixed order shop → booking → wallet → support → community", async ({ page }) => {
     await gotoRemix(page);
     expect(await surfaceAttr(page, "data-business-context")).toBe("shop");
@@ -64,6 +93,16 @@ test.describe("US2 range remix — behaviour", () => {
     expect(after).toEqual(before); // origin, runtime, theme unchanged
   });
 
+  test("runtime badge stays visually anchored across a remix", async ({ page }) => {
+    await gotoRemix(page);
+    const before = await page.getByTestId("runtime-badge").boundingBox();
+    await page.getByTestId("primary-action").click();
+    await waitForBusinessContext(page, "booking");
+    const after = await page.getByTestId("runtime-badge").boundingBox();
+    expect(Math.abs((after?.x ?? 0) - (before?.x ?? 0))).toBeLessThanOrEqual(1);
+    expect(Math.abs((after?.y ?? 0) - (before?.y ?? 0))).toBeLessThanOrEqual(1);
+  });
+
   test("all three triggers emit the identical recorder sequence", async ({ page }) => {
     // 1) context chip
     await gotoRemix(page);
@@ -89,8 +128,27 @@ test.describe("US2 range remix — behaviour", () => {
     await dragSurface(page, -120); // swipe left → next context
     await waitForBusinessContext(page, "booking");
     expect(await surfaceAttr(page, "data-business-context")).toBe("booking"); // exactly one step
-    const drag = (await getRecorder(page)).find((e) => e.reaction === "remix-recomposing");
+    const drag = (await getRecorder(page)).find((e) => e.reaction === "templateChanged");
     expect(drag?.source).toBe("pointer");
+  });
+
+  test("remix records preservation marks for template, tokens, safe-area, and runtime", async ({ page }) => {
+    await gotoRemix(page);
+    await page.getByTestId("primary-action").click();
+    await waitForMotionState(page, "continuity");
+
+    const reactions = (await getRecorder(page)).map((e) => e.reaction);
+    expect(reactions).toEqual([...REMIX_STEP_SEQUENCE]);
+  });
+
+  test("rotating state does not rotate the whole surface in 3D", async ({ page }) => {
+    await page.goto("/?scene=rangeRemix&context=booking&motion=rotating");
+    await waitForMotionState(page, "rotating");
+
+    const transforms = await page.locator(".sc-slot").evaluateAll((nodes) =>
+      nodes.map((node) => getComputedStyle(node).transform),
+    );
+    expect(transforms.some((t) => t.includes("matrix3d"))).toBe(false);
   });
 });
 

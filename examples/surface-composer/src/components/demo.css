@@ -1,8 +1,9 @@
 /*
  * Static styling for the demo-only primitives (Seed, Rails, TactileRing,
  * GravityLayer wrapper, switcher, action, proof strip). Motion lives in
- * motion/birth.css. The committed accent (--sc-accent) defaults to the kit
- * accent here and is refined to the OKLCH committed accent in T047.
+ * motion/birth.css. The committed accent (--sc-accent) is seeded from the kit
+ * accent in motion/easing.css and stays reserved for origin, active context,
+ * CTA, and contact feedback.
  */
 .sc-scene {
   position: relative;
@@ -44,7 +45,7 @@
 }
 .sc-rail {
   fill: none;
-  stroke: color-mix(in oklab, var(--sc-accent) 55%, transparent);
+  stroke: color-mix(in oklab, var(--tk-fg-muted, #64748b) 28%, transparent);
   stroke-width: 1;
   stroke-dasharray: 2 4;
 }
@@ -71,9 +72,12 @@
 
 /* Switcher: a horizontal chip row that scrolls rather than overlaps when long
  * Russian labels exceed 320px (SC-006). */
+.sc-context-control {
+  min-width: 0;
+}
 .sc-switcher {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   overflow-x: auto;
   padding: 2px 0;
   scrollbar-width: none;
@@ -94,6 +98,23 @@
   --tk-accent: var(--sc-accent);
 }
 
+.sc-buyer-proof {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  margin-bottom: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.sc-buyer-proof::-webkit-scrollbar {
+  display: none;
+}
+.sc-bottom-slot {
+  display: block;
+  height: 0;
+}
+
 .sc-proof-strip {
   display: flex;
   flex-wrap: wrap;
@@ -104,9 +125,9 @@
   font: 500 11px/1.4 var(--tk-font, system-ui);
   padding: 4px 9px;
   border-radius: 999px;
-  color: var(--sc-accent);
-  background: color-mix(in oklab, var(--sc-accent) 12%, transparent);
-  border: 1px solid color-mix(in oklab, var(--sc-accent) 28%, transparent);
+  color: var(--tk-fg, #111827);
+  background: var(--tk-section-bg, color-mix(in oklab, var(--tk-fg, #111827) 5%, transparent));
+  border: 1px solid var(--tk-sep, rgb(0 0 0 / 0.08));
 }
 
 /* Clean promo strip (replaces TKBannerCard — no decorative orbs). Accent-tinted
@@ -117,8 +138,8 @@
   gap: 4px;
   padding: 14px 16px;
   border-radius: var(--tk-r3, 16px);
-  background: color-mix(in oklab, var(--sc-accent) 9%, var(--tk-bg, #fff));
-  border: 1px solid color-mix(in oklab, var(--sc-accent) 18%, transparent);
+  background: var(--tk-section-bg, color-mix(in oklab, var(--tk-fg, #111827) 4%, var(--tk-bg, #fff)));
+  border: 1px solid var(--tk-sep, rgb(0 0 0 / 0.08));
 }
 .sc-promo__title {
   font-size: 16px;
@@ -137,6 +158,78 @@
   margin: 0 0 10px;
   color: var(--tk-fg-muted, #6b7280);
   font-size: 14px;
+}
+
+.sc-state-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+.sc-state-strip__item {
+  min-width: 0;
+  min-height: 62px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 12px;
+  background: var(--tk-section-bg, color-mix(in oklab, var(--tk-fg, #111827) 4%, var(--tk-bg, #fff)));
+  border: 1px solid var(--tk-sep, rgb(0 0 0 / 0.08));
+}
+.sc-state-strip__label {
+  color: var(--tk-fg, #111827);
+  font: 650 12px/1.1 var(--tk-font, system-ui);
+}
+.sc-state-strip__bar {
+  position: relative;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--tk-fg-muted, #64748b) 14%, transparent);
+}
+.sc-state-strip__bar::after {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 42%;
+  border-radius: inherit;
+  background: color-mix(in oklab, var(--tk-fg-muted, #64748b) 46%, transparent);
+  animation: sc-state-loading 860ms var(--sc-ease-out-quint) infinite;
+}
+@keyframes sc-state-loading {
+  0% {
+    transform: translateX(-80%);
+  }
+  100% {
+    transform: translateX(240%);
+  }
+}
+.sc-state-strip__note {
+  color: var(--tk-fg-muted, #64748b);
+  font: 500 11px/1.25 var(--tk-font, system-ui);
+}
+.sc-state-strip__retry {
+  align-self: flex-start;
+  min-height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--tk-sep, rgb(0 0 0 / 0.08));
+  border-radius: 999px;
+  color: var(--tk-fg, #111827);
+  background: var(--tk-bg, #fff);
+  font: 650 11px/1 var(--tk-font, system-ui);
+}
+.sc-state-strip__retry:focus-visible {
+  outline: 2px solid var(--tk-focus, var(--tk-accent));
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sc-state-strip__bar::after {
+    animation: none;
+    transform: translateX(70%);
+  }
 }
 
 /* Dev-only recorder HUD on the dark stage (never in the buyer frame). */

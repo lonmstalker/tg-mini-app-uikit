@@ -1,18 +1,19 @@
 /*
  * US2 remix choreography (D6, FR-004): one object morphing, not navigation.
- * remix-start → separating → rotating → recomposing → locked → continuity. The
- * business context changes at `recomposing` so new content inherits the old
- * bounds (FLIP shared-element morph via motion/flip.ts); CSS owns the rotation
- * around the seed axis. The same sequence runs for all three triggers and emits
- * the REMIX_STEP_SEQUENCE fixture.
+ * remix-start → separating → rotating → locked → continuity. The business
+ * context changes inside the rotating hold so new content inherits the old
+ * bounds (FLIP shared-element morph via motion/flip.ts); CSS keeps it as a
+ * per-slot reflow, not a page flip. The same sequence runs for all three
+ * triggers and emits the REMIX_STEP_SEQUENCE fixture plus the preservation
+ * marks required by the recorder contract.
  *
  * Continuity (T041): the timeline only ever changes `businessContext` + content
  * — the frame, theme, safe-area, origin, runtime mark, and primary-action slot
  * position are untouched, so they stay anchored across every remix.
  *
- * Reduced motion: the SAME six events fire in the SAME order (FR-010); the
- * rotation/perspective is swapped for a stepped crossfade in CSS and the FLIP is
- * skipped. All timing is deferred so StrictMode's double-mount stays clean.
+ * Reduced motion: the SAME events fire in the SAME order (FR-010); the reflow is
+ * swapped for a stepped opacity change in CSS and the FLIP is skipped. All
+ * timing is deferred so StrictMode's double-mount stays clean.
  */
 import type { Dispatch } from "react";
 import type { BusinessContext, ComposerAction } from "../../app/composerReducer";
@@ -66,9 +67,12 @@ export function runRemix(dispatch: Dispatch<ComposerAction>, opts: RemixOptions)
         dispatch({
           type: "remix",
           businessContext: to,
-          motionState: "recomposing",
-          record: { source, target: `surface.remix.${to}`, reaction: "remix-recomposing" },
+          motionState: "rotating",
+          record: { source, target: `surface.remix.${to}`, reaction: "templateChanged" },
         });
+        dispatch({ type: "record", record: { source, target: "surface.tokens", reaction: "tokensPreserved" } });
+        dispatch({ type: "record", record: { source, target: "surface.safe-area", reaction: "safeAreaPreserved" } });
+        dispatch({ type: "record", record: { source, target: "surface.runtime", reaction: "runtimePreserved" } });
         if (!reducedMotion && prevRects) {
           const captured = prevRects;
           requestAnimationFrame(() => playFlip(slotEntries(surface), captured, { duration: SC_DURATION.remix }));
