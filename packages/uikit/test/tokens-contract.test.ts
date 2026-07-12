@@ -179,6 +179,66 @@ describe("design token contract", () => {
     expect(tokensCss).toMatch(/--tk-separator:\s*var\(--tk-sep\)/);
   });
 
+  it("TYP-001 declares concrete color defaults on the bare .tk block (no data-theme needed)", () => {
+    // The base `.tk { ... }` block, before the first themed selector.
+    const baseStart = tokensCss.indexOf(".tk {");
+    const baseEnd = tokensCss.indexOf('.tk[data-theme="light"]');
+    expect(baseStart).toBeGreaterThan(-1);
+    expect(baseEnd).toBeGreaterThan(baseStart);
+    const baseBlock = tokensCss.slice(baseStart, baseEnd);
+    // Each must be declared with a concrete color literal (not only under [data-theme]).
+    for (const token of ["--tk-text", "--tk-bg", "--tk-surface", "--tk-text-2", "--tk-text-3"]) {
+      expect(baseBlock).toMatch(new RegExp(`${token}:\\s*(#[0-9a-f]{3,8}|rgba?\\()`, "i"));
+    }
+  });
+
+  it("TYP-001 keeps the themed blocks overriding the base defaults", () => {
+    expect(tokensCss).toMatch(/\.tk\[data-theme="light"\][\s\S]*?--tk-text:\s*#/);
+    expect(tokensCss).toMatch(/\.tk\[data-theme="dark"\][\s\S]*?--tk-bg:\s*#/);
+  });
+
+  it("TYP-009 ships solid fallbacks for color-mix tokens via @supports", () => {
+    const m = tokensCss.match(/@supports not \(color: color-mix\(in srgb[\s\S]*?\r?\n\}/);
+    expect(m, "missing @supports not (color-mix) fallback block").not.toBeNull();
+    const block = m![0];
+    for (const token of [
+      "--tk-accent-06",
+      "--tk-accent-12",
+      "--tk-accent-20",
+      "--tk-accent-35",
+      "--tk-accent-ink",
+      "--tk-red-ink",
+      "--tk-green-ink",
+      "--tk-orange-ink",
+      "--tk-surface-2",
+      "--tk-surface-3",
+      "--tk-glass",
+      "--tk-scrim",
+    ]) {
+      // declared in the fallback block, and NOT with another color-mix() value
+      const decl = block.match(new RegExp(`${token}:\\s*([^;]+);`));
+      expect(decl, `${token} missing from fallback block`).not.toBeNull();
+      expect(decl![1]).not.toContain("color-mix(");
+    }
+  });
+
+  it("TYP-009 keeps color-mix as the progressive-enhancement primary", () => {
+    expect(tokensCss).toMatch(/--tk-accent-ink:\s*color-mix\(/);
+  });
+
+  it("TYP-009 fallback gives dark theme its own ink colors", () => {
+    const m = tokensCss.match(/@supports not \(color: color-mix\(in srgb[\s\S]*?\r?\n\}/);
+    expect(m![0]).toMatch(/\.tk\[data-theme="dark"\]\s*\{[\s\S]*?--tk-accent-ink:/);
+  });
+
+  it("CC-09 ships an OS-independent motion-off path keyed on data-tk-motion", () => {
+    const m = tokensCss.match(/\.tk\[data-tk-motion="off"\]\s*\{[\s\S]*?\}/);
+    expect(m, "missing [data-tk-motion=off] block").not.toBeNull();
+    for (const token of ["--tk-t1", "--tk-t2", "--tk-t3"]) {
+      expect(m![0]).toMatch(new RegExp(`${token}:\\s*1ms`));
+    }
+  });
+
   it("TOK-CONTRACT-013 keeps the package CSS entrypoint available in package exports and build output", () => {
     const packageJson = JSON.parse(readFileSync(join(packageRoot, "package.json"), "utf8")) as {
       exports?: Record<string, unknown>;

@@ -62,7 +62,7 @@ describe("navigation module reorganization", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Back" }));
     fireEvent.click(screen.getByRole("button", { name: /Settings/ }));
-    fireEvent.click(screen.getByRole("button", { name: "Closed" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Closed" })); // NAV-002: segmented radiogroup
     fireEvent.click(screen.getByRole("button", { name: "Paid" }));
     fireEvent.click(screen.getByRole("button", { name: /Done/ }));
     fireEvent.click(screen.getByRole("button", { name: "Page 2" }));

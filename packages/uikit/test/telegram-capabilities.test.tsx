@@ -548,7 +548,7 @@ describe("expanded Telegram capabilities", () => {
     expect(root.classList.contains("tk-kb-open")).toBe(false);
 
     const focused = document.createElement("input");
-    document.body.append(focused);
+    root.append(focused); // FND-009: the class scopes to the root owning the focused editable
     focused.focus();
     act(() => {
       listeners.get("resize")?.();

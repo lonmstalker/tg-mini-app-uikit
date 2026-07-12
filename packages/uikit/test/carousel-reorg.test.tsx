@@ -27,7 +27,8 @@ describe("carousel module reorganization", () => {
     const scrollTo = vi.fn();
     Object.defineProperty(track, "scrollTo", { value: scrollTo, configurable: true });
     fireEvent.click(screen.getByRole("button", { name: "Page 3" }));
-    expect(scrollTo).toHaveBeenCalledWith({ left: 240, behavior: "smooth" });
+    // stride is clientWidth(120) + gap(10) = 130, so slide index 2 → 260 (CRS-001)
+    expect(scrollTo).toHaveBeenCalledWith({ left: 260, behavior: "smooth" });
     expect(onPageChange).toHaveBeenLastCalledWith(2);
   });
 });

@@ -177,7 +177,7 @@ describe("M7.4 optional haptics", () => {
     );
     fireEvent.click(screen.getByRole("switch"));
     expect(calls).toContain("selection");
-    fireEvent.click(screen.getByRole("button", { name: "b" }));
+    fireEvent.click(screen.getByRole("radio", { name: "b" })); // NAV-002: segmented radiogroup
     expect(calls.filter((c) => c === "selection")).toHaveLength(2);
   });
 

@@ -23,8 +23,9 @@ describe("accessibility semantics", () => {
 
     const mon = screen.getByRole("button", { name: "Mon" });
     const tue = screen.getByRole("button", { name: "Tue" });
-    expect(mon).toHaveAttribute("aria-pressed", "false");
-    expect(tue).toHaveAttribute("aria-pressed", "false");
+    // FBK-004: plain action bars (no selectedIndex) are not toggle buttons → no aria-pressed.
+    expect(mon).not.toHaveAttribute("aria-pressed");
+    expect(tue).not.toHaveAttribute("aria-pressed");
 
     mon.focus();
     await userEvent.keyboard("{Enter}");

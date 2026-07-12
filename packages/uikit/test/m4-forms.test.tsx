@@ -465,8 +465,8 @@ describe("M4.9 control extras", () => {
   it("TKRating readonly ignores clicks; allowHalf renders halves", () => {
     const onChange = vi.fn();
     render(<kit.TKRating readonly defaultValue={3.5} allowHalf onChange={onChange} />);
-    const group = screen.getByRole("group");
-    const buttons = within(group).getAllByRole("button");
+    const group = screen.getByRole("radiogroup"); // CTL-001: rating is a radiogroup
+    const buttons = within(group).getAllByRole("radio");
     fireEvent.click(buttons[4]);
     expect(onChange).not.toHaveBeenCalled();
   });

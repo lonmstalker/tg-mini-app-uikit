@@ -57,14 +57,22 @@ describe("M1 TKLocaleProvider", () => {
   });
 
   it("localizes aria labels (Sheet close, Stepper, OTP)", () => {
-    render(
+    // The Sheet is a modal: it now inerts the background (OVL-006), so unrelated
+    // controls can't be live siblings of an open sheet — check it on its own,
+    // then the rest in a fresh mount.
+    const { unmount } = render(
       <TKLocaleProvider locale={ruLocale}>
         <TKSheet open title="T" />
+      </TKLocaleProvider>,
+    );
+    expect(screen.getByRole("button", { name: "Закрыть" })).toBeInTheDocument();
+    unmount();
+    render(
+      <TKLocaleProvider locale={ruLocale}>
         <TKStepper />
         <TKOTP />
       </TKLocaleProvider>,
     );
-    expect(screen.getByRole("button", { name: "Закрыть" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Уменьшить" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Увеличить" })).toBeInTheDocument();
     expect(screen.getByLabelText("Одноразовый код")).toBeInTheDocument();

@@ -23,9 +23,11 @@ describe("M3.1 useDragGesture math", () => {
     expect(tkShouldCommit(80, 0, 200)).toBe(false); // 40%
   });
 
-  it("commits on a fast flick even with a small offset", () => {
-    expect(tkShouldCommit(30, 0.9, 200)).toBe(true);
-    expect(tkShouldCommit(30, 0.1, 200)).toBe(false);
+  it("commits on a fast flick once it clears the INT-001 floor", () => {
+    // floor for size 200 = min(200*0.15, 48) = 30; a flick must travel past it.
+    expect(tkShouldCommit(60, 0.9, 200)).toBe(true);
+    expect(tkShouldCommit(20, 0.9, 200)).toBe(false); // micro-flick under the floor
+    expect(tkShouldCommit(60, 0.1, 200)).toBe(false); // far enough but too slow
   });
 
   it("never commits when the gesture moved back past zero", () => {
@@ -52,7 +54,7 @@ describe("M3.6 useLongPress", () => {
     const fn = vi.fn();
     render(<LongPressProbe onLongPress={fn} />);
     const btn = screen.getByRole("button");
-    fireEvent.pointerDown(btn, { clientX: 10, clientY: 10 });
+    fireEvent.pointerDown(btn, { clientX: 10, clientY: 10, isPrimary: true });
     act(() => vi.advanceTimersByTime(499));
     expect(fn).not.toHaveBeenCalled();
     act(() => vi.advanceTimersByTime(2));
@@ -63,7 +65,7 @@ describe("M3.6 useLongPress", () => {
     const fn = vi.fn();
     render(<LongPressProbe onLongPress={fn} />);
     const btn = screen.getByRole("button");
-    fireEvent.pointerDown(btn, { clientX: 10, clientY: 10 });
+    fireEvent.pointerDown(btn, { clientX: 10, clientY: 10, isPrimary: true });
     act(() => vi.advanceTimersByTime(300));
     fireEvent.pointerUp(btn);
     act(() => vi.advanceTimersByTime(500));
@@ -74,7 +76,7 @@ describe("M3.6 useLongPress", () => {
     const fn = vi.fn();
     render(<LongPressProbe onLongPress={fn} />);
     const btn = screen.getByRole("button");
-    fireEvent.pointerDown(btn, { clientX: 10, clientY: 10 });
+    fireEvent.pointerDown(btn, { clientX: 10, clientY: 10, isPrimary: true });
     fireEvent.pointerMove(btn, { clientX: 40, clientY: 10 });
     act(() => vi.advanceTimersByTime(600));
     expect(fn).not.toHaveBeenCalled();
@@ -196,10 +198,12 @@ describe("M3.5 TKSwipeCell", () => {
     { label: "Delete", icon: "trash" as const, tone: "red" as const, onAction: onDelete },
   ];
 
-  it("full swipe fires the action", () => {
+  it("GES-007: a full swipe on a destructive action OPENS the row, never auto-fires", () => {
     const onDelete = vi.fn();
     render(
-      <kit.TKSwipeCell trailing={actions(onDelete)} testId="swipe">
+      // fullSwipe explicitly enabled — a red (destructive) action must still NOT
+      // auto-fire on over-swipe; it opens so the user confirms with a tap (CC-01).
+      <kit.TKSwipeCell trailing={actions(onDelete)} fullSwipe testId="swipe">
         <kit.TKCell title="Row" />
       </kit.TKSwipeCell>,
     );
@@ -208,7 +212,51 @@ describe("M3.5 TKSwipeCell", () => {
     fireEvent.pointerDown(cell, { pointerId: 1, clientX: 300, clientY: 10 });
     fireEvent.pointerMove(cell, { pointerId: 1, clientX: 20, clientY: 10 });
     fireEvent.pointerUp(cell, { pointerId: 1, clientX: 20, clientY: 10 });
+    expect(onDelete).not.toHaveBeenCalled();
+    // the revealed button fires it on a deliberate tap
+    fireEvent.click(screen.getByRole("button", { name: "Delete" }));
     expect(onDelete).toHaveBeenCalledOnce();
+  });
+
+  it("GES-007: fullSwipe auto-fires a NON-destructive first action", () => {
+    const onArchive = vi.fn();
+    render(
+      <kit.TKSwipeCell
+        trailing={[{ label: "Archive", icon: "check" as const, tone: "green" as const, onAction: onArchive }]}
+        fullSwipe
+        testId="swipe"
+      >
+        <kit.TKCell title="Row" />
+      </kit.TKSwipeCell>,
+    );
+    const cell = screen.getByTestId("swipe");
+    Object.defineProperty(cell, "clientWidth", { value: 320, configurable: true });
+    fireEvent.pointerDown(cell, { pointerId: 1, clientX: 300, clientY: 10 });
+    fireEvent.pointerMove(cell, { pointerId: 1, clientX: 20, clientY: 10 });
+    fireEvent.pointerUp(cell, { pointerId: 1, clientX: 20, clientY: 10 });
+    expect(onArchive).toHaveBeenCalledOnce();
+  });
+
+  it("GES-007: destructive:true guards a non-red first action from auto-fire", () => {
+    const onPurge = vi.fn();
+    render(
+      // Orange, not red — colour alone wouldn't guard it; `destructive:true` must.
+      <kit.TKSwipeCell
+        trailing={[{ label: "Purge", icon: "trash" as const, tone: "orange" as const, destructive: true, onAction: onPurge }]}
+        fullSwipe
+        testId="swipe"
+      >
+        <kit.TKCell title="Row" />
+      </kit.TKSwipeCell>,
+    );
+    const cell = screen.getByTestId("swipe");
+    Object.defineProperty(cell, "clientWidth", { value: 320, configurable: true });
+    fireEvent.pointerDown(cell, { pointerId: 1, clientX: 300, clientY: 10 });
+    fireEvent.pointerMove(cell, { pointerId: 1, clientX: 20, clientY: 10 });
+    fireEvent.pointerUp(cell, { pointerId: 1, clientX: 20, clientY: 10 });
+    expect(onPurge).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Purge" }));
+    expect(onPurge).toHaveBeenCalledOnce();
   });
 
   it("keyboard alternative: action buttons are reachable without gestures", () => {

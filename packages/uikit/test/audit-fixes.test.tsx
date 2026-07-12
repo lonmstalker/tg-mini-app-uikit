@@ -79,7 +79,7 @@ describe("audit · useKeyboard clears .tk-kb-open on unmount-while-open (#6)", (
 
     const { unmount } = renderHook(() => kit.useKeyboard(80));
     const input = document.createElement("input");
-    document.body.append(input);
+    root.append(input); // FND-009: class scopes to the root owning the focused editable
     input.focus();
     act(() => {
       vv.height = window.innerHeight - 300;

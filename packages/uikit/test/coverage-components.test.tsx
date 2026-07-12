@@ -36,7 +36,8 @@ describe("coverage-backed component behaviours", () => {
     Object.defineProperty(track, "scrollTo", { value: scrollTo, configurable: true });
     fireEvent.click(screen.getByRole("button", { name: "Page 3" }));
 
-    expect(scrollTo).toHaveBeenCalledWith({ left: 200, behavior: "smooth" });
+    // stride = clientWidth(100) + gap(10) = 110, slide index 2 → 220 (CRS-001)
+    expect(scrollTo).toHaveBeenCalledWith({ left: 220, behavior: "smooth" });
     expect(onPageChange).toHaveBeenLastCalledWith(2);
   });
 
@@ -57,7 +58,8 @@ describe("coverage-backed component behaviours", () => {
       />,
     );
 
-    const [minThumb, maxThumb] = screen.getAllByRole("slider", { name: "Budget" });
+    // CTL-005: range thumbs now carry distinct "{label} minimum/maximum" names.
+    const [minThumb, maxThumb] = screen.getAllByRole("slider", { name: /Budget/ });
     fireEvent.keyDown(minThumb, { key: "End" });
     expect(minThumb).toHaveAttribute("aria-valuenow", "70");
     expect(onRangeChange).toHaveBeenLastCalledWith([70, 70]);
@@ -111,8 +113,9 @@ describe("coverage-backed component behaviours", () => {
     fireEvent.dragOver(row);
     fireEvent.drop(row, { dataTransfer: { files: [text, image] } });
 
-    expect(onFilesChange).toHaveBeenLastCalledWith([text, image]);
-    expect(screen.getByText("note.txt, photo.png")).toBeInTheDocument();
+    // INP-005: the text/plain file is filtered out against accept="image/*".
+    expect(onFilesChange).toHaveBeenLastCalledWith([image]);
+    expect(screen.getByText("photo.png")).toBeInTheDocument();
     expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:preview");
   });
 
@@ -295,7 +298,8 @@ describe("coverage-backed component behaviours", () => {
     );
 
     fireEvent.keyDown(screen.getByTestId("card"), { key: "Enter" });
-    fireEvent.keyDown(screen.getByRole("button", { name: /Cell/ }), { key: " " });
+    // CRD-006: Space activates a div-button on keyup (native-button semantics).
+    fireEvent.keyUp(screen.getByRole("button", { name: /Cell/ }), { key: " " });
     fireEvent.click(screen.getByRole("button", { name: "Urgent" }));
 
     expect(onCard).toHaveBeenCalledOnce();
@@ -354,7 +358,8 @@ describe("coverage-backed component behaviours", () => {
       </>,
     );
 
-    await user.click(screen.getByTestId("a"));
+    // TCRD-004: the card's click is a real overlay button named by the title.
+    await user.click(screen.getByRole("button", { name: "Camera" }));
     expect(onClick).toHaveBeenCalledOnce();
 
     await user.click(screen.getByRole("button", { name: "Add to cart" }));
@@ -454,28 +459,28 @@ describe("coverage-backed component behaviours", () => {
     render(<kit.TKStepper editable min={1} max={5} defaultValue={2} onChange={onChange} />);
 
     const input = screen.getByRole("spinbutton", { name: "Quantity" }) as HTMLInputElement;
+    // CTL-006: clamp + commit on change (not only on blur).
     fireEvent.change(input, { target: { value: "9" } });
-    fireEvent.blur(input);
     expect(onChange).toHaveBeenLastCalledWith(5);
+    expect(input.value).toBe("5");
 
-    fireEvent.focus(input);
     fireEvent.change(input, { target: { value: "3" } });
-    fireEvent.keyDown(input, { key: "Enter" });
-    expect(onChange).toHaveBeenLastCalledWith(5);
+    expect(onChange).toHaveBeenLastCalledWith(3);
 
+    // autorepeat decrement from 3 → 2 → 1 (min)
     const decrement = screen.getByRole("button", { name: "Decrease" });
     fireEvent.pointerDown(decrement);
     act(() => vi.advanceTimersByTime(650));
     fireEvent.pointerUp(decrement);
-    expect(onChange).toHaveBeenCalledWith(4);
-    expect(onChange).toHaveBeenCalledWith(3);
+    expect(onChange).toHaveBeenCalledWith(2);
+    expect(onChange).toHaveBeenCalledWith(1);
   });
 
   it("TKRating supports hover, half-star clicks and readonly mode", () => {
     const onChange = vi.fn();
     const { rerender } = render(<kit.TKRating allowHalf defaultValue={2.5} onChange={onChange} testId="rating" />);
 
-    const stars = screen.getAllByRole("button");
+    const stars = screen.getAllByRole("radio"); // CTL-001: rating is a radiogroup
     Object.defineProperty(stars[2], "getBoundingClientRect", {
       value: () => ({ left: 0, width: 20, top: 0, right: 20, bottom: 20, height: 20 }),
       configurable: true,
@@ -489,9 +494,9 @@ describe("coverage-backed component behaviours", () => {
     expect(onChange).toHaveBeenLastCalledWith(3);
 
     rerender(<kit.TKRating readonly defaultValue={4} />);
-    fireEvent.click(screen.getAllByRole("button")[0]);
+    fireEvent.click(screen.getAllByRole("radio")[0]);
     expect(onChange).toHaveBeenCalledTimes(2);
-    expect(screen.getAllByRole("button")[0]).toHaveAttribute("aria-disabled", "true");
+    expect(screen.getAllByRole("radio")[0]).toHaveAttribute("aria-disabled", "true");
   });
 
   it("TKDateInput opens month/year selectors and applies calendar selections", async () => {
@@ -637,7 +642,9 @@ describe("coverage-backed component behaviours", () => {
       </>,
     );
 
-    fireEvent.error(screen.getByAltText("Anna"));
+    // The avatar photo is decorative (alt="", name is on the container — DSP-001),
+    // so reach the <img> through the avatar root rather than by alt text.
+    fireEvent.error(screen.getByTestId("avatar").querySelector("img")!);
     expect(screen.getByTestId("avatar").textContent).toContain("AK");
 
     fireEvent.load(screen.getByAltText("Photo"));
@@ -648,7 +655,8 @@ describe("coverage-backed component behaviours", () => {
     fireEvent.click(bar);
     fireEvent.mouseLeave(bar);
     expect(onBarClick).toHaveBeenCalledWith(1);
-    expect(screen.getByTestId("progress")).toHaveAttribute("aria-valuenow", "140");
+    // FBK-002: aria-valuenow is clamped to match the visual fill (was 140).
+    expect(screen.getByTestId("progress")).toHaveAttribute("aria-valuenow", "100");
 
     rerender(<kit.TKImage src="photo.png" alt="Photo" onError={onError} testId="image" />);
     fireEvent.error(screen.getByAltText("Photo"));

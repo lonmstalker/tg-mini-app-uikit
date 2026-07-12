@@ -47,12 +47,12 @@ describe("M2.1 roving tabindex & arrow navigation", () => {
   it("TKSegmented: roving tabindex, arrows move the selection", () => {
     const onChange = vi.fn();
     render(<TKSegmented options={["one", "two", "three"]} defaultValue="one" onChange={onChange} />);
-    const buttons = screen.getAllByRole("button");
+    const buttons = screen.getAllByRole("radio"); // NAV-002: segmented is a radiogroup
     expect(buttons.map((b) => b.tabIndex)).toEqual([0, -1, -1]);
     buttons[0].focus();
     fireEvent.keyDown(buttons[0], { key: "ArrowRight" });
     expect(onChange).toHaveBeenLastCalledWith("two");
-    expect(document.activeElement).toBe(screen.getAllByRole("button")[1]);
+    expect(document.activeElement).toBe(screen.getAllByRole("radio")[1]);
   });
 
   it("TKCategoryTabs: arrows move the active tab", () => {
@@ -80,6 +80,7 @@ describe("M2.1 roving tabindex & arrow navigation", () => {
   it("TKInlineButtons: toolbar focus roving with Home/End", () => {
     render(
       <TKInlineButtons
+        ariaLabel="View"
         items={[
           { id: "a", label: "A" },
           { id: "b", label: "B" },
@@ -87,7 +88,8 @@ describe("M2.1 roving tabindex & arrow navigation", () => {
         ]}
       />,
     );
-    const buttons = screen.getAllByRole("button");
+    // single-select InlineButtons now exposes radiogroup/radio semantics (BTN-002)
+    const buttons = screen.getAllByRole("radio");
     buttons[0].focus();
     fireEvent.keyDown(buttons[0], { key: "End" });
     expect(document.activeElement).toBe(buttons[2]);
@@ -115,7 +117,8 @@ describe("M2.1 roving tabindex & arrow navigation", () => {
 describe("M2.4 TKSegmented disabled option is visibly distinct", () => {
   it("renders the disabled option dimmed with tertiary color", () => {
     render(<TKSegmented options={["on", { value: "off", disabled: true }]} />);
-    const off = screen.getByRole("button", { name: "off" });
+    const off = screen.getByRole("radio", { name: "off" }); // NAV-002
+
     expect(off).toBeDisabled();
     expect(off.style.opacity).toBe("0.45");
     expect(off.style.color).toBe("var(--tk-text-3)");
