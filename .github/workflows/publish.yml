@@ -1,0 +1,45 @@
+name: Publish
+
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  publish:
+    name: gates & npm publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # npm --provenance
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # needed to verify the tag sits on main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          registry-url: https://registry.npmjs.org
+      # Release gates: the tagged commit must be on main and the tree clean.
+      - name: verify tag is on main
+        run: |
+          git fetch origin main
+          git merge-base --is-ancestor HEAD origin/main || {
+            echo "::error::tag does not point at a commit on main"; exit 1; }
+      - run: npm ci
+      - run: npm run build
+      - name: verify clean tree after build
+        run: |
+          git diff --quiet || { echo "::error::build left the tree dirty"; git status --porcelain; exit 1; }
+      - run: npm run typecheck
+      - run: npm run check:cycles
+      - run: npm run test:unit
+      - run: npm run check:package
+      - run: npm run check:api
+      # Topological publish: uikit resolves its @tg-mini-app/telegram peer from dist.
+      - run: npm publish --provenance --access public -w @tg-mini-app/telegram
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - run: npm publish --provenance --access public -w tg-mini-app-uikit
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
