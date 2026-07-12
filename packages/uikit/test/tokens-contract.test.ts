@@ -197,6 +197,26 @@ describe("design token contract", () => {
     expect(tokensCss).toMatch(/\.tk\[data-theme="dark"\][\s\S]*?--tk-bg:\s*#/);
   });
 
+  it("NAV2-103 scopes the default palette to top-level .tk roots at unchanged specificity", () => {
+    // The default variable block must NOT re-apply to a nested .tk (a
+    // standalone TKNavStack inside a themed host would repaint itself light
+    // and reset host-tuned --tk-safe-*), and must keep (0,1,0) specificity via
+    // :where so the [data-theme]/.tk-tg blocks still override by order.
+    const scoped = tokensCss.indexOf(".tk:where(:not(.tk .tk)) {");
+    expect(scoped).toBeGreaterThan(-1);
+    const scopedBlock = tokensCss.slice(scoped, tokensCss.indexOf("}", scoped));
+    for (const token of ["--tk-accent", "--tk-bg", "--tk-text", "--tk-safe-bottom", "--tk-kb-height"]) {
+      expect(scopedBlock).toContain(`${token}:`);
+    }
+    // Paint properties stay on EVERY .tk so a nested themed provider still paints.
+    const paint = tokensCss.slice(tokensCss.indexOf(".tk {"), scoped);
+    for (const decl of ["color: var(--tk-text)", "background: var(--tk-bg)"]) {
+      expect(paint).toContain(decl);
+    }
+    // And no default --tk-* variable may leak into the unscoped .tk block.
+    expect([...collectMatches(paint, declarationPattern)]).toEqual([]);
+  });
+
   it("TYP-009 ships solid fallbacks for color-mix tokens via @supports", () => {
     const m = tokensCss.match(/@supports not \(color: color-mix\(in srgb[\s\S]*?\r?\n\}/);
     expect(m, "missing @supports not (color-mix) fallback block").not.toBeNull();
