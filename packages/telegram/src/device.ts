@@ -39,6 +39,27 @@ export function useKeyboard(threshold = 80): TKKeyboardState {
     tkKbConsumers += 1;
     const closeThreshold = threshold * TK_KB_CLOSE_RATIO;
     let visible = false;
+    let settleTimer: number | undefined;
+    // Undo a leftover WebKit pan once the keyboard is geometrically closed.
+    // Deferred and re-checked rather than scrolled synchronously: WebKit runs
+    // its own settle animation after the keyboard retracts, and a synchronous
+    // scrollTo inside the event handler fights it (visible jump). The snapshot
+    // re-check reschedules while vv is still moving.
+    const scheduleSettle = () => {
+      window.clearTimeout(settleTimer);
+      const h0 = vv.height;
+      const o0 = vv.offsetTop ?? 0;
+      settleTimer = window.setTimeout(() => {
+        const stillShifted = (vv.offsetTop ?? 0) > 0 || window.scrollY > 0;
+        const stillClosed = Math.max(0, window.innerHeight - vv.height) <= closeThreshold;
+        if (!stillShifted || !stillClosed) return;
+        if (vv.height !== h0 || (vv.offsetTop ?? 0) !== o0) {
+          scheduleSettle();
+          return;
+        }
+        window.scrollTo(0, 0);
+      }, 120);
+    };
     const sync = () => {
       // Height overlapped by the keyboard. `offsetTop` must NOT be subtracted:
       // when WebKit pans the page toward a bottom field, `offsetTop` grows to
@@ -46,16 +67,15 @@ export function useKeyboard(threshold = 80): TKKeyboardState {
       // keyboard closed while it was physically open.
       const covered = Math.max(0, window.innerHeight - vv.height);
       const editableFocused = tkIsEditableActive();
-      // Some WebViews (Telegram iOS) scroll the page to keep a focused input in
-      // view and never scroll back after the keyboard closes, leaving the app
-      // pinned to the top slice of the screen. A mini app never scrolls the
-      // window itself, so a leftover offset with no editable focused is always
-      // that stuck state — undo it.
-      if (!editableFocused && ((vv.offsetTop ?? 0) > 0 || window.scrollY > 0)) {
-        window.scrollTo(0, 0);
-      }
       const open = visible ? covered > closeThreshold : editableFocused && covered > threshold;
       visible = open;
+      // Telegram iOS scrolls the page to keep a focused input in view and not
+      // always back — the iOS keyboard chevron even closes the keyboard with NO
+      // focus events, so the gate is the keyboard's geometry, never focus: a
+      // leftover offset with the keyboard closed is always the stuck state.
+      if (covered <= closeThreshold && ((vv.offsetTop ?? 0) > 0 || window.scrollY > 0)) {
+        scheduleSettle();
+      }
       setState((prev) => {
         const next = { visible: open, height: open ? Math.round(covered) : 0 };
         return prev.visible === next.visible && prev.height === next.height ? prev : next;
@@ -81,6 +101,7 @@ export function useKeyboard(threshold = 80): TKKeyboardState {
       document.removeEventListener("focusout", syncFocus);
       document.removeEventListener("visibilitychange", sync);
       window.removeEventListener("focus", sync);
+      window.clearTimeout(settleTimer);
       tkKbConsumers -= 1;
       // Clear the global class once the LAST keyboard consumer unmounts, so a
       // screen that navigates away while the keyboard is still up doesn't leave

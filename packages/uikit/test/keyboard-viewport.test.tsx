@@ -94,3 +94,83 @@ describe("KB-1.1 covered ignores offsetTop and open/close use split thresholds",
     expect(result.current.visible).toBe(false);
   });
 });
+
+/* ---------------- KB-1.2 · geometry-driven pan settle ---------------- */
+
+describe("KB-1.2 leftover WebKit pan settles by keyboard geometry, not focus", () => {
+  it("chevron close: no focus events, resize back → scrollTo(0,0) within ~150ms", () => {
+    vi.useFakeTimers();
+    const { vv, fire, innerHeight } = installVV();
+    const { result } = renderHook(() => useKeyboard(80));
+    input.focus();
+    act(() => {
+      vv.height = innerHeight - 300;
+      vv.offsetTop = 280; // WebKit panned to the focused field
+      fire("resize");
+    });
+    expect(result.current.visible).toBe(true);
+    // The iOS keyboard chevron closes the keyboard WITHOUT blurring the input
+    // and without focus events; only the geometry comes back.
+    act(() => {
+      vv.height = innerHeight;
+      fire("resize");
+    });
+    expect(result.current.visible).toBe(false);
+    expect(window.scrollTo).not.toHaveBeenCalled(); // never synchronously
+    act(() => {
+      vi.advanceTimersByTime(150);
+    });
+    expect(window.scrollTo).toHaveBeenCalledWith(0, 0);
+    expect(document.activeElement).toBe(input); // focus was never touched
+  });
+
+  it("does not fight a native settle: no scrollTo while vv keeps moving", () => {
+    vi.useFakeTimers();
+    const { vv, fire, innerHeight } = installVV();
+    renderHook(() => useKeyboard(80));
+    input.focus();
+    act(() => {
+      vv.height = innerHeight - 300;
+      vv.offsetTop = 280;
+      fire("resize");
+    });
+    // Keyboard retracts; WebKit walks offsetTop back over several frames.
+    for (const offsetTop of [220, 160, 90, 30]) {
+      act(() => {
+        vv.height = innerHeight;
+        vv.offsetTop = offsetTop;
+        fire("scroll");
+        vi.advanceTimersByTime(50); // < settle delay between movements
+      });
+    }
+    expect(window.scrollTo).not.toHaveBeenCalled();
+    // Native settle finished on its own — nothing left to undo.
+    act(() => {
+      vv.offsetTop = 0;
+      fire("scroll");
+      vi.advanceTimersByTime(200);
+    });
+    expect(window.scrollTo).not.toHaveBeenCalled();
+  });
+
+  it("settles a native settle that stalls mid-way", () => {
+    vi.useFakeTimers();
+    const { vv, fire, innerHeight } = installVV();
+    renderHook(() => useKeyboard(80));
+    input.focus();
+    act(() => {
+      vv.height = innerHeight - 300;
+      vv.offsetTop = 280;
+      fire("resize");
+    });
+    act(() => {
+      vv.height = innerHeight;
+      vv.offsetTop = 120; // retraction stalls here (the Telegram iOS bug)
+      fire("resize");
+    });
+    act(() => {
+      vi.advanceTimersByTime(150);
+    });
+    expect(window.scrollTo).toHaveBeenCalledWith(0, 0);
+  });
+});
