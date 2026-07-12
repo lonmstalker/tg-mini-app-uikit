@@ -145,19 +145,20 @@ let tkKbConsumers = 0;
 function tkSetKeyboardOpenClass(open: boolean): void {
   if (typeof document === "undefined") return;
   const roots = document.querySelectorAll<HTMLElement>(".tk");
-  if (!open) {
-    // Always clear every root so no subtree is left lifted by a phantom keyboard.
-    roots.forEach((el) => el.classList.remove("tk-kb-open"));
-    return;
-  }
   // Scope the lift to the root that actually contains the focused editable, so a
   // keyboard in one .tk subtree doesn't lift an unrelated one (FND-009).
   const active = document.activeElement;
-  const target = active instanceof HTMLElement ? active.closest(".tk") : null;
+  const target = open && active instanceof HTMLElement ? active.closest(".tk") : null;
   // A portalled editable (focused element outside every .tk) in a single-root
   // app still lifts that lone root, preserving the pre-scoping behavior.
-  const sole = !target && roots.length === 1 ? roots[0] : null;
-  roots.forEach((el) => el.classList.toggle("tk-kb-open", el === target || el === sole));
+  const sole = open && !target && roots.length === 1 ? roots[0] : null;
+  roots.forEach((el) => {
+    const lifted = el === target || el === sole;
+    // Write only on an actual change: sync() runs on every vv event (and
+    // consumer watchdogs ping it on a timer), and an unconditional class write
+    // invalidated styles on every .tk root each time.
+    if (el.classList.contains("tk-kb-open") !== lifted) el.classList.toggle("tk-kb-open", lifted);
+  });
 }
 
 export function useHideKeyboard(): { hide: () => boolean; isSupported: boolean } {

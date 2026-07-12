@@ -214,6 +214,12 @@
   --tk-scrim: color-mix(in srgb, #05080c 55%, transparent);
 }
 
+/* While the on-screen keyboard overlaps the layout, useKeyboard() marks the
+   .tk root owning the focused editable with `tk-kb-open` (FND-009 scoping).
+   The keyboard covers the home indicator, so the bottom safe inset must not
+   double-pad bottom-pinned bars while it is up. */
+.tk.tk-kb-open { --tk-safe-bottom: 0px; }
+
 /* ============ shared micro-interaction utilities ============ */
 
 .tk-press {

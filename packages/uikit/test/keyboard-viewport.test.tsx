@@ -96,6 +96,39 @@ describe("KB-1.1 covered ignores offsetTop and open/close use split thresholds",
   });
 });
 
+/* ---------------- KB-1.4 · idempotent .tk-kb-open writes ---------------- */
+
+describe("KB-1.4 repeated sync() without a state change mutates no attributes", () => {
+  it("zero class mutations on .tk roots for watchdog-style re-syncs", () => {
+    const { vv, fire, innerHeight } = installVV();
+    const root = document.createElement("div");
+    root.className = "tk";
+    root.append(input); // scope the lift to this root
+    document.body.append(root);
+    renderHook(() => useKeyboard(80));
+    input.focus();
+    act(() => {
+      vv.height = innerHeight - 300;
+      fire("resize");
+    });
+    expect(root.classList.contains("tk-kb-open")).toBe(true);
+
+    const mo = new MutationObserver(() => {});
+    mo.observe(root, { attributes: true });
+    // Same geometry re-synced many ways — the watchdog pattern.
+    act(() => {
+      fire("resize");
+      fire("scroll");
+      document.dispatchEvent(new FocusEvent("focusin", { bubbles: true }));
+      vi.advanceTimersByTime(500);
+    });
+    expect(mo.takeRecords()).toHaveLength(0);
+    mo.disconnect();
+    root.remove();
+    input = document.createElement("input"); // afterEach removes this one
+  });
+});
+
 /* ---------------- KB-1.2 · geometry-driven pan settle ---------------- */
 
 describe("KB-1.2 leftover WebKit pan settles by keyboard geometry, not focus", () => {
