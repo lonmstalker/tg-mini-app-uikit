@@ -311,6 +311,10 @@
   from { transform: translateX(100%); }
   to   { transform: translateX(0); }
 }
+/* no `from`: starts at the panel's computed transform (mid-swipe hand-off) */
+@keyframes tk-nav-out {
+  to { transform: translateX(100%); }
+}
 @keyframes tk-sheet-up {
   from { transform: translateY(104%); }
   to   { transform: translateY(0); }

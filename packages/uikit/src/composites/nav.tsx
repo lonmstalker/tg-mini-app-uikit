@@ -14,6 +14,7 @@ import {
 } from "react";
 import { tkShouldCommit, useDragGesture } from "../internal/useDragGesture";
 import { useBackIntercept } from "../foundation/telegram";
+import { useReducedMotion } from "../foundation/theme";
 
 export interface TKNavApi<TParams = unknown> {
   push: (panel: string, params?: TParams) => void;
@@ -139,6 +140,11 @@ export function TKNavStack({
         : internalStack;
   const [dragX, setDragX] = useState(0);
   const [dragging, setDragging] = useState(false);
+  // Once a panel's push entrance has played, never re-apply the animation on
+  // later renders: `fill-mode: both` otherwise keeps a resolved transform on
+  // the panel forever — a permanent containing block for position:fixed
+  // children and a leaked compositor layer per panel (sheet.tsx settled-guard).
+  const [settledKeys, setSettledKeys] = useState<ReadonlySet<number>>(() => new Set());
   const rootRef = useRef<HTMLDivElement>(null);
   const changeRef = useRef(onStackChange);
   changeRef.current = onStackChange;
@@ -247,6 +253,65 @@ export function TKNavStack({
     }
   }, [stack, panels]);
 
+  // Exit animation: when the top entry leaves the stack (pop / popTo /
+  // committed swipe-back) it would otherwise vanish from the DOM in the same
+  // commit — an old-screen flash on every "back". The departed entry keeps
+  // rendering on top of the stack and slides out to the right.
+  const [exiting, setExiting] = useState<{ entry: NavEntry; fromX: number } | null>(null);
+  const exitRef = useRef<HTMLDivElement>(null);
+  const exitFromXRef = useRef(0);
+  const reducedMotion = useReducedMotion();
+  // Detect the departure against the previous stack IN RENDER (an effect would
+  // still flash the old screen for one commit). Comparing stacks (not hooking
+  // pop()) also covers controlled mode, where a pop() is only a request until
+  // the host feeds the shorter stack back.
+  const prevStackRef = useRef(stack);
+  if (prevStackRef.current !== stack) {
+    const prev = prevStackRef.current;
+    prevStackRef.current = stack;
+    const prevTop = prev[prev.length - 1];
+    if (prevTop && stack.length < prev.length && !stack.some((entry) => entry.key === prevTop.key)) {
+      if (!reducedMotion) setExiting({ entry: prevTop, fromX: exitFromXRef.current });
+      exitFromXRef.current = 0;
+    }
+  }
+  useEffect(() => {
+    if (!exiting) return;
+    const node = exitRef.current;
+    // Native listener, not React's onAnimationEnd — React resolves animation
+    // events to a vendor-prefixed name in environments without AnimationEvent
+    // (the shared.tsx overlay-exit pattern).
+    const onEnd = (e: Event) => {
+      if ((e as AnimationEvent).animationName === "tk-nav-out" && e.target === node) setExiting(null);
+    };
+    node?.addEventListener("animationend", onEnd);
+    // Removal fallback: a backgrounded WKWebView swallows animation events, so
+    // a timer at duration+80ms guarantees the panel leaves the DOM.
+    const css = node ? getComputedStyle(node).animationDuration : "";
+    const duration = css.endsWith("ms") ? parseFloat(css) : css.endsWith("s") ? parseFloat(css) * 1000 : 260;
+    const timer = window.setTimeout(() => setExiting(null), duration + 80);
+    return () => {
+      node?.removeEventListener("animationend", onEnd);
+      window.clearTimeout(timer);
+    };
+  }, [exiting]);
+
+  // Settled-guard listener for the panels' entrance keyframes (same native-
+  // listener rationale as above); the panel is identified by data-tk-nav-key.
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    const onEnd = (e: Event) => {
+      if ((e as AnimationEvent).animationName !== "tk-nav-in") return;
+      const key = e.target instanceof HTMLElement ? e.target.dataset.tkNavKey : undefined;
+      if (key === undefined) return;
+      const num = Number(key);
+      setSettledKeys((prev) => (prev.has(num) ? prev : new Set(prev).add(num)));
+    };
+    root.addEventListener("animationend", onEnd);
+    return () => root.removeEventListener("animationend", onEnd);
+  }, []);
+
   const drag = useDragGesture({
     axis: "x",
     enabled: !!swipeBack && stack.length > 1,
@@ -256,7 +321,11 @@ export function TKNavStack({
       setDragging(false);
       setDragX(0);
       const width = rootRef.current?.clientWidth ?? 360;
-      if (tkShouldCommit(state.delta, state.velocity, width)) api.pop();
+      if (tkShouldCommit(state.delta, state.velocity, width)) {
+        // The exit layer picks the slide up from under the finger, not from 0.
+        exitFromXRef.current = state.delta;
+        api.pop();
+      }
     },
   });
 
@@ -329,6 +398,7 @@ export function TKNavStack({
               key={entry.key}
               ref={top ? topPanelRef : undefined}
               data-tk-nav-panel={entry.panel}
+              data-tk-nav-key={entry.key}
               role="region"
               aria-label={label}
               tabIndex={top ? -1 : undefined}
@@ -349,9 +419,10 @@ export function TKNavStack({
                     : undefined,
                 transition: dragging ? "none" : "transform var(--tk-t2) var(--tk-ease)",
                 zIndex: index,
-                // Only the forward push enters from the right. On pop the revealed
-                // panel rides its -30%→0 transform transition in from the left.
-                ...(top && index > 0 && !dragging && !dragX && dirRef.current === "push"
+                // Only the forward push enters from the right (and only until the
+                // entrance settles). On pop the revealed panel rides its -30%→0
+                // transform transition in from the left.
+                ...(top && index > 0 && !dragging && !dragX && dirRef.current === "push" && !settledKeys.has(entry.key)
                   ? { animation: "tk-nav-in var(--tk-t2) var(--tk-ease) both" }
                   : null),
               }}
@@ -364,6 +435,31 @@ export function TKNavStack({
             </div>
           );
         })}
+        {exiting ? (
+          <div
+            key={`exit-${exiting.entry.key}`}
+            ref={exitRef}
+            data-tk-nav-exit={exiting.entry.panel}
+            aria-hidden
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: "var(--tk-bg)",
+              zIndex: stack.length,
+              pointerEvents: "none",
+              // tk-nav-out has no `from`: the slide starts at the computed
+              // transform, i.e. exactly where the finger / pop left the panel.
+              transform: exiting.fromX ? `translateX(${exiting.fromX}px)` : undefined,
+              animation: "tk-nav-out var(--tk-t2) var(--tk-ease) forwards",
+            }}
+          >
+            <TKNavContext.Provider
+              value={{ ...api, activePanel: exiting.entry.panel, params: exiting.entry.params, depth: stack.length + 1 }}
+            >
+              {panels.get(exiting.entry.panel) ?? null}
+            </TKNavContext.Provider>
+          </div>
+        ) : null}
       </div>
     </TKNavContext.Provider>
   );
