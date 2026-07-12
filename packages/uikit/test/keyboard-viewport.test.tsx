@@ -386,6 +386,59 @@ describe("KB-1.2 leftover WebKit pan settles by keyboard geometry, not focus", (
     expect(window.scrollTo).toHaveBeenCalledWith(0, 0);
   });
 
+  it("never yanks a legitimately scrolled page: closed-keyboard sync with scrollY>0 but no pan", () => {
+    // A real app with a scrolling document: scrollY is the USER's position.
+    Object.defineProperty(document.documentElement, "scrollHeight", { value: 2000, configurable: true });
+    Object.defineProperty(document.documentElement, "clientHeight", { value: 800, configurable: true });
+    Object.defineProperty(window, "scrollY", { value: 500, configurable: true });
+    installVV();
+    renderHook(() => useKeyboard(80));
+    // Any sync trigger with the keyboard closed (focusin before the kb resize
+    // arrives) must NOT arm the settle: there is no pan (offsetTop 0), only scroll.
+    act(() => {
+      input.focus();
+      document.dispatchEvent(new FocusEvent("focusin", { bubbles: true }));
+      vi.advanceTimersByTime(130);
+    });
+    expect(window.scrollTo).not.toHaveBeenCalled();
+    Reflect.deleteProperty(document.documentElement, "scrollHeight");
+    Reflect.deleteProperty(document.documentElement, "clientHeight");
+  });
+
+  it("an actively changing scrollY inside the settle window restarts the countdown", () => {
+    const { vv, fire, innerHeight } = installVV();
+    renderHook(() => useKeyboard(80));
+    input.focus();
+    act(() => {
+      vv.height = innerHeight - 300;
+      vv.offsetTop = 280;
+      fire("resize");
+    });
+    // Keyboard closes with a stuck pan AND a leftover scroll offset (the doc
+    // itself is unscrollable — jsdom default — so both are WebKit artifacts).
+    Object.defineProperty(window, "scrollY", { value: 80, configurable: true });
+    act(() => {
+      vv.height = innerHeight;
+      vv.offsetTop = 120;
+      fire("resize");
+    });
+    act(() => {
+      vi.advanceTimersByTime(60);
+    });
+    // WebKit is still walking the scroll back — the stability snapshot must
+    // see the moving scrollY and reschedule instead of firing.
+    Object.defineProperty(window, "scrollY", { value: 30, configurable: true });
+    act(() => {
+      vi.advanceTimersByTime(70); // t=130 from arming: original countdown expired
+    });
+    expect(window.scrollTo).not.toHaveBeenCalled();
+    act(() => {
+      vi.advanceTimersByTime(120); // stable since the restart → now it settles
+    });
+    expect(window.scrollTo).toHaveBeenCalledWith(0, 0);
+    expect(window.scrollTo).toHaveBeenCalledTimes(1);
+  });
+
   it("settles a native settle that stalls mid-way", () => {
     const { vv, fire, innerHeight } = installVV();
     renderHook(() => useKeyboard(80));

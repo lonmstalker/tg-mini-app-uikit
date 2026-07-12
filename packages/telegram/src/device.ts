@@ -48,23 +48,32 @@ export function useKeyboard(threshold = 80): TKKeyboardState {
     let settlePending = false;
     let settleH = 0;
     let settleO = 0;
+    let settleS = 0;
+    // A leftover scrollY marks the stuck pan only when the document CANNOT be
+    // user-scrolled — on a page with real overflow the same scrollY is the
+    // user's own position and must never be yanked back to 0.
+    const stuckShift = () =>
+      (vv.offsetTop ?? 0) > 0 || (window.scrollY > 0 && !tkIsDocumentScrollable());
     const scheduleSettle = () => {
       const h0 = vv.height;
       const o0 = vv.offsetTop ?? 0;
+      const s0 = window.scrollY;
       // Restart the countdown only when the geometry moved — a re-sync at an
       // unchanged viewport (deferred focusout, visibilitychange) must not keep
       // pushing an already-armed settle further out.
-      if (settlePending && settleH === h0 && settleO === o0) return;
+      if (settlePending && settleH === h0 && settleO === o0 && settleS === s0) return;
       window.clearTimeout(settleTimer);
       settlePending = true;
       settleH = h0;
       settleO = o0;
+      settleS = s0;
       settleTimer = window.setTimeout(() => {
         settlePending = false;
-        const stillShifted = (vv.offsetTop ?? 0) > 0 || window.scrollY > 0;
         const stillClosed = Math.max(0, window.innerHeight - vv.height) <= closeThreshold;
-        if (!stillShifted || !stillClosed) return;
-        if (vv.height !== h0 || (vv.offsetTop ?? 0) !== o0) {
+        if (!stuckShift() || !stillClosed) return;
+        // The snapshot includes scrollY: WebKit walking the scroll back (or the
+        // user actively scrolling) restarts the countdown instead of firing.
+        if (vv.height !== h0 || (vv.offsetTop ?? 0) !== o0 || window.scrollY !== s0) {
           scheduleSettle();
           return;
         }
@@ -98,9 +107,10 @@ export function useKeyboard(threshold = 80): TKKeyboardState {
       visible = open;
       // Telegram iOS scrolls the page to keep a focused input in view and not
       // always back — the iOS keyboard chevron even closes the keyboard with NO
-      // focus events, so the gate is the keyboard's geometry, never focus: a
-      // leftover offset with the keyboard closed is always the stuck state.
-      if (covered <= closeThreshold && ((vv.offsetTop ?? 0) > 0 || window.scrollY > 0)) {
+      // focus events, so the gate is the keyboard's geometry, never focus. The
+      // stuck-state signal is the PAN (vv.offsetTop > 0), or a scrollY the user
+      // could not have produced; a plain scrolled page must never arm it.
+      if (covered <= closeThreshold && stuckShift()) {
         scheduleSettle();
       }
       const height = open ? (covered > closeThreshold ? Math.round(covered) : knownKbHeight) : 0;
@@ -169,6 +179,13 @@ function tkIsEditableActive(): boolean {
   if (typeof document === "undefined") return false;
   const el = document.activeElement;
   return el instanceof HTMLElement && el.matches("input,textarea,[contenteditable]");
+}
+
+// Whether the page itself is a user scroller. When it is not, any non-zero
+// window.scrollY with the keyboard closed can only be a leftover WebKit pan.
+function tkIsDocumentScrollable(): boolean {
+  const el = document.scrollingElement ?? document.documentElement;
+  return !!el && el.scrollHeight > el.clientHeight;
 }
 
 // Ref-counted so concurrent consumers don't fight and the class is cleared only
