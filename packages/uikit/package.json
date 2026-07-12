@@ -1,6 +1,6 @@
 {
   "name": "tg-mini-app-uikit",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "iOS-flavored React UI kit for Telegram Mini Apps — design tokens, themed components, springy motion.",
   "license": "MIT",
   "type": "module",
@@ -27,7 +27,8 @@
     "**/*.css"
   ],
   "files": [
-    "dist"
+    "dist",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "build": "vite build && tsc -p tsconfig.build.json && node scripts/postbuild-types.mjs",
@@ -38,7 +39,7 @@
     "stories:build": "storybook build -c storybook/.storybook -o storybook-static"
   },
   "peerDependencies": {
-    "@tg-mini-app/telegram": "^0.1.0",
+    "@tg-mini-app/telegram": "^0.2.0",
     "react": "^18.0.0 || ^19.0.0",
     "react-dom": "^18.0.0 || ^19.0.0"
   },
@@ -67,5 +68,12 @@
     "react",
     "ui-kit",
     "design-tokens"
-  ]
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lonmstalker/tg-mini-app-uikit.git",
+    "directory": "packages/uikit"
+  },
+  "homepage": "https://github.com/lonmstalker/tg-mini-app-uikit#readme",
+  "bugs": "https://github.com/lonmstalker/tg-mini-app-uikit/issues"
 }

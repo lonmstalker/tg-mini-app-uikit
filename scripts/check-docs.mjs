@@ -76,7 +76,7 @@ mustContain("docs/site/pages/recipes.md", [
 mustContain(".github/workflows/docs.yml", ["npm run docs:check", "npm run docs:build"]);
 
 mustContain("CHANGELOG.md", ["0.2.0", "forwardRef", "TKLocaleProvider", "breaking"]);
-mustContain("packages/uikit/package.json", ['"version": "0.2.0"']);
+mustContain("packages/uikit/package.json", ['"version": "0.3.0"']);
 
 if (failures.length > 0) {
   console.error("Docs gate failed:");

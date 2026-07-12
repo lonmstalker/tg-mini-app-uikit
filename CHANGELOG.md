@@ -1,6 +1,11 @@
 # Changelog
 
-## 0.3.0 — 2026-06-16
+## 0.3.0 — 2026-07-12
+
+This release also ships the m2–m10 audit wave and the keyboard/viewport/nav
+overhaul (flicker-free keyboard, exit animations, scoped nested tokens, TKApp
+bootstrap, TKPage onRefresh, TKKeepMountTabs) — the full per-package notes
+live in `packages/uikit/CHANGELOG.md` and `packages/telegram/CHANGELOG.md`.
 
 The non-UI layers move into their own DDD-bounded, publishable packages; `tg-mini-app-uikit` keeps only UI and depends on the platform package as a peer. The kit's public surface is unchanged for existing consumers (a re-export shim), so this is a minor — the one action is adding the `@tg-mini-app/telegram` peer dependency.
 
