@@ -3,7 +3,11 @@
  * Shared by the SSR smoke test and the parameterized M0 API tests.
  * Everything not listed here renders with `{}`.
  */
+import { createElement } from "react";
+import { TKKeepMountTab } from "../../src/composites/navigation/keep-mount-tabs";
+
 export const MINIMAL_PROPS: Record<string, Record<string, unknown>> = {
+  TKKeepMountTabs: { active: "a", children: createElement(TKKeepMountTab, { id: "a" }, "tab") },
   TKIcon: { name: "check" },
   TKIconButton: { icon: "check", label: "act" },
   TKMainButton: { label: "Pay" },

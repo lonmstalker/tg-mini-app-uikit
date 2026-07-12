@@ -15,6 +15,8 @@ export interface TKKeepMountTabsProps {
   active: string;
   /** Scroll the enclosing page scroller to the top on tab switch (default true). */
   scrollToTop?: boolean;
+  /** Rendered on the ACTIVE tab's wrapper (the only visible one). */
+  testId?: string;
   children?: ReactNode;
 }
 
@@ -40,7 +42,7 @@ export function useTabActive(): boolean {
   return useContext(TKTabActiveContext);
 }
 
-export function TKKeepMountTabs({ active, scrollToTop = true, children }: TKKeepMountTabsProps) {
+export function TKKeepMountTabs({ active, scrollToTop = true, testId, children }: TKKeepMountTabsProps) {
   // Visited-set lives across renders: once a tab has mounted it stays mounted.
   const visitedRef = useRef(new Set<string>());
   visitedRef.current.add(active);
@@ -69,6 +71,7 @@ export function TKKeepMountTabs({ active, scrollToTop = true, children }: TKKeep
             key={id}
             ref={id === active ? activeWrapperRef : undefined}
             data-tk-keep-tab={id}
+            data-testid={id === active ? testId : undefined}
             style={{ display: id === active ? "contents" : "none" }}
           >
             <TKTabActiveContext.Provider value={id === active}>{node}</TKTabActiveContext.Provider>
