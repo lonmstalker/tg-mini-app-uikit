@@ -77,6 +77,8 @@ export interface TKLocale {
   revealSpoiler: string;
   /** TKWriteBar send button aria label. */
   send: string;
+  /** TKWriteBar textarea fallback accessible name (CHT-001). */
+  composeMessage: string;
   /** TKOnboardingTooltip controls. */
   next: string;
   skip: string;
@@ -88,6 +90,33 @@ export interface TKLocale {
   countryCode: string;
   /** TKDateInput calendar trigger button aria label. */
   openCalendar: string;
+  /** Busy / async live-region announcements (CC-05). */
+  loading: string;
+  error: string;
+  refreshing: string;
+  loadingMore: string;
+  /** TKPinInput progress announcement template: `{n} of {length} digits entered`. */
+  pinProgress: string;
+  /** TKGallery slide announcement template: `Slide {page} of {total}` (CRS-005). */
+  slidePosition: string;
+  /** TKActionSheet default accessible name (OVL-011). */
+  actions: string;
+  /** TKAvatar presence status labels (DSP-002). */
+  online: string;
+  offline: string;
+  unavailable: string;
+  tabs: string;
+  categories: string;
+  phoneNumber: string;
+  noResults: string;
+  asyncErrorTitle: string;
+  asyncErrorText: string;
+  asyncRetry: string;
+  asyncEmptyTitle: string;
+  sliderMin: string;
+  sliderMax: string;
+  leadingActions: string;
+  trailingActions: string;
 }
 
 export const enLocale: TKLocale = {
@@ -130,12 +159,35 @@ export const enLocale: TKLocale = {
   quantity: "Quantity",
   revealSpoiler: "Show hidden content",
   send: "Send",
+  composeMessage: "Message",
   next: "Next",
   skip: "Skip",
   progress: "Progress",
   invalidEmail: "Enter a valid email address",
   countryCode: "Country code",
   openCalendar: "Open calendar",
+  loading: "Loading…",
+  error: "Something went wrong",
+  refreshing: "Refreshing…",
+  loadingMore: "Loading more…",
+  pinProgress: "{n} of {length} digits entered",
+  slidePosition: "Slide {page} of {total}",
+  actions: "Actions",
+  online: "Online",
+  offline: "Offline",
+  unavailable: "Unavailable",
+  tabs: "Tabs",
+  categories: "Categories",
+  phoneNumber: "Phone number",
+  noResults: "Nothing found",
+  asyncErrorTitle: "Something went wrong",
+  asyncErrorText: "Please try again.",
+  asyncRetry: "Retry",
+  asyncEmptyTitle: "Nothing here yet",
+  sliderMin: "{label} minimum",
+  sliderMax: "{label} maximum",
+  leadingActions: "Leading actions",
+  trailingActions: "Trailing actions",
 };
 
 /** Ready-made Russian preset. */
@@ -179,12 +231,35 @@ export const ruLocale: TKLocale = {
   quantity: "Количество",
   revealSpoiler: "Показать скрытое",
   send: "Отправить",
+  composeMessage: "Сообщение",
   next: "Далее",
   skip: "Пропустить",
   progress: "Прогресс",
   invalidEmail: "Введите корректный email",
   countryCode: "Код страны",
   openCalendar: "Открыть календарь",
+  loading: "Загрузка…",
+  error: "Что-то пошло не так",
+  refreshing: "Обновление…",
+  loadingMore: "Загрузка…",
+  pinProgress: "Введено {n} из {length}",
+  slidePosition: "Слайд {page} из {total}",
+  actions: "Действия",
+  online: "В сети",
+  offline: "Не в сети",
+  unavailable: "Недоступно",
+  tabs: "Вкладки",
+  categories: "Категории",
+  phoneNumber: "Номер телефона",
+  noResults: "Ничего не найдено",
+  asyncErrorTitle: "Что-то пошло не так",
+  asyncErrorText: "Попробуйте ещё раз.",
+  asyncRetry: "Повторить",
+  asyncEmptyTitle: "Здесь пока пусто",
+  sliderMin: "{label} минимум",
+  sliderMax: "{label} максимум",
+  leadingActions: "Действия слева",
+  trailingActions: "Действия справа",
 };
 
 const TKLocaleContext = /* @__PURE__ */ createContext<TKLocale>(enLocale);

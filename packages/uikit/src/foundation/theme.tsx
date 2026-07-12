@@ -3,6 +3,7 @@ import {
   useContext,
   useEffect,
   useRef,
+  useState,
   type CSSProperties,
   type ReactNode,
 } from "react";
@@ -34,12 +35,38 @@ export interface TKThemeValue extends TKThemeKnobs {
   theme: TKTheme;
 }
 
+/**
+ * Picks a readable ink color to sit ON a hex accent (relative luminance): a
+ * light accent gets dark ink, a dark accent white. Returns undefined for a
+ * non-hex accent (var()/rgb()), leaving the CSS default. So a near-white custom
+ * accent no longer renders white-on-white through `--tk-on-accent` (M6 review).
+ */
+export function tkOnAccentInk(accent: string): string | undefined {
+  const m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(accent.trim());
+  if (!m) return undefined;
+  const h = m[1].length === 3 ? m[1].replace(/./g, (c) => c + c) : m[1];
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+  return lum > 0.6 ? "#0b0f14" : "#ffffff";
+}
+
 /** Turns theme knobs into the CSS custom properties the kit is driven by. */
 export function tkThemeVars(knobs: TKThemeKnobs): CSSProperties {
   const vars: Record<string, string | number> = {};
-  if (knobs.accent != null) vars["--tk-accent"] = knobs.accent;
+  if (knobs.accent != null) {
+    vars["--tk-accent"] = knobs.accent;
+    // Keep on-accent ink readable on a custom (esp. light) accent.
+    const ink = tkOnAccentInk(knobs.accent);
+    if (ink) vars["--tk-on-accent"] = ink;
+  }
   if (knobs.roundness != null) vars["--tk-rx"] = knobs.roundness;
-  if (knobs.motionSpeed != null) vars["--tk-ms"] = knobs.motionSpeed;
+  // Clamp to a positive floor: `--tk-ms` is a DIVISOR in tokens.css
+  // (`calc(140ms / var(--tk-ms))`), so 0 or a negative would emit an invalid /
+  // negative duration across the whole subtree (FND-002). For a true motion-off
+  // path use `reduceMotion`, not `motionSpeed={0}`.
+  if (knobs.motionSpeed != null) vars["--tk-ms"] = Math.max(0.05, knobs.motionSpeed);
   if (knobs.fontSize != null) vars["--tk-fz"] = `${knobs.fontSize}px`;
   if (knobs.motion != null) vars["--tk-spring"] = knobs.motion === "smooth" ? TK_SMOOTH : TK_SPRING;
   return vars as CSSProperties;
@@ -48,19 +75,42 @@ export function tkThemeVars(knobs: TKThemeKnobs): CSSProperties {
 const TKThemeContext = /* @__PURE__ */ createContext<TKThemeValue>({ theme: "light" });
 
 /**
- * Mirrors `WebApp.themeParams` onto `--tg-theme-*` custom properties on
- * `<html>` (snake_case key → `--tg-theme-<kebab>`), so `tokens.css` fallbacks
- * resolve even behind an injected mock webApp or an old client that does not
- * set them natively. SSR-safe and idempotent.
+ * Mirrors `WebApp.themeParams` onto `--tg-theme-*` custom properties on a target
+ * element (snake_case key → `--tg-theme-<kebab>`), so `tokens.css` fallbacks
+ * resolve even behind an injected mock webApp or an old client that does not set
+ * them natively. Returns the keys it set so the caller can remove exactly those
+ * on cleanup (FND-003 — no global leak, no cross-provider clobber). SSR-safe.
  */
-function applyTelegramThemeVars(params: TelegramThemeParams | undefined): void {
-  if (typeof document === "undefined") return;
-  const root = document.documentElement;
-  if (!root || !params) return;
+function applyTelegramThemeVars(target: HTMLElement | null, params: TelegramThemeParams | undefined): string[] {
+  if (!target || !params) return [];
+  const applied: string[] = [];
   for (const [key, value] of Object.entries(params)) {
     if (typeof value !== "string") continue;
-    root.style.setProperty(`--tg-theme-${key.replace(/_/g, "-")}`, value);
+    const prop = `--tg-theme-${key.replace(/_/g, "-")}`;
+    target.style.setProperty(prop, value);
+    applied.push(prop);
   }
+  return applied;
+}
+
+/**
+ * Tracks the OS `prefers-reduced-motion` setting, live. Works anywhere (not
+ * gated to the `.tk` scope — CC-09). Returns `false` when `matchMedia` is
+ * unavailable (SSR / old WebView).
+ */
+export function useReducedMotion(): boolean {
+  const query = "(prefers-reduced-motion: reduce)";
+  const get = () => typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia(query).matches;
+  const [reduced, setReduced] = useState(get);
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
+    const mql = window.matchMedia(query);
+    const onChange = () => setReduced(mql.matches);
+    onChange();
+    mql.addEventListener?.("change", onChange);
+    return () => mql.removeEventListener?.("change", onChange);
+  }, []);
+  return reduced;
 }
 
 export type TKThemePreset = "ios" | "material";
@@ -77,9 +127,19 @@ export interface TKProviderProps extends TKThemeKnobs {
   preset?: TKThemePreset;
   /**
    * Inherit the live Telegram theme: adds the `tk-tg` class so every token
-   * resolves from `--tg-theme-*` variables when running inside Telegram.
+   * resolves from `--tg-theme-*` variables when running inside Telegram. The
+   * `--tg-theme-*` mirror is `'scoped'` to this provider's root by default
+   * (`true` ≡ `'scoped'`); `'global'` writes them on `<html>` for the rare app
+   * that needs page-level vars. Either way they are removed on unmount (FND-003).
    */
-  telegram?: boolean;
+  telegram?: boolean | "scoped" | "global";
+  /**
+   * Honor reduced-motion. `'auto'` (default) follows the OS
+   * `prefers-reduced-motion` live; `true`/`false` force it. When reduced, the
+   * root gets `data-tk-motion="off"` so motion quiets down without invalid
+   * `calc()` (CC-09 / FND-DX-002).
+   */
+  reduceMotion?: boolean | "auto";
   className?: string;
   style?: CSSProperties;
   children?: ReactNode;
@@ -100,6 +160,7 @@ export function TKProvider({
   motion,
   fontSize,
   telegram,
+  reduceMotion = "auto",
   className,
   style,
   children,
@@ -114,14 +175,33 @@ export function TKProvider({
     ...(motion != null ? { motion } : null),
     ...(fontSize != null ? { fontSize } : null),
   });
-  // When inheriting the Telegram theme, mirror its themeParams onto
-  // `--tg-theme-*` on <html> at mount and on every themeChanged, so the
-  // tokens.css fallbacks resolve under a mock webApp or an old client.
+  const rootRef = useRef<HTMLDivElement>(null);
+  const osReduced = useReducedMotion();
+  const reduced = reduceMotion === "auto" ? osReduced : reduceMotion;
+  // When inheriting the Telegram theme, mirror its themeParams onto `--tg-theme-*`.
+  // Scoped to this root by default so two providers don't clobber each other and
+  // nothing leaks onto <html> after unmount; `'global'` opts into page-level vars.
+  // Applied keys are tracked so cleanup removes exactly what we set (FND-003).
   const wa = useWebApp();
+  const appliedKeysRef = useRef<string[]>([]);
+  const mirrorTarget = (): HTMLElement | null =>
+    !telegram ? null : telegram === "global" ? document.documentElement : rootRef.current;
+  const syncTelegramTheme = () => {
+    const target = mirrorTarget();
+    // remove the previous set first so a target/param change never leaves stragglers
+    for (const key of appliedKeysRef.current) target?.style.removeProperty(key);
+    appliedKeysRef.current = applyTelegramThemeVars(target, wa?.themeParams);
+  };
   useEffect(() => {
-    if (telegram) applyTelegramThemeVars(wa?.themeParams);
+    syncTelegramTheme();
+    return () => {
+      const target = mirrorTarget();
+      for (const key of appliedKeysRef.current) target?.style.removeProperty(key);
+      appliedKeysRef.current = [];
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [telegram, wa]);
-  useTelegramEvent("themeChanged", telegram ? () => applyTelegramThemeVars(wa?.themeParams) : undefined);
+  useTelegramEvent("themeChanged", telegram ? syncTelegramTheme : undefined);
   // Bridge Telegram's JS safe-area insets onto the `--tk-safe-*` vars on this
   // root. The tokens default them to `env(safe-area-inset-*)`, but inside the
   // Telegram webview `env()` is frequently 0 while the real inset is exposed
@@ -129,7 +209,6 @@ export function TKProvider({
   // whichever is larger, so bottom overlays (sheet, action sheet, toast) clear
   // the home indicator / header even when `env()` reports nothing — matching
   // what TKHeader/TKTabbar/tkSafePad already do per-component.
-  const rootRef = useRef<HTMLDivElement>(null);
   const { inset, contentInset } = useSafeArea();
   useEffect(() => {
     const node = rootRef.current;
@@ -146,6 +225,7 @@ export function TKProvider({
         ref={rootRef}
         className={["tk", telegram ? "tk-tg" : "", className ?? ""].filter(Boolean).join(" ")}
         data-theme={theme}
+        data-tk-motion={reduced ? "off" : undefined}
         data-testid={testId}
         style={{ position: "relative", ...vars, ...style }}
       >
