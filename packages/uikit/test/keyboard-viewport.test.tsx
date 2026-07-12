@@ -1,6 +1,7 @@
-import { act, renderHook } from "@testing-library/react";
+import { act, render, renderHook, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useKeyboard } from "@tg-mini-app/telegram";
+import { TKPage } from "../src";
 
 /* Keyboard/viewport controller (KB-1.x): covered formula, open/close
    hysteresis, geometry-driven pan settle, deferred focusout. */
@@ -42,9 +43,17 @@ beforeEach(() => {
 afterEach(() => {
   input.remove();
   Reflect.deleteProperty(window, "visualViewport");
+  window.localStorage.removeItem("tk:kbHeight");
   vi.useRealTimers();
   vi.restoreAllMocks();
 });
+
+function tkRoot(): HTMLDivElement {
+  const root = document.createElement("div");
+  root.className = "tk";
+  document.body.append(root);
+  return root;
+}
 
 /* ---------------- KB-1.1 · covered formula + hysteresis ---------------- */
 
@@ -93,6 +102,104 @@ describe("KB-1.1 covered ignores offsetTop and open/close use split thresholds",
       fire("resize");
     });
     expect(result.current.visible).toBe(false);
+  });
+});
+
+/* ---------------- KB-1.5 · single animated height source ---------------- */
+
+describe("KB-1.5 --tk-kb-height on the .tk root drives the page shrink", () => {
+  it("(a) a resize burst within one keyboard animation writes the var once", () => {
+    const { vv, fire, innerHeight } = installVV();
+    const root = tkRoot();
+    root.append(input);
+    renderHook(() => useKeyboard(80));
+    input.focus();
+    let styleWrites = 0;
+    const mo = new MutationObserver((recs) => {
+      styleWrites += recs.filter((r) => r.attributeName === "style").length;
+    });
+    mo.observe(root, { attributes: true, attributeOldValue: true });
+    // One keyboard animation: WebKit reports the final height, then jitters
+    // by a couple px while settling.
+    for (const covered of [300, 301, 299, 302, 300]) {
+      act(() => {
+        vv.height = innerHeight - covered;
+        fire("resize");
+      });
+    }
+    styleWrites += mo.takeRecords().filter((r) => r.attributeName === "style").length;
+    expect(styleWrites).toBe(1);
+    expect(root.style.getPropertyValue("--tk-kb-height")).toBe("300px");
+    root.remove();
+    input = document.createElement("input");
+  });
+
+  it("(b) focusin pre-shrinks from the remembered height before any resize", () => {
+    window.localStorage.setItem("tk:kbHeight", "264");
+    installVV();
+    const root = tkRoot();
+    root.append(input);
+    const { result } = renderHook(() => useKeyboard(80));
+    act(() => {
+      input.focus();
+      document.dispatchEvent(new FocusEvent("focusin", { bubbles: true }));
+    });
+    // No vv resize yet — the stored height is already applied.
+    expect(result.current).toEqual({ visible: true, height: 264 });
+    expect(root.style.getPropertyValue("--tk-kb-height")).toBe("264px");
+    root.remove();
+    input = document.createElement("input");
+  });
+
+  it("(c) pre-shrink reverts after ~600ms when no resize confirms it", () => {
+    window.localStorage.setItem("tk:kbHeight", "264");
+    installVV();
+    const root = tkRoot();
+    root.append(input);
+    const { result } = renderHook(() => useKeyboard(80));
+    act(() => {
+      input.focus();
+      document.dispatchEvent(new FocusEvent("focusin", { bubbles: true }));
+    });
+    expect(result.current.visible).toBe(true);
+    act(() => {
+      vi.advanceTimersByTime(600); // hardware keyboard: no resize ever comes
+    });
+    expect(result.current).toEqual({ visible: false, height: 0 });
+    expect(root.style.getPropertyValue("--tk-kb-height")).toBe("0px");
+    root.remove();
+    input = document.createElement("input");
+  });
+
+  it("(d) the footer collapses via the CSS hook, never display:none on the flip", () => {
+    const { vv, fire, innerHeight } = installVV();
+    render(
+      <div className="tk">
+        <TKPage footer={<button type="button">tab</button>} testId="page">
+          <input aria-label="field" />
+        </TKPage>
+      </div>,
+    );
+    const page = screen.getByTestId("page");
+    expect(page).toHaveClass("tk-page");
+    expect(page.style.height).toBe("calc(100% - var(--tk-kb-height, 0px))");
+    const footer = page.querySelector(".tk-page-footer") as HTMLElement;
+    expect(footer.hasAttribute("data-kb-open")).toBe(false);
+    screen.getByLabelText("field").focus();
+    act(() => {
+      vv.height = innerHeight - 300;
+      fire("resize");
+    });
+    // The flip only toggles the collapse hook; hiding is CSS's delayed
+    // visibility at the end of the transition, never a synchronous display:none.
+    expect(footer.hasAttribute("data-kb-open")).toBe(true);
+    expect(footer.style.display).not.toBe("none");
+    expect(getComputedStyle(footer).display).not.toBe("none");
+    act(() => {
+      vv.height = innerHeight;
+      fire("resize");
+    });
+    expect(footer.hasAttribute("data-kb-open")).toBe(false);
   });
 });
 

@@ -220,6 +220,28 @@
    double-pad bottom-pinned bars while it is up. */
 .tk.tk-kb-open { --tk-safe-bottom: 0px; }
 
+/* Keyboard-driven page geometry: TKPage (with a footer) is
+   height: calc(100% - var(--tk-kb-height)) — useKeyboard writes the var on the
+   .tk root, this transition turns every change into ONE movement. The curve
+   approximates the iOS keyboard (easeInOutCubic). The footer collapses on the
+   same curve; `visibility` flips only at the END of the collapse (discrete
+   transition), so the footer is never yanked in the frame the keyboard opens. */
+.tk-page { transition: height 200ms cubic-bezier(.32, 0, .68, 1); }
+.tk-page-footer {
+  flex-shrink: 0;
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 200ms cubic-bezier(.32, 0, .68, 1);
+}
+.tk-page-footer[data-kb-open] {
+  grid-template-rows: 0fr;
+  visibility: hidden;
+  transition: grid-template-rows 200ms cubic-bezier(.32, 0, .68, 1), visibility 0s 200ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tk-page, .tk-page-footer, .tk-page-footer[data-kb-open] { transition: none; }
+}
+
 /* ============ shared micro-interaction utilities ============ */
 
 .tk-press {

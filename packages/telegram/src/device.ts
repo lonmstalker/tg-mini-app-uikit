@@ -71,6 +71,13 @@ export function useKeyboard(threshold = 80): TKKeyboardState {
         window.scrollTo(0, 0);
       }, 120);
     };
+    // Pre-shrink (reference miniapp pattern): the keyboard height is stable per
+    // device, so remember it and apply it on focusin BEFORE the vv resize
+    // arrives — the layout then shrinks in one movement together with the
+    // keyboard instead of jumping after it.
+    let knownKbHeight = tkReadStoredKbHeight();
+    let preShrunk = false;
+    let revertTimer: number | undefined;
     const sync = () => {
       // Height overlapped by the keyboard. `offsetTop` must NOT be subtracted:
       // when WebKit pans the page toward a bottom field, `offsetTop` grows to
@@ -78,7 +85,16 @@ export function useKeyboard(threshold = 80): TKKeyboardState {
       // keyboard closed while it was physically open.
       const covered = Math.max(0, window.innerHeight - vv.height);
       const editableFocused = tkIsEditableActive();
-      const open = visible ? covered > closeThreshold : editableFocused && covered > threshold;
+      if (covered > threshold) {
+        knownKbHeight = Math.round(covered);
+        tkStoreKbHeight(knownKbHeight);
+        if (preShrunk) {
+          // The real resize confirmed the pre-shrink; geometry owns the state now.
+          preShrunk = false;
+          window.clearTimeout(revertTimer);
+        }
+      }
+      const open = preShrunk || (visible ? covered > closeThreshold : editableFocused && covered > threshold);
       visible = open;
       // Telegram iOS scrolls the page to keep a focused input in view and not
       // always back — the iOS keyboard chevron even closes the keyboard with NO
@@ -87,12 +103,27 @@ export function useKeyboard(threshold = 80): TKKeyboardState {
       if (covered <= closeThreshold && ((vv.offsetTop ?? 0) > 0 || window.scrollY > 0)) {
         scheduleSettle();
       }
+      const height = open ? (covered > closeThreshold ? Math.round(covered) : knownKbHeight) : 0;
       setState((prev) => {
-        const next = { visible: open, height: open ? Math.round(covered) : 0 };
+        const next = { visible: open, height };
         return prev.visible === next.visible && prev.height === next.height ? prev : next;
       });
-      // recipe hook: `.tk-kb-open` lets CSS lift bottom bars above the keyboard
-      tkSetKeyboardOpenClass(open);
+      // recipe hook: `.tk-kb-open` + `--tk-kb-height` let CSS shrink pages and
+      // lift bottom bars above the keyboard
+      tkApplyKeyboardState(open, height);
+    };
+    const syncFocusIn = () => {
+      if (!preShrunk && !visible && knownKbHeight > 0 && tkIsEditableActive()) {
+        preShrunk = true;
+        window.clearTimeout(revertTimer);
+        // The keyboard never opened (hardware keyboard etc.) — no resize will
+        // come; fall back to the actual geometry.
+        revertTimer = window.setTimeout(() => {
+          preShrunk = false;
+          sync();
+        }, 600);
+      }
+      sync();
     };
     // focusout must NOT resync synchronously: when focus moves between fields
     // the blur fires while activeElement is already body, so a synchronous sync
@@ -107,26 +138,27 @@ export function useKeyboard(threshold = 80): TKKeyboardState {
     sync();
     vv.addEventListener("resize", sync);
     vv.addEventListener("scroll", sync);
-    document.addEventListener("focusin", sync);
+    document.addEventListener("focusin", syncFocusIn);
     document.addEventListener("focusout", syncFocusOut);
     document.addEventListener("visibilitychange", sync);
     window.addEventListener("focus", sync);
     return () => {
       vv.removeEventListener("resize", sync);
       vv.removeEventListener("scroll", sync);
-      document.removeEventListener("focusin", sync);
+      document.removeEventListener("focusin", syncFocusIn);
       document.removeEventListener("focusout", syncFocusOut);
       document.removeEventListener("visibilitychange", sync);
       window.removeEventListener("focus", sync);
       window.clearTimeout(settleTimer);
       window.clearTimeout(focusOutTimer);
+      window.clearTimeout(revertTimer);
       tkKbConsumers -= 1;
       // Clear the global class once the LAST keyboard consumer unmounts, so a
       // screen that navigates away while the keyboard is still up doesn't leave
       // `.tk-kb-open` stuck on and lift the next screen by a phantom keyboard.
       if (tkKbConsumers <= 0) {
         tkKbConsumers = 0;
-        tkSetKeyboardOpenClass(false);
+        tkApplyKeyboardState(false, 0);
       }
     };
   }, [threshold]);
@@ -142,7 +174,7 @@ function tkIsEditableActive(): boolean {
 // Ref-counted so concurrent consumers don't fight and the class is cleared only
 // once they have all unmounted.
 let tkKbConsumers = 0;
-function tkSetKeyboardOpenClass(open: boolean): void {
+function tkApplyKeyboardState(open: boolean, height: number): void {
   if (typeof document === "undefined") return;
   const roots = document.querySelectorAll<HTMLElement>(".tk");
   // Scope the lift to the root that actually contains the focused editable, so a
@@ -158,7 +190,35 @@ function tkSetKeyboardOpenClass(open: boolean): void {
     // consumer watchdogs ping it on a timer), and an unconditional class write
     // invalidated styles on every .tk root each time.
     if (el.classList.contains("tk-kb-open") !== lifted) el.classList.toggle("tk-kb-open", lifted);
+    // `--tk-kb-height` is the single animated height source: TKPage subtracts
+    // it via calc() + transition. Written on the .tk root, NOT documentElement
+    // (multi-root apps). Sub-4px wobble is ignored so a vv jitter mid-animation
+    // doesn't restart the transition — except across the open/close boundary.
+    const next = lifted ? height : 0;
+    const prev = parseFloat(el.style.getPropertyValue("--tk-kb-height")) || 0;
+    const crossing = (prev === 0) !== (next === 0);
+    if (crossing || Math.abs(next - prev) >= 4) {
+      el.style.setProperty("--tk-kb-height", `${next}px`);
+    }
   });
+}
+
+// Keyboard-height memory (reference miniapp pattern): pre-shrink works from the
+// very first focus of a session; the actual resize then corrects the value.
+const TK_KB_HEIGHT_KEY = "tk:kbHeight";
+function tkReadStoredKbHeight(): number {
+  try {
+    return Number(window.localStorage.getItem(TK_KB_HEIGHT_KEY)) || 0;
+  } catch {
+    return 0;
+  }
+}
+function tkStoreKbHeight(height: number): void {
+  try {
+    window.localStorage.setItem(TK_KB_HEIGHT_KEY, String(height));
+  } catch {
+    /* private mode etc. — pre-shrink simply starts working from the second focus */
+  }
 }
 
 export function useHideKeyboard(): { hide: () => boolean; isSupported: boolean } {

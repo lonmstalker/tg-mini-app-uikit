@@ -37,6 +37,14 @@ export interface TKPageProps {
  * pinned footer, with the safe-area plumbing done once. The forwarded `ref`
  * points at the SCROLL container (the most-needed handle — scroll-to-top,
  * measurement; LAY-006).
+ *
+ * Keyboard contract: with a `footer`, the page height is
+ * `calc(100% - var(--tk-kb-height))` — `--tk-kb-height` is written on the
+ * `.tk` root by `useKeyboard` and animated by the `.tk-page` transition. The
+ * 100% base MUST therefore be the real visible viewport. If the host already
+ * shrinks the `.tk` root by the keyboard (e.g. its own
+ * `min(var(--tg-viewport-stable-height), 100%)` cap), the keyboard would be
+ * subtracted twice — remove the host-side cap.
  */
 export const TKPage = /* @__PURE__ */ forwardRef<HTMLDivElement, TKPageProps>(function TKPage(
   {
@@ -63,14 +71,17 @@ export const TKPage = /* @__PURE__ */ forwardRef<HTMLDivElement, TKPageProps>(fu
   const [scrollTop, setScrollTop] = useState(0);
   return (
     <div
-      className={className}
+      className={["tk-page", className].filter(Boolean).join(" ")}
       data-testid={testId}
       style={{
         // Only shrink when this page owns a pinned footer that must clear the
         // keyboard. Scroll-only pages should keep their full height; shrinking
         // those can collapse a focused search/feed in Telegram clients that
-        // already adjust the viewport.
-        height: footer && keyboard.visible ? `calc(100% - ${keyboard.height}px)` : "100%",
+        // already adjust the viewport. The var (not keyboard.height state) is
+        // the single animated source: useKeyboard quantizes it and pre-shrinks
+        // on focusin, and the .tk-page transition turns the change into one
+        // movement instead of a discrete jump per vv event.
+        height: footer ? "calc(100% - var(--tk-kb-height, 0px))" : "100%",
         display: "flex",
         flexDirection: "column",
         // The header (e.g. TKHeader) reserves the top inset itself; padding here
@@ -121,8 +132,12 @@ export const TKPage = /* @__PURE__ */ forwardRef<HTMLDivElement, TKPageProps>(fu
       {footer ? (
         // While the keyboard is up the footer (tabbar/bottom bar) is useless and,
         // riding on the shrunk page, would float right above the keyboard covering
-        // the focused input's results — hide it until typing ends.
-        <div style={{ flexShrink: 0, display: keyboard.visible ? "none" : undefined }}>{footer}</div>
+        // the focused input's results. It collapses via grid-template-rows 1fr→0fr
+        // (same curve as the page shrink) — never display:none in the same frame:
+        // visibility flips only at the END of the collapse (.tk-page-footer CSS).
+        <div className="tk-page-footer" data-kb-open={keyboard.visible ? "" : undefined}>
+          <div style={{ overflow: "hidden", minHeight: 0 }}>{footer}</div>
+        </div>
       ) : null}
     </div>
   );
