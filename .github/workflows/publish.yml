@@ -41,9 +41,11 @@ jobs:
           TELEGRAM="$(node -p "require('./packages/telegram/package.json').version")"
           [ "$TAG" = "v$UIKIT" ] || {
             echo "::error::tag $TAG does not match tg-mini-app-uikit version $UIKIT"; exit 1; }
-          grep -q "^## ${UIKIT}$" packages/uikit/CHANGELOG.md || {
+          # -xF: dots in the version are literals, not regex wildcards, and the
+          # whole line must match — '## 0.3.1' cannot be satisfied by '## 0x3x1'.
+          grep -qxF "## ${UIKIT}" packages/uikit/CHANGELOG.md || {
             echo "::error::packages/uikit/CHANGELOG.md has no '## ${UIKIT}' entry"; exit 1; }
-          grep -q "^## ${TELEGRAM}$" packages/telegram/CHANGELOG.md || {
+          grep -qxF "## ${TELEGRAM}" packages/telegram/CHANGELOG.md || {
             echo "::error::packages/telegram/CHANGELOG.md has no '## ${TELEGRAM}' entry"; exit 1; }
       - run: npm ci
       - run: npm run build
@@ -59,24 +61,14 @@ jobs:
       # Topological publish: uikit resolves its @tg-mini-app/telegram peer from
       # dist. Each publish is guarded so a re-run after a partial failure (or a
       # release where one package's version is already on npm) skips instead of
-      # failing with E403.
+      # failing with E403. The guard distinguishes "version absent" (E404 →
+      # publish) from registry/auth/network errors (fail BEFORE publish): a
+      # swallowed transient error must not turn into a blind publish attempt.
       - name: publish @tg-mini-app/telegram
-        run: |
-          VER="$(node -p "require('./packages/telegram/package.json').version")"
-          if npm view "@tg-mini-app/telegram@$VER" version >/dev/null 2>&1; then
-            echo "@tg-mini-app/telegram@$VER is already on npm — skipping"
-          else
-            npm publish --provenance --access public -w @tg-mini-app/telegram
-          fi
+        run: scripts/publish-if-absent.sh "@tg-mini-app/telegram"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: publish tg-mini-app-uikit
-        run: |
-          VER="$(node -p "require('./packages/uikit/package.json').version")"
-          if npm view "tg-mini-app-uikit@$VER" version >/dev/null 2>&1; then
-            echo "tg-mini-app-uikit@$VER is already on npm — skipping"
-          else
-            npm publish --provenance --access public -w tg-mini-app-uikit
-          fi
+        run: scripts/publish-if-absent.sh "tg-mini-app-uikit"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
