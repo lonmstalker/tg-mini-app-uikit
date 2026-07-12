@@ -3,9 +3,13 @@ import { Children, createContext, isValidElement, useContext, useEffect, useRef,
 /**
  * Keep-mount tab host: visited tabs stay MOUNTED (`display: contents` when
  * active, `display: none` when hidden), so switching back is instant — no data
- * reload, no lost input or scroll state. Unvisited tabs mount lazily on first
- * activation. The nearest `[data-tk-page-scroll]` ancestor (a TKPage scroller)
- * is scrolled back to the top on every switch, matching the remount-era UX.
+ * reload, no lost component state (form input values, fetched data, timers).
+ * Note the limit: `display: none` destroys layout, so the browser resets the
+ * `scrollTop` of any scroller INSIDE a hidden tab — scroll position is not
+ * preserved (re-apply it from state if a tab needs that). Unvisited tabs
+ * mount lazily on first activation. The nearest `[data-tk-page-scroll]`
+ * ancestor (a TKPage scroller) is scrolled back to the top on every switch,
+ * matching the remount-era UX.
  *
  * `display: contents` (not a plain block) keeps the active tab's children
  * direct flex items of the TKPage content column, so its `gap` still applies.
@@ -44,8 +48,13 @@ export function useTabActive(): boolean {
 
 export function TKKeepMountTabs({ active, scrollToTop = true, testId, children }: TKKeepMountTabsProps) {
   // Visited-set lives across renders: once a tab has mounted it stays mounted.
+  // The set is committed in an effect (never mutated during render) so a
+  // discarded concurrent render can't leave a phantom "visited" tab behind;
+  // the render below treats the CURRENT active id as visited for first paint.
   const visitedRef = useRef(new Set<string>());
-  visitedRef.current.add(active);
+  useEffect(() => {
+    visitedRef.current.add(active);
+  }, [active]);
   const activeWrapperRef = useRef<HTMLDivElement>(null);
   const prevActiveRef = useRef(active);
   useEffect(() => {
@@ -66,7 +75,7 @@ export function TKKeepMountTabs({ active, scrollToTop = true, testId, children }
   return (
     <>
       {tabs.map(({ id, node }) =>
-        visitedRef.current.has(id) ? (
+        id === active || visitedRef.current.has(id) ? (
           <div
             key={id}
             ref={id === active ? activeWrapperRef : undefined}

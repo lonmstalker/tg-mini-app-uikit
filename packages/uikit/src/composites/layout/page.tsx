@@ -51,10 +51,12 @@ export interface TKPageProps {
  * Keyboard contract: with a `footer`, the page height is
  * `calc(100% - var(--tk-kb-height))` — `--tk-kb-height` is written on the
  * `.tk` root by `useKeyboard` and animated by the `.tk-page` transition. The
- * 100% base MUST therefore be the real visible viewport. If the host already
- * shrinks the `.tk` root by the keyboard (e.g. its own
- * `min(var(--tg-viewport-stable-height), 100%)` cap), the keyboard would be
- * subtracted twice — remove the host-side cap.
+ * 100% base must be a viewport the HOST has not already shrunk by the
+ * keyboard. A `min(var(--tg-viewport-stable-height), 100%)` host cap is fine
+ * (stable-height ignores the keyboard on iOS; Android resizes the WebView so
+ * `covered≈0` and there is nothing to subtract twice) — keep it, it guards
+ * the expand jump. What DOES double-subtract is a host-managed height fed
+ * from `visualViewport.height` (an `--app-height` pattern): remove that one.
  */
 export const TKPage = /* @__PURE__ */ forwardRef<HTMLDivElement, TKPageProps>(function TKPage(
   {
@@ -79,6 +81,16 @@ export const TKPage = /* @__PURE__ */ forwardRef<HTMLDivElement, TKPageProps>(fu
   const left = inset.left + contentInset.left;
   const right = inset.right + contentInset.right;
   const keyboard = useKeyboard();
+  const footerRef = useRef<HTMLDivElement>(null);
+  // The footer collapse must follow THIS page's .tk root, not the global
+  // keyboard state: useKeyboard scopes --tk-kb-height to the root owning the
+  // focused editable (FND-009), so in a multi-root app a keyboard in root A
+  // must not collapse root B's footer. The var is written synchronously
+  // before this re-render commits; outside any .tk root fall back to global.
+  const ownRootLifted = () => {
+    const root = footerRef.current?.closest<HTMLElement>(".tk");
+    return !root || parseFloat(root.style.getPropertyValue("--tk-kb-height")) > 0;
+  };
   // The raw scroll position lives in a ref; state (→ TKPageScrollContext) only
   // carries the 0..64px band quantized to 4px steps — all TKHeader's collapse
   // hysteresis (36/20px) ever reads. Committing the raw px re-rendered the
@@ -170,7 +182,7 @@ export const TKPage = /* @__PURE__ */ forwardRef<HTMLDivElement, TKPageProps>(fu
         // the focused input's results. It collapses via grid-template-rows 1fr→0fr
         // (same curve as the page shrink) — never display:none in the same frame:
         // visibility flips only at the END of the collapse (.tk-page-footer CSS).
-        <div className="tk-page-footer" data-kb-open={keyboard.visible ? "" : undefined}>
+        <div ref={footerRef} className="tk-page-footer" data-kb-open={keyboard.visible && ownRootLifted() ? "" : undefined}>
           <div style={{ overflow: "hidden", minHeight: 0 }}>{footer}</div>
         </div>
       ) : null}

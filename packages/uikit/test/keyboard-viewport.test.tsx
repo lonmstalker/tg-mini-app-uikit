@@ -250,6 +250,42 @@ describe("KB-1.7 pre-shrink cannot outlive its focus or bypass the open threshol
     expect(result.current).toEqual({ visible: false, height: 0 });
   });
 
+  it("(d) focus hop while pre-shrunk never touches the DOM — pins the DEFERRED focusout", () => {
+    window.localStorage.setItem("tk:kbHeight", "264");
+    installVV();
+    const root = tkRoot();
+    const inputB = document.createElement("input");
+    root.append(input, inputB);
+    const { result } = renderHook(() => useKeyboard(80));
+    act(() => {
+      input.focus();
+      document.dispatchEvent(new FocusEvent("focusin", { bubbles: true }));
+    });
+    expect(result.current.visible).toBe(true);
+    expect(root.style.getPropertyValue("--tk-kb-height")).toBe("264px");
+    // Hop to the next field BEFORE any confirming resize. A SYNCHRONOUS
+    // focusout re-sync would read "no editable + closed geometry" mid-hop,
+    // drop the pre-shrink (KB-1.7a) and write the collapse to the DOM — a
+    // footer flicker on every form hop that React's state batching hides from
+    // the hook consumer. Pin the DOM instead: zero root mutations.
+    const mo = new MutationObserver(() => {});
+    mo.observe(root, { attributes: true });
+    act(() => {
+      input.blur();
+      document.dispatchEvent(new FocusEvent("focusout", { bubbles: true }));
+      inputB.focus();
+      document.dispatchEvent(new FocusEvent("focusin", { bubbles: true }));
+      vi.advanceTimersByTime(300); // deferred re-check fires inside this window
+    });
+    expect(mo.takeRecords()).toHaveLength(0);
+    expect(root.style.getPropertyValue("--tk-kb-height")).toBe("264px");
+    expect(root.classList.contains("tk-kb-open")).toBe(true);
+    expect(result.current.visible).toBe(true);
+    mo.disconnect();
+    root.remove();
+    input = document.createElement("input");
+  });
+
   it("(c) hardware keyboard: focusin with no resize ever → full layout after 600ms", () => {
     window.localStorage.setItem("tk:kbHeight", "264");
     installVV();

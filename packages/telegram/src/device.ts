@@ -131,7 +131,12 @@ export function useKeyboard(threshold = 80): TKKeyboardState {
       }
       const height = open ? (covered > closeThreshold ? Math.round(covered) : knownKbHeight) : 0;
       setState((prev) => {
-        const next = { visible: open, height };
+        // Same quantization as the CSS var below (4px, except across the
+        // open/close boundary) — a sub-4px vv jitter mid-animation must not
+        // re-render every keyboard consumer.
+        const crossing = (prev.height === 0) !== (height === 0);
+        const quantized = crossing || Math.abs(height - prev.height) >= 4 ? height : prev.height;
+        const next = { visible: open, height: quantized };
         return prev.visible === next.visible && prev.height === next.height ? prev : next;
       });
       // recipe hook: `.tk-kb-open` + `--tk-kb-height` let CSS shrink pages and
@@ -191,10 +196,21 @@ export function useKeyboard(threshold = 80): TKKeyboardState {
   return state;
 }
 
+// Focusing these via Tab / click raises no on-screen keyboard — they must not
+// pre-shrink the layout.
+const TK_NON_TEXT_INPUT = /^(?:button|checkbox|radio|range|color|file|submit|reset|image|hidden)$/;
+
 function tkIsEditableActive(): boolean {
   if (typeof document === "undefined") return false;
   const el = document.activeElement;
-  return el instanceof HTMLElement && el.matches("input,textarea,[contenteditable]");
+  if (el instanceof HTMLInputElement) return !TK_NON_TEXT_INPUT.test(el.type);
+  if (el instanceof HTMLTextAreaElement) return true;
+  if (!(el instanceof HTMLElement)) return false;
+  // isContentEditable honors inheritance and ="false"; environments without it
+  // (jsdom) fall back to the attribute, still rejecting an explicit "false".
+  return typeof el.isContentEditable === "boolean"
+    ? el.isContentEditable
+    : el.matches('[contenteditable]:not([contenteditable="false"])');
 }
 
 // Whether the page itself is a user scroller. When it is not, any non-zero

@@ -199,6 +199,26 @@ describe("TKPage onRefresh (pit of success)", () => {
   });
 });
 
+describe("GES-005 screen-reader announcement", () => {
+  it("announces via role=status with locale.refreshing while refreshing, then clears", async () => {
+    let resolve!: () => void;
+    const onRefresh = vi.fn(() => new Promise<void>((r) => (resolve = r)));
+    render(
+      <TKPullToRefresh onRefresh={onRefresh} testId="ptr">
+        <div>content</div>
+      </TKPullToRefresh>,
+    );
+    const status = screen.getByRole("status");
+    expect(status).toHaveTextContent("");
+    pull(screen.getByTestId("ptr"), 210);
+    expect(status).toHaveTextContent("Refreshing…"); // locale.refreshing default
+    await act(async () => {
+      resolve();
+    });
+    expect(status).toHaveTextContent("");
+  });
+});
+
 describe("GES-011 mounted-flag survives a StrictMode double-mount", () => {
   it("clears the refreshing state after onRefresh settles under StrictMode", async () => {
     let resolve!: () => void;
