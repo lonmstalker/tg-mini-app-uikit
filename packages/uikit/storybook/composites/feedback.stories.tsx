@@ -6,6 +6,8 @@ import {
   TKBars,
   TKButton,
   TKEmptyState,
+  TKIcon,
+  TKNoticeBar,
   TKProgress,
   TKRing,
   TKSkeleton,
@@ -31,6 +33,43 @@ const meta = {
 export default meta;
 
 type Story = StoryObj;
+
+function NoticeBarsPreview() {
+  // Real render/unrender so the closing collapse + onClose contract plays live.
+  const [open, setOpen] = useState(true);
+  return (
+    <AppScreen>
+      <Narrow>
+        <TKNoticeBar icon={<TKIcon name="info" size={18} />}>Payouts arrive within 24 hours.</TKNoticeBar>
+        <TKNoticeBar tone="green" icon={<TKIcon name="check" size={18} />}>
+          Order confirmed — receipt sent to Saved Messages.
+        </TKNoticeBar>
+        <TKNoticeBar tone="orange" action={<a href="#renew">Renew</a>}>
+          Subscription expires in 3 days.
+        </TKNoticeBar>
+        <TKNoticeBar tone="red">Payments are temporarily unavailable.</TKNoticeBar>
+        {open ? (
+          <TKNoticeBar closable onClose={() => setOpen(false)} testId="feedback-notice">
+            Closable notice — content below slides up.
+          </TKNoticeBar>
+        ) : (
+          <TKButton variant="surface" onClick={() => setOpen(true)}>
+            Show notice again
+          </TKButton>
+        )}
+        <TKNoticeBar marquee icon={<TKIcon name="star" size={18} />}>
+          Season sale: −40% on annual plans until Sunday, plus bonus stars for every referred friend who
+          completes a first order.
+        </TKNoticeBar>
+      </Narrow>
+    </AppScreen>
+  );
+}
+
+export const NoticeBars = {
+  parameters: { fullBleed: true },
+  render: () => <NoticeBarsPreview />,
+} satisfies Story;
 
 export const Skeletons = {
   parameters: { fullBleed: true },

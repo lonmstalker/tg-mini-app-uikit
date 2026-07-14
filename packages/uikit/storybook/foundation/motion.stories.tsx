@@ -96,6 +96,14 @@ function KeyframesPreview() {
         <Tile label="tk-pulse" note="TKDot pulse, timeline node">
           <span className="tk-pulse" style={{ display: "block", width: 12, height: 12, borderRadius: "50%", background: "var(--tk-accent)" }} />
         </Tile>
+        <Tile label="tk-marquee" note="TKNoticeBar overflow ticker (.tk-marquee-track)">
+          <div aria-hidden="true" style={{ width: 72, overflow: "hidden" }}>
+            <div className="tk-marquee-track" style={{ display: "flex", width: "max-content", ["--tk-marquee-dur" as string]: "4s" }}>
+              <span style={{ whiteSpace: "nowrap", paddingRight: 24 }}>Season sale — up to 40% off</span>
+              <span style={{ whiteSpace: "nowrap", paddingRight: 24 }}>Season sale — up to 40% off</span>
+            </div>
+          </div>
+        </Tile>
       </div>
     </AppScreen>
   );

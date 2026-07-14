@@ -285,6 +285,9 @@
   .tk-rise   { animation: tk-rise var(--tk-t3) var(--tk-ease) both; }
   .tk-shake  { animation: tk-shake calc(360ms / var(--tk-ms)) var(--tk-ease); }
   .tk-otp-caret { animation: tk-fade-in calc(900ms / var(--tk-ms)) ease-in-out infinite alternate; }
+  /* TKNoticeBar overflow ticker — declared ONLY here so the OS reduced-motion
+     path never starts it; duration set inline from the measured text length. */
+  .tk-marquee-track { animation: tk-marquee var(--tk-marquee-dur, 14s) linear infinite; }
 }
 
 @keyframes tk-pop {
@@ -328,6 +331,11 @@
 /* no `from`: starts at the computed transform (mid-drag hand-off, snap offset) */
 @keyframes tk-sheet-down {
   to { transform: translateY(104%); }
+}
+/* compositor-only: the duplicated ticker track slides one copy-width left
+   (copies carry the gap as padding, so -50% is an exact loop) */
+@keyframes tk-marquee {
+  to { transform: translateX(-50%); }
 }
 @keyframes tk-fade-in  { from { opacity: 0; } to { opacity: 1; } }
 @keyframes tk-fade-out { from { opacity: 1; } to { opacity: 0; } }
@@ -461,6 +469,7 @@
   .tk .tk-press-soft:active { transform: none; }
   /* Accordion chevron changes state instantly (LST-008). */
   .tk .tk-accordion-chevron { transition: none; }
+  .tk .tk-marquee-track { animation: none; }
 }
 
 /* Explicit, OS-independent motion-off path driven by TKProvider's reduceMotion
@@ -476,6 +485,7 @@
 .tk[data-tk-motion="off"] .tk-press:active,
 .tk[data-tk-motion="off"] .tk-press-soft:active { transform: none; }
 .tk[data-tk-motion="off"] .tk-accordion-chevron { transition: none; }
+.tk[data-tk-motion="off"] .tk-marquee-track { animation: none; }
 .tk[data-tk-motion="off"] .tk-skel::after,
 .tk[data-tk-motion="off"] .tk-skel-group::after { animation: none; }
 .tk[data-tk-motion="off"] .tk-pulse::after { animation: none; opacity: 0; }

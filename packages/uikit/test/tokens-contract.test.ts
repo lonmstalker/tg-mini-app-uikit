@@ -48,6 +48,7 @@ const localTokenAllowlist = new Set([
   "--tk-popper-offset",
   "--tk-pulse-ring",
   "--tk-pulse-scale",
+  "--tk-marquee-dur",
   "--tk-story-gap",
   "--tk-story-pad",
   "--tk-tabbar-h",

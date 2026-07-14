@@ -7,6 +7,7 @@ The public surface is grouped by workflow rather than by file.
 - Display: `TKText`, `TKBadge`, `TKCounter`, `TKAvatar`, `TKAvatarStack`, `TKImage`, `TKSpoiler`, `TKEllipsis`, `TKBlockquote`, `TKGallery`, `TKIcon`.
 - Navigation: `TKNavStack`, `TKNavPanel`, `useNav`, `TKHeader`, `TKTabbar`, `TKSegmented`, `TKCategoryTabs`, `TKSteps`, `TKPageDots`.
 - Overlays: `TKSheet`, `TKDialog`, `TKActionSheet`, `TKPopper`, `TKTooltip`, `TKToastProvider`, `useTKToast`.
+- Feedback: `TKNoticeBar` — a tone-colored announcement strip (`accent`/`green`/`orange`/`red`). Visibility is the consumer's: render/unrender it; the close button first collapses the height so content below slides up, then calls `onClose`. `marquee` scrolls only genuinely overflowing text and is disabled under reduced motion.
 - Telegram patterns: `TKMessages`, `TKMessageBubble`, `TKWriteBar`, `TKOnboardingTooltip`, `TKConfetti`, `TKPullToRefresh`, `TKSwipeCell`, `TKPaymentSummary`, `TKWalletConnectButton`, `TKWalletStatusCell`.
 
 Every component accepts `testId?: string` and forwards refs where a meaningful DOM root exists. Stateful controls use controlled/uncontrolled pairs.
@@ -23,5 +24,6 @@ Custom interactive controls expose native or explicit keyboard semantics:
 - `TKRing` exposes progress as `role="progressbar"` with `aria-valuemin`, `aria-valuemax`, and `aria-valuenow`.
 - `TKBars` is decorative by default. When `onBarClick` is provided, each bar is a named keyboard-operable button.
 - `TKEllipsis` clamps text visually only — assistive technology reads the full text while collapsed. The "show more" button renders only on real overflow, carries `aria-expanded`, and expand/collapse animates height (instant under reduced motion). Default is one-way expand; pass `collapsible` to allow folding back.
+- `TKNoticeBar` uses `role="status"` (announced without stealing focus), names its close button from the locale, and keeps a static screen-reader copy of marquee text — the scrolling track is `aria-hidden`.
 
 For overlays, `TKDialog`, `TKSheet`, and `TKActionSheet` own their focus behavior while open and restore or release focus on close according to their component contract.
