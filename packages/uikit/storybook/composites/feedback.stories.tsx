@@ -1,8 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { useState } from "react";
 import {
   AsyncBoundary,
   TKAsyncState,
   TKBars,
+  TKButton,
   TKEmptyState,
   TKProgress,
   TKRing,
@@ -47,21 +49,37 @@ export const Skeletons = {
   ),
 } satisfies Story;
 
-export const ProgressAndBars = {
-  parameters: { fullBleed: true },
-  render: () => (
+// Cycling values so the fill/stroke transitions actually play on value change.
+const PROGRESS_STEPS = [
+  { progress: 72, ring: 0.64, bars: [3, 7, 5, 9, 6] },
+  { progress: 28, ring: 0.21, bars: [8, 2, 6, 4, 9] },
+  { progress: 94, ring: 0.88, bars: [5, 5, 8, 3, 7] },
+];
+
+function ProgressPreview() {
+  const [step, setStep] = useState(0);
+  const { progress, ring, bars } = PROGRESS_STEPS[step % PROGRESS_STEPS.length];
+  return (
     <AppScreen>
       <Narrow>
-        <TKProgress value={72} label="Upload progress" />
+        <TKButton variant="surface" onClick={() => setStep((s) => s + 1)}>
+          Change values
+        </TKButton>
+        <TKProgress value={progress} label="Upload progress" />
       </Narrow>
       <Grid>
-        <TKRing value={0.64} label="Goal progress">
-          64%
+        <TKRing value={ring} label="Goal progress">
+          {Math.round(ring * 100)}%
         </TKRing>
-        <TKBars data={[3, 7, 5, 9, 6]} labels={["Mon", "Tue", "Wed", "Thu", "Fri"]} />
+        <TKBars data={bars} labels={["Mon", "Tue", "Wed", "Thu", "Fri"]} />
       </Grid>
     </AppScreen>
-  ),
+  );
+}
+
+export const ProgressAndBars = {
+  parameters: { fullBleed: true },
+  render: () => <ProgressPreview />,
 } satisfies Story;
 
 export const EmptyAndTimeline = {

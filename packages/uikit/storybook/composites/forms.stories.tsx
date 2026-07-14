@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { useState } from "react";
 import {
   TKCalendar,
   TKChipsInput,
@@ -69,12 +70,33 @@ export const MaskedInputs = {
   ),
 } satisfies Story;
 
+function PinWithError() {
+  const [error, setError] = useState(false);
+  return (
+    <TKPinInput
+      title={
+        <span>
+          <strong>Wallet access</strong> — correct PIN is 1234, a wrong code shakes
+        </span>
+      }
+      error={error}
+      onBiometricRequest={() => undefined}
+      onComplete={(pin) => {
+        // Mirrors a real verify round-trip: clear the previous error first, then
+        // reject async so the false→true transition re-fires the shake/haptic.
+        setError(false);
+        if (pin !== "1234") setTimeout(() => setError(true), 0);
+      }}
+    />
+  );
+}
+
 export const PinAndChips = {
   parameters: { fullBleed: true },
   render: () => (
     <AppScreen>
       <Narrow>
-        <TKPinInput title={<strong>Wallet access</strong>} onBiometricRequest={() => undefined} />
+        <PinWithError />
       </Narrow>
       <Narrow>
         <TKPinInput title={<strong>Variable PIN</strong>} length={4} maxLength={8} />

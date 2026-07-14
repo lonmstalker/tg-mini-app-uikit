@@ -124,6 +124,9 @@ const preview: Preview = {
         items: [
           { value: "springy", title: "Springy" },
           { value: "smooth", title: "Smooth" },
+          // Drives TKProvider reduceMotion (data-tk-motion="off") — the in-app
+          // motion-off path, testable without touching the OS setting.
+          { value: "reduced", title: "Reduced" },
         ],
         dynamicTitle: true,
       },
@@ -163,7 +166,7 @@ const preview: Preview = {
         locale?: "en" | "ru";
         rtl?: "ltr" | "rtl";
         density?: "compact" | "comfortable";
-        motion?: "springy" | "smooth";
+        motion?: "springy" | "smooth" | "reduced";
         preset?: TKThemePreset;
         device?: "phone" | "off";
       };
@@ -200,7 +203,8 @@ const preview: Preview = {
               accent={globals.accent ?? "#3390ec"}
               roundness={Number(globals.roundness ?? 1)}
               fontSize={Number(globals.fontSize ?? 16)}
-              motion={globals.motion ?? "springy"}
+              motion={globals.motion === "reduced" ? "springy" : (globals.motion ?? "springy")}
+              reduceMotion={globals.motion === "reduced" ? true : "auto"}
               preset={globals.preset ?? "ios"}
             >
               <TKLocaleProvider locale={locale}>

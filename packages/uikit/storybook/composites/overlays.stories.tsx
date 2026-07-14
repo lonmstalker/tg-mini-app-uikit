@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   TKActionSheet,
   TKButton,
@@ -27,25 +27,40 @@ export default meta;
 
 type Story = StoryObj;
 
-export const ModalSurfaces = {
-  // Overlays fill the device screen (backdrop, centered dialog, bottom sheet) like a real app.
-  parameters: { fullBleed: true },
-  render: () => (
+function ModalSurfacesPreview() {
+  // Real open/close state so the exit animations (tk-fade-out, tk-modal close,
+  // tk-sheet-down) and the sheet's drag-to-dismiss are exercisable, not just enter.
+  const [dialogOpen, setDialogOpen] = useState(true);
+  const [sheetOpen, setSheetOpen] = useState(true);
+  return (
     <>
+      <Section style={{ padding: 16 }}>
+        <Row>
+          <TKButton variant="surface" onClick={() => setDialogOpen(true)}>
+            Open dialog
+          </TKButton>
+          <TKButton variant="surface" onClick={() => setSheetOpen(true)}>
+            Open sheet
+          </TKButton>
+        </Row>
+      </Section>
       <TKDialog
-        open
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
         title="Confirm payout"
         text="Review the amount before sending."
         icon="warning"
         tone="orange"
         actions={
           <>
-            <TKButton variant="plain">Cancel</TKButton>
-            <TKButton>Send</TKButton>
+            <TKButton variant="plain" onClick={() => setDialogOpen(false)}>
+              Cancel
+            </TKButton>
+            <TKButton onClick={() => setDialogOpen(false)}>Send</TKButton>
           </>
         }
       />
-      <TKSheet open title="Transfer details" noGrabber>
+      <TKSheet open={sheetOpen} onClose={() => setSheetOpen(false)} title="Transfer details">
         <Section>
           <Narrow>
             <TKButton variant="surface">Account ending 2842</TKButton>
@@ -53,22 +68,41 @@ export const ModalSurfaces = {
         </Section>
       </TKSheet>
     </>
-  ),
+  );
+}
+
+export const ModalSurfaces = {
+  // Overlays fill the device screen (backdrop, centered dialog, bottom sheet) like a real app.
+  parameters: { fullBleed: true },
+  render: () => <ModalSurfacesPreview />,
 } satisfies Story;
+
+function ActionSheetPreview() {
+  const [open, setOpen] = useState(true);
+  return (
+    <>
+      <Section style={{ padding: 16 }}>
+        <TKButton variant="surface" onClick={() => setOpen(true)}>
+          Open action sheet
+        </TKButton>
+      </Section>
+      <TKActionSheet
+        open={open}
+        onClose={() => setOpen(false)}
+        items={[
+          { icon: "share", label: "Share receipt" },
+          { icon: "copy", label: "Copy transaction ID" },
+          { icon: "trash", label: "Delete draft", danger: true },
+        ]}
+        cancelLabel="Close"
+      />
+    </>
+  );
+}
 
 export const ActionSheet = {
   parameters: { fullBleed: true },
-  render: () => (
-    <TKActionSheet
-      open
-      items={[
-        { icon: "share", label: "Share receipt" },
-        { icon: "copy", label: "Copy transaction ID" },
-        { icon: "trash", label: "Delete draft", danger: true },
-      ]}
-      cancelLabel="Close"
-    />
-  ),
+  render: () => <ActionSheetPreview />,
 } satisfies Story;
 
 export const Tooltip = {
@@ -108,17 +142,23 @@ export const AnchoredPopper = {
 
 function ToastPreview() {
   const toast = useTKToast();
+  const fire = () => toast.success("Saved to Telegram CloudStorage");
   useEffect(() => {
-    toast.success("Saved to Telegram CloudStorage");
+    fire();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toast]);
-  return <TKButton variant="surface">Toast trigger</TKButton>;
+  return (
+    <TKButton variant="surface" onClick={fire}>
+      Show toast
+    </TKButton>
+  );
 }
 
 export const Toasts = {
   parameters: { fullBleed: true },
   render: () => (
-    // Long duration so the demo toast stays visible while the story is open.
-    <TKToastProvider duration={100000}>
+    // Real auto-dismiss timing so tk-toast-in AND tk-toast-out both play; the button re-fires it.
+    <TKToastProvider duration={2400}>
       <Section style={{ padding: 16 }}>
         <ToastPreview />
       </Section>
