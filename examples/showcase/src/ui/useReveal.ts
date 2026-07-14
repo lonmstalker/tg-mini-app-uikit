@@ -3,10 +3,12 @@ import { useLayoutEffect, useRef } from "react";
 const REVEAL_PENDING_CLASS = "reveal-pending";
 const REVEALED_CLASS = "is-revealed";
 
-export function useReveal<T extends HTMLElement>() {
+export function useReveal<T extends HTMLElement>(enabled = true) {
   const ref = useRef<T>(null);
 
   useLayoutEffect(() => {
+    if (!enabled) return;
+
     const node = ref.current;
     if (!node || typeof IntersectionObserver === "undefined") return;
 
@@ -35,7 +37,7 @@ export function useReveal<T extends HTMLElement>() {
         node.classList.remove(REVEAL_PENDING_CLASS);
       }
     };
-  }, []);
+  }, [enabled]);
 
   return ref;
 }

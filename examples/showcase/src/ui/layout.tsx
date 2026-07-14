@@ -16,26 +16,28 @@ interface SectionProps
   extends Omit<ComponentPropsWithoutRef<"section">, "aria-labelledby" | "id"> {
   id: string;
   labelledBy?: string;
+  reveal?: boolean;
   revealIndex?: number;
 }
 
 export function Section({
   id,
   labelledBy = `${id}-title`,
+  reveal = true,
   revealIndex = 0,
   className,
   style,
   ...props
 }: SectionProps) {
-  const revealRef = useReveal<HTMLElement>();
+  const revealRef = useReveal<HTMLElement>(reveal);
 
   return (
     <section
       ref={revealRef}
       id={id}
       aria-labelledby={labelledBy}
-      className={["showcase-section", "reveal", className].filter(Boolean).join(" ")}
-      style={{ ...style, transitionDelay: `${revealIndex * REVEAL_STAGGER_MS}ms` }}
+      className={["showcase-section", reveal ? "reveal" : "", className].filter(Boolean).join(" ")}
+      style={{ ...style, transitionDelay: reveal ? `${revealIndex * REVEAL_STAGGER_MS}ms` : undefined }}
       {...props}
     />
   );
