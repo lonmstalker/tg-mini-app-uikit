@@ -32,6 +32,7 @@ exports[`public API surface > keeps the set of named exports stable 1`] = `
   "TKDateInput",
   "TKDialog",
   "TKDot",
+  "TKEllipsis",
   "TKEmptyState",
   "TKFileInput",
   "TKFormField",

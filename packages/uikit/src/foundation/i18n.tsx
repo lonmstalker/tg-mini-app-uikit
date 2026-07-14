@@ -117,6 +117,9 @@ export interface TKLocale {
   sliderMax: string;
   leadingActions: string;
   trailingActions: string;
+  /** TKEllipsis expand/collapse labels. */
+  showMore: string;
+  showLess: string;
 }
 
 export const enLocale: TKLocale = {
@@ -188,6 +191,8 @@ export const enLocale: TKLocale = {
   sliderMax: "{label} maximum",
   leadingActions: "Leading actions",
   trailingActions: "Trailing actions",
+  showMore: "Show more",
+  showLess: "Show less",
 };
 
 /** Ready-made Russian preset. */
@@ -260,6 +265,8 @@ export const ruLocale: TKLocale = {
   sliderMax: "{label} максимум",
   leadingActions: "Действия слева",
   trailingActions: "Действия справа",
+  showMore: "Ещё",
+  showLess: "Свернуть",
 };
 
 const TKLocaleContext = /* @__PURE__ */ createContext<TKLocale>(enLocale);

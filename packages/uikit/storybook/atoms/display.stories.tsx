@@ -6,6 +6,7 @@ import {
   TKBlockquote,
   TKCounter,
   TKDot,
+  TKEllipsis,
   TKImage,
   TKImg,
   TKSpoiler,
@@ -73,6 +74,24 @@ export const Media = {
         <TKImage fallbackLabel="Image fallback" ratio="16 / 9" />
       </Narrow>
     </Grid>
+  ),
+} satisfies Story;
+
+const LONG_TEXT =
+  "Telegram Mini Apps let you build rich interfaces right inside a chat. This paragraph is deliberately long so the clamp has something to cut: the kit clamps it to a few lines with pure CSS, so the first paint is already collapsed and nothing shifts. Tap the accent button to smoothly expand the full text — content below slides down instead of jumping. With `collapsible` the text folds back up the same way, and with reduced motion every transition lands instantly.";
+
+export const Ellipsis = {
+  render: () => (
+    <Section>
+      <Narrow>
+        <TKEllipsis>{LONG_TEXT}</TKEllipsis>
+      </Narrow>
+      <Narrow>
+        <TKEllipsis lines={2} collapsible>
+          {LONG_TEXT}
+        </TKEllipsis>
+      </Narrow>
+    </Section>
   ),
 } satisfies Story;
 

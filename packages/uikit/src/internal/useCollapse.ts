@@ -10,6 +10,31 @@ import { useIsomorphicLayoutEffect } from "./useIsomorphicLayoutEffect";
  * itself and never rides a scroll or drag frame. Powers the accordion panel
  * and the collapsing large-header title.
  */
+/**
+ * Transient WAAPI tween between two measured pixel heights (the same mechanism
+ * `useCollapse` uses, for elements whose collapsed height is NOT 0 — e.g. the
+ * line-clamped `TKEllipsis`). Clips overflow for the ride and restores it after.
+ * Returns `null` when motion is off (OS setting or `data-tk-motion="off"`) or
+ * WAAPI is unavailable — callers snap to the final state instantly.
+ */
+export function tkAnimateHeight(el: HTMLElement, from: number, to: number, duration = 260): Animation | null {
+  if (typeof el.animate !== "function" || from === to) return null;
+  if (el.closest('.tk[data-tk-motion="off"]')) return null;
+  if (typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches) return null;
+  const prevOverflow = el.style.overflow;
+  el.style.overflow = "hidden";
+  const anim = el.animate([{ height: `${from}px` }, { height: `${to}px` }], {
+    duration,
+    easing: "cubic-bezier(.22,.61,.36,1)",
+  });
+  const restore = () => {
+    el.style.overflow = prevOverflow;
+  };
+  anim.addEventListener("finish", restore);
+  anim.addEventListener("cancel", restore);
+  return anim;
+}
+
 export function useCollapse<T extends HTMLElement = HTMLDivElement>(
   open: boolean,
   duration = 260,
