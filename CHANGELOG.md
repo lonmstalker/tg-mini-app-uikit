@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.4.0 — 2026-07-14
+
+Animation smoothness overhaul (plan phases 0–5): gestures track the finger
+1:1 with zero layout/React commits per drag frame; every layout-property
+animation moved to transforms (snap sheet, sliders, segmented, fills, search,
+keyboard shrink) or measured-height WAAPI (accordion, collapsing header);
+paint diet (`will-change` windows, static blur layers, `TKProvider
+glassBars`, opacity focus rings, one shimmer per skeleton group) enforced by
+the new `check-animatable-props` CI gate; familiar motion added (form error
+rise/shake, header title crossfade, tab fades with preserved scroll,
+skeleton→content and list-append fades, pull-progress spinner, toast FLIP);
+`TKHeader back="auto"` dedups against the native Telegram Back button via
+`TKNavStack.nativeBack`. Ships `tg-mini-app-uikit@0.4.0`
+(`@tg-mini-app/telegram` stays `0.2.1`); per-package notes in
+`packages/uikit/CHANGELOG.md`.
+
 ## 0.3.1 — 2026-07-12
 
 Patch release: the adversarial review remediation for the 0.3.0 wave —
