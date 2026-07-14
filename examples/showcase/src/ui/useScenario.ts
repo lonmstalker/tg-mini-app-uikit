@@ -89,13 +89,38 @@ function waitWhileVisible(duration: number, signal: AbortSignal): Promise<boolea
 export function useScenario(frameRef: RefObject<HTMLElement | null>) {
   const reducedMotion = useReducedMotion();
   const [stopped, setStopped] = useState(false);
+  const [inViewport, setInViewport] = useState(
+    () => typeof IntersectionObserver === "undefined",
+  );
   const [snapshot, setSnapshot] = useState<ScenarioSnapshot>({ cycle: 0, step: "wallet" });
+
+  useEffect(() => {
+    const frame = frameRef.current;
+    if (!frame || typeof IntersectionObserver === "undefined") return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        const visible = entry?.isIntersecting ?? false;
+        setInViewport(visible);
+        if (!visible) {
+          setSnapshot((current) =>
+            current.cycle === 0 && current.step === "wallet"
+              ? current
+              : { cycle: 0, step: "wallet" },
+          );
+        }
+      },
+      { threshold: 0.2 },
+    );
+    observer.observe(frame);
+    return () => observer.disconnect();
+  }, [frameRef]);
 
   useEffect(() => {
     const controller = new AbortController();
     const frame = frameRef.current;
 
-    if (!reducedMotion && !stopped) {
+    if (!reducedMotion && !stopped && inViewport) {
       frame?.addEventListener(
         "pointerdown",
         () => {
@@ -123,11 +148,11 @@ export function useScenario(frameRef: RefObject<HTMLElement | null>) {
     }
 
     return () => controller.abort();
-  }, [frameRef, reducedMotion, stopped]);
+  }, [frameRef, inViewport, reducedMotion, stopped]);
 
   return {
     ...snapshot,
-    autoplay: !reducedMotion && !stopped,
+    autoplay: !reducedMotion && !stopped && inViewport,
     reducedMotion,
     stopped,
   };

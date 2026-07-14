@@ -16,6 +16,10 @@ const sourceAliases = [
     replacement: fromHere("../../packages/uikit/src/tokens/tokens.css"),
   },
   {
+    find: "@tg-mini-app/telegram/testing",
+    replacement: fromHere("../../packages/telegram/src/testing.ts"),
+  },
+  {
     find: "@tg-mini-app/telegram",
     replacement: fromHere("../../packages/telegram/src/index.ts"),
   },

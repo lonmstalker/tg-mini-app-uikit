@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { TKProvider, TKToastProvider, type TKTheme } from "tg-mini-app-uikit";
 import { Hero } from "./ui/Hero";
+import { Features } from "./ui/Features";
 import { SiteFooter } from "./ui/SiteFooter";
 import { SiteHeader } from "./ui/SiteHeader";
 import { Container, Section, SectionTitle } from "./ui/layout";
 
 const sections = [
-  { id: "features", title: "Features" },
   { id: "components", title: "Components" },
   { id: "tweaks", title: "Tweaks" },
   { id: "i18n", title: "Internationalization" },
@@ -42,8 +42,14 @@ export function App() {
             </Container>
           </Section>
 
+          <Section className="showcase-features" id="features" reveal={false}>
+            <Container>
+              <Features theme={theme} />
+            </Container>
+          </Section>
+
           {sections.map(({ id, title }, index) => (
-            <Section id={id} key={id} revealIndex={index + 1}>
+            <Section id={id} key={id} revealIndex={index + 2}>
               <Container>
                 <SectionTitle id={`${id}-title`}>{title}</SectionTitle>
               </Container>
