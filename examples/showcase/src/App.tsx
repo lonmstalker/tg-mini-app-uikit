@@ -1,4 +1,8 @@
-import { TKProvider } from "tg-mini-app-uikit";
+import { useState } from "react";
+import { TKProvider, type TKTheme } from "tg-mini-app-uikit";
+import { SiteFooter } from "./ui/SiteFooter";
+import { SiteHeader } from "./ui/SiteHeader";
+import { Container, Section, SectionTitle } from "./ui/layout";
 
 const sections = [
   { id: "features", title: "Features" },
@@ -7,47 +11,47 @@ const sections = [
   { id: "i18n", title: "Internationalization" },
 ] as const;
 
+function getInitialTheme(): TKTheme {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+    return "dark";
+  }
+
+  return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+}
+
 export function App() {
+  const [theme, setTheme] = useState<TKTheme>(getInitialTheme);
+
   return (
-    <TKProvider theme="dark" className="showcase">
+    <TKProvider theme={theme} className="showcase">
       <a className="skip-link" href="#components">
         Skip to components
       </a>
 
-      <header className="site-header">
-        <div className="container">
-          <strong>tg-mini-app-uikit</strong>
-        </div>
-      </header>
+      <SiteHeader
+        theme={theme}
+        onThemeToggle={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
+      />
 
       <main>
-        <section
-          className="showcase-section showcase-hero"
-          id="hero"
-          aria-labelledby="hero-title"
-        >
-          <div className="container">
-            <h1 id="hero-title">iOS-flavored UI kit for Telegram Mini Apps</h1>
-          </div>
-        </section>
+        <Section className="showcase-hero" id="hero">
+          <Container>
+            <SectionTitle as="h1" id="hero-title">
+              iOS-flavored UI kit for Telegram Mini Apps
+            </SectionTitle>
+          </Container>
+        </Section>
 
-        {sections.map(({ id, title }) => (
-          <section
-            className="showcase-section"
-            id={id}
-            aria-labelledby={`${id}-title`}
-            key={id}
-          >
-            <div className="container">
-              <h2 id={`${id}-title`}>{title}</h2>
-            </div>
-          </section>
+        {sections.map(({ id, title }, index) => (
+          <Section id={id} key={id} revealIndex={index + 1}>
+            <Container>
+              <SectionTitle id={`${id}-title`}>{title}</SectionTitle>
+            </Container>
+          </Section>
         ))}
       </main>
 
-      <footer className="site-footer">
-        <div className="container">tg-mini-app-uikit</div>
-      </footer>
+      <SiteFooter />
     </TKProvider>
   );
 }

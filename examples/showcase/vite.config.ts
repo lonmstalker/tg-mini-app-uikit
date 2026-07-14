@@ -1,9 +1,14 @@
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
 const fromHere = (relativePath: string) =>
   fileURLToPath(new URL(relativePath, import.meta.url));
+
+const uikitPackage = JSON.parse(
+  readFileSync(fromHere("../../packages/uikit/package.json"), "utf8"),
+) as { version: string };
 
 const sourceAliases = [
   {
@@ -22,6 +27,9 @@ const sourceAliases = [
 
 export default defineConfig({
   base: "/",
+  define: {
+    __TK_PACKAGE_VERSION__: JSON.stringify(uikitPackage.version),
+  },
   plugins: [react()],
   resolve: {
     alias: sourceAliases,
