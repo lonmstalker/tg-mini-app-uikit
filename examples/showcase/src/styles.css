@@ -1,0 +1,103 @@
+:root {
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-width: 0;
+}
+
+button,
+a {
+  font: inherit;
+}
+
+.showcase {
+  min-block-size: 100dvh;
+  overflow-x: clip;
+  color: var(--tk-text);
+  background: var(--tk-bg);
+}
+
+.container {
+  box-sizing: border-box;
+  inline-size: min(100%, 1080px);
+  margin-inline: auto;
+  padding-inline: max(var(--tk-sp-4), var(--tk-safe-left));
+}
+
+.skip-link {
+  position: fixed;
+  z-index: var(--tk-z-toast);
+  inset-block-start: var(--tk-sp-2);
+  inset-inline-start: var(--tk-sp-2);
+  padding: var(--tk-sp-2) var(--tk-sp-3);
+  border-radius: var(--tk-r-sm);
+  color: var(--tk-on-accent);
+  background: var(--tk-accent);
+  box-shadow: var(--tk-shadow-md);
+  transform: translateY(calc(-100% - var(--tk-sp-4)));
+}
+
+.skip-link:focus-visible {
+  outline: none;
+  box-shadow: var(--tk-ring), var(--tk-shadow-md);
+  transform: translateY(0);
+}
+
+.site-header {
+  position: sticky;
+  z-index: var(--tk-z-header);
+  inset-block-start: 0;
+  padding-block: var(--tk-sp-4);
+  border-block-end: 1px solid var(--tk-sep);
+  color: var(--tk-text);
+  background: var(--tk-glass);
+}
+
+.showcase-section {
+  display: grid;
+  min-block-size: 50dvh;
+  align-items: center;
+  padding-block: clamp(var(--tk-sp-8), 12vw, 120px);
+  border-block-end: 1px solid var(--tk-sep);
+}
+
+.showcase-section:not(.showcase-hero) {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 400px;
+}
+
+.showcase-hero {
+  min-block-size: calc(100dvh - var(--tk-tap-min));
+  background: radial-gradient(circle at 80% 20%, var(--tk-accent-12), var(--tk-bg) 58%);
+}
+
+h1,
+h2 {
+  max-inline-size: 18ch;
+  margin: 0;
+  color: var(--tk-text);
+  line-height: 1.08;
+}
+
+h1 {
+  font-size: clamp(40px, 8vw, 76px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+h2 {
+  font-size: var(--tk-fz-large);
+}
+
+.site-footer {
+  padding-block: var(--tk-sp-7);
+  color: var(--tk-text-2);
+  background: var(--tk-surface);
+}

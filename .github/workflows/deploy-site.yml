@@ -1,0 +1,30 @@
+name: Deploy showcase site
+
+on:
+  # Enabling this push trigger supersedes the Pages deploy in docs.yml because
+  # both workflows target the same Pages site. Switch them deliberately.
+  # push:
+  #   branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  site:
+    name: build and deploy site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run site:deploy
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site-dist
+      - uses: actions/deploy-pages@v4

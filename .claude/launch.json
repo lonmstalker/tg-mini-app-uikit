@@ -18,6 +18,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev", "-w", "surface-composer"],
       "port": 5174
+    },
+    {
+      "name": "showcase",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "-w", "showcase"],
+      "port": 5175
     }
   ]
 }

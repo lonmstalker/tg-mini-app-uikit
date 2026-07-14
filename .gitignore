@@ -10,3 +10,4 @@ playwright-report/
 blob-report/
 coverage/
 packages/uikit/storybook-static/
+site-dist/

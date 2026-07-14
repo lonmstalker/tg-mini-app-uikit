@@ -1,0 +1,27 @@
+{
+  "name": "showcase",
+  "private": true,
+  "type": "module",
+  "version": "0.0.0",
+  "description": "Showcase landing page for tg-mini-app-uikit.",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 5175",
+    "build": "vite build",
+    "preview": "vite preview --host 127.0.0.1 --port 4175",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@tg-mini-app/telegram": "*",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "tg-mini-app-uikit": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.3",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "@vitejs/plugin-react": "^4.5.0",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5"
+  }
+}
