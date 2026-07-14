@@ -96,6 +96,12 @@ function KeyframesPreview() {
         <Tile label="tk-pulse" note="TKDot pulse, timeline node">
           <span className="tk-pulse" style={{ display: "block", width: 12, height: 12, borderRadius: "50%", background: "var(--tk-accent)" }} />
         </Tile>
+        <Tile label="tk-viewer-down" note="TKImageViewer swipe-close hand-off (no from)">
+          <div style={kf("tk-viewer-down", "var(--tk-t3)", "var(--tk-ease)")} />
+        </Tile>
+        <Tile label="tk-viewer-fade" note="TKImageViewer scrim/stage exit (no from)">
+          <div style={kf("tk-viewer-fade", "var(--tk-t3)", "var(--tk-ease)")} />
+        </Tile>
         <Tile label="tk-marquee" note="TKNoticeBar overflow ticker (.tk-marquee-track)">
           <div aria-hidden="true" style={{ width: 72, overflow: "hidden" }}>
             <div className="tk-marquee-track" style={{ display: "flex", width: "max-content", ["--tk-marquee-dur" as string]: "4s" }}>

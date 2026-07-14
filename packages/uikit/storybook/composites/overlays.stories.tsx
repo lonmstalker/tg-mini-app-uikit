@@ -4,6 +4,7 @@ import {
   TKActionSheet,
   TKButton,
   TKDialog,
+  TKImageViewer,
   TKPopper,
   TKSheet,
   TKToastProvider,
@@ -164,4 +165,62 @@ export const Toasts = {
       </Section>
     </TKToastProvider>
   ),
+} satisfies Story;
+
+/* ---------------- Image viewer ---------------- */
+
+const photo = (hue: number, label: string, w = 1200, h = 800) =>
+  `data:image/svg+xml;utf8,${encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}">` +
+      `<rect width="100%" height="100%" fill="hsl(${hue} 55% 42%)"/>` +
+      `<circle cx="${w * 0.72}" cy="${h * 0.3}" r="${h * 0.16}" fill="hsl(${hue + 40} 70% 72%)"/>` +
+      `<text x="48" y="${h - 56}" font-family="sans-serif" font-size="64" fill="white" opacity=".9">${label}</text>` +
+    `</svg>`,
+  )}`;
+
+const VIEWER_IMAGES = [
+  { src: photo(210, "Harbor"), alt: "Harbor at dusk" },
+  { src: photo(20, "Dunes", 900, 1200), alt: "Sand dunes" },
+  { src: photo(130, "Forest"), alt: "Forest trail" },
+];
+
+function ImageViewerPreview() {
+  const [open, setOpen] = useState(false);
+  const [index, setIndex] = useState(0);
+  const originRef = useRef<HTMLElement | null>(null);
+  return (
+    <Section style={{ padding: 16 }}>
+      <Row>
+        {VIEWER_IMAGES.map((img, i) => (
+          <button
+            key={img.alt}
+            type="button"
+            aria-label={img.alt}
+            onClick={(e) => {
+              originRef.current = e.currentTarget;
+              setIndex(i);
+              setOpen(true);
+            }}
+            style={{ appearance: "none", border: "none", padding: 0, background: "none", cursor: "zoom-in", borderRadius: "var(--tk-r-sm)", overflow: "hidden" }}
+          >
+            <img src={img.src} alt="" style={{ width: 88, height: 66, objectFit: "cover", display: "block" }} />
+          </button>
+        ))}
+      </Row>
+      <TKImageViewer
+        open={open}
+        onClose={() => setOpen(false)}
+        images={VIEWER_IMAGES}
+        index={index}
+        onIndexChange={setIndex}
+        originRef={originRef}
+        testId="image-viewer"
+      />
+    </Section>
+  );
+}
+
+export const ImageViewer = {
+  parameters: { fullBleed: true },
+  render: () => <ImageViewerPreview />,
 } satisfies Story;

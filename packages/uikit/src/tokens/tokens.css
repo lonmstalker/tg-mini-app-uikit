@@ -332,6 +332,15 @@
 @keyframes tk-sheet-down {
   to { transform: translateY(104%); }
 }
+/* no `from`: the viewer image exits from under the finger (velocity hand-off),
+   compositor-only */
+@keyframes tk-viewer-down {
+  to { transform: translateY(110%); opacity: .2; }
+}
+/* no `from`: fades out from the CURRENT opacity (a swipe-dimmed viewer scrim) */
+@keyframes tk-viewer-fade {
+  to { opacity: 0; }
+}
 /* compositor-only: the duplicated ticker track slides one copy-width left
    (copies carry the gap as padding, so -50% is an exact loop) */
 @keyframes tk-marquee {

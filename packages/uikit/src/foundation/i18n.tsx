@@ -120,6 +120,8 @@ export interface TKLocale {
   /** TKEllipsis expand/collapse labels. */
   showMore: string;
   showLess: string;
+  /** TKImageViewer position announcement template: `{current} of {total}`. */
+  imageCounter: string;
 }
 
 export const enLocale: TKLocale = {
@@ -193,6 +195,7 @@ export const enLocale: TKLocale = {
   trailingActions: "Trailing actions",
   showMore: "Show more",
   showLess: "Show less",
+  imageCounter: "{current} of {total}",
 };
 
 /** Ready-made Russian preset. */
@@ -267,6 +270,7 @@ export const ruLocale: TKLocale = {
   trailingActions: "Действия справа",
   showMore: "Ещё",
   showLess: "Свернуть",
+  imageCounter: "{current} из {total}",
 };
 
 const TKLocaleContext = /* @__PURE__ */ createContext<TKLocale>(enLocale);

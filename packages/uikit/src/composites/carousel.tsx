@@ -4,6 +4,7 @@ import {
   isValidElement,
   useEffect,
   useRef,
+  useState,
   type ForwardedRef,
   type HTMLAttributes,
   type Key,
@@ -15,6 +16,7 @@ import { useControllable } from "../internal/useControllable";
 import { tkFormat, useTKLocale } from "../foundation/i18n";
 import { useOptionalHaptics } from "../foundation/telegram";
 import { TKPageDots } from "./navigation";
+import { TKImageViewer, type TKImageViewerImage } from "./overlays/image-viewer";
 
 export interface TKGalleryProps<T = unknown> extends HTMLAttributes<HTMLDivElement> {
   /** Data-driven slides (alternative to `children`); `renderItem` maps each (CRS-DX-006). */
@@ -42,11 +44,17 @@ export interface TKGalleryProps<T = unknown> extends HTMLAttributes<HTMLDivEleme
   height?: number | string;
   /** Fire the Telegram selection haptic on a landed page change (default true; CRS-006). Also requires `haptics` on the `TKTelegramProvider`/`TKApp` to actually buzz. */
   haptics?: boolean;
+  /**
+   * Full-res images, index-aligned with the slides: tapping a slide opens the
+   * built-in `TKImageViewer` on that image, growing out of the tapped slide
+   * (shared-element). Slides become keyboard-operable buttons.
+   */
+  viewerImages?: TKImageViewerImage[];
   testId?: string;
 }
 
 function TKGalleryImpl<T>(
-  { children, items, renderItem, getKey, page: pageProp, defaultPage, onPageChange, dots = true, gap = 10, edgeInset = 16, height, haptics = true, testId, className, style, ...rest }: TKGalleryProps<T>,
+  { children, items, renderItem, getKey, page: pageProp, defaultPage, onPageChange, dots = true, gap = 10, edgeInset = 16, height, haptics = true, viewerImages, testId, className, style, ...rest }: TKGalleryProps<T>,
   forwardedRef: ForwardedRef<HTMLDivElement>,
 ) {
   const locale = useTKLocale();
@@ -183,6 +191,17 @@ function TKGalleryImpl<T>(
   // Clear the self-clearing scroll-settle timer on unmount (CRS-004).
   useEffect(() => () => window.clearTimeout(settleTimerRef.current), []);
 
+  // Built-in viewer state: controlled index so a re-open lands on the slide
+  // that was tapped, not on the first-open default.
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [viewerIndex, setViewerIndex] = useState(0);
+  const viewerOrigin = useRef<HTMLElement | null>(null);
+  const openViewer = (i: number, origin: HTMLElement) => {
+    viewerOrigin.current = origin;
+    setViewerIndex(Math.min(i, (viewerImages?.length ?? 1) - 1));
+    setViewerOpen(true);
+  };
+
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key === "ArrowLeft") {
       e.preventDefault();
@@ -231,17 +250,34 @@ function TKGalleryImpl<T>(
           height,
         }}
       >
-        {slides.map(({ key, node }) => (
+        {slides.map(({ key, node }, i) => (
           <div
             // Preserve each slide's identity so reorder/removal doesn't remount the
             // wrong slide (CC-11/CRS-008); keys come from getKey (data) or the
             // keyed child, falling back to index.
             key={key}
             data-tk-gallery-slide
+            // With viewerImages the slide is a real tap target: button semantics,
+            // keyboard-operable, named after the image it opens.
+            {...(viewerImages
+              ? {
+                  role: "button" as const,
+                  tabIndex: 0,
+                  "aria-label": viewerImages[i]?.alt,
+                  onClick: (e: { currentTarget: HTMLElement }) => openViewer(i, e.currentTarget),
+                  onKeyDown: (e: KeyboardEvent<HTMLDivElement>) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      openViewer(i, e.currentTarget);
+                    }
+                  },
+                }
+              : {})}
             style={{
               flex: "0 0 100%",
               scrollSnapAlign: "center",
               minWidth: 0,
+              cursor: viewerImages ? "zoom-in" : undefined,
             }}
           >
             {node}
@@ -252,6 +288,16 @@ function TKGalleryImpl<T>(
         <div style={{ display: "flex", justifyContent: "center" }}>
           <TKPageDots count={slides.length} page={page} onChange={scrollTo} />
         </div>
+      ) : null}
+      {viewerImages ? (
+        <TKImageViewer
+          open={viewerOpen}
+          onClose={() => setViewerOpen(false)}
+          images={viewerImages}
+          index={viewerIndex}
+          onIndexChange={setViewerIndex}
+          originRef={viewerOrigin}
+        />
       ) : null}
     </div>
   );

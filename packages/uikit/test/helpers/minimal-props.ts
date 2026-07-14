@@ -32,6 +32,7 @@ export const MINIMAL_PROPS: Record<string, Record<string, unknown>> = {
   TKAccordion: { items: [{ id: "a", title: "T", content: "C" }] },
   TKSheet: { open: true, title: "Sheet" },
   TKDialog: { open: true, title: "Dialog" },
+  TKImageViewer: { open: true, images: [{ src: "https://example.com/a.jpg", alt: "Photo" }] },
   TKActionSheet: { open: true, items: [{ label: "Do it" }] },
   TKPopper: { open: false, anchorRef: { current: null } },
   TKTooltip: { content: "tip", children: "hover me" },

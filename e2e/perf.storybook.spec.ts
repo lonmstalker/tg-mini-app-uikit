@@ -123,6 +123,34 @@ test.describe("gesture and animation perf", () => {
     expect(after.layout - before.layout, "layouts during plain scroll over PTR").toBeLessThanOrEqual(2);
   });
 
+  test("image viewer dismiss drag: imperative transforms only, no per-frame commits", async ({ page }) => {
+    await openStory(page, "composites-overlays--image-viewer");
+    // Open the viewer from the first thumbnail (FLIP origin).
+    await page.getByRole("button", { name: "Harbor at dusk" }).click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible();
+    await page.waitForTimeout(500); // let the entrance animation finish
+    const box = (await dialog.boundingBox())!;
+    const session = await cdp(page);
+
+    const before = await counters(session);
+    const commitsBefore = await commits(page);
+    // A vertical dismiss drag that does NOT commit (short travel, slow release):
+    // the image tracks the finger 1:1 and springs back — all imperative.
+    await driveDrag(
+      page,
+      session,
+      { x: box.x + box.width / 2, y: box.y + box.height / 2 },
+      { x: box.x + box.width / 2, y: box.y + box.height / 2 + 80 },
+    );
+    const after = await counters(session);
+    const commitsAfter = await commits(page);
+
+    expect(after.layout - before.layout, "layouts during viewer dismiss drag").toBeLessThanOrEqual(3);
+    expect(commitsAfter - commitsBefore, "React commits during viewer dismiss drag").toBeLessThanOrEqual(1);
+    await expect(dialog).toBeVisible();
+  });
+
   test("segmented switch: indicator animation is transform-only", async ({ page }) => {
     await openStory(page, "composites-navigation--segmented-and-tabs");
     const session = await cdp(page);

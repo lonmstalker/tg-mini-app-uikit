@@ -10,3 +10,5 @@ export { TKPopper, TKTooltip } from "./overlays/popper-tooltip";
 export type { TKPopperPlacement, TKPopperProps, TKTooltipProps } from "./overlays/popper-tooltip";
 export { TKToastProvider, useTKToast } from "./overlays/toasts";
 export type { TKToastApi, TKToastOptions, TKToastProviderProps } from "./overlays/toasts";
+export { TKImageViewer } from "./overlays/image-viewer";
+export type { TKImageViewerImage, TKImageViewerProps } from "./overlays/image-viewer";
