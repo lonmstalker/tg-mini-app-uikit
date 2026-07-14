@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { TKEllipsis, TKLocaleProvider, ruLocale } from "../src/index";
+import { tkAnimateHeight } from "../src/internal/useCollapse";
 
 const LONG = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor.";
 
@@ -98,5 +99,38 @@ describe("TKEllipsis", () => {
     const text = screen.getByTestId("e").firstChild as HTMLElement;
     expect(text.style.overflow).not.toBe("hidden");
     expect(screen.getByRole("button", { name: "Show less" })).toBeInTheDocument();
+  });
+});
+
+describe("tkAnimateHeight overflow ownership", () => {
+  /** Minimal WAAPI stand-in: an EventTarget with manual finish/cancel triggers. */
+  function fakeAnimate(this: HTMLElement) {
+    const target = new EventTarget();
+    return Object.assign(target, {
+      finish: () => target.dispatchEvent(new Event("finish")),
+      cancel: () => target.dispatchEvent(new Event("cancel")),
+    }) as unknown as Animation;
+  }
+
+  it("a stale cancel from a superseded run does not strip the live clip", () => {
+    const el = document.createElement("div");
+    document.body.appendChild(el);
+    (el as { animate?: unknown }).animate = fakeAnimate;
+
+    const a1 = tkAnimateHeight(el, 100, 0)!;
+    expect(el.style.overflow).toBe("hidden");
+    (a1 as unknown as { finish(): void }).finish();
+    expect(el.style.overflow).toBe("");
+
+    const a2 = tkAnimateHeight(el, 100, 40)!;
+    expect(el.style.overflow).toBe("hidden");
+    // The late cancel event a real Animation queues when cancel() is called on
+    // an already-finished player — it must not touch the newer run's clip.
+    (a1 as unknown as { cancel(): void }).cancel();
+    expect(el.style.overflow).toBe("hidden");
+
+    (a2 as unknown as { finish(): void }).finish();
+    expect(el.style.overflow).toBe("");
+    el.remove();
   });
 });

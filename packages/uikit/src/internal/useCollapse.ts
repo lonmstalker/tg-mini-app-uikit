@@ -10,6 +10,13 @@ import { useIsomorphicLayoutEffect } from "./useIsomorphicLayoutEffect";
  * itself and never rides a scroll or drag frame. Powers the accordion panel
  * and the collapsing large-header title.
  */
+// Which tkAnimateHeight animation currently owns an element's overflow clip.
+// `cancel()` on an already-finished Animation still queues a LATE cancel event;
+// without ownership that stale callback wiped the `overflow: hidden` a newer
+// run had just installed, so a collapse played unclipped (text painted past
+// the shrinking box).
+const heightAnimOwner = /* @__PURE__ */ new WeakMap<HTMLElement, Animation>();
+
 /**
  * Transient WAAPI tween between two measured pixel heights (the same mechanism
  * `useCollapse` uses, for elements whose collapsed height is NOT 0 — e.g. the
@@ -21,14 +28,24 @@ export function tkAnimateHeight(el: HTMLElement, from: number, to: number, durat
   if (typeof el.animate !== "function" || from === to) return null;
   if (el.closest('.tk[data-tk-motion="off"]')) return null;
   if (typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches) return null;
-  const prevOverflow = el.style.overflow;
+  // A previous run may still hold the clip: its overflow value is the one to
+  // restore; reading el.style here would capture our own "hidden".
+  const prevOverflow = heightAnimOwner.has(el) ? "" : el.style.overflow;
   el.style.overflow = "hidden";
   const anim = el.animate([{ height: `${from}px` }, { height: `${to}px` }], {
     duration,
     easing: "cubic-bezier(.22,.61,.36,1)",
   });
+  heightAnimOwner.set(el, anim);
   const restore = () => {
-    el.style.overflow = prevOverflow;
+    anim.removeEventListener("finish", restore);
+    anim.removeEventListener("cancel", restore);
+    // Only the CURRENT owner may release the clip — a stale finish/cancel from
+    // a superseded run must not undo the newer animation's overflow.
+    if (heightAnimOwner.get(el) === anim) {
+      heightAnimOwner.delete(el);
+      el.style.overflow = prevOverflow;
+    }
   };
   anim.addEventListener("finish", restore);
   anim.addEventListener("cancel", restore);
