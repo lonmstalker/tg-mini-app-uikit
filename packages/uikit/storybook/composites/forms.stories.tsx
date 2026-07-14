@@ -72,20 +72,23 @@ export const MaskedInputs = {
 
 function PinWithError() {
   const [error, setError] = useState(false);
+  const [success, setSuccess] = useState(false);
   return (
     <TKPinInput
       title={
         <span>
-          <strong>Wallet access</strong> — correct PIN is 1234, a wrong code shakes
+          <strong>Wallet access</strong> — 1234 pops green, a wrong code shakes
         </span>
       }
       error={error}
+      success={success}
       onBiometricRequest={() => undefined}
       onComplete={(pin) => {
-        // Mirrors a real verify round-trip: clear the previous error first, then
-        // reject async so the false→true transition re-fires the shake/haptic.
+        // Mirrors a real verify round-trip: clear the previous outcome first, then
+        // resolve async so the false→true transition re-fires the feedback.
         setError(false);
-        if (pin !== "1234") setTimeout(() => setError(true), 0);
+        setSuccess(false);
+        setTimeout(() => (pin === "1234" ? setSuccess(true) : setError(true)), 0);
       }}
     />
   );

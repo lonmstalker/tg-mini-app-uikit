@@ -13,6 +13,8 @@ export interface TKPinInputProps {
   onComplete?: (pin: string) => void;
   /** Shows the error shake and clears the entered digits. */
   error?: boolean;
+  /** Pops the dots green (success haptic, `codeVerified` announced to AT). */
+  success?: boolean;
   /** Adds a biometrics key to the pad. */
   onBiometricRequest?: () => void;
   title?: ReactNode;
@@ -26,6 +28,7 @@ export function TKPinInput({
   maxLength,
   onComplete,
   error,
+  success,
   onBiometricRequest,
   title,
   testId,
@@ -54,6 +57,15 @@ export function TKPinInput({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [error]);
+
+  useEffect(() => {
+    if (success) {
+      clearTimeout(resetTimer.current);
+      setPin("");
+      haptics.notification("success");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [success]);
 
   const complete = (next: string) => {
     completeRef.current?.(next);
@@ -135,6 +147,11 @@ export function TKPinInput({
           {locale.error}
         </span>
       ) : null}
+      {success ? (
+        <span role="status" style={SR_ONLY}>
+          {locale.codeVerified}
+        </span>
+      ) : null}
       {/* `key={shakeKey}` remounts this block on every error so the one-shot
           `tk-shake` animation re-plays even when `error` stays `true`. */}
       <div
@@ -146,15 +163,18 @@ export function TKPinInput({
             them no longer focuses the hidden input (which would raise the OS
             keyboard over the pad). Entry goes through the on-screen pad. */}
         <div style={{ display: "flex", gap: 14, justifyContent: "center", minHeight: 14 }}>
-          {Array.from({ length: pin.length }).map((_, i) => (
+          {/* Success feedback: the full row of dots pops back in green (the
+              entered digits were already cleared by the post-complete reset). */}
+          {Array.from({ length: success ? length : pin.length }).map((_, i) => (
             <span
-              key={i}
+              key={success ? `s${i}` : i}
               data-dot
+              className={success ? "tk-pop" : undefined}
               style={{
                 width: 14,
                 height: 14,
                 borderRadius: "50%",
-                background: "var(--tk-accent)",
+                background: success ? "var(--tk-green)" : "var(--tk-accent)",
               }}
             />
           ))}

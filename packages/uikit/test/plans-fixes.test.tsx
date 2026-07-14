@@ -119,6 +119,28 @@ describe("forms: PIN", () => {
     // the keypad group shares the "One-time code" name, so target the input
     expect(screen.getByRole("textbox", { name: "One-time code" })).toHaveAttribute("inputmode", "none");
   });
+
+  it("success pops the full green dot row and announces codeVerified", () => {
+    const { container, rerender } = render(<TKPinInput length={4} />);
+    expect(container.querySelectorAll("[data-dot]")).toHaveLength(0);
+
+    rerender(<TKPinInput length={4} success />);
+    const dots = container.querySelectorAll("[data-dot]");
+    expect(dots).toHaveLength(4);
+    for (const dot of dots) {
+      expect(dot).toHaveClass("tk-pop");
+      expect(dot.getAttribute("style")).toContain("--tk-green");
+    }
+    // (there is a second, empty status region for entry progress)
+    expect(screen.getByText("Code verified")).toHaveAttribute("role", "status");
+  });
+
+  it("error still shakes and announces while success stays quiet", () => {
+    const { container } = render(<TKPinInput length={4} error />);
+    expect(container.querySelector(".tk-shake")).not.toBeNull();
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    expect(screen.queryByText("Code verified")).not.toBeInTheDocument();
+  });
 });
 
 describe("lists: infinite list", () => {
