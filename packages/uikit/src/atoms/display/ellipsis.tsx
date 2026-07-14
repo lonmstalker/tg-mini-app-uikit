@@ -85,6 +85,14 @@ export const TKEllipsis = /* @__PURE__ */ forwardRef<HTMLDivElement, TKEllipsisP
     animRef.current = tkAnimateHeight(el, from, el.clientHeight);
   }, [expanded]);
 
+  // Release the collapse pin (set in the finish handler below) only after the
+  // clamp is back in the DOM — the layout effect runs pre-paint, so no frame
+  // ever shows the unclamped text.
+  useIsomorphicLayoutEffect(() => {
+    const el = textRef.current;
+    if (clamped && el) el.style.height = "";
+  }, [clamped]);
+
   const flip = () => {
     const el = textRef.current;
     const next = !expanded;
@@ -113,9 +121,19 @@ export const TKEllipsis = /* @__PURE__ */ forwardRef<HTMLDivElement, TKEllipsisP
         s.overflow = "";
         anim = tkAnimateHeight(el, from, to);
         animRef.current = anim;
+        if (anim) {
+          anim.addEventListener("finish", () => {
+            // The tween has no fill: on finish the box would snap back to the
+            // full text height for one painted frame before React commits the
+            // clamp. Pin the collapsed geometry inline; the [clamped] layout
+            // effect below releases it in the same commit that re-clamps.
+            s.height = `${to}px`;
+            s.overflow = "hidden";
+            setClamped(true);
+          });
+        }
       }
-      if (anim) anim.addEventListener("finish", () => setClamped(true));
-      else setClamped(true);
+      if (!anim) setClamped(true);
     }
     onToggle?.(next);
   };

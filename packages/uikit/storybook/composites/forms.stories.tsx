@@ -70,6 +70,24 @@ export const MaskedInputs = {
   ),
 } satisfies Story;
 
+function VariablePin() {
+  // The kit can't know whether a code is right — feedback is consumer-driven:
+  // pass `success`/`error` after your own verify. Here any confirmed code passes.
+  const [success, setSuccess] = useState(false);
+  return (
+    <TKPinInput
+      title={<strong>Variable PIN — any confirmed code passes</strong>}
+      length={4}
+      maxLength={8}
+      success={success}
+      onComplete={() => {
+        setSuccess(false);
+        setTimeout(() => setSuccess(true), 0);
+      }}
+    />
+  );
+}
+
 function PinWithError() {
   const [error, setError] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -102,7 +120,7 @@ export const PinAndChips = {
         <PinWithError />
       </Narrow>
       <Narrow>
-        <TKPinInput title={<strong>Variable PIN</strong>} length={4} maxLength={8} />
+        <VariablePin />
       </Narrow>
       <Narrow>
         <TKChipsInput label="Tags" defaultValue={["VIP", "Courier"]} placeholder="Add tag" />
