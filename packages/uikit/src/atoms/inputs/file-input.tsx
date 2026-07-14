@@ -144,7 +144,7 @@ export const TKFileInput = /* @__PURE__ */ forwardRef<HTMLInputElement, TKFileIn
               : dropZone
                 ? "inset 0 0 0 1.5px var(--tk-accent-20)"
                 : "var(--tk-shadow-sm)",
-          transition: "background var(--tk-t1) var(--tk-ease), box-shadow var(--tk-t1) var(--tk-ease)",
+          transition: "background var(--tk-t1) var(--tk-ease)", // box-shadow flips instantly (no repaint-per-frame animation)
           cursor: disabled ? "default" : "pointer",
         }}
       >
@@ -215,12 +215,15 @@ export const TKFileInput = /* @__PURE__ */ forwardRef<HTMLInputElement, TKFileIn
           style={{ height: 5, borderRadius: 3, background: "var(--tk-surface-3)", overflow: "hidden", margin: "0 2px" }}
         >
           <div
+            // Full-width bar sliding in inside the overflow-hidden track:
+            // transform-only upload progress, no width animation (layout).
             style={{
               height: "100%",
-              width: `${Math.min(100, Math.max(0, progress))}%`,
+              width: "100%",
               borderRadius: 3,
               background: "var(--tk-accent-grad)",
-              transition: "width var(--tk-t2) var(--tk-ease)",
+              transform: `translateX(${Math.min(100, Math.max(0, progress)) - 100}%)`,
+              transition: "transform var(--tk-t2) var(--tk-ease)",
             }}
           />
         </div>

@@ -1,0 +1,59 @@
+{
+  "$comment": "Reviewed exceptions for scripts/check-animatable-props.mjs. Every entry needs a reason. The gate is a ratchet: counts may only shrink. 'debt(phaseN)' entries are scheduled for removal by the 2026-07-14 animation-smoothness plan.",
+  "entries": [
+    {
+      "file": "packages/uikit/src/atoms/controls/checkbox.tsx",
+      "property": "box-shadow",
+      "count": 1,
+      "reason": "rare state flip on a tiny control; not a hot animation path"
+    },
+    {
+      "file": "packages/uikit/src/atoms/controls/chips.tsx",
+      "property": "box-shadow",
+      "count": 1,
+      "reason": "rare state flip on a tiny control; not a hot animation path"
+    },
+    {
+      "file": "packages/uikit/src/atoms/controls/radio-group.tsx",
+      "property": "box-shadow",
+      "count": 1,
+      "reason": "rare state flip on a tiny control; not a hot animation path"
+    },
+    {
+      "file": "packages/uikit/src/composites/forms/calendar.tsx",
+      "property": "box-shadow",
+      "count": 1,
+      "reason": "day-cell selection flip; discrete state, not a hot animation path"
+    },
+    {
+      "file": "packages/uikit/src/composites/forms/chips-date.tsx",
+      "property": "box-shadow",
+      "count": 2,
+      "reason": "chip selection flip; discrete state, not a hot animation path"
+    },
+    {
+      "file": "packages/uikit/src/composites/navigation/page-dots.tsx",
+      "property": "width",
+      "count": 1,
+      "reason": "8→24px pill morph: scaleX would distort the capsule radius; discrete page change over a ~40px row, negligible layout"
+    },
+    {
+      "file": "packages/uikit/src/composites/navigation/steps.tsx",
+      "property": "box-shadow",
+      "count": 1,
+      "reason": "step badge state flip; discrete, not a hot animation path"
+    },
+    {
+      "file": "packages/uikit/src/templates/cards/promotional.tsx",
+      "property": "height",
+      "count": 1,
+      "reason": "countdown banner collapse; off-plan, revisit with the useCollapse recipe"
+    },
+    {
+      "file": "packages/uikit/src/templates/patterns/commerce.tsx",
+      "property": "box-shadow",
+      "count": 2,
+      "reason": "card hover elevation; pointer-only surface, not a mobile hot path"
+    }
+  ]
+}

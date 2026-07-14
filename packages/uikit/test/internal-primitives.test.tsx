@@ -351,10 +351,14 @@ describe("INT-002/008/009 useDragGesture lifecycle", () => {
     render(<DragProbe onMove={onMove} />);
     const el = screen.getByTestId("drag");
     fireEvent.pointerDown(el, { pointerId: 1, clientX: 0, clientY: 0 });
-    fireEvent.pointerMove(el, { pointerId: 1, clientX: 0, clientY: 20 }); // schedules rAF, not flushed
+    // First move of the frame fires synchronously; a second same-frame move
+    // parks in the pending slot behind the queued rAF.
+    fireEvent.pointerMove(el, { pointerId: 1, clientX: 0, clientY: 20 });
+    fireEvent.pointerMove(el, { pointerId: 1, clientX: 0, clientY: 30 });
+    expect(onMove).toHaveBeenCalledTimes(1);
     fireEvent.pointerDown(el, { pointerId: 2, clientX: 0, clientY: 0 }); // second down cancels prior frame
     flushRaf();
-    expect(onMove).not.toHaveBeenCalled();
+    expect(onMove).toHaveBeenCalledTimes(1); // the parked move never leaks onto the new gesture
   });
 
   it("INT-009 unmount cancels a queued frame (no onMove on a dead tree)", () => {
@@ -363,10 +367,12 @@ describe("INT-002/008/009 useDragGesture lifecycle", () => {
     const { unmount } = render(<DragProbe onMove={onMove} />);
     const el = screen.getByTestId("drag");
     fireEvent.pointerDown(el, { pointerId: 1, clientX: 0, clientY: 0 });
-    fireEvent.pointerMove(el, { pointerId: 1, clientX: 0, clientY: 20 }); // schedules rAF
+    fireEvent.pointerMove(el, { pointerId: 1, clientX: 0, clientY: 20 }); // fires sync, schedules the trailing flush
+    fireEvent.pointerMove(el, { pointerId: 1, clientX: 0, clientY: 40 }); // parks in the pending slot
+    expect(onMove).toHaveBeenCalledTimes(1);
     unmount();
     flushRaf();
-    expect(onMove).not.toHaveBeenCalled();
+    expect(onMove).toHaveBeenCalledTimes(1); // the parked move never fires on a dead tree
     expect(errorSpy).not.toHaveBeenCalled();
     errorSpy.mockRestore();
   });
@@ -436,27 +442,35 @@ describe("INT-005 useScrollLock shares a reference-counted registry", () => {
     document.body.removeAttribute("style");
   });
 
-  it("pins the body while locked and restores it on release", () => {
+  // The pin lands one frame after activation (the body relayout must not share
+  // a frame with the overlay's first entrance-animation frame) — flush it.
+  const nextFrame = () => act(() => new Promise<void>((r) => requestAnimationFrame(() => r())));
+
+  it("pins the body while locked (one frame later) and restores it on release", async () => {
     const { unmount } = render(<LockProbe active />);
+    expect(document.body.style.position).toBe(""); // deferred: not yet pinned
+    await nextFrame();
     expect(document.body.style.position).toBe("fixed");
     unmount();
     expect(document.body.style.position).toBe("");
   });
 
-  it("parks its counter on the shared globalThis registry (not a module local)", () => {
+  it("parks its counter on the shared globalThis registry (not a module local)", async () => {
     render(<LockProbe active />);
+    await nextFrame();
     // Init shape matches the hook's so a stray test-first run can't seed a malformed slot.
     const shared = tkSharedState<{ count: number }>("scrollLock", () => ({ count: 0, scrollY: 0, prevBody: null }));
     expect(shared.count).toBe(1);
   });
 
-  it("keeps the lock until the LAST overlay releases (reference counting)", () => {
+  it("keeps the lock until the LAST overlay releases (reference counting)", async () => {
     const { rerender } = render(
       <>
         <LockProbe active />
         <LockProbe active />
       </>,
     );
+    await nextFrame();
     expect(document.body.style.position).toBe("fixed");
     rerender(
       <>
@@ -464,6 +478,7 @@ describe("INT-005 useScrollLock shares a reference-counted registry", () => {
         <LockProbe active={false} />
       </>,
     );
+    await nextFrame();
     expect(document.body.style.position).toBe("fixed"); // one still open
     rerender(
       <>
@@ -474,16 +489,26 @@ describe("INT-005 useScrollLock shares a reference-counted registry", () => {
     expect(document.body.style.position).toBe(""); // last released
   });
 
-  it("re-locks correctly after a full release (count never drifts negative)", () => {
+  it("re-locks correctly after a full release (count never drifts negative)", async () => {
     const first = render(<LockProbe active />);
+    await nextFrame();
     first.unmount();
     const second = render(<LockProbe active />);
+    await nextFrame();
     expect(document.body.style.position).toBe("fixed");
     // Init shape matches the hook's so a stray test-first run can't seed a malformed slot.
     const shared = tkSharedState<{ count: number }>("scrollLock", () => ({ count: 0, scrollY: 0, prevBody: null }));
     expect(shared.count).toBe(1);
     second.unmount();
     expect(shared.count).toBe(0);
+  });
+
+  it("an unmount before the deferred pin lands never acquires (and never releases)", () => {
+    const { unmount } = render(<LockProbe active />);
+    unmount(); // the queued frame is canceled
+    const shared = tkSharedState<{ count: number }>("scrollLock", () => ({ count: 0, scrollY: 0, prevBody: null }));
+    expect(shared.count).toBe(0);
+    expect(document.body.style.position).toBe("");
   });
 });
 

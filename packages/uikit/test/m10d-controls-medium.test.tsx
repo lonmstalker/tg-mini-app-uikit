@@ -83,7 +83,8 @@ describe("CTL-011 TKSlider track yields vertical pans", () => {
 
   it("[D-TG] range slider track is touch-action: pan-y", () => {
     render(<kit.TKSlider range label="Span" defaultRange={[20, 80]} />);
-    const track = screen.getAllByRole("slider")[0].parentElement as HTMLElement;
+    // Thumbs ride full-width transform rails: thumb → rail → track.
+    const track = screen.getAllByRole("slider")[0].parentElement!.parentElement as HTMLElement;
     expect(track.style.touchAction).toBe("pan-y");
   });
 });

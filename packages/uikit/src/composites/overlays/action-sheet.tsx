@@ -1,4 +1,4 @@
-import { forwardRef, useRef, type ReactNode } from "react";
+import { forwardRef, useRef, useState, type ReactNode } from "react";
 import { TKIcon, type TKIconName } from "../../atoms/icons";
 import { mergeRefs } from "../../internal/dom";
 import { useTKLocale } from "../../foundation/i18n";
@@ -30,6 +30,9 @@ export const TKActionSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKAction
   const locale = useTKLocale();
   const ref = useRef<HTMLDivElement>(null);
   const { mounted, closing } = useMountTransition(open, 360, ref);
+  // Compositor promotion only while the entrance/exit keyframes play — a
+  // permanent will-change would leak a layer per mounted action sheet.
+  const [entered, setEntered] = useState(false);
   // Five modal hooks in one ordered call; panelProps pre-builds role/aria-modal/
   // tabIndex/z so the panel is spread-ready (INT-DX-001).
   const { scrimZ, panelProps } = useModalOverlay({ mounted, active: mounted && !closing, ref, onClose });
@@ -42,6 +45,9 @@ export const TKActionSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKAction
         data-testid={testId}
         {...panelProps}
         aria-label={ariaLabel ?? locale.actions}
+        onAnimationEnd={(e) => {
+          if (e.animationName === "tk-sheet-up") setEntered(true);
+        }}
         style={{
           ...panelProps.style,
           outline: "none",
@@ -53,6 +59,7 @@ export const TKActionSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKAction
           flexDirection: "column",
           gap: 8,
           animation: `${closing ? "tk-sheet-down" : "tk-sheet-up"} var(--tk-t3) ${closing ? "var(--tk-ease)" : "var(--tk-spring)"} both`,
+          willChange: entered && !closing ? undefined : "transform",
         }}
       >
         <div

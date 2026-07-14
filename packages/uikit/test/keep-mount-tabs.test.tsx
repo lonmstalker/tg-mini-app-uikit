@@ -35,12 +35,17 @@ describe("TKKeepMountTabs", () => {
     expect((screen.getByLabelText("search") as HTMLInputElement).value).toBe("durov");
   });
 
-  it("hides inactive tabs via display:none and exposes useTabActive()=false to them", () => {
+  it("hides inactive tabs out of flow (visibility, not display:none) and exposes useTabActive()=false to them", () => {
     const { rerender } = render(host("home"));
     rerender(host("stats"));
     const homeWrap = document.querySelector<HTMLElement>('[data-tk-keep-tab="home"]')!;
     const statsWrap = document.querySelector<HTMLElement>('[data-tk-keep-tab="stats"]')!;
-    expect(homeWrap.style.display).toBe("none");
+    // visibility (not display:none) so the browser keeps the hidden tab's
+    // inner scroll positions; absolute takes it out of flow; inert keeps
+    // focus/AT out (2026-07-14 smoothness plan, phase 4).
+    expect(homeWrap.style.visibility).toBe("hidden");
+    expect(homeWrap.style.position).toBe("absolute");
+    expect(homeWrap.hasAttribute("inert")).toBe(true);
     expect(statsWrap.style.display).toBe("contents");
     expect(screen.getByTestId("probe-home").textContent).toBe("inactive");
     expect(screen.getByTestId("probe-stats").textContent).toBe("active");

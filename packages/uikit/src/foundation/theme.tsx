@@ -140,6 +140,14 @@ export interface TKProviderProps extends TKThemeKnobs {
    * `calc()` (CC-09 / FND-DX-002).
    */
   reduceMotion?: boolean | "auto";
+  /**
+   * Frosted-glass bars (tabbar, header, bottom/write bars) use a constant
+   * `backdrop-filter: blur()` — an ongoing GPU cost on hot surfaces. Set
+   * `false` to downgrade them to the opaque `--tk-bg` surface (the same look
+   * as the no-backdrop-filter fallback). Default `true`. The kit never
+   * device-sniffs — the host decides.
+   */
+  glassBars?: boolean;
   className?: string;
   style?: CSSProperties;
   children?: ReactNode;
@@ -161,6 +169,7 @@ export function TKProvider({
   fontSize,
   telegram,
   reduceMotion = "auto",
+  glassBars = true,
   className,
   style,
   children,
@@ -226,6 +235,7 @@ export function TKProvider({
         className={["tk", telegram ? "tk-tg" : "", className ?? ""].filter(Boolean).join(" ")}
         data-theme={theme}
         data-tk-motion={reduced ? "off" : undefined}
+        data-tk-glass={glassBars ? undefined : "off"}
         data-testid={testId}
         style={{ position: "relative", ...vars, ...style }}
       >

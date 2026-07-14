@@ -83,11 +83,29 @@ function tkReleaseScrollLock() {
 /**
  * Locks page scroll while `active` is true. Reference-counted across overlays
  * and always released on cleanup, even if the component unmounts while open.
+ *
+ * The body pin lands one frame AFTER activation: `position: fixed` + `top`
+ * force a full page relayout, which used to share a frame with the overlay's
+ * first entrance-animation frame (a visible start hitch on weak devices).
  */
 export function useScrollLock(active: boolean) {
   useEffect(() => {
     if (!active) return;
-    tkAcquireScrollLock();
-    return () => tkReleaseScrollLock();
+    let acquired = false;
+    let raf = 0;
+    const acquire = () => {
+      raf = 0;
+      acquired = true;
+      tkAcquireScrollLock();
+    };
+    if (typeof requestAnimationFrame === "function" && typeof window !== "undefined") {
+      raf = requestAnimationFrame(acquire);
+    } else {
+      acquire();
+    }
+    return () => {
+      if (raf) cancelAnimationFrame(raf);
+      if (acquired) tkReleaseScrollLock();
+    };
   }, [active]);
 }

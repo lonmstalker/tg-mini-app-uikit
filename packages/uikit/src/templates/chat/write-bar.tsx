@@ -81,8 +81,8 @@ export function TKWriteBar({
         padding: "8px 10px",
         paddingBottom: safeArea ? `max(env(safe-area-inset-bottom, 0px), ${bottom}px, 8px)` : 8,
         background: "var(--tk-glass)",
-        backdropFilter: "blur(14px)",
-        WebkitBackdropFilter: "blur(14px)",
+        backdropFilter: "var(--tk-bar-blur, blur(14px))",
+        WebkitBackdropFilter: "var(--tk-bar-blur, blur(14px))",
         borderTop: "0.5px solid var(--tk-sep)",
         ...style,
       }}

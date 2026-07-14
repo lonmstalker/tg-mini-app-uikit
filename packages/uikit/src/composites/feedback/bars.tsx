@@ -46,14 +46,32 @@ export const TKBars = /* @__PURE__ */ forwardRef<HTMLDivElement, TKBarsProps>(fu
     >
       {data.map((b, i) => {
         const label = labels?.[i] ?? `Bar ${i + 1}`;
+        // The bar is a full-height transparent trough; the visible fill rises
+        // from the bottom via translateY inside overflow:hidden — the value
+        // change animates transform only, never height (layout).
         const barStyle: CSSProperties = {
           width: "100%",
+          flex: 1,
+          minHeight: 0,
           borderRadius: "var(--tk-r-xs)",
-          height: `${(b / max) * 100}%`,
-          background: hover === i ? "var(--tk-accent)" : "var(--tk-accent-20)",
-          transition: "height var(--tk-t3) var(--tk-spring), background var(--tk-t1) var(--tk-ease)",
+          overflow: "hidden",
+          position: "relative",
+          background: "transparent",
           cursor: interactive ? "pointer" : "default",
         };
+        const fill = (
+          <span
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              inset: 0,
+              borderRadius: "var(--tk-r-xs)",
+              background: hover === i ? "var(--tk-accent)" : "var(--tk-accent-20)",
+              transform: `translateY(${100 - (Number.isFinite(b) && b > 0 ? Math.min(b / max, 1) : 0) * 100}%)`,
+              transition: "transform var(--tk-t3) var(--tk-spring), background var(--tk-t1) var(--tk-ease)",
+            }}
+          />
+        );
         return (
           <div
             key={i}
@@ -82,14 +100,18 @@ export const TKBars = /* @__PURE__ */ forwardRef<HTMLDivElement, TKBarsProps>(fu
                   padding: 0,
                   font: "inherit",
                 }}
-              />
+              >
+                {fill}
+              </button>
             ) : (
               <div
                 aria-hidden="true"
                 onMouseEnter={() => setHover(i)}
                 onMouseLeave={() => setHover(-1)}
                 style={barStyle}
-              />
+              >
+                {fill}
+              </div>
             )}
             {labels?.[i] != null ? (
               <span

@@ -1,9 +1,10 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { TKIcon } from "../../atoms/icons";
 import { useTKLocale } from "../../foundation/i18n";
 import { useSafeArea } from "../../foundation/telegram";
 import { useOptionalNav } from "../nav";
-import { usePageScrollTop } from "../../internal/pageScroll";
+import { usePageHeaderCollapsed } from "../../internal/pageScroll";
+import { useCollapse } from "../../internal/useCollapse";
 
 export interface TKHeaderProps {
   title?: ReactNode;
@@ -20,22 +21,25 @@ export interface TKHeaderProps {
 
 export function TKHeader({ title, subtitle, large, collapsing, back = true, onBack, actions, testId }: TKHeaderProps) {
   const locale = useTKLocale();
-  const scrollTop = usePageScrollTop();
+  // The enclosing TKPage publishes ONE hysteresis-guarded boolean (collapse
+  // past 36px, expand under 20px) — the header re-renders only on the two
+  // direction flips, never per scroll frame.
+  const collapsed = usePageHeaderCollapsed();
   const { inset, contentInset } = useSafeArea();
   const safeTop = inset.top + contentInset.top;
-  // `back="auto"` derives visibility + handler from the enclosing nav stack.
+  // `back="auto"` derives visibility + handler from the enclosing nav stack —
+  // and hides the arrow while the stack drives the NATIVE Telegram Back button
+  // (nav.nativeBack), so the user never sees two back controls for one pop.
+  // In a plain browser (no Telegram chrome) the arrow is the only "back" and
+  // stays.
   const nav = useOptionalNav();
-  const showBack = back === "auto" ? (nav?.depth ?? 1) > 1 : back;
+  const showBack = back === "auto" ? (nav?.depth ?? 1) > 1 && !nav?.nativeBack : back;
   const handleBack = onBack ?? (back === "auto" ? nav?.pop : undefined);
-  // Hysteresis: collapse past 36px, expand back under 20px, hold in between so
-  // the large title does not dither when scrollTop hovers around the threshold.
-  const [collapsed, setCollapsed] = useState(false);
   const collapsible = !!collapsing && large === true;
-  useEffect(() => {
-    if (!collapsible) return;
-    setCollapsed((prev) => (scrollTop > 36 ? true : scrollTop < 20 ? false : prev));
-  }, [collapsible, scrollTop]);
   const isCollapsed = collapsible && collapsed;
+  // The large title collapses by animating its measured height through WAAPI
+  // (no grid-template-rows in a transition list, reduced-motion aware).
+  const largeTitle = useCollapse(!isCollapsed);
 
   return (
     <div
@@ -53,8 +57,8 @@ export function TKHeader({ title, subtitle, large, collapsing, back = true, onBa
         boxSizing: "border-box",
         justifyContent: "center",
         background: "var(--tk-glass)",
-        backdropFilter: "blur(14px)",
-        WebkitBackdropFilter: "blur(14px)",
+        backdropFilter: "var(--tk-bar-blur, blur(14px))",
+        WebkitBackdropFilter: "var(--tk-bar-blur, blur(14px))",
         borderBottom: "0.5px solid var(--tk-sep)",
       }}
     >
@@ -77,35 +81,29 @@ export function TKHeader({ title, subtitle, large, collapsing, back = true, onBa
             <TKIcon name="chevronLeft" size={24} strokeWidth={2.3} />
           </button>
         ) : null}
-        {!large || isCollapsed ? (
-          <div
-            style={{
-              flex: 1,
-              textAlign: "center",
-              marginRight: showBack ? 18 : 0,
-              opacity: large && !isCollapsed ? 0 : 1,
-              transition: "opacity var(--tk-t2) var(--tk-ease)",
-            }}
-          >
-            <div style={{ fontSize: "var(--tk-fz-body)", fontWeight: 600 }}>{title}</div>
-            {subtitle && !large ? (
-              <div style={{ fontSize: "var(--tk-fz-caption)", color: "var(--tk-text-2)" }}>{subtitle}</div>
-            ) : null}
-          </div>
-        ) : (
-          <div style={{ flex: 1 }} />
-        )}
+        <div
+          // Both titles stay MOUNTED: the compact one crossfades in as the large
+          // one collapses — a transition on a freshly-mounted node never runs,
+          // which left the old conditional render popping in with no fade.
+          aria-hidden={large && !isCollapsed ? true : undefined}
+          style={{
+            flex: 1,
+            textAlign: "center",
+            marginRight: showBack ? 18 : 0,
+            opacity: !large || isCollapsed ? 1 : 0,
+            transition: "opacity var(--tk-t2) var(--tk-ease)",
+          }}
+        >
+          <div style={{ fontSize: "var(--tk-fz-body)", fontWeight: 600 }}>{title}</div>
+          {subtitle && !large ? (
+            <div style={{ fontSize: "var(--tk-fz-caption)", color: "var(--tk-text-2)" }}>{subtitle}</div>
+          ) : null}
+        </div>
         {actions ? <div style={{ display: "flex", gap: 6 }}>{actions}</div> : null}
       </div>
       {large ? (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateRows: isCollapsed ? "0fr" : "1fr",
-            transition: "grid-template-rows var(--tk-t2) var(--tk-ease)",
-          }}
-        >
-          <div style={{ overflow: "hidden", opacity: isCollapsed ? 0 : 1, transition: "opacity var(--tk-t2) var(--tk-ease)" }}>
+        <div ref={largeTitle.ref} aria-hidden={isCollapsed || undefined} style={largeTitle.style}>
+          <div style={{ opacity: isCollapsed ? 0 : 1, transition: "opacity var(--tk-t2) var(--tk-ease)" }}>
             <div style={{ fontSize: "var(--tk-fz-title1)", fontWeight: 700, letterSpacing: 0 }}>{title}</div>
             {subtitle ? (
               <div style={{ fontSize: "var(--tk-fz-sub)", color: "var(--tk-text-2)" }}>{subtitle}</div>

@@ -46,6 +46,7 @@ export function TKPullToRefresh({ children, onRefresh, threshold = 72, disabled,
   const [refreshing, setRefreshing] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const indicatorRef = useRef<HTMLDivElement>(null);
+  const spinnerRef = useRef<HTMLSpanElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const scrollTargetsRef = useRef<HTMLElement[] | null>(null);
   const pullRef = useRef(0);
@@ -114,10 +115,26 @@ export function TKPullToRefresh({ children, onRefresh, threshold = 72, disabled,
     for (const el of resolveScrollTargets()) top = Math.max(top, el.scrollTop);
     return top;
   };
+  // The indicator is a FIXED 48px box that slides in via transform — the pull
+  // never writes layout properties, so a pull frame is compositor-only (the
+  // old `height` write + scrollTop read pair forced a reflow every frame).
+  const indicatorTransform = (pull: number, resting: boolean) =>
+    pull > 2 || resting ? `translateY(${(Math.max(pull, 48) - 48) / 2}px)` : "translateY(-56px)";
   const applyPull = (nextPull: number) => {
     const next = Math.max(0, nextPull);
     pullRef.current = next;
-    if (indicatorRef.current) indicatorRef.current.style.height = next > 2 ? `${Math.max(next, 48)}px` : "0px";
+    if (indicatorRef.current) {
+      indicatorRef.current.style.transform = indicatorTransform(next, false);
+      indicatorRef.current.style.transition = next ? "none" : "transform var(--tk-t2) var(--tk-ease)";
+    }
+    if (spinnerRef.current) {
+      // iOS UIRefreshControl feel: the spinner turns and grows with the pull
+      // distance (transform only), then TKSpinner's own rotation takes over
+      // while refreshing.
+      const p = Math.min(1, next / threshold);
+      spinnerRef.current.style.transform = next ? `rotate(${p * 270}deg) scale(${0.6 + 0.4 * p})` : "";
+      spinnerRef.current.style.transition = next ? "none" : "transform var(--tk-t2) var(--tk-ease)";
+    }
     if (scrollRef.current) {
       scrollRef.current.style.transform = next ? `translateY(${next}px)` : "";
       scrollRef.current.style.transition = next ? "none" : "transform var(--tk-t2) var(--tk-ease)";
@@ -132,28 +149,48 @@ export function TKPullToRefresh({ children, onRefresh, threshold = 72, disabled,
   // gesture is dead on touch while desktop mouse works (which is why the unit
   // and e2e tests miss it). A non-passive touchmove listener preventDefaults
   // ONLY the top-edge downward overscroll, which keeps the browser from
-  // hijacking the gesture (no pointercancel) so the pointer drag runs. Scrolling
-  // anywhere but the very top, pulling up, or horizontal swipes are untouched.
+  // hijacking the gesture (no pointercancel) so the pointer drag runs.
+  //
+  // Perf contract: scrollTop is read ONCE per touch (at touchstart) and the
+  // non-passive listener is attached only when that read said "at top" — a
+  // mid-list scroll never runs a blocking touchmove handler and never reads
+  // layout per frame. While a pull holds preventDefault the list cannot
+  // scroll, so the sample stays valid for the whole gesture.
+  // ponytail: a scroll-away-then-pull-back inside ONE touch can pull from a
+  // non-zero scrollTop; re-sample on direction flips if it ever matters.
+  const atTopRef = useRef(false);
   useEffect(() => {
     const el = rootRef.current;
     if (!el) return;
-    const onStart = (e: TouchEvent) => {
-      touchStart.current = e.touches.length === 1 ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : null;
-      if (touchStart.current) resolveScrollTargets();
-    };
     const onMove = (e: TouchEvent) => {
       const s = touchStart.current;
       if (!s || disabled || refreshing || e.touches.length !== 1) return;
       const dy = e.touches[0].clientY - s.y;
       const dx = e.touches[0].clientX - s.x;
-      if (dy > 0 && dy > Math.abs(dx) && getScrollTop() <= 0) e.preventDefault();
+      if (dy > 0 && dy > Math.abs(dx) && atTopRef.current) e.preventDefault();
+    };
+    const onStart = (e: TouchEvent) => {
+      touchStart.current = e.touches.length === 1 ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : null;
+      if (!touchStart.current) return;
+      resolveScrollTargets();
+      atTopRef.current = getScrollTop() <= 0;
+      if (atTopRef.current && !disabled && !refreshing) {
+        el.addEventListener("touchmove", onMove, { passive: false });
+        // Telegram's swipe-to-minimize is muted from the touchstart, not from
+        // the 14px activation threshold — the first frames of a fast pull must
+        // not race the app-collapse gesture.
+        setGuardingActive(true);
+      }
     };
     const clear = () => {
       touchStart.current = null;
       scrollTargetsRef.current = null;
+      atTopRef.current = false;
+      el.removeEventListener("touchmove", onMove);
+      // `refreshing` keeps the swipe guard up on its own (guarding || refreshing).
+      setGuardingActive(false);
     };
     el.addEventListener("touchstart", onStart, { passive: true });
-    el.addEventListener("touchmove", onMove, { passive: false });
     el.addEventListener("touchend", clear, { passive: true });
     el.addEventListener("touchcancel", clear, { passive: true });
     return () => {
@@ -171,10 +208,19 @@ export function TKPullToRefresh({ children, onRefresh, threshold = 72, disabled,
     // clearly drags downward past this distance.
     threshold: 14,
     enabled: !disabled && !refreshing,
+    onStart() {
+      // Pointer-only environments (desktop, tests) have no touchstart to sample
+      // the top-of-list gate — take the one read here instead.
+      if (touchStart.current === null) {
+        resolveScrollTargets();
+        atTopRef.current = getScrollTop() <= 0;
+      }
+    },
     onMove(state) {
-      // Only pull when starting from the very top AND moving downward — an
-      // upward or mid-list drag is a scroll and must not be hijacked.
-      if (getScrollTop() > 0 || state.delta <= 0) {
+      // Only pull when the touch started at the very top AND moves downward —
+      // an upward or mid-list drag is a scroll and must not be hijacked. The
+      // gate was sampled at gesture start: no layout reads per frame.
+      if (!atTopRef.current || state.delta <= 0) {
         if (armedRef.current) armedRef.current = false;
         if (pullRef.current !== 0) applyPull(0);
         setGuardingActive(false);
@@ -188,7 +234,7 @@ export function TKPullToRefresh({ children, onRefresh, threshold = 72, disabled,
       setGuardingActive(true);
     },
     onEnd(state) {
-      const committed = getScrollTop() <= 0 && state.delta > 0 && resistPull(state.delta) >= threshold;
+      const committed = atTopRef.current && state.delta > 0 && resistPull(state.delta) >= threshold;
       scrollTargetsRef.current = null;
       armedRef.current = false;
       if (!committed) {
@@ -242,13 +288,22 @@ export function TKPullToRefresh({ children, onRefresh, threshold = 72, disabled,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          height: showIndicator ? Math.max(renderedPull, 48) : 0,
-          overflow: "hidden",
+          // Fixed-size box, revealed by transform (the root's overflow:hidden
+          // clips it away at rest) — pulls never write layout properties.
+          height: 48,
+          transform: indicatorTransform(renderedPull, showIndicator),
+          transition: renderedPull ? "none" : "transform var(--tk-t2) var(--tk-ease)",
           zIndex: 2,
         }}
         ref={indicatorRef}
       >
-        <span className="tk-ptr">
+        <span
+          ref={spinnerRef}
+          className="tk-ptr"
+          style={{
+            transform: renderedPull ? `rotate(${Math.min(1, renderedPull / threshold) * 270}deg) scale(${0.6 + 0.4 * Math.min(1, renderedPull / threshold)})` : undefined,
+          }}
+        >
           <TKSpinner size={20} />
         </span>
       </div>

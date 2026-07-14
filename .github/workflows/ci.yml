@@ -23,6 +23,7 @@ jobs:
       - run: npm run typecheck
       - run: npm run check:cycles
       - run: npm run check:stories
+      - run: npm run check:animatable
       - run: npm run build
       - run: npm run stories:build
       # The flagship demos must typecheck and build against the (source-aliased) packages.

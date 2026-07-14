@@ -70,10 +70,16 @@ export const TKSpoiler = /* @__PURE__ */ forwardRef<HTMLSpanElement, TKSpoilerPr
       <span
         aria-hidden={open ? undefined : "true"}
         style={{
+          // The blur is STATIC per state and the reveal flips it in one jump —
+          // interpolating `filter` re-rendered the blur at every step of the
+          // transition (the most expensive possible reveal). An absolute
+          // blurred overlay can't work here: inline content fragments across
+          // line boxes. The paint is the crossfading `opacity` below.
           filter: open ? "none" : "blur(6px)",
           background: open ? "transparent" : "var(--tk-surface-3)",
           borderRadius: "var(--tk-r-xs)",
-          transition: reduced ? "none" : "filter var(--tk-t2) var(--tk-ease), background var(--tk-t2) var(--tk-ease)",
+          opacity: open ? 1 : 0.92,
+          transition: reduced ? "none" : "opacity var(--tk-t2) var(--tk-ease)",
           userSelect: open ? undefined : "none",
           WebkitUserSelect: open ? undefined : "none",
         }}

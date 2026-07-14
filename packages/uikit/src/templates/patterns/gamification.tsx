@@ -60,12 +60,15 @@ export function TKXPHeader({ name, initials = "", level, xp = 0, hint, testId }:
           style={{ marginTop: 8, height: 7, borderRadius: 4, background: "color-mix(in srgb, var(--tk-on-accent) 25%, transparent)", overflow: "hidden" }}
         >
           <div
+            // Full-width bar sliding in inside the overflow-hidden track:
+            // transform-only XP progress, no width animation (layout).
             style={{
               height: "100%",
-              width: `${pct}%`,
+              width: "100%",
               borderRadius: 4,
               background: "var(--tk-on-accent, #fff)",
-              transition: "width var(--tk-t3) var(--tk-spring)",
+              transform: `translateX(${pct - 100}%)`,
+              transition: "transform var(--tk-t3) var(--tk-spring)",
             }}
           />
         </div>

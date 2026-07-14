@@ -1,5 +1,5 @@
 import type { Preview } from "@storybook/react-vite";
-import { useEffect, useMemo, type CSSProperties, type ReactNode } from "react";
+import { Profiler, useEffect, useMemo, type CSSProperties, type ReactNode } from "react";
 import {
   enLocale,
   ruLocale,
@@ -193,24 +193,34 @@ const preview: Preview = {
       );
 
       return (
-        <TKTelegramProvider webApp={telegram.webApp}>
-          <TKProvider
-            theme={theme}
-            accent={globals.accent ?? "#3390ec"}
-            roundness={Number(globals.roundness ?? 1)}
-            fontSize={Number(globals.fontSize ?? 16)}
-            motion={globals.motion ?? "springy"}
-            preset={globals.preset ?? "ios"}
-          >
-            <TKLocaleProvider locale={locale}>
-              <TKToastProvider>{inPhone ? <PhoneFrame>{root}</PhoneFrame> : root}</TKToastProvider>
-            </TKLocaleProvider>
-          </TKProvider>
-        </TKTelegramProvider>
+        <Profiler id="tk-story" onRender={countStoryCommit}>
+          <TKTelegramProvider webApp={telegram.webApp}>
+            <TKProvider
+              theme={theme}
+              accent={globals.accent ?? "#3390ec"}
+              roundness={Number(globals.roundness ?? 1)}
+              fontSize={Number(globals.fontSize ?? 16)}
+              motion={globals.motion ?? "springy"}
+              preset={globals.preset ?? "ios"}
+            >
+              <TKLocaleProvider locale={locale}>
+                <TKToastProvider>{inPhone ? <PhoneFrame>{root}</PhoneFrame> : root}</TKToastProvider>
+              </TKLocaleProvider>
+            </TKProvider>
+          </TKTelegramProvider>
+        </Profiler>
       );
     },
   ],
 };
+
+// React commit counter for the e2e perf spec (e2e/perf.storybook.spec.ts): a
+// gesture frame must move pixels imperatively, not through setState — the spec
+// asserts the commit delta over a drag stays tiny.
+function countStoryCommit() {
+  const w = window as unknown as { __tkCommits?: number };
+  w.__tkCommits = (w.__tkCommits ?? 0) + 1;
+}
 
 function StoryRoot({ density, inPhone, children }: { density: "compact" | "comfortable"; inPhone?: boolean; children: ReactNode }) {
   return (

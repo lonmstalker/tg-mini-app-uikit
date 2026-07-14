@@ -63,8 +63,7 @@ export const TKNativeField = /* @__PURE__ */ forwardRef<HTMLInputElement, TKNati
           padding: "0 14px",
           height: 48,
           boxShadow: `inset 0 0 0 1.5px ${borderColor}${focus && !error ? ", var(--tk-ring)" : ""}`,
-          transition: "box-shadow var(--tk-t2) var(--tk-ease)",
-          opacity: disabled ? 0.55 : 1,
+                    opacity: disabled ? 0.55 : 1,
           cursor: disabled ? "default" : "pointer",
         }}
       >

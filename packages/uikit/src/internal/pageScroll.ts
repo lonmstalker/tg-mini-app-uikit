@@ -1,11 +1,13 @@
 import { createContext, useContext } from "react";
 
 /**
- * Scroll position of the nearest `TKPage` content area, px. Powers the
- * collapsing `TKHeader` (M5.9) and the M6 ScrollSaver.
+ * Whether the nearest `TKPage` content area has scrolled past the header
+ * collapse point (with hysteresis applied at the scroll handler). A single
+ * boolean commit per direction change — never a per-frame (or per-quantum)
+ * scroll position — so scrolling re-renders nothing (LAY-001).
  */
-export const TKPageScrollContext = /* @__PURE__ */ createContext(0);
+export const TKPageScrollContext = /* @__PURE__ */ createContext(false);
 
-export function usePageScrollTop(): number {
+export function usePageHeaderCollapsed(): boolean {
   return useContext(TKPageScrollContext);
 }

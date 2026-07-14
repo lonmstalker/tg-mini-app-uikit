@@ -1,6 +1,7 @@
 import { forwardRef, useId, useMemo, useRef, useState, type ChangeEvent, type FocusEvent, type ReactNode } from "react";
 import { TKIcon, type TKIconName } from "../icons";
 import { mergeRefs } from "../../internal/dom";
+import { TKFocusRing } from "../../internal/FocusRing";
 import { useControllable } from "../../internal/useControllable";
 import { useTKLocale } from "../../foundation/i18n";
 import { TKFormField } from "./form-field";
@@ -114,14 +115,17 @@ export const TKInput = /* @__PURE__ */ forwardRef<HTMLInputElement, TKInputProps
           display: "flex",
           alignItems: "center",
           gap: 10,
+          position: "relative",
           background: "var(--tk-surface)",
           borderRadius: "var(--tk-r-md)",
           padding: "0 14px",
           height: 48,
-          boxShadow: `inset 0 0 0 1.5px ${borderColor}${focus && !error ? ", var(--tk-ring)" : ""}`,
-          transition: "box-shadow var(--tk-t2) var(--tk-ease)",
+          // Static shadow; the focus ring fades on its own layer (TKFocusRing)
+          // so nothing here ever animates box-shadow (repaint per frame).
+          boxShadow: `inset 0 0 0 1.5px ${borderColor}`,
         }}
       >
+        <TKFocusRing show={focus && !error} />
         {icon ? (
           <span
             style={{

@@ -120,8 +120,9 @@ export interface TKDragBinding {
 }
 
 /**
- * Pointer-events drag tracker with rAF-throttled move callbacks, an
- * activation threshold and velocity tracking.
+ * Pointer-events drag tracker with frame-deduplicated move callbacks (the
+ * first move of a frame fires synchronously; extra same-frame moves collapse
+ * into one trailing rAF flush), an activation threshold and velocity tracking.
  *
  * Returns `{ bind, style }`: spread `bind()` for the pointer handlers and `style`
  * for the axis-correct `touch-action`, so a swipe never fights native scroll /
@@ -160,6 +161,8 @@ export function useDragGesture({
     cross: axis === "x" ? e.clientY : e.clientX,
   });
 
+  // Trailing edge of the per-frame dedup: flush the freshest move that arrived
+  // while this frame was already served by the synchronous call below.
   const flush = () => {
     const d = drag.current;
     if (!d) return;
@@ -230,11 +233,18 @@ export function useDragGesture({
       d.samples.push({ pos: main, t: e.timeStamp });
       if (d.samples.length > 24) d.samples.shift();
       d.last = { delta, velocity: tkDragVelocity(d.samples) };
-      d.pending = d.last;
+      // The finger is the law: the FIRST move of a frame fires onMove
+      // synchronously (zero added latency); rAF only dedups extra moves that
+      // land inside the same frame, flushing the freshest one at the boundary.
       if (typeof requestAnimationFrame === "function" && typeof window !== "undefined") {
-        if (!d.raf) d.raf = requestAnimationFrame(flush);
+        if (!d.raf) {
+          d.raf = requestAnimationFrame(flush);
+          onMove?.(d.last);
+        } else {
+          d.pending = d.last;
+        }
       } else {
-        flush();
+        onMove?.(d.last);
       }
     },
     onPointerUp(e) {

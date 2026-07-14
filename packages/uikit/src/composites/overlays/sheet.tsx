@@ -76,8 +76,11 @@ export const TKSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSheetProps>(
   );
   const snapRef = useRef(snap);
   snapRef.current = snap;
-  const [dragY, setDragY] = useState(0);
   const [dragging, setDragging] = useState(false);
+  // Per-gesture geometry, measured once at drag start: the finger then moves
+  // the sheet through imperative transform writes — zero layout, zero React
+  // commits per frame.
+  const dragGeom = useRef<{ maxH: number; startY: number } | null>(null);
   // True once the entrance keyframes have played, so a partial drag-and-release
   // (or any later re-render) never re-runs the full `translateY(104%)→0` slide.
   const [settled, setSettled] = useState(false);
@@ -126,48 +129,84 @@ export const TKSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSheetProps>(
     axis: "y",
     enabled: dismissible || !!snapPoints,
     cancelOnCrossAxis: false,
-    onStart: () => setDragging(true),
-    onMove: (state) => setDragY(snapPoints ? state.delta : Math.max(0, state.delta)),
+    onStart: () => {
+      setDragging(true);
+      const el = ref.current;
+      const maxH = el?.clientHeight ?? 400;
+      const fMax = snapPoints?.[snapPoints.length - 1] ?? 1;
+      const f = snapPoints?.[snapRef.current] ?? fMax;
+      dragGeom.current = { maxH, startY: snapPoints && fMax > 0 ? maxH * (1 - f / fMax) : 0 };
+      // Kill the transition before the first move — React's `dragging` commit
+      // lands a beat later, and the finger must never be eased after.
+      if (el) el.style.transitionDuration = "0s";
+    },
+    onMove: (state) => {
+      const el = ref.current;
+      const g = dragGeom.current;
+      if (!el || !g) return;
+      // 1:1 behind the finger, compositor-only: no setState, no layout.
+      const y = snapPoints ? Math.min(Math.max(g.startY + state.delta, 0), g.maxH) : Math.max(0, state.delta);
+      el.style.transform = `translateY(${y}px)`;
+    },
     onEnd: (state) => {
+      const el = ref.current;
+      const g = dragGeom.current;
+      dragGeom.current = null;
       setDragging(false);
-      setDragY(0);
       // The sheet is settled by this interaction — never replay the entrance.
       setSettled(true);
-      const height = ref.current?.clientHeight ?? 400;
-      if (state.delta > 0 && tkShouldCommit(state.delta, state.velocity, height)) {
+      const maxH = g?.maxH ?? el?.clientHeight ?? 400;
+      const fMax = snapPoints?.[snapPoints.length - 1] ?? 1;
+      // Commit thresholds are relative to the VISIBLE height at gesture start
+      // (the current snap), not the pinned max-snap height.
+      const size = maxH - (g?.startY ?? 0);
+      let nextSnap = snapRef.current;
+      let close = false;
+      if (state.delta > 0 && tkShouldCommit(state.delta, state.velocity, size)) {
         // swiping down: step down a snap point, close from the lowest
-        if (snapPoints && snapRef.current > 0) setSnap(snapRef.current - 1);
-        else if (dismissible) requestClose();
-      } else if (state.delta < 0 && snapPoints && snapRef.current < snapPoints.length - 1) {
-        if (tkShouldCommit(-state.delta, -state.velocity, height)) setSnap(snapRef.current + 1);
+        if (snapPoints && snapRef.current > 0) nextSnap = snapRef.current - 1;
+        else if (dismissible) close = true;
+      } else if (
+        state.delta < 0 &&
+        snapPoints &&
+        snapRef.current < snapPoints.length - 1 &&
+        tkShouldCommit(-state.delta, -state.velocity, size)
+      ) {
+        nextSnap = snapRef.current + 1;
       }
+      if (el) {
+        el.style.transitionDuration = "";
+        // On close the exit keyframes pick the slide up from under the finger
+        // (tk-sheet-down has no `from`). Otherwise glide to the resting offset
+        // of the (possibly unchanged) snap — React skips the style write when
+        // its rendered value didn't change, so this write drives the return.
+        if (!close) {
+          const f = snapPoints?.[nextSnap] ?? fMax;
+          el.style.transform = `translateY(${snapPoints && fMax > 0 ? maxH * (1 - f / fMax) : 0}px)`;
+        }
+      }
+      if (close) requestClose();
+      else if (nextSnap !== snapRef.current) setSnap(nextSnap);
     },
   });
 
   if (!mounted) return null;
-  // ----- drag-driven geometry -----
-  const dragOffset = dragging || dragY !== 0;
-  // Snap mode drives the HEIGHT live: a downward drag shrinks the sheet, an
-  // upward drag GROWS it (the old `Math.max(0, dragY)` clamp froze upward
-  // drags), clamped between fully closed and the tallest snap point. The sign
-  // is baked into the calc because CSS rejects `calc(40% - -50px)`.
-  const baseSnapPct = snapPoints ? (snapPoints[snap] ?? snapPoints[0]) * 100 : 0;
-  const maxSnapPct = snapPoints ? (snapPoints[snapPoints.length - 1] ?? baseSnapPct / 100) * 100 : 0;
-  const dragPx = -dragY; // > 0 grows, < 0 shrinks
-  const dragSign = dragPx >= 0 ? "+" : "-";
-  const height = snapPoints
-    ? dragOffset
-      ? `clamp(0px, calc(${baseSnapPct}% ${dragSign} ${Math.abs(dragPx)}px), ${maxSnapPct}%)`
-      : `${baseSnapPct}%`
-    : undefined;
+  // ----- resting geometry -----
+  // The height is pinned to the TALLEST snap point; the current snap is a
+  // translateY offset and the visible box (header + content) is clipped by an
+  // inner wrapper sized to the current snap. Drags and snap transitions are
+  // transform-only — the layout never changes per frame.
+  const fMax = snapPoints ? (snapPoints[snapPoints.length - 1] ?? 1) : 1;
+  const fBase = snapPoints ? (snapPoints[snap] ?? snapPoints[0] ?? fMax) : fMax;
+  const restPct = snapPoints && fMax > 0 ? (1 - fBase / fMax) * 100 : 0;
+  const height = snapPoints ? `${fMax * 100}%` : undefined;
   // Content mode: size to content but cap it so a long sheet can't grow past
   // the top safe area, and let the body scroll instead of pushing its header
   // (and the close button) off-screen.
   const maxHeight = snapPoints ? undefined : "calc(100% - var(--tk-safe-top) - 24px)";
-  const transform = !snapPoints && dragY > 0 ? `translateY(${dragY}px)` : undefined;
   const animation = closing
     ? "tk-sheet-down var(--tk-t3) var(--tk-ease) both"
-    : settled || dragOffset
+    : settled || dragging
       ? "none"
       : "tk-sheet-up var(--tk-t3) var(--tk-spring) both";
   return (
@@ -197,55 +236,84 @@ export const TKSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSheetProps>(
           background: "var(--tk-surface)",
           borderRadius: "var(--tk-r-xl) var(--tk-r-xl) 0 0",
           boxShadow: "var(--tk-shadow-lg)",
-          padding: "8px 16px calc(16px + var(--tk-safe-bottom))",
-          transform,
-          transition: dragging
-            ? "none"
-            : "height var(--tk-t3) var(--tk-spring), transform var(--tk-t2) var(--tk-ease)",
+          // Transform is ALWAYS set (translateY(0%) at full height) and the
+          // transition list is constant — a drag only zeroes the duration, so
+          // the compositor never re-parses a property-list flip mid-gesture.
+          transform: `translateY(${restPct}%)`,
+          transition: "transform var(--tk-t3) var(--tk-spring)",
+          transitionDuration: dragging ? "0s" : undefined,
+          // Promote to a compositor layer for the entrance/exit/drag window
+          // only — a permanent will-change leaks a layer per sheet.
+          willChange: settled && !closing && !dragging ? undefined : "transform",
           // Entrance keyframes only on the first open (until `settled`); during
-          // a drag the inline transform/height drive the sheet instead, so the
+          // a drag the imperative transform drives the sheet instead, so the
           // finger tracks it and a partial drag returns without re-sliding in.
           animation,
         }}
       >
-        {/* Full-claim surface: override drag.style's pan-x with touch-action:none. */}
-        <div {...grabDrag.bind()} style={{ flexShrink: 0, touchAction: "none", margin: "-8px -16px 0", padding: "8px 16px 0" }}>
-          {!noGrabber ? (
-            <div
-              style={{
-                width: 36,
-                height: 4.5,
-                borderRadius: 3,
-                background: "var(--tk-surface-3)",
-                margin: "4px auto 14px",
-              }}
-            />
-          ) : null}
-          {title ? (
-            <div
-              style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}
-            >
-              <div id={titleId} style={{ fontSize: "var(--tk-fz-title3)", fontWeight: 700 }}>{title}</div>
-              <TKIconButton
-                icon="close"
-                size={30}
-                variant="surface"
-                label={locale.close}
-                onClick={requestClose}
-                style={{ background: "var(--tk-surface-2)", boxShadow: "none", color: "var(--tk-text-2)" }}
-              />
-            </div>
-          ) : null}
-        </div>
+        {/* The visible box: sized to the CURRENT snap (the sheet itself stays at
+            the tallest snap), so the content clips where the user sees the
+            sheet end. Resizes once per snap commit — never during a drag. */}
         <div
           style={{
-            flex: snapPoints ? 1 : "0 1 auto",
+            display: "flex",
+            flexDirection: "column",
             minHeight: 0,
-            overflowY: "auto",
-            overscrollBehavior: "contain",
+            padding: "8px 16px calc(16px + var(--tk-safe-bottom))",
+            ...(snapPoints
+              ? {
+                  position: "absolute" as const,
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: `${fMax > 0 ? (fBase / fMax) * 100 : 100}%`,
+                }
+              : { flex: "0 1 auto" as const }),
           }}
         >
-          {children}
+          {/* Full-claim surface: override drag.style's pan-x with touch-action:none. */}
+          <div
+            {...grabDrag.bind()}
+            data-tk-sheet-grab=""
+            style={{ flexShrink: 0, touchAction: "none", margin: "-8px -16px 0", padding: "8px 16px 0" }}
+          >
+            {!noGrabber ? (
+              <div
+                style={{
+                  width: 36,
+                  height: 4.5,
+                  borderRadius: 3,
+                  background: "var(--tk-surface-3)",
+                  margin: "4px auto 14px",
+                }}
+              />
+            ) : null}
+            {title ? (
+              <div
+                style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}
+              >
+                <div id={titleId} style={{ fontSize: "var(--tk-fz-title3)", fontWeight: 700 }}>{title}</div>
+                <TKIconButton
+                  icon="close"
+                  size={30}
+                  variant="surface"
+                  label={locale.close}
+                  onClick={requestClose}
+                  style={{ background: "var(--tk-surface-2)", boxShadow: "none", color: "var(--tk-text-2)" }}
+                />
+              </div>
+            ) : null}
+          </div>
+          <div
+            style={{
+              flex: snapPoints ? 1 : "0 1 auto",
+              minHeight: 0,
+              overflowY: "auto",
+              overscrollBehavior: "contain",
+            }}
+          >
+            {children}
+          </div>
         </div>
       </div>
     </>

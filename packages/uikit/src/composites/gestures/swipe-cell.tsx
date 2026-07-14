@@ -91,42 +91,64 @@ export function TKSwipeCell({ children, leading = [], trailing = [], fullSwipe =
   const announceOpen = () => document.dispatchEvent(new CustomEvent(OPEN_EVENT, { detail: idRef.current }));
 
   const startOffset = useRef(0);
+  // Cached once per gesture — the finger then moves the row through imperative
+  // transform writes (no setState, no clientWidth reads per frame).
+  const widthRef = useRef(320);
+  const contentRef = useRef<HTMLDivElement>(null);
   const drag = useDragGesture({
     axis: "x",
     onStart() {
       startOffset.current = offset;
+      widthRef.current = rootRef.current?.clientWidth ?? 320;
+      // Kill the transition before the first move — React's `dragging` commit
+      // lands a beat later, and the finger must never be eased after.
+      if (contentRef.current) contentRef.current.style.transitionDuration = "0s";
       setDragging(true);
     },
     onMove(state) {
+      const el = contentRef.current;
+      if (!el) return;
       const maxLeft = trailing.length * ACTION_W;
       const maxRight = leading.length * ACTION_W;
-      const width = rootRef.current?.clientWidth ?? 320;
+      const width = widthRef.current;
       const raw = startOffset.current + state.delta;
       const limit = fullSwipe ? width : Math.max(maxLeft, maxRight);
-      setOffset(Math.max(-Math.min(limit, width), Math.min(Math.min(limit, width), raw)));
+      const next = Math.max(-Math.min(limit, width), Math.min(Math.min(limit, width), raw));
+      el.style.transform = `translateX(${next}px)`;
     },
     onEnd(state) {
       setDragging(false);
-      const width = rootRef.current?.clientWidth ?? 320;
+      const width = widthRef.current;
       const raw = startOffset.current + state.delta;
       const side = raw < 0 ? trailing : leading;
       const max = side.length * ACTION_W;
+      // The rest position is also written imperatively: when the offset state
+      // doesn't change (release below the commit point), React skips the style
+      // write and this glide back is the only one the user gets.
+      const settle = (next: number) => {
+        const el = contentRef.current;
+        if (el) {
+          el.style.transitionDuration = "";
+          el.style.transform = `translateX(${next}px)`;
+        }
+        setOffset(next);
+      };
       // Full-swipe auto-fire — but never for a destructive first action; that one
       // opens the row so the user confirms with a tap (GES-007/CC-01). `tone:"red"`
       // implies destructive unless overridden via `destructive:false`.
       const destructive = side[0]?.destructive ?? side[0]?.tone === "red";
       if (fullSwipe && side.length && Math.abs(raw) > width * 0.6 && !destructive) {
         haptics.impact("medium");
-        setOffset(0);
+        settle(0);
         side[0].onAction();
         return;
       }
       const open = tkShouldCommit(Math.abs(raw) - max / 2, Math.abs(state.velocity), max) || Math.abs(raw) > max / 2;
       if (open && side.length) {
-        setOffset(raw < 0 ? -max : max);
+        settle(raw < 0 ? -max : max);
         announceOpen();
       } else {
-        setOffset(0);
+        settle(0);
       }
     },
   });
@@ -143,8 +165,8 @@ export function TKSwipeCell({ children, leading = [], trailing = [], fullSwipe =
           bottom: 0,
           [side === "leading" ? "left" : "right"]: 0,
           display: "flex",
-          // Hidden until the row is opened or a button is keyboard-focused.
-          opacity: offset === 0 && !focused ? 0 : 1,
+          // Hidden until the row is opened, dragged or a button is keyboard-focused.
+          opacity: offset === 0 && !dragging && !focused ? 0 : 1,
         }}
       >
         {actions.map((action) => (
@@ -199,11 +221,15 @@ export function TKSwipeCell({ children, leading = [], trailing = [], fullSwipe =
       {renderActions(leading, "leading")}
       {renderActions(trailing, "trailing")}
       <div
+        ref={contentRef}
         style={{
           position: "relative",
           background: "var(--tk-surface)",
-          transform: offset ? `translateX(${offset}px)` : undefined,
-          transition: dragging ? "none" : "transform var(--tk-t2) var(--tk-ease)",
+          // Always-set transform + constant transition list; a drag only zeroes
+          // the duration and moves the row imperatively (drag onMove).
+          transform: `translateX(${offset}px)`,
+          transition: "transform var(--tk-t2) var(--tk-ease)",
+          transitionDuration: dragging ? "0s" : undefined,
         }}
       >
         {children}

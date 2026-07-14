@@ -1,4 +1,5 @@
 import { forwardRef, useId, useState, type CSSProperties, type ReactNode } from "react";
+import { TKFocusRing } from "../../internal/FocusRing";
 import { useControllable } from "../../internal/useControllable";
 import { TKFormField } from "./form-field";
 
@@ -50,13 +51,15 @@ export const TKTextarea = /* @__PURE__ */ forwardRef<HTMLTextAreaElement, TKText
     <TKFormField label={label} hint={hint} error={error} htmlFor={inputId} describedBy={describedBy} disabled={disabled} testId={testId}>
       <div
         style={{
+          position: "relative",
           background: "var(--tk-surface)",
           borderRadius: "var(--tk-r-md)",
           padding: "12px 14px",
-          boxShadow: `inset 0 0 0 1.5px ${borderColor}${focus && !error ? ", var(--tk-ring)" : ""}`,
-          transition: "box-shadow var(--tk-t2) var(--tk-ease)",
+          // Static shadow; the focus ring fades on its own layer (TKFocusRing).
+          boxShadow: `inset 0 0 0 1.5px ${borderColor}`,
         }}
       >
+        <TKFocusRing show={focus && !error} />
         <textarea
           ref={ref}
           id={inputId}

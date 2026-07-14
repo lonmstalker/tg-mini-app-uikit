@@ -138,7 +138,7 @@ export function TKInlineButtons({
               cursor: item.disabled ? "default" : "pointer",
               boxShadow: selected ? "var(--tk-shadow-sm)" : "none",
               transition:
-                "background var(--tk-t2) var(--tk-ease), color var(--tk-t2) var(--tk-ease), box-shadow var(--tk-t2) var(--tk-ease)",
+                "background var(--tk-t2) var(--tk-ease), color var(--tk-t2) var(--tk-ease)",
             }}
           >
             {item.icon ? <TKIcon name={item.icon} size={size === "sm" ? 15 : 17} /> : null}

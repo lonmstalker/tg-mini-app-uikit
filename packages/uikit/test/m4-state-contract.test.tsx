@@ -77,11 +77,13 @@ describe("NAV-005 TKTabView works uncontrolled", () => {
 
   it("uses defaultValue and switches panels on tap with no value/onChange", () => {
     render(<kit.TKTabView tabs={tabs} panels={panels} defaultValue={1} panelTestId={(i) => `p-${i}`} />);
-    expect(screen.getByTestId("p-1").style.display).toBe("block");
-    expect(screen.getByTestId("p-0").style.display).toBe("none");
+    // Hidden panels keep layout (visibility, not display:none) so inner
+    // scroll positions survive a tab switch (2026-07-14 smoothness plan).
+    expect(screen.getByTestId("p-1").style.visibility).toBe("visible");
+    expect(screen.getByTestId("p-0").style.visibility).toBe("hidden");
     fireEvent.click(screen.getAllByRole("button")[0]); // tab A
-    expect(screen.getByTestId("p-0").style.display).toBe("block");
-    expect(screen.getByTestId("p-1").style.display).toBe("none");
+    expect(screen.getByTestId("p-0").style.visibility).toBe("visible");
+    expect(screen.getByTestId("p-1").style.visibility).toBe("hidden");
   });
 
   it("controlled mode still delegates to the parent", () => {
@@ -89,7 +91,7 @@ describe("NAV-005 TKTabView works uncontrolled", () => {
     render(<kit.TKTabView tabs={tabs} panels={panels} value={0} onChange={onChange} panelTestId={(i) => `p-${i}`} />);
     fireEvent.click(screen.getAllByRole("button")[1]);
     expect(onChange).toHaveBeenCalledWith(1);
-    expect(screen.getByTestId("p-0").style.display).toBe("block"); // stays until parent updates
+    expect(screen.getByTestId("p-0").style.visibility).toBe("visible"); // stays until parent updates
   });
 });
 

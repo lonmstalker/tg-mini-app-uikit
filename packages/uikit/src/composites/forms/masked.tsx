@@ -349,8 +349,7 @@ const TKPhoneCountryField = /* @__PURE__ */ forwardRef<HTMLInputElement, TKPhone
     background: "var(--tk-surface)",
     borderRadius: "var(--tk-r-md)",
     boxShadow: `inset 0 0 0 1.5px ${borderColor}${focus && !error ? ", var(--tk-ring)" : ""}`,
-    transition: "box-shadow var(--tk-t2) var(--tk-ease)",
-    opacity: disabled ? 0.55 : 1,
+        opacity: disabled ? 0.55 : 1,
   };
 
   return (

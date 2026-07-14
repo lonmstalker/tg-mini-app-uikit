@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { TKIcon, type TKIconName } from "../../atoms/icons";
 import { tkZ } from "../../internal/dom";
@@ -175,8 +175,39 @@ export function TKToastProvider({ children, offset = 14, duration = 2400, max = 
     );
   }, []);
 
+  // FLIP the surviving toasts when the stack reflows (a toast above them left):
+  // the position jump becomes a transform glide. WAAPI composes ABOVE the CSS
+  // enter/exit keyframes, and both are transform/opacity-only.
+  const stackRef = useRef<HTMLDivElement>(null);
+  const toastTopsRef = useRef(new Map<string, number>());
+  useLayoutEffect(() => {
+    const el = stackRef.current;
+    const prev = toastTopsRef.current;
+    const next = new Map<string, number>();
+    if (el) {
+      const reduced =
+        !!el.closest('.tk[data-tk-motion="off"]') ||
+        (typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches);
+      for (const child of Array.from(el.children) as HTMLElement[]) {
+        const id = child.dataset.tkToastId;
+        if (!id) continue;
+        const top = child.getBoundingClientRect().top;
+        next.set(id, top);
+        const before = prev.get(id);
+        if (!reduced && before != null && Math.abs(before - top) > 1 && typeof child.animate === "function") {
+          child.animate(
+            [{ transform: `translateY(${before - top}px)` }, { transform: "translateY(0)" }],
+            { duration: 260, easing: "cubic-bezier(.22,.61,.36,1)" },
+          );
+        }
+      }
+    }
+    toastTopsRef.current = next;
+  }, [toasts]);
+
   const stack = (
     <div
+      ref={stackRef}
       data-testid={testId}
       // Marks the stack as a live region that stays above modals — an open
       // dialog/sheet must NOT inert it, or a toast over a dialog goes mute and
@@ -196,11 +227,29 @@ export function TKToastProvider({ children, offset = 14, duration = 2400, max = 
         }}
       >
         {toasts.map((t) => (
+          // Two layers: the OUTER one animates (transform/opacity keyframes,
+          // promoted only while entering/leaving), the INNER one carries the
+          // backdrop blur — animating a blurring element re-filters it every
+          // frame. Exit is faster than enter (t1 vs t2), like native toasts.
           <div
             key={t.id}
             role={t.assertive ? "alert" : "status"}
             aria-live={t.assertive ? "assertive" : "polite"}
             aria-atomic="true"
+            data-tk-toast={t.out ? "out" : "in"}
+            data-tk-toast-id={String(t.id)}
+            onAnimationEnd={(e) => {
+              if (e.animationName === "tk-toast-in") (e.currentTarget as HTMLElement).style.willChange = "";
+            }}
+            style={{
+              animation: t.out
+                ? "tk-toast-out var(--tk-t1) var(--tk-ease) both"
+                : "tk-toast-in var(--tk-t2) var(--tk-spring) both",
+              willChange: "transform, opacity",
+              pointerEvents: "auto",
+            }}
+          >
+          <div
             style={{
               display: "flex",
               alignItems: "center",
@@ -211,8 +260,6 @@ export function TKToastProvider({ children, offset = 14, duration = 2400, max = 
               backdropFilter: "blur(14px)",
               WebkitBackdropFilter: "blur(14px)",
               boxShadow: "var(--tk-shadow-md)",
-              animation: `${t.out ? "tk-toast-out" : "tk-toast-in"} var(--tk-t2) ${t.out ? "var(--tk-ease)" : "var(--tk-spring)"} both`,
-              pointerEvents: "auto",
             }}
           >
             {t.icon ? (
@@ -263,6 +310,7 @@ export function TKToastProvider({ children, offset = 14, duration = 2400, max = 
                 {t.action}
               </button>
             ) : null}
+          </div>
           </div>
         ))}
     </div>

@@ -121,9 +121,27 @@ export function TKInfiniteList({
     return () => io.disconnect();
   }, [loading, hasMore, margin, maybeLoad, childCount]);
 
+  // Appended rows fade in (opacity-only WAAPI, one batch per loaded page) —
+  // new content used to teleport into the list. DOM-count based so it works
+  // for any child structure; reduced-motion aware; never touches layout.
+  const listRef = useRef<HTMLDivElement>(null);
+  const domRowsRef = useRef(0);
+  useEffect(() => {
+    const el = listRef.current;
+    if (!el) return;
+    const rows = Array.from(el.children).filter((c) => !c.hasAttribute("data-tk-sentinel")) as HTMLElement[];
+    const prev = domRowsRef.current;
+    domRowsRef.current = rows.length;
+    if (prev === 0 || rows.length <= prev) return; // first page / shrink: nothing to reveal
+    if (typeof rows[0]?.animate !== "function") return;
+    if (el.closest('.tk[data-tk-motion="off"]')) return;
+    if (typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    for (const row of rows.slice(prev)) row.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 140, easing: "ease-out" });
+  });
+
   const locale = useTKLocale();
   return (
-    <div data-testid={testId} aria-busy={loading || undefined} style={style}>
+    <div ref={listRef} data-testid={testId} aria-busy={loading || undefined} style={style}>
       {children}
       {hasMore ? (
         <div

@@ -35,7 +35,7 @@ export const TKSkeletonCard = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSkele
   return (
     <div
       ref={ref}
-      className={className}
+      className={["tk-skel-group", className ?? ""].filter(Boolean).join(" ")}
       data-testid={testId}
       {...rest}
       style={{
@@ -68,7 +68,7 @@ export const TKSkeletonList = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSkele
   return (
     <div
       ref={ref}
-      className={className}
+      className={["tk-skel-group", className ?? ""].filter(Boolean).join(" ")}
       data-testid={testId}
       {...rest}
       style={{
@@ -124,7 +124,7 @@ export const TKSkeletonTable = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSkel
   return (
     <div
       ref={ref}
-      className={className}
+      className={["tk-skel-group", className ?? ""].filter(Boolean).join(" ")}
       data-testid={testId}
       {...rest}
       style={{

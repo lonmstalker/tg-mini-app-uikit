@@ -1,6 +1,7 @@
 import { forwardRef, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { TKIcon } from "../icons";
 import { mergeRefs, tkZ } from "../../internal/dom";
+import { TKFocusRing } from "../../internal/FocusRing";
 import { useControllable } from "../../internal/useControllable";
 import { useTKLocale } from "../../foundation/i18n";
 import { tkFlattenOptions, type TKOption, type TKOptionGroup } from "../../foundation/options";
@@ -157,10 +158,13 @@ export const TKSelect = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKSelectPr
           fontSize: "var(--tk-fz-body)",
           fontFamily: "inherit",
           pointerEvents: disabled ? "none" : undefined,
-          boxShadow: open ? "inset 0 0 0 1.5px var(--tk-accent), var(--tk-ring)" : "none",
-          transition: "box-shadow var(--tk-t2) var(--tk-ease)",
+          position: "relative",
+          // Static inset border; the open ring fades on its own layer
+          // (TKFocusRing) — box-shadow never animates.
+          boxShadow: open ? "inset 0 0 0 1.5px var(--tk-accent)" : "none",
         }}
       >
+        <TKFocusRing show={open} />
         <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {selected?.label ?? placeholder ?? ""}
         </span>

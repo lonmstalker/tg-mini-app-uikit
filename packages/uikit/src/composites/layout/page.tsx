@@ -50,7 +50,8 @@ export interface TKPageProps {
  *
  * Keyboard contract: with a `footer`, the page height is
  * `calc(100% - var(--tk-kb-height))` — `--tk-kb-height` is written on the
- * `.tk` root by `useKeyboard` and animated by the `.tk-page` transition. The
+ * `.tk` root by `useKeyboard`; the change lands in one jump (no layout
+ * animation — the OS keyboard slide masks it). The
  * 100% base must be a viewport the HOST has not already shrunk by the
  * keyboard. A `min(var(--tg-viewport-stable-height), 100%)` host cap is fine
  * (stable-height ignores the keyboard on iOS; Android resizes the WebView so
@@ -91,12 +92,13 @@ export const TKPage = /* @__PURE__ */ forwardRef<HTMLDivElement, TKPageProps>(fu
     const root = footerRef.current?.closest<HTMLElement>(".tk");
     return !root || parseFloat(root.style.getPropertyValue("--tk-kb-height")) > 0;
   };
-  // The raw scroll position lives in a ref; state (→ TKPageScrollContext) only
-  // carries the 0..64px band quantized to 4px steps — all TKHeader's collapse
-  // hysteresis (36/20px) ever reads. Committing the raw px re-rendered the
-  // whole page (and every context consumer) on each scroll frame (LAY-001).
+  // The raw scroll position lives in a ref; state (→ TKPageScrollContext) is a
+  // single COLLAPSED boolean with hysteresis (collapse past 36px, expand under
+  // 20px, hold between) — scrolling commits nothing except the two direction
+  // flips. Publishing the position (even quantized) re-rendered the header on
+  // every few pixels of the collapse band (LAY-001).
   const scrollTopRef = useRef(0);
-  const [headerScroll, setHeaderScroll] = useState(0);
+  const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const scroller = (
     <div
       ref={ref}
@@ -111,8 +113,8 @@ export const TKPage = /* @__PURE__ */ forwardRef<HTMLDivElement, TKPageProps>(fu
           ? (e) => {
               const px = e.currentTarget.scrollTop;
               scrollTopRef.current = px;
-              // Same quantized value → React bails out, no re-render.
-              setHeaderScroll(px <= 0 ? 0 : px >= 64 ? 64 : Math.floor(px / 4) * 4);
+              // Same boolean → React bails out, no re-render.
+              setHeaderCollapsed((prev) => (px > 36 ? true : px < 20 ? false : prev));
             }
           : undefined
       }
@@ -165,7 +167,7 @@ export const TKPage = /* @__PURE__ */ forwardRef<HTMLDivElement, TKPageProps>(fu
       }}
     >
       {header ? (
-        <TKPageScrollContext.Provider value={headerScroll}>
+        <TKPageScrollContext.Provider value={headerCollapsed}>
           <div style={{ flexShrink: 0, position: "relative", zIndex: 1 }}>{header}</div>
         </TKPageScrollContext.Provider>
       ) : null}
@@ -180,8 +182,9 @@ export const TKPage = /* @__PURE__ */ forwardRef<HTMLDivElement, TKPageProps>(fu
         // While the keyboard is up the footer (tabbar/bottom bar) is useless and,
         // riding on the shrunk page, would float right above the keyboard covering
         // the focused input's results. It collapses via grid-template-rows 1fr→0fr
-        // (same curve as the page shrink) — never display:none in the same frame:
-        // visibility flips only at the END of the collapse (.tk-page-footer CSS).
+        // in the same single jump as the page shrink (nothing animates layout;
+        // the OS keyboard slide masks it) — never display:none in that frame,
+        // which would drop a mid-tap target (.tk-page-footer CSS).
         <div ref={footerRef} className="tk-page-footer" data-kb-open={keyboard.visible && ownRootLifted() ? "" : undefined}>
           <div style={{ overflow: "hidden", minHeight: 0 }}>{footer}</div>
         </div>

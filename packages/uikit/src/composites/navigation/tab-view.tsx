@@ -1,4 +1,4 @@
-import { type ReactNode, type RefObject } from "react";
+import { useDeferredValue, type CSSProperties, type ReactNode, type RefObject } from "react";
 import { useKeyboard } from "../../foundation/telegram";
 import { useControllable } from "../../internal/useControllable";
 import { TKTabbar, type TKTabItem } from "./tabbar";
@@ -52,6 +52,9 @@ export function TKTabView({
   // Self-manage the active index when uncontrolled, like every sibling (NAV-005).
   // TabView owns the source of truth; the tabbar below is driven from it.
   const [active, setActive] = useControllable(value, defaultValue, onChange);
+  // The tabbar highlight moves IMMEDIATELY; the (potentially heavy) panel flip
+  // rides a deferred render, so the pill never freezes waiting for it.
+  const shownPanel = useDeferredValue(active);
   const tabbarVisible = !hideTabbar && !keyboard.visible;
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column", minHeight: 0 }}>
@@ -60,8 +63,22 @@ export function TKTabView({
           <div
             key={index}
             data-testid={panelTestId?.(index)}
-            aria-hidden={index === active ? undefined : true}
-            style={{ position: "absolute", inset: 0, display: index === active ? "block" : "none" }}
+            aria-hidden={index === shownPanel ? undefined : true}
+            {...(index === shownPanel ? null : { inert: true })}
+            style={
+              {
+                position: "absolute",
+                inset: 0,
+                // Hidden panels keep their layout (visibility, not display:none,
+                // so inner scroll positions survive a tab switch) while
+                // content-visibility skips their paint/layout work entirely.
+                visibility: index === shownPanel ? "visible" : "hidden",
+                contentVisibility: index === shownPanel ? undefined : "hidden",
+                // The incoming panel fades in briefly — a display-flip used to
+                // teleport it. (Restarts because the property flips none→value.)
+                animation: index === shownPanel ? "tk-fade-in var(--tk-t1) var(--tk-ease)" : "none",
+              } as CSSProperties
+            }
           >
             {panel}
           </div>

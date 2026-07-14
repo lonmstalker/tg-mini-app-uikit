@@ -100,12 +100,15 @@ export function TKSteps({ steps, current, onStepClick, testId }: TKStepsProps) {
                 }}
               >
                 <div
+                  // Full-width fill sliding in inside the overflow-hidden
+                  // connector: transform-only, no width animation (layout).
                   style={{
                     height: "100%",
+                    width: "100%",
                     borderRadius: 2,
                     background: "var(--tk-accent)",
-                    width: index <= cur ? "100%" : "0%",
-                    transition: "width var(--tk-t3) var(--tk-ease)",
+                    transform: index <= cur ? "translateX(0%)" : "translateX(-100%)",
+                    transition: "transform var(--tk-t3) var(--tk-ease)",
                   }}
                 />
               </div>

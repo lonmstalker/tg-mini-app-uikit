@@ -12,19 +12,26 @@ const items = [
   { id: "b", title: "Bravo", content: "CB" },
 ];
 
-describe("LST-008 accordion transitions are class-driven + reduced-motion off", () => {
+describe("LST-008 accordion reveal is WAAPI-driven + reduced-motion off", () => {
   const css = readFileSync("src/tokens/tokens.css", "utf8");
 
-  it("[D-MOTION] reduced-motion paths switch the accordion transitions off", () => {
-    expect(css).toMatch(/prefers-reduced-motion: reduce[\s\S]*?\.tk-accordion-panel[\s\S]*?transition: none/);
-    expect(css).toMatch(/data-tk-motion="off"\][\s\S]*?\.tk-accordion-panel[\s\S]*?transition: none/);
+  it("[D-MOTION] reduced-motion paths switch the chevron off; the panel has no CSS transition at all", () => {
+    expect(css).toMatch(/prefers-reduced-motion: reduce[\s\S]*?\.tk-accordion-chevron[\s\S]*?transition: none/);
+    expect(css).toMatch(/data-tk-motion="off"\][\s\S]*?\.tk-accordion-chevron[\s\S]*?transition: none/);
+    // The panel reveal animates a MEASURED height through a transient WAAPI
+    // player (internal/useCollapse, reduced-motion aware in JS) — a
+    // grid-template-rows/height CSS transition must never come back
+    // (check-animatable-props gate).
+    expect(css).not.toMatch(/\.tk-accordion-panel\s*\{[^}]*transition/);
   });
 
-  it("[D-MOTION] the panel uses the class, not an inline transition", () => {
+  it("[D-MOTION] the panel renders the final collapse state, no inline transition", () => {
     render(<kit.TKAccordion items={items} defaultValue={["a"]} />);
-    const panel = screen.getAllByRole("region")[0];
-    expect(panel.classList.contains("tk-accordion-panel")).toBe(true);
-    expect((panel as HTMLElement).style.transition).toBe("");
+    const [openPanel, closedPanel] = screen.getAllByRole("region", { hidden: true }) as HTMLElement[];
+    expect(openPanel.classList.contains("tk-accordion-panel")).toBe(true);
+    expect(openPanel.style.transition).toBe("");
+    expect(openPanel.style.height).toBe("");
+    expect(closedPanel.style.height).toBe("0px");
   });
 });
 

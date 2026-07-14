@@ -66,14 +66,17 @@ describe("DSP-005 TKSpoiler is self-sufficient outside .tk", () => {
     expect(btn.style.outline === "" || btn.style.outline === "none").toBe(true);
   });
 
-  it("[D-MOTION] reduced motion disables the blur transition; otherwise it keeps it", () => {
+  it("[D-MOTION] reduced motion disables the reveal transition; otherwise it fades opacity, never filter", () => {
     mockMatchMedia(true);
     const { unmount } = render(<kit.TKSpoiler>secret</kit.TKSpoiler>);
     expect(["none", ""]).toContain(screen.getByText("secret").style.transition);
     unmount();
     mockMatchMedia(false);
     render(<kit.TKSpoiler>secret2</kit.TKSpoiler>);
-    expect(screen.getByText("secret2").style.transition).toContain("filter");
+    // The blur is static per state; interpolating `filter` re-rendered the
+    // blur every frame (2026-07-14 smoothness plan, phase 3).
+    expect(screen.getByText("secret2").style.transition).toContain("opacity");
+    expect(screen.getByText("secret2").style.transition).not.toContain("filter");
   });
 });
 

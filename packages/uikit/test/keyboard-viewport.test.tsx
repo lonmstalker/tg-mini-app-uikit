@@ -2,7 +2,7 @@ import { act, fireEvent, render, renderHook, screen } from "@testing-library/rea
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useKeyboard } from "@tg-mini-app/telegram";
 import { TKPage } from "../src";
-import { usePageScrollTop } from "../src/internal/pageScroll";
+import { usePageHeaderCollapsed } from "../src/internal/pageScroll";
 
 /* Keyboard/viewport controller (KB-1.x): covered formula, open/close
    hysteresis, geometry-driven pan settle, deferred focusout. */
@@ -310,16 +310,16 @@ describe("KB-1.7 pre-shrink cannot outlive its focus or bypass the open threshol
 
 /* ---------------- KB-1.6 · scroll tracking decoupled from render ---------------- */
 
-describe("KB-1.6 page scroll commits only quantized header phases", () => {
-  it("a 0→500px scroll re-renders the header consumer per 4px quantum, not per frame", () => {
+describe("KB-1.6 page scroll commits only the hysteresis boolean", () => {
+  it("a 0→500px→0 scroll re-renders the header consumer once per direction flip, not per frame", () => {
     installVV();
     let headerRenders = 0;
-    const seen: number[] = [];
+    const seen: boolean[] = [];
     function CountingHeader() {
       headerRenders += 1;
-      const scrollTop = usePageScrollTop();
-      if (seen[seen.length - 1] !== scrollTop) seen.push(scrollTop);
-      return <div data-testid="hdr">{scrollTop}</div>;
+      const collapsed = usePageHeaderCollapsed();
+      if (seen[seen.length - 1] !== collapsed) seen.push(collapsed);
+      return <div data-testid="hdr">{String(collapsed)}</div>;
     }
     render(
       <TKPage header={<CountingHeader />} testId="page">
@@ -327,17 +327,17 @@ describe("KB-1.6 page scroll commits only quantized header phases", () => {
       </TKPage>,
     );
     const scroller = screen.getByTestId("page").querySelector("[data-tk-page-scroll]") as HTMLElement;
-    const before = headerRenders;
-    // 50 scroll frames, 10px apart — a fast flick through the whole band.
-    for (let px = 10; px <= 500; px += 10) {
+    const scrollTo = (px: number) => {
       Object.defineProperty(scroller, "scrollTop", { value: px, configurable: true });
       fireEvent.scroll(scroller);
-    }
-    // ≤ one commit per quantum crossed inside 0..64 (16 quanta), not 50 frames.
-    expect(headerRenders - before).toBeLessThanOrEqual(17);
-    // The header still sees the full collapse band it needs (36/20 hysteresis).
-    expect(seen).toContain(64);
-    expect(Math.max(...seen)).toBe(64); // clamp: deep scroll stays 64
+    };
+    const before = headerRenders;
+    // 50 scroll frames down, then back up — two hysteresis flips total.
+    for (let px = 10; px <= 500; px += 10) scrollTo(px);
+    for (let px = 490; px >= 0; px -= 10) scrollTo(px);
+    // One commit per direction flip (collapse >36, expand <20) — not 100 frames.
+    expect(headerRenders - before).toBeLessThanOrEqual(2);
+    expect(seen).toEqual([false, true, false]);
   });
 });
 

@@ -1,4 +1,4 @@
-import { type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { type TKIconName } from "../../atoms/icons";
 import { TKVisuallyHidden } from "../../atoms/service";
 import { useTKLocale } from "../../foundation/i18n";
@@ -97,10 +97,39 @@ export interface AsyncBoundaryProps extends Omit<TKAsyncStateProps, "status"> {
  * Picks the loading / error / empty state (in that order) or renders `children`
  * when the data is ready. One place for the per-screen "loading → skeleton,
  * error → retry, empty → message" branch the demo screens repeated by hand.
+ *
+ * The skeleton → content swap fades the ready children in (transform-free
+ * WAAPI opacity, reduced-motion aware) instead of teleporting them. The ready
+ * wrapper is `display: contents`, so children stay direct flex items of the
+ * host column (gap intact) — the fade runs on each child element.
  */
 export function AsyncBoundary({ loading, error, empty, children, ...state }: AsyncBoundaryProps) {
+  const ready = !loading && !error && !empty;
+  const readyRef = useRef<HTMLDivElement>(null);
+  const wasBlockedRef = useRef(false);
+  useEffect(() => {
+    if (!ready) {
+      wasBlockedRef.current = true;
+      return;
+    }
+    if (!wasBlockedRef.current) return; // ready from the first render — nothing to reveal
+    wasBlockedRef.current = false;
+    const host = readyRef.current;
+    if (!host) return;
+    if (typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (host.closest('.tk[data-tk-motion="off"]')) return;
+    for (const child of Array.from(host.children)) {
+      if (typeof (child as HTMLElement).animate === "function") {
+        (child as HTMLElement).animate([{ opacity: 0 }, { opacity: 1 }], { duration: 260, easing: "ease-out" });
+      }
+    }
+  }, [ready]);
   if (loading) return <TKAsyncState status="loading" {...state} />;
   if (error) return <TKAsyncState status="error" {...state} />;
   if (empty) return <TKAsyncState status="empty" {...state} />;
-  return <>{children}</>;
+  return (
+    <div ref={readyRef} style={{ display: "contents" }}>
+      {children}
+    </div>
+  );
 }

@@ -1,15 +1,16 @@
-import { Children, createContext, isValidElement, useContext, useEffect, useRef, type ReactNode } from "react";
+import { Children, createContext, isValidElement, useContext, useDeferredValue, useEffect, useRef, type ReactNode } from "react";
 
 /**
  * Keep-mount tab host: visited tabs stay MOUNTED (`display: contents` when
- * active, `display: none` when hidden), so switching back is instant — no data
- * reload, no lost component state (form input values, fetched data, timers).
- * Note the limit: `display: none` destroys layout, so the browser resets the
- * `scrollTop` of any scroller INSIDE a hidden tab — scroll position is not
- * preserved (re-apply it from state if a tab needs that). Unvisited tabs
- * mount lazily on first activation. The nearest `[data-tk-page-scroll]`
- * ancestor (a TKPage scroller) is scrolled back to the top on every switch,
- * matching the remount-era UX.
+ * active; hidden ones are pulled out of flow and skipped via
+ * `visibility: hidden` + `content-visibility: hidden`), so switching back is
+ * instant — no data reload, no lost component state (form input values,
+ * fetched data, timers) and, unlike the old `display: none`, no browser-reset
+ * `scrollTop` inside the hidden tab. Unvisited tabs mount lazily on first
+ * activation — through a DEFERRED render, so the tabbar highlight paints
+ * before the heavy first mount. The nearest `[data-tk-page-scroll]` ancestor
+ * (a TKPage scroller) is scrolled back to the top on every switch, matching
+ * the remount-era UX.
  *
  * `display: contents` (not a plain block) keeps the active tab's children
  * direct flex items of the TKPage content column, so its `gap` still applies.
@@ -47,23 +48,26 @@ export function useTabActive(): boolean {
 }
 
 export function TKKeepMountTabs({ active, scrollToTop = true, testId, children }: TKKeepMountTabsProps) {
+  // A heavy first mount rides a deferred (interruptible) render: whatever
+  // updated `active` (the tabbar pill) commits and paints first.
+  const shown = useDeferredValue(active);
   // Visited-set lives across renders: once a tab has mounted it stays mounted.
   // The set is committed in an effect (never mutated during render) so a
   // discarded concurrent render can't leave a phantom "visited" tab behind;
-  // the render below treats the CURRENT active id as visited for first paint.
+  // the render below treats the CURRENT shown id as visited for first paint.
   const visitedRef = useRef(new Set<string>());
   useEffect(() => {
-    visitedRef.current.add(active);
-  }, [active]);
+    visitedRef.current.add(shown);
+  }, [shown]);
   const activeWrapperRef = useRef<HTMLDivElement>(null);
-  const prevActiveRef = useRef(active);
+  const prevActiveRef = useRef(shown);
   useEffect(() => {
-    if (prevActiveRef.current === active) return;
-    prevActiveRef.current = active;
+    if (prevActiveRef.current === shown) return;
+    prevActiveRef.current = shown;
     if (!scrollToTop) return;
     const scroller = activeWrapperRef.current?.closest("[data-tk-page-scroll]");
     if (scroller) scroller.scrollTop = 0;
-  }, [active, scrollToTop]);
+  }, [shown, scrollToTop]);
 
   const tabs: { id: string; node: ReactNode }[] = [];
   Children.forEach(children, (child) => {
@@ -75,15 +79,30 @@ export function TKKeepMountTabs({ active, scrollToTop = true, testId, children }
   return (
     <>
       {tabs.map(({ id, node }) =>
-        id === active || visitedRef.current.has(id) ? (
+        id === shown || visitedRef.current.has(id) ? (
           <div
             key={id}
-            ref={id === active ? activeWrapperRef : undefined}
+            ref={id === shown ? activeWrapperRef : undefined}
             data-tk-keep-tab={id}
-            data-testid={id === active ? testId : undefined}
-            style={{ display: id === active ? "contents" : "none" }}
+            data-testid={id === shown ? testId : undefined}
+            {...(id === shown ? null : { inert: true })}
+            style={
+              id === shown
+                ? { display: "contents" }
+                : {
+                    // Out of flow but NOT display:none — the browser keeps the
+                    // hidden tab's inner scroll positions. content-visibility
+                    // skips its layout/paint; older WebKit simply ignores it
+                    // and falls back to plain visibility:hidden.
+                    position: "absolute",
+                    width: "100%",
+                    visibility: "hidden",
+                    contentVisibility: "hidden",
+                    pointerEvents: "none",
+                  }
+            }
           >
-            <TKTabActiveContext.Provider value={id === active}>{node}</TKTabActiveContext.Provider>
+            <TKTabActiveContext.Provider value={id === shown}>{node}</TKTabActiveContext.Provider>
           </div>
         ) : null,
       )}

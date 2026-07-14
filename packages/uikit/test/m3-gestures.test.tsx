@@ -96,15 +96,19 @@ describe("M3.2 TKSheet imperative API and callbacks", () => {
     expect(onClose).toHaveBeenCalledOnce();
   });
 
-  it("snapTo() drives the snap point height", () => {
+  it("snapTo() drives the snap position via transform over a pinned max-snap height", () => {
     const ref = createRef<kit.TKSheetHandle>();
     render(
       <kit.TKSheet open snapPoints={[0.4, 0.9]} sheetRef={ref} title="T" testId="sheet" />,
     );
     const panel = screen.getByTestId("sheet");
-    expect(panel.style.height).toBe("40%");
+    // The height is pinned to the tallest snap; the current snap is a
+    // translateY offset (drags and snap changes never animate layout).
+    expect(panel.style.height).toBe("90%");
+    expect(panel.style.transform).toBe(`translateY(${(1 - 0.4 / 0.9) * 100}%)`);
     act(() => ref.current!.snapTo(1));
     expect(panel.style.height).toBe("90%");
+    expect(panel.style.transform).toBe("translateY(0%)");
     expect(ref.current!.snapIndex).toBe(1);
   });
 

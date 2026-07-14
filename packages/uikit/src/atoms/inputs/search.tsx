@@ -1,5 +1,6 @@
 import { forwardRef, useState, type CSSProperties } from "react";
 import { TKIcon } from "../icons";
+import { TKFocusRing } from "../../internal/FocusRing";
 import { useControllable } from "../../internal/useControllable";
 import { useTKLocale } from "../../foundation/i18n";
 
@@ -60,7 +61,9 @@ export const TKSearch = /* @__PURE__ */ forwardRef<HTMLInputElement, TKSearchPro
         gap: 10,
         maxWidth: "100%",
         width: expandOnFocus ? undefined : "100%",
-        transition: expandOnFocus ? "width var(--tk-t3) var(--tk-ease)" : undefined,
+        // expandOnFocus switches width INSTANTLY (no transition): the width
+        // animation used to run exactly while the keyboard lifts — the single
+        // worst moment to relayout every frame.
         ...expandStyle,
       }}
     >
@@ -69,16 +72,19 @@ export const TKSearch = /* @__PURE__ */ forwardRef<HTMLInputElement, TKSearchPro
           display: "flex",
           alignItems: "center",
           gap: 8,
+          position: "relative",
           flex: 1,
           minWidth: 0,
           height: 40,
           padding: "0 12px",
           borderRadius: "var(--tk-r-md)",
           background: "var(--tk-surface)",
-          boxShadow: focus ? "var(--tk-ring)" : "inset 0 0 0 0.5px var(--tk-sep)",
-          transition: "box-shadow var(--tk-t2) var(--tk-ease)",
+          // Static hairline; the focus ring fades on its own layer
+          // (TKFocusRing) — box-shadow never animates.
+          boxShadow: "inset 0 0 0 0.5px var(--tk-sep)",
         }}
       >
+        <TKFocusRing show={focus} />
         <span style={{ color: "var(--tk-text-2)", display: "inline-flex" }}>
           <TKIcon name="search" size={17} />
         </span>
@@ -129,10 +135,14 @@ export const TKSearch = /* @__PURE__ */ forwardRef<HTMLInputElement, TKSearchPro
             cursor: "pointer",
             flexShrink: 0,
             padding: 0,
+            // The width is claimed in ONE jump (no max-width animation — that
+            // relaid the row out every frame); the visible motion is the
+            // Cancel label fading/sliding in, transform+opacity only.
             maxWidth: showCancel ? 90 : 0,
             opacity: showCancel ? 1 : 0,
+            transform: showCancel ? "translateX(0)" : "translateX(8px)",
             overflow: "hidden",
-            transition: "max-width var(--tk-t3) var(--tk-ease), opacity var(--tk-t2) var(--tk-ease)",
+            transition: "opacity var(--tk-t2) var(--tk-ease), transform var(--tk-t2) var(--tk-ease)",
             whiteSpace: "nowrap",
           }}
         >

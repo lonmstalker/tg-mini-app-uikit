@@ -22,9 +22,10 @@ describe("M7 · TKTabView", () => {
     // Both panels are in the DOM (state/scroll survive a tab switch)...
     expect(screen.getByText("panel-a")).toBeInTheDocument();
     expect(screen.getByText("panel-b")).toBeInTheDocument();
-    // ...but only the active one is shown.
-    expect(screen.getByTestId("p-0").style.display).toBe("block");
-    expect(screen.getByTestId("p-1").style.display).toBe("none");
+    // ...but only the active one is shown (visibility keeps the hidden one's
+    // layout/scroll; display:none would reset it — 2026-07-14 smoothness plan).
+    expect(screen.getByTestId("p-0").style.visibility).toBe("visible");
+    expect(screen.getByTestId("p-1").style.visibility).toBe("hidden");
   });
 
   it("hides the tabbar on a deep screen", () => {

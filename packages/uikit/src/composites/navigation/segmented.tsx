@@ -69,10 +69,14 @@ export function TKSegmented({ options, value, defaultValue, onChange, full, aria
           position: "absolute",
           top: 3,
           bottom: 3,
+          // The slide is transform-only. Columns are equal (1fr grid), so the
+          // measured width differs between segments by fractional pixels at
+          // most — it changes instantly (no width/left in the transition list,
+          // which animated layout on every switch).
           ...(rect
-            ? { left: rect.left, width: rect.width, transform: "none" }
+            ? { left: 0, width: rect.width, transform: `translateX(${rect.left}px)` }
             : { left: 3, width: `calc((100% - 6px) / ${n})`, transform: `translateX(${idx * 100}%)` }),
-          transition: "transform var(--tk-t2) var(--tk-spring), left var(--tk-t2) var(--tk-spring), width var(--tk-t2) var(--tk-spring)",
+          transition: "transform var(--tk-t2) var(--tk-spring)",
           background: "var(--tk-surface)",
           borderRadius: "calc(var(--tk-r-sm) - 3px)",
           boxShadow: "var(--tk-shadow-sm)",

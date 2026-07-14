@@ -320,21 +320,33 @@ export function TKTooltip({ children, content, placement = "top", disabled, test
         id={id}
         onClose={() => setOpen(false)}
         style={{
+          // The popper node is the ANIMATED layer (tk-modal-in) — keep it
+          // visually empty and let the static inner span carry the backdrop
+          // blur: animating a blurring element re-filters it every frame.
           minWidth: "max-content",
           maxWidth: 220,
-          padding: "7px 9px",
-          borderRadius: "var(--tk-r-sm)",
-          background: "var(--tk-glass)",
-          backdropFilter: "blur(14px)",
-          WebkitBackdropFilter: "blur(14px)",
-          boxShadow: "var(--tk-shadow-md)",
+          padding: 0,
+          background: "transparent",
+          boxShadow: "none",
           color: "var(--tk-text)",
           fontSize: "var(--tk-fz-caption)",
           fontWeight: 600,
           pointerEvents: "none",
         }}
       >
-        {content}
+        <span
+          style={{
+            display: "block",
+            padding: "7px 9px",
+            borderRadius: "var(--tk-r-sm)",
+            background: "var(--tk-glass)",
+            backdropFilter: "blur(14px)",
+            WebkitBackdropFilter: "blur(14px)",
+            boxShadow: "var(--tk-shadow-md)",
+          }}
+        >
+          {content}
+        </span>
       </TKPopper>
     </span>
   );

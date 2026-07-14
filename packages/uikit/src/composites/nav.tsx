@@ -13,7 +13,8 @@ import {
   type ReactNode,
 } from "react";
 import { tkShouldCommit, useDragGesture } from "../internal/useDragGesture";
-import { useBackIntercept } from "../foundation/telegram";
+import { useBackIntercept, useWebApp } from "../foundation/telegram";
+import { useHasNativeChrome } from "../foundation/chrome";
 import { useReducedMotion } from "../foundation/theme";
 
 export interface TKNavApi<TParams = unknown> {
@@ -28,6 +29,13 @@ export interface TKNavApi<TParams = unknown> {
   activePanel: string;
   /** Params of the current stack entry — type it via `useNav<MyParams>()` (NAV2-006). */
   params: TParams;
+  /**
+   * True while the stack drives the NATIVE Telegram Back button for its depth
+   * (`backButton` on, depth > 1, a `BackButton` API present). `TKHeader
+   * back="auto"` reads it to hide its own arrow — otherwise Telegram shows
+   * TWO back controls (the chrome one and the header one) for the same pop.
+   */
+  nativeBack: boolean;
 }
 
 /** A stack entry for controlled-mode / `reset()` (NAV2-007). */
@@ -178,8 +186,11 @@ export function TKNavStack({
   } else {
     stack = internalStack;
   }
-  const [dragX, setDragX] = useState(0);
   const [dragging, setDragging] = useState(false);
+  // Swipe-back moves panels through imperative transform writes — the width and
+  // the panel nodes are cached once at drag start, so a frame does no layout
+  // reads, no setState and no context re-publish.
+  const dragCache = useRef<{ width: number; top: HTMLDivElement | null; under: HTMLDivElement | null } | null>(null);
   // Once a panel's push entrance has played, never re-apply the animation on
   // later renders: `fill-mode: both` otherwise keeps a resolved transform on
   // the panel forever — a permanent containing block for position:fixed
@@ -204,6 +215,12 @@ export function TKNavStack({
   // revealed panel instead transitions from its -30% "under" offset back to 0,
   // so going back slides in from the left like the platform expects.
   const dirRef = useRef<"push" | "pop">("push");
+
+  // Whether a REAL Telegram client hosts the app (useHasNativeChrome) and its
+  // Back button API is reachable. Injected mocks (storybook, demos, tests
+  // without window.Telegram) count as "no native chrome": their in-DOM header
+  // arrow is the only visible back control, so it must stay.
+  const hasNativeBack = useHasNativeChrome() && !!useWebApp()?.BackButton;
 
   const api = useMemo<TKNavApi>(() => {
     const top = stack[stack.length - 1];
@@ -263,8 +280,9 @@ export function TKNavStack({
       depth: stack.length,
       activePanel: top.panel,
       params: top.params,
+      nativeBack: backButton && hasNativeBack && stack.length > 1,
     };
-  }, [commit, stack]);
+  }, [commit, stack, backButton, hasNativeBack]);
 
   // Telegram Back button: intercept while the stack is deep; the provider's
   // back queue lets open overlays (sheets, dialogs) intercept first, and shows
@@ -366,15 +384,63 @@ export function TKNavStack({
     return () => root.removeEventListener("animationend", onEnd);
   }, []);
 
+  const underPanelRef = useRef<HTMLDivElement>(null);
   const drag = useDragGesture({
     axis: "x",
     enabled: !!swipeBack && stack.length > 1,
-    onStart: () => setDragging(true),
-    onMove: (state) => setDragX(Math.max(0, state.delta)),
+    onStart: () => {
+      const top = topPanelRef.current;
+      const under = underPanelRef.current;
+      dragCache.current = { width: rootRef.current?.clientWidth ?? 360, top, under };
+      // Reveal the under panel and kill the transitions before the first move —
+      // React's `dragging` commit lands a beat later.
+      if (top) top.style.transitionDuration = "0s";
+      if (under) {
+        under.style.transitionDuration = "0s";
+        under.style.visibility = "visible";
+      }
+      setDragging(true);
+    },
+    onMove: (state) => {
+      const c = dragCache.current;
+      if (!c) return;
+      const x = Math.max(0, state.delta);
+      // 1:1 behind the finger, compositor-only; the under panel parallaxes
+      // from -30% toward 0 as the top panel uncovers it.
+      if (c.top) c.top.style.transform = `translateX(${x}px)`;
+      if (c.under) c.under.style.transform = `translateX(${-30 + (x / Math.max(1, c.width)) * 30}%)`;
+    },
     onEnd: (state) => {
+      const c = dragCache.current;
+      dragCache.current = null;
       setDragging(false);
-      setDragX(0);
-      const width = rootRef.current?.clientWidth ?? 360;
+      const width = c?.width ?? rootRef.current?.clientWidth ?? 360;
+      // Glide both panels back imperatively in EVERY case — React's rendered
+      // transform values never changed during the drag, so it skips the writes.
+      // On a committed pop the exit-layer styles React writes in the same
+      // commit override this before paint; but a controlled host may REJECT
+      // the pop (stack unchanged → no React style writes at all), and the
+      // dragged transform must never linger on a live panel.
+      if (c?.top) {
+        const topEl = c.top;
+        topEl.style.transitionDuration = "";
+        topEl.style.transform = "translateX(0px)";
+        // Clear the transform once the glide settles so the panel doesn't keep
+        // a containing block / compositor layer at rest. Timer fallback: a
+        // backgrounded WKWebView swallows transition events.
+        const clear = () => {
+          topEl.removeEventListener("transitionend", clear);
+          window.clearTimeout(timer);
+          if (dragCache.current) return; // re-grabbed mid-glide — the new drag owns the transform
+          topEl.style.transform = "";
+        };
+        const timer = window.setTimeout(clear, 700);
+        topEl.addEventListener("transitionend", clear);
+      }
+      if (c?.under) {
+        c.under.style.transitionDuration = "";
+        c.under.style.transform = "translateX(-30%)";
+      }
       if (tkShouldCommit(state.delta, state.velocity, width)) {
         // The exit layer picks the slide up from under the finger, not from 0.
         setPendingFromX(state.delta);
@@ -440,7 +506,14 @@ export function TKNavStack({
   // mid-exit) drops the exit layer for that pop — instant swap, never a
   // duplicate key.
   const rendered: { entry: NavEntry; exit?: { fromX: number } }[] = stack.map((entry) => ({ entry }));
-  if (exiting && !stack.some((entry) => entry.key === exiting.entry.key)) {
+  const topEntry = stack[stack.length - 1];
+  // A quick pop → re-PUSH of the same panel would briefly render the screen
+  // TWICE (the dying exit copy plus the fresh top) — duplicated test ids,
+  // duplicated queries, a ghost copy sliding away behind the real one. Drop
+  // the exit instantly then. A pop REVEALING the same panel (detail→detail
+  // chains) keeps its slide: dir is "pop" there.
+  const exitDuplicatesTop = exiting && topEntry && exiting.entry.panel === topEntry.panel && dirRef.current === "push";
+  if (exiting && !stack.some((entry) => entry.key === exiting.entry.key) && !exitDuplicatesTop) {
     rendered.push({ entry: exiting.entry, exit: { fromX: exiting.fromX } });
   }
 
@@ -484,8 +557,11 @@ export function TKNavStack({
                   pointerEvents: "none",
                   // tk-nav-out has no `from`: the slide starts at the computed
                   // transform, i.e. exactly where the finger / pop left the panel.
-                  transform: exit.fromX ? `translateX(${exit.fromX}px)` : undefined,
+                  // Always explicit (0px for a button pop) so it overrides any
+                  // imperative transform a rejected swipe left on this node.
+                  transform: `translateX(${exit.fromX}px)`,
                   animation: "tk-nav-out var(--tk-t2) var(--tk-ease) forwards",
+                  willChange: "transform",
                 }}
               >
                 <TKNavContext.Provider
@@ -505,7 +581,7 @@ export function TKNavStack({
           return (
             <div
               key={entry.key}
-              ref={top ? topPanelRef : undefined}
+              ref={top ? topPanelRef : under ? underPanelRef : undefined}
               data-tk-nav-panel={entry.panel}
               data-tk-nav-key={entry.key}
               role="region"
@@ -517,21 +593,25 @@ export function TKNavStack({
                 inset: 0,
                 background: "var(--tk-bg)",
                 // lower panels stay mounted (state + scroll preserved) but
-                // hidden from paint and the accessibility tree
-                visibility: top || (under && (dragging || dragX > 0)) ? "visible" : "hidden",
-                transform: top
-                  ? dragX
-                    ? `translateX(${dragX}px)`
-                    : undefined
-                  : under
-                    ? `translateX(${dragX ? -30 + (dragX / Math.max(1, rootRef.current?.clientWidth ?? 360)) * 30 : -30}%)`
-                    : undefined,
-                transition: dragging ? "none" : "transform var(--tk-t2) var(--tk-ease)",
+                // hidden from paint and the accessibility tree; a swipe-back
+                // reveals the under panel imperatively (drag onStart).
+                visibility: top || (under && dragging) ? "visible" : "hidden",
+                // The top panel carries NO resting transform (a resolved transform
+                // is a permanent containing block for position:fixed children and
+                // a leaked compositor layer — the settled-guard rationale); the
+                // swipe-back writes it imperatively and clears it after the glide.
+                transform: under ? "translateX(-30%)" : undefined,
+                transition: "transform var(--tk-t2) var(--tk-ease)",
+                transitionDuration: dragging ? "0s" : undefined,
+                // Compositor promotion only while a swipe or entrance moves the
+                // panel — never at rest (leaked layer per panel otherwise).
+                willChange:
+                  dragging || (top && index > 0 && !settledKeys.has(entry.key)) ? "transform" : undefined,
                 zIndex: index,
                 // Only the forward push enters from the right (and only until the
                 // entrance settles). On pop the revealed panel rides its -30%→0
                 // transform transition in from the left.
-                ...(top && index > 0 && !dragging && !dragX && dirRef.current === "push" && !settledKeys.has(entry.key)
+                ...(top && index > 0 && !dragging && dirRef.current === "push" && !settledKeys.has(entry.key)
                   ? { animation: "tk-nav-in var(--tk-t2) var(--tk-ease) both" }
                   : null),
               }}

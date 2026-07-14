@@ -260,33 +260,26 @@ describe("design token contract", () => {
   });
 
   /* Acceptance 1.5 — the keyboard-driven page geometry is a CSS contract: the
-     .tk-page/.tk-page-footer block is what turns every --tk-kb-height change
-     into ONE animated movement. Nothing else asserted it — deleting the whole
-     block kept every unit and e2e test green (mutation survives). */
-  it("KB-CSS keeps the .tk-page height transition at ~200ms", () => {
-    const m = tokensCss.match(/\.tk-page\s*\{[^}]*\}/);
-    expect(m, "missing .tk-page rule").not.toBeNull();
-    expect(m![0]).toMatch(/transition:\s*height\s+200ms/);
+     .tk-page-footer block collapses the footer in the SAME single jump as the
+     page shrink. Nothing may reintroduce a layout transition here — animating
+     height/grid-template-rows re-laid the page out every frame of the keyboard
+     slide (2026-07-14 smoothness plan, phase 2). */
+  it("KB-CSS keeps the keyboard page shrink a single jump (no height transition)", () => {
+    expect(tokensCss).not.toMatch(/\.tk-page\s*\{[^}]*transition[^}]*height/);
   });
 
-  it("KB-CSS collapses the footer via grid-template-rows 1fr→0fr, never display:none", () => {
+  it("KB-CSS collapses the footer via grid-template-rows 1fr→0fr, never display:none, no transition", () => {
     const footer = tokensCss.match(/\.tk-page-footer\s*\{[^}]*\}/);
     expect(footer, "missing .tk-page-footer rule").not.toBeNull();
     expect(footer![0]).toMatch(/grid-template-rows:\s*1fr/);
-    expect(footer![0]).toMatch(/transition:[^;]*grid-template-rows\s+200ms/);
+    expect(footer![0]).not.toContain("transition");
     const open = tokensCss.match(/\.tk-page-footer\[data-kb-open\]\s*\{[^}]*\}/);
     expect(open, "missing .tk-page-footer[data-kb-open] rule").not.toBeNull();
     expect(open![0]).toMatch(/grid-template-rows:\s*0fr/);
     expect(open![0]).not.toContain("display");
-    // visibility flips only at the END of the collapse (discrete transition
-    // delayed by the full duration) — never in the frame the keyboard opens.
-    expect(open![0]).toMatch(/transition:[^;]*visibility\s+0s\s+200ms/);
-  });
-
-  it("KB-CSS switches the page/footer transitions off under prefers-reduced-motion", () => {
-    expect(tokensCss).toMatch(
-      /@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{\s*\.tk-page,\s*\.tk-page-footer,\s*\.tk-page-footer\[data-kb-open\]\s*\{\s*transition:\s*none;?\s*\}/,
-    );
+    // The footer leaves the a11y tree/paint in the collapse frame — but via
+    // visibility, never display:none (a mid-tap target must not vanish).
+    expect(open![0]).toMatch(/visibility:\s*hidden/);
   });
 
   it("B1 underlay literals in app.tsx mirror the --tk-bg theme values", () => {

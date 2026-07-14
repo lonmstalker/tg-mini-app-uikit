@@ -45,8 +45,8 @@ export function TKBottomBar({
       data-testid={testId}
       style={{
         background: blur ? "var(--tk-glass)" : "var(--tk-bg)",
-        backdropFilter: blur ? "blur(14px)" : undefined,
-        WebkitBackdropFilter: blur ? "blur(14px)" : undefined,
+        backdropFilter: blur ? "var(--tk-bar-blur, blur(14px))" : undefined,
+        WebkitBackdropFilter: blur ? "var(--tk-bar-blur, blur(14px))" : undefined,
         borderTop: separator ? "0.5px solid var(--tk-sep)" : "none",
         paddingTop,
         paddingBottom: tkSafePad("bottom", bottom, paddingBottom),

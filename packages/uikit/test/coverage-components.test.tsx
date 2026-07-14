@@ -604,7 +604,7 @@ describe("coverage-backed component behaviours", () => {
 
     const sheet = screen.getByTestId("sheet");
     Object.defineProperty(sheet, "clientHeight", { value: 400, configurable: true });
-    const grab = sheet.firstElementChild as HTMLElement;
+    const grab = sheet.querySelector("[data-tk-sheet-grab]") as HTMLElement;
     Object.defineProperty(grab, "setPointerCapture", { value: vi.fn(), configurable: true });
 
     fireEvent.pointerDown(grab, { clientY: 220, clientX: 10, pointerId: 1, timeStamp: 0 });

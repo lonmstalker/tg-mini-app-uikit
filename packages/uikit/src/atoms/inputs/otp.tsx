@@ -1,6 +1,7 @@
 import { forwardRef, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { TKIcon } from "../icons";
 import { mergeRefs } from "../../internal/dom";
+import { TKFocusRing } from "../../internal/FocusRing";
 import { useControllable } from "../../internal/useControllable";
 import { useTKLocale } from "../../foundation/i18n";
 
@@ -80,6 +81,7 @@ export const TKOTP = /* @__PURE__ */ forwardRef<HTMLInputElement, TKOTPProps>(fu
             <div
               key={i}
               style={{
+                position: "relative",
                 width: 46,
                 height: 56,
                 display: "flex",
@@ -91,14 +93,17 @@ export const TKOTP = /* @__PURE__ */ forwardRef<HTMLInputElement, TKOTPProps>(fu
                 fontWeight: 700,
                 fontVariantNumeric: "tabular-nums",
                 color: done ? "var(--tk-green)" : "var(--tk-text)",
+                // Static inset border per state; the active ring fades on its
+                // own layer (TKFocusRing) — box-shadow never animates.
                 boxShadow: done
                   ? "inset 0 0 0 1.5px var(--tk-green)"
                   : active
-                    ? "inset 0 0 0 1.5px var(--tk-accent), var(--tk-ring)"
+                    ? "inset 0 0 0 1.5px var(--tk-accent)"
                     : "inset 0 0 0 1px var(--tk-sep)",
-                transition: "box-shadow var(--tk-t2) var(--tk-ease), color var(--tk-t2) var(--tk-ease)",
+                transition: "color var(--tk-t2) var(--tk-ease)",
               }}
             >
+              <TKFocusRing show={active} />
               {filled ? (
                 <span className="tk-pop" style={{ display: "inline-block" }}>
                   {v[i]}

@@ -100,10 +100,13 @@ describe("PTN-005 SlotPicker day / XP guards", () => {
     expect(active[0].textContent).toContain("Tue");
   });
 
-  it("XP NaN renders 0% width", () => {
+  it("XP NaN renders an empty (fully slid-out) fill", () => {
     render(<kit.TKXPHeader name="A" xp={Number.NaN} testId="xp" />);
-    const fill = [...screen.getByTestId("xp").querySelectorAll<HTMLElement>("div")].find((d) => d.style.width.endsWith("%"))!;
-    expect(fill.style.width).toBe("0%");
+    // The fill is a full-width bar slid in by transform (never animated width).
+    const fill = [...screen.getByTestId("xp").querySelectorAll<HTMLElement>("div")].find((d) =>
+      d.style.transform.startsWith("translateX"),
+    )!;
+    expect(fill.style.transform).toBe("translateX(-100%)");
   });
 
   it("empty days/slots do not throw", () => {

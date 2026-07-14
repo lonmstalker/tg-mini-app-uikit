@@ -72,6 +72,9 @@ export const TKDialog = /* @__PURE__ */ forwardRef<HTMLDivElement, TKDialogProps
 ) {
   const ref = useRef<HTMLDivElement>(null);
   const { mounted, closing } = useMountTransition(open, 260, ref);
+  // Compositor promotion only while the entrance/exit keyframes play — a
+  // permanent will-change would leak a layer per mounted dialog.
+  const [entered, setEntered] = useState(false);
   const titleId = useId();
   const textId = useId();
   // One ordered call for the five modal hooks: focus-trap + Escape, scroll-lock,
@@ -101,6 +104,9 @@ export const TKDialog = /* @__PURE__ */ forwardRef<HTMLDivElement, TKDialogProps
           aria-labelledby={title ? titleId : undefined}
           aria-describedby={text ? textId : undefined}
           tabIndex={-1}
+          onAnimationEnd={(e) => {
+            if (e.animationName === "tk-modal-in") setEntered(true);
+          }}
           style={{
             outline: "none",
             background: "var(--tk-surface)",
@@ -109,6 +115,7 @@ export const TKDialog = /* @__PURE__ */ forwardRef<HTMLDivElement, TKDialogProps
             padding: "20px 18px 14px",
             textAlign: "center",
             animation: `${closing ? "tk-fade-out" : "tk-modal-in"} var(--tk-t2) ${closing ? "var(--tk-ease)" : "var(--tk-spring)"} both`,
+            willChange: entered && !closing ? undefined : "transform, opacity",
           }}
         >
           {icon ? (

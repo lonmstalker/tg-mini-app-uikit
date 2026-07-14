@@ -38,12 +38,15 @@ export const TKProgress = /* @__PURE__ */ forwardRef<HTMLDivElement, TKProgressP
       style={{ height: h, borderRadius: h / 2, background: "var(--tk-surface-3)", overflow: "hidden", ...style }}
     >
       <div
+        // Full-width bar sliding in from the start inside the overflow-hidden
+        // track: transform-only progress, radius intact (no width animation).
         style={{
           height: "100%",
-          width: `${v}%`,
+          width: "100%",
           borderRadius: h / 2,
           background: "var(--tk-accent-grad)",
-          transition: "width var(--tk-t3) var(--tk-spring)",
+          transform: `translateX(${v - 100}%)`,
+          transition: "transform var(--tk-t3) var(--tk-spring)",
         }}
       />
     </div>

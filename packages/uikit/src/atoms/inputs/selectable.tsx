@@ -90,7 +90,7 @@ export const TKSelectable = /* @__PURE__ */ forwardRef<HTMLInputElement, TKSelec
           color: "var(--tk-on-accent)",
           boxShadow: isChecked ? "none" : "inset 0 0 0 1px var(--tk-sep)",
           flexShrink: 0,
-          transition: "background var(--tk-t2) var(--tk-ease), box-shadow var(--tk-t2) var(--tk-ease)",
+          transition: "background var(--tk-t2) var(--tk-ease)", // box-shadow flips instantly (no repaint-per-frame animation)
         }}
       >
         {isChecked ? <TKIcon name="check" size={14} strokeWidth={2.7} /> : icon ? <TKIcon name={icon} size={14} /> : null}

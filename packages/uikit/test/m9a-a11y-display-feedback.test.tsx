@@ -13,9 +13,9 @@ describe("FBK-002 TKProgress clamps aria-valuenow to the visual fill", () => {
     expect(screen.getByTestId("p")).toHaveAttribute("aria-valuenow", "0");
     rerender(<kit.TKProgress value={Number.NaN} testId="p" />);
     expect(screen.getByTestId("p")).toHaveAttribute("aria-valuenow", "0");
-    // the inner fill width matches (0%)
+    // the inner fill matches: a full-width bar fully slid out by transform
     const fill = screen.getByTestId("p").querySelector("div") as HTMLElement;
-    expect(fill.style.width).toBe("0%");
+    expect(fill.style.transform).toBe("translateX(-100%)");
   });
 });
 

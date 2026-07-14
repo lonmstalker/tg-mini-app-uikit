@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from "react";
+import { useState, type CSSProperties, type ReactNode } from "react";
 
 export interface TKFormFieldProps {
   label?: ReactNode;
@@ -16,6 +16,19 @@ export interface TKFormFieldProps {
 }
 
 export function TKFormField({ label, hint, error, htmlFor, labelId, describedBy, required, disabled, children, testId, style }: TKFormFieldProps) {
+  // Native-feeling validation feedback: a NEW error rises in (tk-rise — an
+  // animation, because a transition on a freshly-mounted node never runs); an
+  // error REPLACING one already showing shakes instead. Errors compare by a
+  // primitive key — JSX errors get a fresh element identity every parent
+  // render and would shake-spam if compared by reference. Adjust-state-during-
+  // render so a discarded concurrent render can't double-count.
+  const errKey = error == null || error === false ? "" : typeof error === "string" || typeof error === "number" ? `v:${error}` : "node";
+  const [prevKey, setPrevKey] = useState(errKey);
+  const [anim, setAnim] = useState<{ kind: "rise" | "shake"; n: number }>({ kind: "rise", n: 0 });
+  if (prevKey !== errKey) {
+    setPrevKey(errKey);
+    if (errKey) setAnim((a) => ({ kind: prevKey ? "shake" : "rise", n: a.n + 1 }));
+  }
   return (
     <div data-testid={testId} style={{ display: "flex", flexDirection: "column", gap: 6, opacity: disabled ? 0.55 : 1, ...style }}>
       {label ? (
@@ -39,6 +52,9 @@ export function TKFormField({ label, hint, error, htmlFor, labelId, describedBy,
       {hint || error ? (
         <div
           id={describedBy}
+          // Remount on every error change so the entrance animation replays.
+          key={error ? `${anim.kind}-${anim.n}` : "hint"}
+          className={error ? (anim.kind === "shake" ? "tk-shake" : "tk-rise") : undefined}
           // Announce a validation error to AT (INP-008 / CC-05); a plain hint stays silent.
           role={error ? "alert" : undefined}
           style={{

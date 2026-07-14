@@ -233,31 +233,28 @@
 
 /* Keyboard-driven page geometry: TKPage (with a footer) is
    height: calc(100% - var(--tk-kb-height)) — useKeyboard writes the var on the
-   .tk root, this transition turns every change into ONE movement. The curve
-   approximates the iOS keyboard (easeInOutCubic). The footer collapses on the
-   same curve; `visibility` flips only at the END of the collapse (discrete
-   transition), so the footer is never yanked in the frame the keyboard opens. */
-.tk-page { transition: height 200ms cubic-bezier(.32, 0, .68, 1); }
+   .tk root. The change lands in ONE jump (no height transition — animating
+   layout re-laid the whole page out every frame of the keyboard slide; the OS
+   keyboard animation visually masks the single jump). The footer collapses in
+   the same jump — grid-template-rows is a static mechanism here, nothing
+   animates it — and hides from AT/focus while the keyboard is up (never
+   display:none in the open frame, which would drop a mid-tap target). */
 .tk-page-footer {
   flex-shrink: 0;
   display: grid;
   grid-template-rows: 1fr;
-  transition: grid-template-rows 200ms cubic-bezier(.32, 0, .68, 1);
 }
 .tk-page-footer[data-kb-open] {
   grid-template-rows: 0fr;
   visibility: hidden;
-  transition: grid-template-rows 200ms cubic-bezier(.32, 0, .68, 1), visibility 0s 200ms;
-}
-@media (prefers-reduced-motion: reduce) {
-  .tk-page, .tk-page-footer, .tk-page-footer[data-kb-open] { transition: none; }
 }
 
 /* ============ shared micro-interaction utilities ============ */
 
 .tk-press {
+  /* transform/opacity only — a `filter` transition forced a repaint of the
+     pressed surface on every frame (nothing ever set a filter anyway). */
   transition: transform var(--tk-t2) var(--tk-spring),
-              filter var(--tk-t1) var(--tk-ease),
               opacity var(--tk-t1) var(--tk-ease);
   cursor: pointer;
   user-select: none;
@@ -270,10 +267,10 @@
    allowed (INP-002 — no infinite animation under prefers-reduced-motion). */
 .tk-otp-caret { width: 2px; height: 24px; background: var(--tk-accent); border-radius: 1px; }
 
-/* Accordion reveal/chevron transitions live in classes (not inline) so the
-   reduced-motion paths below can switch them off entirely (LST-008). */
+/* Accordion chevron transition lives in a class (not inline) so the
+   reduced-motion paths below can switch it off entirely (LST-008). The panel
+   reveal is WAAPI-driven (internal/useCollapse) — reduced-motion aware in JS. */
 .tk-accordion-chevron { transition: transform var(--tk-t2) var(--tk-spring); }
-.tk-accordion-panel { transition: grid-template-rows var(--tk-t3) var(--tk-ease); }
 
 /* Screen-reader-only text; the -focusable variant reveals on keyboard focus
    (skip links etc.) — needs a real :focus rule, so it lives here, not inline (SVC-002). */
@@ -323,13 +320,14 @@
 @keyframes tk-nav-out {
   to { transform: translateX(100%); }
 }
+/* no `to`: lands on the element's computed transform, so a snap sheet resting
+   at translateY(40%) enters to its snap, not to 0 */
 @keyframes tk-sheet-up {
   from { transform: translateY(104%); }
-  to   { transform: translateY(0); }
 }
+/* no `from`: starts at the computed transform (mid-drag hand-off, snap offset) */
 @keyframes tk-sheet-down {
-  from { transform: translateY(0); }
-  to   { transform: translateY(104%); }
+  to { transform: translateY(104%); }
 }
 @keyframes tk-fade-in  { from { opacity: 0; } to { opacity: 1; } }
 @keyframes tk-fade-out { from { opacity: 1; } to { opacity: 0; } }
@@ -365,6 +363,29 @@
     color-mix(in srgb, var(--tk-text) 5%, transparent) 50%,
     transparent 70%);
   animation: tk-shimmer calc(1300ms / var(--tk-ms)) linear infinite;
+}
+
+/* Composite skeletons (card/list/table): ONE shimmer sweep per container
+   instead of an infinite compositor layer per bone (~15 in a table). Bones
+   inside the group are static shapes; the group sweeps over them. */
+.tk-skel-group {
+  position: relative;
+  overflow: hidden;
+}
+.tk-skel-group .tk-skel::after { content: none; }
+.tk-skel-group::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 250%;
+  background: linear-gradient(100deg,
+    transparent 30%,
+    color-mix(in srgb, var(--tk-text) 5%, transparent) 50%,
+    transparent 70%);
+  animation: tk-shimmer calc(1300ms / var(--tk-ms)) linear infinite;
+  pointer-events: none;
 }
 
 /* expanding pulse ring (TKDot pulse, TKTimeline active node) */
@@ -432,14 +453,14 @@
     --tk-t2: 1ms;
     --tk-t3: 1ms;
   }
-  .tk .tk-skel::after { animation: none; }
+  .tk .tk-skel::after,
+  .tk .tk-skel-group::after { animation: none; }
   .tk .tk-pulse::after { animation: none; opacity: 0; }
   /* Drop the press-scale entirely, not just speed it up (CRD-004). */
   .tk .tk-press:active,
   .tk .tk-press-soft:active { transform: none; }
-  /* Accordion reveal/chevron change state instantly (LST-008). */
-  .tk .tk-accordion-chevron,
-  .tk .tk-accordion-panel { transition: none; }
+  /* Accordion chevron changes state instantly (LST-008). */
+  .tk .tk-accordion-chevron { transition: none; }
 }
 
 /* Explicit, OS-independent motion-off path driven by TKProvider's reduceMotion
@@ -454,9 +475,9 @@
 }
 .tk[data-tk-motion="off"] .tk-press:active,
 .tk[data-tk-motion="off"] .tk-press-soft:active { transform: none; }
-.tk[data-tk-motion="off"] .tk-accordion-chevron,
-.tk[data-tk-motion="off"] .tk-accordion-panel { transition: none; }
-.tk[data-tk-motion="off"] .tk-skel::after { animation: none; }
+.tk[data-tk-motion="off"] .tk-accordion-chevron { transition: none; }
+.tk[data-tk-motion="off"] .tk-skel::after,
+.tk[data-tk-motion="off"] .tk-skel-group::after { animation: none; }
 .tk[data-tk-motion="off"] .tk-pulse::after { animation: none; opacity: 0; }
 
 /* color-mix() landed in stable WebViews relatively late; on older in-app
@@ -513,4 +534,13 @@
   .tk {
     --tk-glass: var(--tk-bg);
   }
+}
+
+/* Host-driven glass downgrade (TKProvider glassBars={false} → data-tk-glass="off"):
+   bars drop the constant backdrop blur and read as the opaque background —
+   the same look as the no-backdrop-filter fallback above. Unlayered so it wins
+   over every themed --tk-glass inside the layer. */
+.tk[data-tk-glass="off"] {
+  --tk-glass: var(--tk-bg);
+  --tk-bar-blur: none;
 }

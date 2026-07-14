@@ -140,6 +140,6 @@ describe("A4 rejected swipe-back leaves no stale fromX for the next exit", () =>
     fireEvent.click(screen.getByText("pop-a"));
     const exit = exitEl();
     expect(exit).not.toBeNull();
-    expect(exit!.style.transform).toBe("");
+    expect(exit!.style.transform).toBe("translateX(0px)");
   });
 });

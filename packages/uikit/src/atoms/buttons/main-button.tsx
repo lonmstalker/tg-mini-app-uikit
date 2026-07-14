@@ -74,6 +74,8 @@ export const TKMainButton = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKMain
         alignItems: "center",
         justifyContent: "center",
         gap: 10,
+        position: "relative",
+        overflow: "hidden",
         width: "100%",
         height: 52,
         border: "none",
@@ -84,23 +86,38 @@ export const TKMainButton = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKMain
         color: "var(--tk-on-accent)",
         opacity: disabled ? 0.45 : 1,
         pointerEvents: disabled ? "none" : undefined,
-        background: isSuccess
-          ? "linear-gradient(180deg, color-mix(in srgb, var(--tk-green) 88%, #fff), var(--tk-green))"
-          : "var(--tk-accent-grad)",
+        background: "var(--tk-accent-grad)",
+        // Static glow per state: gradients don't interpolate, so the success
+        // flip used to jump discretely mid-"transition" anyway; the visible
+        // crossfade is the opacity of the success layer below.
         boxShadow: isSuccess ? "0 6px 16px -6px var(--tk-green)" : "0 6px 16px -6px var(--tk-accent-35)",
-        transition: "background var(--tk-t2) var(--tk-ease), box-shadow var(--tk-t2) var(--tk-ease)",
         ...style,
       }}
     >
-      {state === "loading" ? (
-        <TKSpinner color="var(--tk-on-accent)" />
-      ) : isSuccess ? (
-        <span key="ok" className="tk-pop" style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-          <TKIcon name="check" size={20} strokeWidth={2.6} /> {successText}
-        </span>
-      ) : (
-        label
-      )}
+      {/* Success gradient on its own layer: gradient→gradient can't animate,
+          opacity can — the state change is a real crossfade now. */}
+      <span
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          inset: 0,
+          background: "linear-gradient(180deg, color-mix(in srgb, var(--tk-green) 88%, #fff), var(--tk-green))",
+          opacity: isSuccess ? 1 : 0,
+          transition: "opacity var(--tk-t2) var(--tk-ease)",
+          pointerEvents: "none",
+        }}
+      />
+      <span style={{ position: "relative", display: "inline-flex", alignItems: "center", gap: 10 }}>
+        {state === "loading" ? (
+          <TKSpinner color="var(--tk-on-accent)" />
+        ) : isSuccess ? (
+          <span key="ok" className="tk-pop" style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+            <TKIcon name="check" size={20} strokeWidth={2.6} /> {successText}
+          </span>
+        ) : (
+          label
+        )}
+      </span>
     </button>
   );
 });
