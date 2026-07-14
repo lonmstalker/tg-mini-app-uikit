@@ -18,6 +18,10 @@ import { useTKLocale } from "../../foundation/i18n";
 import { useControllable } from "../../internal/useControllable";
 import { mergeRefs } from "../../internal/dom";
 import { tkBuildCountries, tkCountryFlag, tkResolveCountry, type TKPhoneCountry } from "./phone-countries";
+
+// Type-only re-export so consumers can build a custom `countries` list with the
+// exact shape (zero runtime cost — the data table itself stays tree-shakeable).
+export type { TKPhoneCountry };
 import { TKNativeField } from "./native-input";
 
 /**
