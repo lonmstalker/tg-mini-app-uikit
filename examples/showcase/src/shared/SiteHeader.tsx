@@ -1,6 +1,8 @@
+import { useEffect, useMemo, useState } from "react";
 import { TKIcon, type TKTheme } from "tg-mini-app-uikit";
 import { useSiteLocale } from "./i18n";
 import { Container } from "./layout";
+import { Wordmark } from "./Wordmark";
 
 export interface SiteLink {
   href: string;
@@ -32,6 +34,46 @@ interface SiteHeaderProps {
   utilityLink?: SiteLink;
 }
 
+function useActiveSection(navigation: readonly SiteLink[]) {
+  const sectionKey = navigation.map(({ href }) => href).join(",");
+  const sectionHrefs = useMemo(() => sectionKey.split(",").filter(Boolean), [sectionKey]);
+  const [activeHref, setActiveHref] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof IntersectionObserver === "undefined") return;
+
+    const sections = sectionHrefs
+      .map((href) => document.getElementById(href.slice(1)))
+      .filter((section): section is HTMLElement => section !== null);
+    if (!sections.length) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const current = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+
+        if (current) {
+          setActiveHref(`#${current.target.id}`);
+          return;
+        }
+
+        setActiveHref((active) =>
+          entries.some((entry) => !entry.isIntersecting && `#${entry.target.id}` === active)
+            ? null
+            : active,
+        );
+      },
+      { rootMargin: "-20% 0px -70% 0px" },
+    );
+
+    sections.forEach((section) => observer.observe(section));
+    return () => observer.disconnect();
+  }, [sectionHrefs]);
+
+  return [activeHref, setActiveHref] as const;
+}
+
 export function SiteHeader({
   theme,
   onThemeToggle,
@@ -42,20 +84,25 @@ export function SiteHeader({
 }: SiteHeaderProps) {
   const nextTheme = theme === "dark" ? "light" : "dark";
   const { locale, setLocale, strings } = useSiteLocale();
+  const [activeHref, setActiveHref] = useActiveSection(navigation);
 
   return (
-    <header className="site-header">
+    <header className="site-header" data-testid="site-header">
       <Container className="site-header-inner">
-        <a className="site-wordmark" href={wordmarkHref}>
-          tg-mini-app-uikit
-          {wordmarkContext ? <span>{wordmarkContext}</span> : null}
-        </a>
+        <Wordmark href={wordmarkHref} context={wordmarkContext} />
 
         <nav className="site-navigation" aria-label={strings.shared.primaryNavigation}>
           <ul>
             {navigation.map(({ href, label }) => (
               <li key={href}>
-                <a href={href}>{label}</a>
+                <a
+                  href={href}
+                  aria-current={activeHref === href ? "location" : undefined}
+                  data-testid={`site-nav-link-${href.replace(/^#/, "")}`}
+                  onClick={() => setActiveHref(href)}
+                >
+                  {label}
+                </a>
               </li>
             ))}
           </ul>

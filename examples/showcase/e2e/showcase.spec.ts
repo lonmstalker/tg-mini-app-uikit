@@ -72,11 +72,17 @@ test("demo accent preset repaints the hero phone frame", async ({ page }) => {
   await openDemo(page);
   const phone = page.locator(".showcase-phone-screen");
   const accent = () => phone.evaluate((node) => getComputedStyle(node).getPropertyValue("--tk-accent").trim());
+  const wordmarkAccent = () =>
+    page.locator(".site-header .wordmark-mark stop").first().evaluate(
+      (node) => getComputedStyle(node).stopColor,
+    );
   const initialAccent = await accent();
+  const initialWordmarkAccent = await wordmarkAccent();
 
   await page.getByTestId("tweaks-panel").scrollIntoViewIfNeeded();
   await page.getByRole("button", { name: "Use Green accent" }).click();
   await expect.poll(accent).not.toBe(initialAccent);
+  await expect.poll(wordmarkAccent).not.toBe(initialWordmarkAccent);
 });
 
 test("landing renders without console errors", async ({ page }) => {
@@ -107,6 +113,50 @@ test("landing live demo CTA opens the demo page", async ({ page }) => {
       name: "iOS-flavored UI kit for Telegram Mini Apps",
     }),
   ).toBeVisible();
+});
+
+test("shared header scrollspy follows clicks and scrolling on both pages", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.emulateMedia({ colorScheme: "dark", reducedMotion: "reduce" });
+
+  for (const scenario of [
+    { route: "/", target: "code", previous: "features" },
+    { route: "/demo/", target: "components", previous: "features" },
+  ]) {
+    await page.goto(scenario.route);
+    const targetLink = page.getByTestId(`site-nav-link-${scenario.target}`);
+    const previousLink = page.getByTestId(`site-nav-link-${scenario.previous}`);
+
+    await targetLink.click();
+    await expect(page).toHaveURL(new RegExp(`#${scenario.target}$`));
+    await expect(targetLink).toHaveAttribute("aria-current", "location");
+    await expect.poll(() => page.locator(`#${scenario.target}`).evaluate(
+      (section) => section.getBoundingClientRect().top,
+    )).toBeGreaterThanOrEqual(60);
+    expect(await page.locator(`#${scenario.target}`).evaluate(
+      (section) => section.getBoundingClientRect().top,
+    )).toBeLessThan(200);
+
+    await page.locator(`#${scenario.previous}`).evaluate((section) =>
+      section.scrollIntoView({ block: "start" }),
+    );
+    await expect(previousLink).toHaveAttribute("aria-current", "location");
+    await expect(targetLink).not.toHaveAttribute("aria-current", "location");
+  }
+});
+
+test("shared navigation and footer links expose visible keyboard focus", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await openLanding(page);
+
+  for (const target of [
+    page.getByTestId("site-nav-link-features"),
+    page.getByTestId("site-footer").getByRole("link", { name: "Docs" }),
+  ]) {
+    await target.focus();
+    await expect(target).toBeFocused();
+    await expect.poll(() => target.evaluate((node) => getComputedStyle(node).boxShadow)).not.toBe("none");
+  }
 });
 
 test("landing theme toggle updates the provider theme", async ({ page }) => {
@@ -351,6 +401,67 @@ test("landing locale switch persists Russian across reload", async ({ page }) =>
     }),
   ).toBeVisible();
   await expect(page.locator("html")).toHaveAttribute("lang", "ru");
+});
+
+test("shared header and footer stay contained across viewport, theme, and locale matrix", async ({ page }) => {
+  test.setTimeout(60_000);
+
+  for (const route of ["/", "/demo/"]) {
+    for (const width of [375, 1280]) {
+      for (const colorScheme of ["light", "dark"] as const) {
+        for (const locale of ["en", "ru"] as const) {
+          await page.setViewportSize({ width, height: 900 });
+          await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+          await page.goto(route);
+          await page.getByTestId(`site-locale-${locale}`).click();
+          await expect(page.locator("html")).toHaveAttribute("lang", locale);
+          await expect(
+            page.getByTestId(route === "/" ? "landing-root" : "showcase-root"),
+          ).toHaveAttribute("data-theme", colorScheme);
+
+          const headerMetrics = await page.getByTestId("site-header").evaluate((header) => {
+            const wordmark = header.querySelector(".site-wordmark")!.getBoundingClientRect();
+            const toolbar = header.querySelector(".site-header-actions")!.getBoundingClientRect();
+            const navigation = header.querySelector(".site-navigation")!;
+            return {
+              documentWidth: document.documentElement.scrollWidth,
+              viewportWidth: document.documentElement.clientWidth,
+              wordmarkLeft: wordmark.left,
+              wordmarkRight: wordmark.right,
+              toolbarLeft: toolbar.left,
+              toolbarRight: toolbar.right,
+              navigationDisplay: getComputedStyle(navigation).display,
+            };
+          });
+
+          expect(headerMetrics.documentWidth, `${route} ${width}px ${colorScheme} ${locale}`).toBe(
+            headerMetrics.viewportWidth,
+          );
+          expect(headerMetrics.wordmarkLeft).toBeGreaterThanOrEqual(0);
+          expect(headerMetrics.wordmarkRight).toBeLessThanOrEqual(headerMetrics.toolbarLeft);
+          expect(headerMetrics.toolbarRight).toBeLessThanOrEqual(width);
+          expect(headerMetrics.navigationDisplay).toBe(width < 768 ? "none" : "block");
+
+          const footer = page.getByTestId("site-footer");
+          await footer.scrollIntoViewIfNeeded();
+          await expect(footer.locator(".site-wordmark")).toBeVisible();
+          await expect(footer.locator(".site-footer-group h2")).toHaveCount(2);
+          const footerMetrics = await footer.evaluate((node) => {
+            const groups = Array.from(
+              node.querySelectorAll<HTMLElement>(".site-footer-group"),
+              (group) => group.getBoundingClientRect(),
+            );
+            return {
+              left: Math.min(...groups.map((rect) => rect.left)),
+              right: Math.max(...groups.map((rect) => rect.right)),
+            };
+          });
+          expect(footerMetrics.left).toBeGreaterThanOrEqual(0);
+          expect(footerMetrics.right).toBeLessThanOrEqual(width);
+        }
+      }
+    }
+  }
 });
 
 test("landing install copy writes the command and shows a kit toast", async ({ context, page }) => {

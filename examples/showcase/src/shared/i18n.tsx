@@ -20,6 +20,9 @@ const en = {
     switchToDarkTheme: "Switch to dark theme",
     githubRepository: "GitHub repository",
     footer: {
+      tagline: "Production React UIKit for Telegram Mini Apps.",
+      product: "Product",
+      community: "Community",
       license: "MIT licensed",
       telegramDemo: "Telegram demo",
       browserDemo: "Browser demo",
@@ -27,6 +30,8 @@ const en = {
       docs: "Docs",
       github: "GitHub",
       npm: "npm",
+      issues: "Issues",
+      credits: "Built in the open for the Telegram WebView.",
     },
   },
   landing: {
@@ -360,6 +365,9 @@ const ru: SiteStrings = {
     switchToDarkTheme: "Включить тёмную тему",
     githubRepository: "Репозиторий на GitHub",
     footer: {
+      tagline: "Продакшен-UIKit на React для Telegram Mini Apps.",
+      product: "Продукт",
+      community: "Сообщество",
       license: "Лицензия MIT",
       telegramDemo: "Демо в Telegram",
       browserDemo: "Демо в браузере",
@@ -367,6 +375,8 @@ const ru: SiteStrings = {
       docs: "Документация",
       github: "GitHub",
       npm: "npm",
+      issues: "Задачи и ошибки",
+      credits: "Создан открыто для Telegram WebView.",
     },
   },
   landing: {
