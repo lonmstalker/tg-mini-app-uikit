@@ -27,6 +27,7 @@ import {
   TKSwitch,
   useReducedMotion,
   useTKTheme,
+  type TKDateRange,
   type TKImageViewerImage,
   type TKTheme,
 } from "tg-mini-app-uikit";
@@ -46,7 +47,7 @@ const STORY_IDS = {
   chat: "templates-chat--support-thread",
   confetti: "templates-onboarding--confetti-burst",
   sheet: "composites-overlays--modal-surfaces",
-  calendar: "composites-forms--calendar-and-date-input",
+  calendar: "composites-forms--calendar-range-drag",
   otp: "atoms-inputs--one-time-code",
   slider: "atoms-controls--sliders",
   skeletons: "composites-feedback--skeletons",
@@ -491,18 +492,28 @@ function SheetDemo({ theme }: { theme: TKTheme }) {
 function CalendarDemo() {
   const { locale, strings } = useSiteLocale();
   const copy = strings.demo.components;
-  const [date, setDate] = useState(() => new Date(2026, 5, 13));
-  const selected = new Intl.DateTimeFormat(locale === "ru" ? "ru-RU" : "en-US", {
+  const [range, setRange] = useState<TKDateRange | null>(() => [
+    new Date(2026, 5, 10),
+    new Date(2026, 5, 13),
+  ]);
+  const formatter = new Intl.DateTimeFormat(locale === "ru" ? "ru-RU" : "en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
-  }).format(date);
+  });
+  const selected = range
+    ? formatSiteString(copy.selectedRange, {
+        start: formatter.format(range[0]),
+        end: formatter.format(range[1]),
+      })
+    : copy.selectRangeEnd;
 
   return (
     <div className="calendar-demo" data-testid="calendar-demo">
       <TKCalendar
-        value={date}
-        onChange={setDate}
+        mode="range"
+        range={range}
+        onRangeChange={setRange}
         lang={locale}
         defaultMonth={new Date(2026, 5, 1)}
         partSelectors={false}
@@ -510,7 +521,7 @@ function CalendarDemo() {
         style={{ boxShadow: "none" }}
       />
       <p className="component-status" data-state="success" role="status" aria-live="polite">
-        {formatSiteString(copy.selectedDate, { date: selected })}
+        {selected}
       </p>
     </div>
   );

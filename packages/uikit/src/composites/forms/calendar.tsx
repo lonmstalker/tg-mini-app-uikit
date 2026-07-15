@@ -1,12 +1,50 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type KeyboardEvent,
+  type PointerEvent,
+  type ReactNode,
+} from "react";
 import { TKIconButton } from "../../atoms/buttons";
 import { TKIcon } from "../../atoms/icons";
 import { useTKLocale } from "../../foundation/i18n";
+import { useOptionalHaptics } from "../../foundation/telegram";
 import { useControllable } from "../../internal/useControllable";
 
 /* ---------------- Calendar ---------------- */
 
 export type TKDateRange = [Date, Date];
+
+const RANGE_TOUCH_HOLD_MS = 300;
+const RANGE_TOUCH_MOVE_TOLERANCE = 10;
+
+interface CalendarDragSession {
+  pointerId: number;
+  pointerType: string;
+  captureTarget: HTMLButtonElement;
+  start: Date;
+  end: Date;
+  originX: number;
+  originY: number;
+  active: boolean;
+  timer?: number;
+}
+
+function normalizeRange(a: Date, b: Date): TKDateRange {
+  return a <= b ? [a, b] : [b, a];
+}
+
+function releaseDragPointer(session: CalendarDragSession): void {
+  try {
+    session.captureTarget.releasePointerCapture?.(session.pointerId);
+  } catch {
+    /* not captured */
+  }
+}
 
 export interface TKCalendarProps {
   mode?: "single" | "range";
@@ -97,6 +135,7 @@ export function TKCalendar({
   style,
 }: TKCalendarProps) {
   const locale = useTKLocale();
+  const haptics = useOptionalHaptics();
   const resolvedLang = lang ?? documentLang();
   const [selected, setSelected] = useControllable<Date | null>(value, defaultValue, onChange as (d: Date | null) => void);
   const [selectedRange, setSelectedRange] = useControllable<TKDateRange | null>(range, defaultRange, onRangeChange);
@@ -109,7 +148,10 @@ export function TKCalendar({
   const [visibleMonth, setVisibleMonth] = useControllable<Date>(month, startOfDay(initialMonth), onMonthChange);
   const [focusDate, setFocusDate] = useState<Date | null>(null);
   const [picker, setPicker] = useState<"none" | "month" | "year">("none");
+  const [dragPreview, setDragPreview] = useState<TKDateRange | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
+  const dragSessionRef = useRef<CalendarDragSession | null>(null);
+  const suppressDragClickRef = useRef(false);
   // Only move DOM focus into the grid when navigation was keyboard-initiated, so
   // arrow-button / part-selector month changes don't steal focus.
   const keyboardNavRef = useRef(false);
@@ -139,6 +181,174 @@ export function TKCalendar({
     for (let w = 0; w < 6; w++) out.push(Array.from({ length: 7 }, (_, i) => addDays(start, w * 7 + i)));
     return out;
   }, [visibleMonth, weekStartsOn]);
+
+  /** Drag ranges stop immediately before the first unavailable day; they never skip holes. */
+  const clipDragEnd = (start: Date, candidate: Date): Date => {
+    const direction = candidate < start ? -1 : 1;
+    let end = start;
+    for (let cursor = addDays(start, direction); direction > 0 ? cursor <= candidate : cursor >= candidate; cursor = addDays(cursor, direction)) {
+      if (isDisabled(cursor)) break;
+      end = cursor;
+    }
+    return end;
+  };
+
+  const dateAtPointer = (x: number, y: number): Date | null => {
+    const grid = gridRef.current;
+    if (!grid) return null;
+
+    // Pointer capture retargets events to the grid. Hit-test the viewport instead
+    // so mouse, pen, and touch all resolve the actual day below the pointer.
+    const hit = document.elementFromPoint?.(x, y)?.closest<HTMLElement>("[data-tk-date]");
+    let day = hit && grid.contains(hit) ? hit : null;
+
+    // Outside the grid, clamp to the nearest visible day cell. Disabled/min/max
+    // handling happens in clipDragEnd, which clips at the first unavailable day.
+    if (!day) {
+      let nearestDistance = Number.POSITIVE_INFINITY;
+      for (const button of grid.querySelectorAll<HTMLElement>("[data-tk-date]")) {
+        const rect = button.getBoundingClientRect();
+        const dx = Math.max(rect.left - x, 0, x - rect.right);
+        const dy = Math.max(rect.top - y, 0, y - rect.bottom);
+        const distance = dx * dx + dy * dy;
+        if (distance < nearestDistance) {
+          nearestDistance = distance;
+          day = button;
+        }
+      }
+    }
+
+    const key = day?.dataset.tkDate;
+    return key ? weeks.flat().find((date) => isoDate(date) === key) ?? null : null;
+  };
+
+  const cancelDrag = useCallback(() => {
+    const session = dragSessionRef.current;
+    if (session) {
+      window.clearTimeout(session.timer);
+      releaseDragPointer(session);
+    }
+    dragSessionRef.current = null;
+    suppressDragClickRef.current = false;
+    setDragPreview(null);
+  }, []);
+
+  useEffect(() => {
+    const onKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape" && dragSessionRef.current?.active) {
+        event.preventDefault();
+        cancelDrag();
+      }
+    };
+    const onVisibilityChange = () => {
+      if (document.visibilityState !== "visible") cancelDrag();
+    };
+    window.addEventListener("scroll", cancelDrag, true);
+    window.addEventListener("blur", cancelDrag);
+    document.addEventListener("keydown", onKeyDown);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+      window.removeEventListener("scroll", cancelDrag, true);
+      window.removeEventListener("blur", cancelDrag);
+      document.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      cancelDrag();
+    };
+  }, [cancelDrag]);
+
+  useEffect(() => {
+    const grid = gridRef.current;
+    if (!grid) return;
+    const stopArmedTouchScroll = (event: TouchEvent) => {
+      if (dragSessionRef.current?.active) event.preventDefault();
+    };
+    // `touch-action` is resolved at gesture start in some browsers. A non-passive
+    // touchmove guard is therefore also required after the delayed long-press,
+    // while remaining a no-op for ordinary vertical scrolling before it arms.
+    grid.addEventListener("touchmove", stopArmedTouchScroll, { passive: false });
+    return () => grid.removeEventListener("touchmove", stopArmedTouchScroll);
+  }, [picker]);
+
+  const onGridPointerDown = (event: PointerEvent<HTMLDivElement>) => {
+    if (mode !== "range" || !event.isPrimary || event.button !== 0) return;
+    const button = (event.target as Element).closest<HTMLButtonElement>("[data-tk-date]");
+    if (!button || button.disabled || !event.currentTarget.contains(button)) return;
+    const start = weeks.flat().find((date) => isoDate(date) === button.dataset.tkDate);
+    if (!start) return;
+
+    cancelDrag();
+    const session: CalendarDragSession = {
+      pointerId: event.pointerId,
+      pointerType: event.pointerType,
+      captureTarget: button,
+      start,
+      end: start,
+      originX: event.clientX,
+      originY: event.clientY,
+      active: false,
+    };
+    dragSessionRef.current = session;
+    button.setPointerCapture?.(event.pointerId);
+
+    if (event.pointerType === "touch") {
+      session.timer = window.setTimeout(() => {
+        if (dragSessionRef.current !== session) return;
+        session.timer = undefined;
+        session.active = true;
+        setDragPreview([start, start]);
+        haptics.impact("medium");
+      }, RANGE_TOUCH_HOLD_MS);
+    }
+  };
+
+  const onGridPointerMove = (event: PointerEvent<HTMLDivElement>) => {
+    const session = dragSessionRef.current;
+    if (!session || session.pointerId !== event.pointerId) return;
+
+    if (!session.active && session.pointerType === "touch") {
+      if (Math.hypot(event.clientX - session.originX, event.clientY - session.originY) > RANGE_TOUCH_MOVE_TOLERANCE) {
+        cancelDrag();
+      }
+      return;
+    }
+
+    const candidate = dateAtPointer(event.clientX, event.clientY);
+    if (!candidate) return;
+    if (!session.active) {
+      if (sameDay(candidate, session.start)) return;
+      session.active = true;
+    } else {
+      // Once a touch hold has landed, this gesture owns the remaining movement.
+      event.preventDefault();
+    }
+
+    const end = clipDragEnd(session.start, candidate);
+    if (sameDay(end, session.end) && dragPreview) return;
+    session.end = end;
+    setDragPreview(normalizeRange(session.start, end));
+  };
+
+  const onGridPointerUp = (event: PointerEvent<HTMLDivElement>) => {
+    const session = dragSessionRef.current;
+    if (!session || session.pointerId !== event.pointerId) return;
+    window.clearTimeout(session.timer);
+    releaseDragPointer(session);
+    dragSessionRef.current = null;
+
+    if (!session.active) return; // the following click keeps the existing tap-tap semantics
+    event.preventDefault();
+    const committed = normalizeRange(session.start, session.end);
+    setDragPreview(null);
+    setPendingStart(null);
+    selfRangeResetRef.current = false;
+    // Preview is intentionally internal: controlled and uncontrolled consumers
+    // receive exactly one onRangeChange, here at commit, never during pointermove.
+    setSelectedRange(committed);
+    suppressDragClickRef.current = true;
+    window.setTimeout(() => {
+      suppressDragClickRef.current = false;
+    }, 0);
+  };
 
   // 2017-01-01 is a Sunday — stable weekday header labels
   const weekdayLabels = useMemo(
@@ -224,7 +434,7 @@ export function TKCalendar({
   }, [range]);
 
   const inRange = (d: Date): boolean => {
-    const r = selectedRange;
+    const r = dragPreview ?? selectedRange;
     if (!r) return false;
     const t = startOfDay(d).getTime();
     return t >= startOfDay(r[0]).getTime() && t <= startOfDay(r[1]).getTime();
@@ -233,7 +443,9 @@ export function TKCalendar({
   const isSelected = (d: Date): boolean =>
     mode === "single"
       ? sameDay(d, selected)
-      : sameDay(d, selectedRange?.[0]) || sameDay(d, selectedRange?.[1]) || sameDay(d, pendingStart);
+      : sameDay(d, (dragPreview ?? selectedRange)?.[0]) ||
+        sameDay(d, (dragPreview ?? selectedRange)?.[1]) ||
+        (!dragPreview && sameDay(d, pendingStart));
 
   const tabbableDate =
     (focusDate && focusDate.getMonth() === visibleMonth.getMonth() ? focusDate : null) ??
@@ -305,7 +517,23 @@ export function TKCalendar({
           onPick={(monthIndex) => setMonthPart(visibleMonth.getFullYear(), monthIndex)}
         />
       ) : (
-        <div ref={gridRef} role="grid" aria-label={fmtMonth.format(visibleMonth)} aria-multiselectable={mode === "range" || undefined}>
+        <div
+          ref={gridRef}
+          role="grid"
+          aria-label={fmtMonth.format(visibleMonth)}
+          aria-multiselectable={mode === "range" || undefined}
+          onPointerDown={onGridPointerDown}
+          onPointerMove={onGridPointerMove}
+          onPointerUp={onGridPointerUp}
+          onPointerCancel={cancelDrag}
+          onContextMenu={(event) => {
+            if (dragSessionRef.current?.pointerType === "touch") event.preventDefault();
+          }}
+          style={{
+            touchAction: dragPreview ? "none" : undefined,
+            userSelect: dragPreview ? "none" : undefined,
+          }}
+        >
         <div role="row" style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", marginBottom: 4 }}>
           {weekdayLabels.map((w) => (
             <span
@@ -346,7 +574,13 @@ export function TKCalendar({
                     aria-current={isToday ? "date" : undefined}
                     disabled={disabled}
                     tabIndex={sameDay(d, tabbableDate) ? 0 : -1}
-                    onClick={() => pick(d)}
+                    onClick={() => {
+                      if (suppressDragClickRef.current) {
+                        suppressDragClickRef.current = false;
+                        return;
+                      }
+                      pick(d);
+                    }}
                     onKeyDown={(e) => moveFocus(d, e)}
                     className={disabled ? undefined : "tk-press"}
                     style={{

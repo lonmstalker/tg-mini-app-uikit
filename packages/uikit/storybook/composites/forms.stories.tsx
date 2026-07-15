@@ -8,6 +8,7 @@ import {
   TKPhoneInput,
   TKPinInput,
   TKTimeInput,
+  type TKDateRange,
 } from "tg-mini-app-uikit";
 import { AppScreen, Grid, Narrow } from "../story-helpers";
 
@@ -38,6 +39,40 @@ export const CalendarAndDateInput = {
       </Narrow>
     </AppScreen>
   ),
+} satisfies Story;
+
+function RangeCalendarDemo() {
+  const [range, setRange] = useState<TKDateRange | null>([
+    new Date(2026, 5, 10),
+    new Date(2026, 5, 13),
+  ]);
+  const format = (date: Date) => new Intl.DateTimeFormat("en-US", { dateStyle: "medium" }).format(date);
+  const status = range ? `${format(range[0])} – ${format(range[1])}` : "Choose the end date";
+
+  return (
+    <AppScreen>
+      <Narrow style={{ display: "grid", gap: "var(--tk-sp-3)" }}>
+        <p style={{ margin: 0, color: "var(--tk-text-2)", fontSize: "var(--tk-fz-caption)" }}>
+          Tap the start and end dates, or press and drag across the calendar.
+        </p>
+        <TKCalendar
+          mode="range"
+          range={range}
+          onRangeChange={setRange}
+          month={new Date(2026, 5, 1)}
+          partSelectors={false}
+        />
+        <p data-testid="calendar-range-status" role="status" style={{ margin: 0, color: "var(--tk-text-2)" }}>
+          Selected range: {status}
+        </p>
+      </Narrow>
+    </AppScreen>
+  );
+}
+
+export const CalendarRangeDrag = {
+  parameters: { fullBleed: true },
+  render: () => <RangeCalendarDemo />,
 } satisfies Story;
 
 export const NativePickers = {

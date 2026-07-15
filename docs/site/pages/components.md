@@ -12,6 +12,8 @@ The public surface is grouped by workflow rather than by file.
 
 Every component accepts `testId?: string` and forwards refs where a meaningful DOM root exists. Stateful controls use controlled/uncontrolled pairs.
 
+`TKCalendar` range mode supports both start/end activation and press-drag selection; touch drag arms after a short hold so ordinary vertical page scrolling remains native.
+
 ## Accessibility contracts
 
 Custom interactive controls expose native or explicit keyboard semantics:

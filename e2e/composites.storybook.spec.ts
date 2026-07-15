@@ -50,4 +50,29 @@ test.describe("composite Storybook stories", () => {
     await expect(page.locator("[data-tk-scrim]")).toHaveCount(0);
     await expect.poll(() => trigger.evaluate((node) => document.activeElement === node)).toBe(true);
   });
+
+  test("calendar range commits a real mouse drag", async ({ page }) => {
+    await page.goto("/iframe.html?id=composites-forms--calendar-range-drag&viewMode=story");
+    const start = page.getByRole("button", { name: "June 10, 2026" });
+    const end = page.getByRole("button", { name: "June 14, 2026" });
+    const [startBox, endBox] = await Promise.all([start.boundingBox(), end.boundingBox()]);
+    expect(startBox).not.toBeNull();
+    expect(endBox).not.toBeNull();
+
+    await page.mouse.move(startBox!.x + startBox!.width / 2, startBox!.y + startBox!.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(endBox!.x + endBox!.width / 2, endBox!.y + endBox!.height / 2, { steps: 8 });
+    await page.mouse.up();
+
+    await expect(page.getByTestId("calendar-range-status")).toHaveText(
+      "Selected range: Jun 10, 2026 – Jun 14, 2026",
+    );
+
+    await page.getByRole("button", { name: "June 22, 2026" }).click();
+    await expect(page.getByTestId("calendar-range-status")).toHaveText("Selected range: Choose the end date");
+    await page.getByRole("button", { name: "June 24, 2026" }).click();
+    await expect(page.getByTestId("calendar-range-status")).toHaveText(
+      "Selected range: Jun 22, 2026 – Jun 24, 2026",
+    );
+  });
 });

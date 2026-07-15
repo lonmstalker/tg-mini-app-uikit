@@ -4,7 +4,25 @@ import { useState } from "react";
 import { describe, expect, it, vi, afterEach } from "vitest";
 import * as kit from "../src/index";
 
-afterEach(() => vi.useRealTimers());
+afterEach(() => {
+  vi.useRealTimers();
+  Reflect.deleteProperty(document, "elementFromPoint");
+});
+
+function hitTest(target: Element) {
+  Object.defineProperty(document, "elementFromPoint", {
+    configurable: true,
+    value: vi.fn(() => target),
+  });
+}
+
+function pointerDrag(from: Element, to: Element, pointerType: "mouse" | "touch" = "mouse") {
+  const grid = screen.getByRole("grid");
+  hitTest(to);
+  fireEvent.pointerDown(from, { pointerId: 1, pointerType, isPrimary: true, button: 0, clientX: 10, clientY: 10 });
+  fireEvent.pointerMove(grid, { pointerId: 1, pointerType, isPrimary: true, buttons: 1, clientX: 20, clientY: 20 });
+  fireEvent.pointerUp(grid, { pointerId: 1, pointerType, isPrimary: true, button: 0, clientX: 20, clientY: 20 });
+}
 
 /* ---------------- M4.1 TKCalendar ---------------- */
 
@@ -59,6 +77,212 @@ describe("M4.1 TKCalendar", () => {
     const [start, end] = onRangeChange.mock.lastCall![0] as [Date, Date];
     expect(start.getDate()).toBe(10);
     expect(end.getDate()).toBe(14);
+  });
+
+  it("mouse drag selects a range forward and commits only on pointerup", () => {
+    const onRangeChange = vi.fn();
+    render(<kit.TKCalendar mode="range" defaultMonth={june} onRangeChange={onRangeChange} />);
+    const start = screen.getByRole("button", { name: /June 10/ });
+    const end = screen.getByRole("button", { name: /June 14/ });
+    const grid = screen.getByRole("grid");
+    hitTest(end);
+
+    fireEvent.pointerDown(start, { pointerId: 1, pointerType: "mouse", isPrimary: true, button: 0 });
+    fireEvent.pointerMove(grid, { pointerId: 1, pointerType: "mouse", isPrimary: true, buttons: 1, clientX: 20 });
+    expect(onRangeChange).not.toHaveBeenCalled();
+    expect(end.closest('[role="gridcell"]')).toHaveAttribute("aria-selected", "true");
+
+    fireEvent.pointerUp(grid, { pointerId: 1, pointerType: "mouse", isPrimary: true, button: 0, clientX: 20 });
+    expect(onRangeChange).toHaveBeenCalledOnce();
+    const [from, to] = onRangeChange.mock.lastCall![0] as kit.TKDateRange;
+    expect([from.getDate(), to.getDate()]).toEqual([10, 14]);
+  });
+
+  it("mouse drag backwards normalizes the committed range", () => {
+    const onRangeChange = vi.fn();
+    render(<kit.TKCalendar mode="range" defaultMonth={june} onRangeChange={onRangeChange} />);
+
+    pointerDrag(
+      screen.getByRole("button", { name: /June 18/ }),
+      screen.getByRole("button", { name: /June 12/ }),
+    );
+
+    const [from, to] = onRangeChange.mock.lastCall![0] as kit.TKDateRange;
+    expect([from.getDate(), to.getDate()]).toEqual([12, 18]);
+  });
+
+  it("pointerup on the starting day keeps tap-tap range selection unchanged", () => {
+    const onRangeChange = vi.fn();
+    render(<kit.TKCalendar mode="range" defaultMonth={june} onRangeChange={onRangeChange} />);
+    const grid = screen.getByRole("grid");
+    const start = screen.getByRole("button", { name: /June 10/ });
+    const end = screen.getByRole("button", { name: /June 14/ });
+
+    fireEvent.pointerDown(start, { pointerId: 1, pointerType: "mouse", isPrimary: true, button: 0 });
+    fireEvent.pointerUp(grid, { pointerId: 1, pointerType: "mouse", isPrimary: true, button: 0 });
+    fireEvent.click(start);
+    fireEvent.click(end);
+
+    expect(onRangeChange).toHaveBeenCalledTimes(2);
+    expect(onRangeChange.mock.calls[0][0]).toBeNull();
+    const [from, to] = onRangeChange.mock.lastCall![0] as kit.TKDateRange;
+    expect([from.getDate(), to.getDate()]).toEqual([10, 14]);
+  });
+
+  it("touch long-press arms drag, suppresses touch action, and commits on lift", () => {
+    vi.useFakeTimers();
+    const onRangeChange = vi.fn();
+    render(<kit.TKCalendar mode="range" defaultMonth={june} onRangeChange={onRangeChange} />);
+    const grid = screen.getByRole("grid");
+    const start = screen.getByRole("button", { name: /June 10/ });
+    const end = screen.getByRole("button", { name: /June 15/ });
+    hitTest(end);
+
+    fireEvent.pointerDown(start, { pointerId: 2, pointerType: "touch", isPrimary: true, button: 0, clientX: 10, clientY: 10 });
+    act(() => vi.advanceTimersByTime(300));
+    expect(grid).toHaveStyle({ touchAction: "none" });
+    const armedTouchMove = new Event("touchmove", { bubbles: true, cancelable: true });
+    grid.dispatchEvent(armedTouchMove);
+    expect(armedTouchMove.defaultPrevented).toBe(true);
+    fireEvent.pointerMove(grid, { pointerId: 2, pointerType: "touch", isPrimary: true, buttons: 1, clientX: 20, clientY: 20 });
+    expect(onRangeChange).not.toHaveBeenCalled();
+    fireEvent.pointerUp(grid, { pointerId: 2, pointerType: "touch", isPrimary: true, button: 0, clientX: 20, clientY: 20 });
+
+    expect(onRangeChange).toHaveBeenCalledOnce();
+    const [from, to] = onRangeChange.mock.lastCall![0] as kit.TKDateRange;
+    expect([from.getDate(), to.getDate()]).toEqual([10, 15]);
+  });
+
+  it("plain touch tap does not arm drag and still starts tap-tap selection", () => {
+    vi.useFakeTimers();
+    const onRangeChange = vi.fn();
+    render(<kit.TKCalendar mode="range" defaultMonth={june} onRangeChange={onRangeChange} />);
+    const grid = screen.getByRole("grid");
+    const start = screen.getByRole("button", { name: /June 10/ });
+
+    fireEvent.pointerDown(start, { pointerId: 3, pointerType: "touch", isPrimary: true, button: 0, clientX: 10, clientY: 10 });
+    act(() => vi.advanceTimersByTime(299));
+    expect(grid).not.toHaveStyle({ touchAction: "none" });
+    const scrollingTouchMove = new Event("touchmove", { bubbles: true, cancelable: true });
+    grid.dispatchEvent(scrollingTouchMove);
+    expect(scrollingTouchMove.defaultPrevented).toBe(false);
+    fireEvent.pointerUp(grid, { pointerId: 3, pointerType: "touch", isPrimary: true, button: 0, clientX: 10, clientY: 10 });
+    fireEvent.click(start);
+
+    expect(onRangeChange).toHaveBeenCalledOnce();
+    expect(onRangeChange).toHaveBeenLastCalledWith(null);
+  });
+
+  it("pointercancel discards the preview and restores the committed range", () => {
+    const onRangeChange = vi.fn();
+    render(
+      <kit.TKCalendar
+        mode="range"
+        defaultMonth={june}
+        defaultRange={[new Date(2026, 5, 4), new Date(2026, 5, 7)]}
+        onRangeChange={onRangeChange}
+      />,
+    );
+    const grid = screen.getByRole("grid");
+    const nextEnd = screen.getByRole("button", { name: /June 16/ });
+    hitTest(nextEnd);
+
+    fireEvent.pointerDown(screen.getByRole("button", { name: /June 10/ }), {
+      pointerId: 4,
+      pointerType: "mouse",
+      isPrimary: true,
+      button: 0,
+    });
+    fireEvent.pointerMove(grid, { pointerId: 4, pointerType: "mouse", isPrimary: true, buttons: 1, clientX: 20 });
+    expect(nextEnd.closest('[role="gridcell"]')).toHaveAttribute("aria-selected", "true");
+
+    fireEvent.pointerCancel(grid, { pointerId: 4, pointerType: "mouse", isPrimary: true });
+    expect(nextEnd.closest('[role="gridcell"]')).toHaveAttribute("aria-selected", "false");
+    expect(screen.getByRole("button", { name: /June 4/ }).closest('[role="gridcell"]')).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("button", { name: /June 7/ }).closest('[role="gridcell"]')).toHaveAttribute("aria-selected", "true");
+    expect(onRangeChange).not.toHaveBeenCalled();
+  });
+
+  it("Escape cancels an active drag without changing the committed range", () => {
+    const onRangeChange = vi.fn();
+    render(
+      <kit.TKCalendar
+        mode="range"
+        defaultMonth={june}
+        defaultRange={[new Date(2026, 5, 4), new Date(2026, 5, 7)]}
+        onRangeChange={onRangeChange}
+      />,
+    );
+    const grid = screen.getByRole("grid");
+    const nextEnd = screen.getByRole("button", { name: /June 16/ });
+    hitTest(nextEnd);
+    fireEvent.pointerDown(screen.getByRole("button", { name: /June 10/ }), {
+      pointerId: 5,
+      pointerType: "mouse",
+      isPrimary: true,
+      button: 0,
+    });
+    fireEvent.pointerMove(grid, { pointerId: 5, pointerType: "mouse", isPrimary: true, buttons: 1, clientX: 20 });
+
+    fireEvent.keyDown(document, { key: "Escape" });
+
+    expect(nextEnd.closest('[role="gridcell"]')).toHaveAttribute("aria-selected", "false");
+    expect(screen.getByRole("button", { name: /June 4/ }).closest('[role="gridcell"]')).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("button", { name: /June 7/ }).closest('[role="gridcell"]')).toHaveAttribute("aria-selected", "true");
+    expect(onRangeChange).not.toHaveBeenCalled();
+  });
+
+  it("clips drag preview at the first disabled date", () => {
+    const onRangeChange = vi.fn();
+    render(
+      <kit.TKCalendar
+        mode="range"
+        defaultMonth={june}
+        disabledDates={(date) => date.getDate() === 13}
+        onRangeChange={onRangeChange}
+      />,
+    );
+
+    const grid = screen.getByRole("grid");
+    const start = screen.getByRole("button", { name: /June 10/ });
+    hitTest(screen.getByRole("button", { name: /June 16/ }));
+    fireEvent.pointerDown(start, { pointerId: 6, pointerType: "mouse", isPrimary: true, button: 0 });
+    fireEvent.pointerMove(grid, { pointerId: 6, pointerType: "mouse", isPrimary: true, buttons: 1, clientX: 20 });
+
+    expect(screen.getByRole("button", { name: /June 12/ }).closest('[role="gridcell"]')).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("button", { name: /June 14/ }).closest('[role="gridcell"]')).toHaveAttribute("aria-selected", "false");
+    fireEvent.pointerUp(grid, { pointerId: 6, pointerType: "mouse", isPrimary: true, button: 0, clientX: 20 });
+
+    const [from, to] = onRangeChange.mock.lastCall![0] as kit.TKDateRange;
+    expect([from.getDate(), to.getDate()]).toEqual([10, 12]);
+  });
+
+  it("controlled range round-trip receives one event after drag commit", () => {
+    const onRangeChange = vi.fn();
+    function Host() {
+      const [range, setRange] = useState<kit.TKDateRange | null>([new Date(2026, 5, 2), new Date(2026, 5, 4)]);
+      return (
+        <kit.TKCalendar
+          mode="range"
+          month={june}
+          range={range}
+          onRangeChange={(next) => {
+            onRangeChange(next);
+            setRange(next);
+          }}
+        />
+      );
+    }
+    render(<Host />);
+
+    pointerDrag(
+      screen.getByRole("button", { name: /June 20/ }),
+      screen.getByRole("button", { name: /June 24/ }),
+    );
+
+    expect(onRangeChange).toHaveBeenCalledOnce();
+    const [from, to] = onRangeChange.mock.lastCall![0] as kit.TKDateRange;
+    expect([from.getDate(), to.getDate()]).toEqual([20, 24]);
   });
 
   it("disables dates outside min/max and via the predicate", () => {
