@@ -9,10 +9,10 @@ import {
   TKSwipeCell,
   TKText,
   TKTitle,
-  useDeviceStorage,
   useNav,
   useTKToast,
 } from "tg-mini-app-uikit";
+import { useDeviceStorage } from "@tg-mini-app/telegram";
 import { bookingView, type Booking } from "../../data/mockApi";
 import { useLang, useT } from "../../i18n";
 import { useAppDispatch, useAppState } from "../../store";

@@ -4,10 +4,12 @@ import {
   TKRating,
   TKSegmented,
   TKSlider,
+  TKSwitch,
   TKText,
   TKTitle,
   type TKMotion,
 } from "tg-mini-app-uikit";
+import { useFullscreen } from "@tg-mini-app/telegram";
 import { useLang, useT, type Lang } from "../../i18n";
 import { DEFAULT_THEME_PREFS, useAppDispatch, useAppState, type ThemePrefs } from "../../store";
 import { useMockBackHeader } from "../../components/MockBackHeader";
@@ -40,6 +42,7 @@ export function PlatformLab({ active }: { active: boolean }) {
   const { themePrefs } = useAppState();
   const dispatch = useAppDispatch();
   const mock = useMockHandle();
+  const fullscreen = useFullscreen();
   const canOverrideAppearance = !!mock;
   const set = (payload: Partial<ThemePrefs>) => dispatch({ type: "SET_THEME_PREF", payload });
   const header = useMockBackHeader(t("lab.title"));
@@ -171,6 +174,28 @@ export function PlatformLab({ active }: { active: boolean }) {
               { value: "ru", label: "Русский" },
             ]}
           />
+        </Row>
+        {/* Real platform call (not a theme pref): request/exitFullscreen against
+            the live bridge, with `isFullscreen` synced from `fullscreenChanged`.
+            Unsupported (plain browser / pre-8.0 client) → disabled + hint.
+            Kept last so the pre-existing controls' at-rest geometry (checked by
+            the polish e2e against the reset footer) stays unchanged. */}
+        <Row label={t("lab.fullscreen")}>
+          <TKSwitch
+            testId="lab-fullscreen"
+            ariaLabel={t("lab.fullscreen")}
+            checked={fullscreen.isFullscreen}
+            disabled={!fullscreen.isSupported}
+            onChange={(on) => {
+              if (on) fullscreen.request();
+              else fullscreen.exit();
+            }}
+          />
+          {!fullscreen.isSupported ? (
+            <TKText size="footnote" tone="tertiary" testId="lab-fullscreen-hint">
+              {t("lab.fullscreenUnsupported")}
+            </TKText>
+          ) : null}
         </Row>
       </TKListGroup>
 

@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
-import { TKNavPanel, TKNavStack } from "tg-mini-app-uikit";
+import { TKNavPanel, TKNavStack, useNav } from "tg-mini-app-uikit";
+import { useSettingsButton } from "@tg-mini-app/telegram";
 import { Profile } from "./Profile";
 import { PlatformLab } from "./PlatformLab";
 
@@ -13,6 +14,21 @@ interface ProfileStackProps {
   onDepthChange?: (depth: number) => void;
 }
 
+/*
+ * Native ⋯ Settings button → Platform Lab. Lives inside the always-mounted
+ * "home" panel so `useNav` sees this stack; visible only while the Profile tab
+ * is the active one (the hook hides the button when `visible` flips off and on
+ * unmount). No-op outside Telegram — the in-DOM "open-lab" cell stays the
+ * browser path. `labOpen` guards a second push while the Lab is already up.
+ */
+function LabSettingsButton({ visible, labOpen }: { visible: boolean; labOpen: boolean }) {
+  const nav = useNav();
+  useSettingsButton(() => {
+    if (!labOpen) nav.push("lab");
+  }, visible);
+  return null;
+}
+
 export function ProfileStack({ visible = true, onDepthChange }: ProfileStackProps) {
   const [panels, setPanels] = useState<string[]>(["home"]);
   const active = panels[panels.length - 1];
@@ -24,6 +40,7 @@ export function ProfileStack({ visible = true, onDepthChange }: ProfileStackProp
     <TKNavStack testId="stack-profile" initial="home" onStackChange={handleStackChange}>
       <TKNavPanel id="home">
         <Profile />
+        <LabSettingsButton visible={visible} labOpen={active === "lab"} />
       </TKNavPanel>
       <TKNavPanel id="lab">
         <PlatformLab active={visible && active === "lab"} />

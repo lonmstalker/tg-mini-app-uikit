@@ -7,7 +7,9 @@ import {
   TKText,
   TKTitle,
   useNav,
+  useTKToast,
 } from "tg-mini-app-uikit";
+import { useShare } from "@tg-mini-app/telegram";
 import { bookingView } from "../../data/mockApi";
 import { useLang, useT } from "../../i18n";
 import { useAppState } from "../../store";
@@ -31,6 +33,8 @@ export function TripDetail({ active }: { active: boolean }) {
   const { bookings } = useAppState();
   const booking = bookings.find((b) => b.id === id);
   const checkin = useCheckIn();
+  const share = useShare();
+  const toast = useTKToast();
   const headerTitle = booking ? bookingView(booking.experienceId, lang).title : t("trips.title");
   const header = useMockBackHeader(headerTitle);
 
@@ -48,6 +52,22 @@ export function TripDetail({ active }: { active: boolean }) {
   const checkedIn = justChecked || wasChecked;
   const busy = checkin.phase === "scanning" || checkin.phase === "verifying" || checkin.phase === "locating";
   const title = justChecked ? t("checkin.doneTitle") : wasChecked ? t("checkin.alreadyTitle") : t("checkin.title");
+
+  /*
+   * Share the trip as a Telegram story. `shareToStory` is the one share API a
+   * Mini App can call without server support (`shareMessage` needs a
+   * server-prepared message id, so it is not faked here). The media is the
+   * app's own hosted story cover; the package hook falls back to
+   * `navigator.share` in capable browsers and reports unsupported otherwise —
+   * the control below is hidden entirely in that case.
+   */
+  const shareTrip = async () => {
+    const mediaUrl = new URL(`${import.meta.env.BASE_URL}story-cover.png`, window.location.origin).toString();
+    const ok = await share.shareToStory(mediaUrl, {
+      text: `${view.title} — ${formatDate(booking.date, lang)} · ${booking.slot}`,
+    });
+    if (!ok) toast.error(t("trips.shareFailed"));
+  };
 
   return (
     <TKPage
@@ -98,6 +118,18 @@ export function TripDetail({ active }: { active: boolean }) {
       </div>
 
       <TripStatusPill status={checkedIn ? "checkedIn" : booking.status} testId="checkin-status-badge" />
+
+      {share.isSupported ? (
+        <TKButton
+          variant="tonal"
+          icon="share"
+          testId="trip-share"
+          loading={share.status === "pending"}
+          onClick={() => void shareTrip()}
+        >
+          {t("trips.share")}
+        </TKButton>
+      ) : null}
 
       {!checkedIn ? (
         <TKCard padding={12} testId="checkin-test-card" style={{ border: "0.5px solid var(--tk-sep)" }}>

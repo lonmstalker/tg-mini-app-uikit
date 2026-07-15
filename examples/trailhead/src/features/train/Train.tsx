@@ -13,9 +13,9 @@ import {
   TKText,
   TKTitle,
   TKXPHeader,
-  useInitData,
   useNav,
 } from "tg-mini-app-uikit";
+import { useInitData } from "@tg-mini-app/telegram";
 import { listPeople, listSessions, type TrainingSession } from "../../data/mockApi";
 import { useLang, useT } from "../../i18n";
 import { useAppState } from "../../store";

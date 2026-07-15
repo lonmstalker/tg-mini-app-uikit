@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
-import { TKButton, TKOnboardingTooltip, TKText, TKTitle, useHomeScreen, useTKToast } from "tg-mini-app-uikit";
+import { TKButton, TKOnboardingTooltip, TKText, TKTitle, useTKToast } from "tg-mini-app-uikit";
+import { useHomeScreen } from "@tg-mini-app/telegram";
 import { useT } from "../i18n";
 import { useAppDispatch, useAppState } from "../store";
 

@@ -8,6 +8,7 @@ const root = join(fileURLToPath(new URL("..", import.meta.url)));
 const showcaseDist = join(root, "examples/showcase/dist");
 const storybookDist = join(root, "packages/uikit/storybook-static");
 const docsDist = join(root, "docs/site/dist");
+const trailheadDist = join(root, "examples/trailhead/dist");
 const siteDist = join(root, "site-dist");
 
 // GH Pages serves the site from /tg-mini-app-uikit/; root-domain hosts
@@ -51,15 +52,20 @@ async function requireBuild(name, directory) {
 
 async function buildSite() {
   await runNpm("build", ["-w", "showcase", "--", "--base", siteBase]);
+  // Trailhead is the flagship Mini App demo — deployed at /trailhead/ so the
+  // BotFather Web App URL can point straight at it.
+  await runNpm("build", ["-w", "trailhead", "--", "--base", `${siteBase}trailhead/`]);
   await runNpm("stories:build");
   await runNpm("docs:build");
 
   await requireBuild("Showcase", showcaseDist);
+  await requireBuild("Trailhead", trailheadDist);
   await requireBuild("Storybook", storybookDist);
   await requireBuild("Docs", docsDist);
 
   await rm(siteDist, { recursive: true, force: true });
   await cp(showcaseDist, siteDist, { recursive: true });
+  await cp(trailheadDist, join(siteDist, "trailhead"), { recursive: true });
   await cp(storybookDist, join(siteDist, "storybook"), { recursive: true });
   await cp(docsDist, join(siteDist, "docs"), { recursive: true });
 

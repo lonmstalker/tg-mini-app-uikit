@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { AsyncBoundary, TKMessages, TKPage, TKWriteBar, useNav, useOptionalHaptics } from "tg-mini-app-uikit";
+import { AsyncBoundary, TKMessages, TKPage, TKWriteBar, useNav } from "tg-mini-app-uikit";
+import { useOptionalHaptics } from "@tg-mini-app/telegram";
 import { listMessages, sendMessage, type Message, type MessageStatus } from "../../data/mockApi";
 import { useLang, useT } from "../../i18n";
 import { useMockBackHeader } from "../../components/MockBackHeader";

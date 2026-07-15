@@ -8,9 +8,9 @@ import {
   TKSlotPicker,
   TKText,
   TKTitle,
-  useOptionalHaptics,
   useNav,
 } from "tg-mini-app-uikit";
+import { useOptionalHaptics } from "@tg-mini-app/telegram";
 import { getExperience } from "../../data/mockApi";
 import { useLang, useT } from "../../i18n";
 import { computeCheckout } from "../../data/pricing";

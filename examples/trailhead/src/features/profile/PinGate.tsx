@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { TKPinInput, TKSheet, TKText, useBiometrics, useOptionalHaptics } from "tg-mini-app-uikit";
+import { TKPinInput, TKSheet, TKText } from "tg-mini-app-uikit";
+import { useBiometrics, useOptionalHaptics } from "@tg-mini-app/telegram";
 import { useT } from "../../i18n";
 import { useAppDispatch, useAppState } from "../../store";
 import { authenticateWithBiometrics } from "../../telegram/biometric-auth";

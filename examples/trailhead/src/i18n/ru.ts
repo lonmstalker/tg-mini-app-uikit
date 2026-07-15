@@ -138,6 +138,8 @@ export const ru: Dict = {
   "trips.empty.title": "Пока нет поездок",
   "trips.empty.text": "Забронируйте поход с гидом — и он появится здесь.",
   "trips.empty.cta": "К маршрутам",
+  "trips.share": "Поделиться в истории",
+  "trips.shareFailed": "Не удалось поделиться поездкой. Попробуйте ещё раз.",
 
   // Trail check-in (the signature QR → biometric → location chain)
   "checkin.title": "Отметка на тропе",
@@ -197,6 +199,8 @@ export const ru: Dict = {
   "lab.appearance.light": "Светлое",
   "lab.appearance.dark": "Тёмное",
   "lab.language": "Язык",
+  "lab.fullscreen": "Полный экран",
+  "lab.fullscreenUnsupported": "Здесь недоступно — нужен Telegram 8.0 или новее.",
   "lab.previewCard": "Sunrise Ridge · оплата 1 Star",
   "lab.reset": "Сбросить настройки",
 
