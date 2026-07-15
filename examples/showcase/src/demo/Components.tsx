@@ -29,6 +29,7 @@ import {
   type TKTheme,
 } from "tg-mini-app-uikit";
 import { SectionTitle } from "../shared/layout";
+import { formatSiteString, useSiteLocale } from "../shared/i18n";
 import { resolveTokenColor } from "./themeColors";
 import { useReveal } from "../shared/useReveal";
 
@@ -51,15 +52,18 @@ const STORY_IDS = {
 
 type StoryId = (typeof STORY_IDS)[keyof typeof STORY_IDS];
 type TileSize = "standard" | "compact" | "wide" | "large" | "tall";
+type TokenImage = TKImageViewerImage & { label: string };
 
 export function Components({ theme }: { theme: TKTheme }) {
+  const { strings } = useSiteLocale();
+  const copy = strings.demo.components;
   const headingRef = useReveal<HTMLDivElement>();
 
   return (
     <>
       <div ref={headingRef} className="components-heading reveal">
-        <SectionTitle id="components-title">Try the kit live</SectionTitle>
-        <p>Open a viewer, swipe a gallery, enter codes, and dismiss a sheet. Each tile uses the public API.</p>
+        <SectionTitle id="components-title">{copy.title}</SectionTitle>
+        <p>{copy.intro}</p>
       </div>
 
       <div className="components-grid">
@@ -67,8 +71,8 @@ export function Components({ theme }: { theme: TKTheme }) {
           index={0}
           slug="image-viewer"
           size="large"
-          title="ImageViewer"
-          description="Open a token-built composition, then pinch, double-tap, or swipe it down."
+          title={copy.imageViewerTitle}
+          description={copy.imageViewerCopy}
           storyId={STORY_IDS.imageViewer}
         >
           <LazyDemo testId="lazy-image-viewer" className="component-lazy--image">
@@ -80,8 +84,8 @@ export function Components({ theme }: { theme: TKTheme }) {
           index={1}
           slug="pin-input"
           size="tall"
-          title="PinInput"
-          description="The local verifier accepts 1234 and rejects every other four-digit PIN."
+          title={copy.pinTitle}
+          description={copy.pinCopy}
           storyId={STORY_IDS.pinInput}
         >
           <PinDemo />
@@ -90,8 +94,8 @@ export function Components({ theme }: { theme: TKTheme }) {
         <BentoTile
           index={2}
           slug="gallery"
-          title="Gallery"
-          description="A scroll-snap gallery with touch, trackpad, and keyboard-operable dots."
+          title={copy.galleryTitle}
+          description={copy.galleryCopy}
           storyId={STORY_IDS.gallery}
         >
           <GalleryDemo />
@@ -101,8 +105,8 @@ export function Components({ theme }: { theme: TKTheme }) {
           index={3}
           slug="notice-bar"
           size="compact"
-          title="NoticeBar marquee"
-          description="Overflow starts only while this tile is visible and motion is allowed."
+          title={copy.noticeTitle}
+          description={copy.noticeCopy}
           storyId={STORY_IDS.noticeBar}
         >
           <NoticeBarDemo />
@@ -112,8 +116,8 @@ export function Components({ theme }: { theme: TKTheme }) {
           index={4}
           slug="chat"
           size="wide"
-          title="Chat template"
-          description="Grouped incoming and outgoing messages, including read-state ticks."
+          title={copy.chatTitle}
+          description={copy.chatCopy}
           storyId={STORY_IDS.chat}
         >
           <LazyDemo testId="lazy-chat" className="component-lazy--chat">
@@ -125,8 +129,8 @@ export function Components({ theme }: { theme: TKTheme }) {
           index={5}
           slug="confetti"
           size="compact"
-          title="Confetti"
-          description="A one-shot canvas burst mounts on demand and removes itself when finished."
+          title={copy.confettiTitle}
+          description={copy.confettiCopy}
           storyId={STORY_IDS.confetti}
         >
           <ConfettiDemo />
@@ -135,8 +139,8 @@ export function Components({ theme }: { theme: TKTheme }) {
         <BentoTile
           index={6}
           slug="sheet"
-          title="Sheet"
-          description="A real draggable sheet kept inside this miniature viewport."
+          title={copy.sheetTitle}
+          description={copy.sheetCopy}
           storyId={STORY_IDS.sheet}
         >
           <SheetDemo theme={theme} />
@@ -146,8 +150,8 @@ export function Components({ theme }: { theme: TKTheme }) {
           index={7}
           slug="calendar"
           size="wide"
-          title="Calendar"
-          description="Pick a date with touch, pointer, or the calendar grid keyboard pattern."
+          title={copy.calendarTitle}
+          description={copy.calendarCopy}
           storyId={STORY_IDS.calendar}
         >
           <LazyDemo testId="lazy-calendar" className="component-lazy--calendar">
@@ -158,8 +162,8 @@ export function Components({ theme }: { theme: TKTheme }) {
         <BentoTile
           index={8}
           slug="otp"
-          title="OTP"
-          description="A real one-time-code input with local completion feedback and resend."
+          title={copy.otpTitle}
+          description={copy.otpCopy}
           storyId={STORY_IDS.otp}
         >
           <OTPDemo />
@@ -169,8 +173,8 @@ export function Components({ theme }: { theme: TKTheme }) {
           index={9}
           slug="slider"
           size="compact"
-          title="Slider"
-          description="Drag the compositor-friendly thumb or use arrows, Page Up, Home, and End."
+          title={copy.sliderTitle}
+          description={copy.sliderCopy}
           storyId={STORY_IDS.slider}
         >
           <SliderDemo />
@@ -179,8 +183,8 @@ export function Components({ theme }: { theme: TKTheme }) {
         <BentoTile
           index={10}
           slug="skeletons"
-          title="Skeleton group"
-          description="Shimmer stays parked until you explicitly replay it, and pauses off-screen."
+          title={copy.skeletonTitle}
+          description={copy.skeletonCopy}
           storyId={STORY_IDS.skeletons}
         >
           <SkeletonDemo />
@@ -189,8 +193,8 @@ export function Components({ theme }: { theme: TKTheme }) {
         <BentoTile
           index={11}
           slug="switch-chips"
-          title="Switch + chips"
-          description="Two selection patterns with native button semantics and visible state."
+          title={copy.switchTitle}
+          description={copy.switchCopy}
           storyId={STORY_IDS.switch}
         >
           <SwitchChipsDemo />
@@ -217,6 +221,7 @@ function BentoTile({
   storyId: StoryId;
   children: ReactNode;
 }) {
+  const { strings } = useSiteLocale();
   const revealRef = useReveal<HTMLElement>();
   const storyUrl = `${import.meta.env.BASE_URL}storybook/?path=/story/${storyId}`;
 
@@ -234,7 +239,7 @@ function BentoTile({
             <p>{description}</p>
           </div>
           <a className="component-story-link" href={storyUrl} target="_blank" rel="noopener noreferrer">
-            Storybook <span aria-hidden="true">→</span>
+            {strings.demo.components.storybook} <span aria-hidden="true">→</span>
           </a>
         </header>
         <div className="component-demo">{children}</div>
@@ -252,6 +257,7 @@ function LazyDemo({
   className?: string;
   children: ReactNode;
 }) {
+  const { strings } = useSiteLocale();
   const { ref, mounted } = useLazyMount<HTMLDivElement>();
 
   return (
@@ -262,12 +268,14 @@ function LazyDemo({
       data-testid={testId}
       aria-busy={!mounted}
     >
-      {mounted ? children : <span className="component-lazy-placeholder">Live demo loads as you approach.</span>}
+      {mounted ? children : <span className="component-lazy-placeholder">{strings.demo.components.lazyLoading}</span>}
     </div>
   );
 }
 
 function ImageViewerDemo({ theme }: { theme: TKTheme }) {
+  const { strings } = useSiteLocale();
+  const copy = strings.demo.components;
   const { accent } = useTKTheme();
   const hostRef = useRef<HTMLDivElement>(null);
   const originRef = useRef<HTMLElement | null>(null);
@@ -289,7 +297,7 @@ function ImageViewerDemo({ theme }: { theme: TKTheme }) {
               key={image.alt}
               type="button"
               className="image-preview-button tk-press"
-              aria-label={`Open ${image.alt}`}
+              aria-label={formatSiteString(copy.openImage, { label: image.label })}
               data-testid={`image-preview-${imageIndex}`}
               onClick={(event) => {
                 originRef.current = event.currentTarget;
@@ -301,7 +309,7 @@ function ImageViewerDemo({ theme }: { theme: TKTheme }) {
             </button>
           ))}
         </div>
-        <p className="component-demo-hint">Open a preview · double-tap to zoom · swipe down to close</p>
+        <p className="component-demo-hint">{copy.imageHint}</p>
         <TKImageViewer
           open={open}
           onClose={() => setOpen(false)}
@@ -317,6 +325,8 @@ function ImageViewerDemo({ theme }: { theme: TKTheme }) {
 }
 
 function PinDemo() {
+  const { strings } = useSiteLocale();
+  const copy = strings.demo.components;
   const [result, setResult] = useState<"idle" | "success" | "error">("idle");
   const timerRef = useRef<number | undefined>(undefined);
 
@@ -345,26 +355,30 @@ function PinDemo() {
         onComplete={verify}
         title={
           <span className="pin-demo-title">
-            <strong>Enter wallet PIN</strong>
-            <span>Hint: 1234</span>
+            <strong>{copy.enterPin}</strong>
+            <span>{copy.pinHint}</span>
           </span>
         }
       />
       <p className="component-status" data-state={result} data-testid="pin-result" role="status" aria-live="polite">
-        {result === "success" ? "PIN accepted" : result === "error" ? "Try 1234" : "Four digits, checked locally"}
+        {result === "success" ? copy.pinAccepted : result === "error" ? copy.tryPin : copy.pinIdle}
       </p>
     </div>
   );
 }
 
 function GalleryDemo() {
+  const { strings } = useSiteLocale();
+  const copy = strings.demo.components;
+  const labels = [copy.signal, copy.orbit, copy.current];
+
   return (
     <TKGallery height={184} edgeInset={0} gap={10} haptics={false} testId="bento-gallery">
-      {["Signal", "Orbit", "Current"].map((label, index) => (
+      {labels.map((label, index) => (
         <div key={label} className="gallery-slide" data-variant={index}>
           <span aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
           <strong>{label}</strong>
-          <small>Swipe to continue</small>
+          <small>{copy.swipeContinue}</small>
         </div>
       ))}
     </TKGallery>
@@ -372,6 +386,8 @@ function GalleryDemo() {
 }
 
 function NoticeBarDemo() {
+  const { strings } = useSiteLocale();
+  const copy = strings.demo.components;
   const playback = useViewportActivity<HTMLDivElement>();
   const [visible, setVisible] = useState(true);
 
@@ -390,52 +406,57 @@ function NoticeBarDemo() {
           tone="accent"
           testId="bento-notice-bar"
         >
-          UIKit 2.4 is ready: accessible controls, Telegram runtime adapters, tuned gesture physics, and no runtime dependencies. Read the migration notes before upgrading.
+          {copy.noticeText}
         </TKNoticeBar>
       ) : (
         <TKButton size="sm" variant="tonal" onClick={() => setVisible(true)}>
-          Restore notice
+          {copy.restoreNotice}
         </TKButton>
       )}
       <p className="component-demo-hint" aria-live="polite">
-        {playback.active ? "Ticker running in view" : "Ticker parked"}
+        {playback.active ? copy.tickerRunning : copy.tickerParked}
       </p>
     </div>
   );
 }
 
 function ChatDemo() {
+  const { strings } = useSiteLocale();
+  const copy = strings.demo.components;
+
   return (
     <div className="chat-demo" data-testid="chat-demo">
       <div className="chat-demo-header">
-        <strong>UIKit support</strong>
-        <span>online</span>
+        <strong>{copy.support}</strong>
+        <span>{copy.online}</span>
       </div>
       <div className="chat-demo-thread">
         <TKMessages
           messages={[
-            { id: "delivery", text: "Your Mini App preview is ready.", time: "12:01" },
-            { id: "theme", text: "Does it follow Telegram themes?", out: true, time: "12:02", status: "read" },
+            { id: "delivery", text: copy.chatPreviewReady, time: "12:01" },
+            { id: "theme", text: copy.chatThemeQuestion, out: true, time: "12:02", status: "read" },
           ]}
           testId="bento-messages"
         />
-        <TKMessageBubble text="Yes — switch the page theme above." time="12:03" />
+        <TKMessageBubble text={copy.chatThemeAnswer} time="12:03" />
       </div>
     </div>
   );
 }
 
 function ConfettiDemo() {
+  const { strings } = useSiteLocale();
+  const copy = strings.demo.components;
   const [burst, setBurst] = useState<number | null>(null);
 
   return (
     <div className="confetti-demo" data-confetti-state={burst == null ? "idle" : "running"} data-testid="confetti-demo">
       <div className="confetti-demo-copy">
-        <strong>{burst == null ? "Ready for a reward" : "Burst in progress"}</strong>
-        <span role="status" aria-live="polite">{burst == null ? "Canvas is unmounted" : "Canvas mounted"}</span>
+        <strong>{burst == null ? copy.rewardReady : copy.burstRunning}</strong>
+        <span role="status" aria-live="polite">{burst == null ? copy.canvasUnmounted : copy.canvasMounted}</span>
       </div>
       <TKButton size="sm" onClick={() => setBurst((current) => (current ?? 0) + 1)}>
-        Fire confetti
+        {copy.fireConfetti}
       </TKButton>
       {burst == null ? null : (
         <TKConfetti key={burst} count={32} duration={900} onDone={() => setBurst(null)} testId="bento-confetti" />
@@ -445,17 +466,19 @@ function ConfettiDemo() {
 }
 
 function SheetDemo({ theme }: { theme: TKTheme }) {
+  const { strings } = useSiteLocale();
+  const copy = strings.demo.components;
   const [open, setOpen] = useState(false);
 
   return (
     <TKProvider theme={theme} className="component-frame-provider">
       <div className="sheet-demo-stage" data-tk-portal-root data-testid="sheet-demo" data-sheet-open={open}>
         <div className="sheet-demo-launcher">
-          <TKButton onClick={() => setOpen(true)}>Open sheet</TKButton>
-          <span>Drag the handle or press Escape</span>
+          <TKButton onClick={() => setOpen(true)}>{copy.openSheet}</TKButton>
+          <span>{copy.sheetHint}</span>
         </div>
-        <TKSheet open={open} onClose={() => setOpen(false)} title="Saved view" testId="bento-sheet">
-          <p className="sheet-demo-line">Filters stay on this device.</p>
+        <TKSheet open={open} onClose={() => setOpen(false)} title={copy.savedView} testId="bento-sheet">
+          <p className="sheet-demo-line">{copy.filtersLocal}</p>
         </TKSheet>
       </div>
     </TKProvider>
@@ -463,27 +486,36 @@ function SheetDemo({ theme }: { theme: TKTheme }) {
 }
 
 function CalendarDemo() {
+  const { locale, strings } = useSiteLocale();
+  const copy = strings.demo.components;
   const [date, setDate] = useState(() => new Date(2026, 5, 13));
-  const selected = new Intl.DateTimeFormat("en", { month: "short", day: "numeric", year: "numeric" }).format(date);
+  const selected = new Intl.DateTimeFormat(locale === "ru" ? "ru-RU" : "en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(date);
 
   return (
     <div className="calendar-demo" data-testid="calendar-demo">
       <TKCalendar
         value={date}
         onChange={setDate}
+        lang={locale}
         defaultMonth={new Date(2026, 5, 1)}
         partSelectors={false}
         testId="bento-calendar"
         style={{ boxShadow: "none" }}
       />
       <p className="component-status" data-state="success" role="status" aria-live="polite">
-        Selected {selected}
+        {formatSiteString(copy.selectedDate, { date: selected })}
       </p>
     </div>
   );
 }
 
 function OTPDemo() {
+  const { strings } = useSiteLocale();
+  const copy = strings.demo.components;
   const [value, setValue] = useState("");
   const [verified, setVerified] = useState(false);
 
@@ -501,32 +533,35 @@ function OTPDemo() {
           setValue("");
           setVerified(false);
         }}
-        successText="Code accepted"
-        resendLabel="Reset"
+        successText={copy.codeAccepted}
+        resendLabel={copy.resetCode}
         testId="bento-otp"
       />
       <p className="component-status" data-state={verified ? "success" : "idle"} role="status" aria-live="polite">
-        {verified ? "OTP complete" : "Type any four digits"}
+        {verified ? copy.otpComplete : copy.otpIdle}
       </p>
     </div>
   );
 }
 
 function SliderDemo() {
+  const { strings } = useSiteLocale();
+  const copy = strings.demo.components;
   const [value, setValue] = useState(64);
 
   return (
     <div className="slider-demo">
       <div className="slider-demo-value">
-        <span>Intensity</span>
+        <span>{copy.intensity}</span>
         <output aria-live="polite">{value}%</output>
       </div>
-      <TKSlider value={value} onChange={setValue} label="Demo intensity" suffix="%" marks={[0, 25, 50, 75, 100]} testId="bento-slider" />
+      <TKSlider value={value} onChange={setValue} label={copy.intensityAria} suffix="%" marks={[0, 25, 50, 75, 100]} testId="bento-slider" />
     </div>
   );
 }
 
 function SkeletonDemo() {
+  const { strings } = useSiteLocale();
   const playback = useViewportActivity<HTMLDivElement>();
   const [replay, setReplay] = useState(0);
   const [running, setRunning] = useState(false);
@@ -569,35 +604,38 @@ function SkeletonDemo() {
         <TKSkeletonText lines={3} />
       </div>
       <TKButton size="sm" variant="outline" onClick={replayShimmer}>
-        Reload preview
+        {strings.demo.components.reloadPreview}
       </TKButton>
     </div>
   );
 }
 
-const channelOptions = [
-  { value: "orders", label: "Orders" },
-  { value: "product", label: "Product" },
-  { value: "security", label: "Security" },
-];
-
 function SwitchChipsDemo() {
+  const { strings } = useSiteLocale();
+  const copy = strings.demo.components;
+  const channelOptions = [
+    { value: "orders", label: copy.orders },
+    { value: "product", label: copy.product },
+    { value: "security", label: copy.security },
+  ];
   const [notifications, setNotifications] = useState(true);
   const [channels, setChannels] = useState<string[]>(["orders", "security"]);
 
   return (
     <div className="switch-chips-demo">
-      <TKSwitch checked={notifications} onChange={setNotifications} label="Push notifications" />
+      <TKSwitch checked={notifications} onChange={setNotifications} label={copy.pushNotifications} />
       <TKChipGroup
         items={channelOptions}
         multi
         value={channels}
         onChange={(next) => setChannels(next as string[])}
-        aria-label="Notification channels"
+        aria-label={copy.notificationChannels}
         testId="bento-chip-group"
       />
       <p className="component-status" data-state={notifications ? "success" : "idle"} role="status" aria-live="polite">
-        {notifications ? `${channels.length} channels enabled` : "Notifications paused"}
+        {notifications
+          ? formatSiteString(copy.channelsEnabled, { count: channels.length })
+          : copy.notificationsPaused}
       </p>
     </div>
   );
@@ -674,18 +712,28 @@ function useTokenImages(
   theme: TKTheme,
   accent: string | undefined,
 ) {
-  const [images, setImages] = useState<TKImageViewerImage[]>([]);
+  const { strings } = useSiteLocale();
+  const copy = strings.demo.components;
+  const [images, setImages] = useState<TokenImage[]>([]);
 
   useEffect(() => {
     const host = hostRef.current;
     if (!host) return;
-    setImages(buildTokenImages(host));
-  }, [accent, hostRef, theme]);
+    setImages(buildTokenImages(
+      host,
+      [copy.signal, copy.orbit, copy.current],
+      copy.tokenComposition,
+    ));
+  }, [accent, copy, hostRef, theme]);
 
   return images;
 }
 
-function buildTokenImages(host: HTMLElement): TKImageViewerImage[] {
+function buildTokenImages(
+  host: HTMLElement,
+  labels: string[],
+  altTemplate: string,
+): TokenImage[] {
   const tokenNames = [
     "--tk-accent",
     "--tk-surface-2",
@@ -695,14 +743,13 @@ function buildTokenImages(host: HTMLElement): TKImageViewerImage[] {
     "--tk-text",
   ];
   const colors = tokenNames.map((name) => resolveTokenColor(host, name));
-  const labels = ["Signal", "Orbit", "Current"];
-
   return labels.map((label, index) => {
     const first = colors[index];
     const second = colors[index + 1];
     const third = colors[index + 2];
     const ink = colors[5];
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img" aria-label="${label} composition">
+    const alt = formatSiteString(altTemplate, { label });
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img" aria-label="${alt}">
       <defs>
         <linearGradient id="field" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stop-color="${first}"/>
@@ -716,7 +763,8 @@ function buildTokenImages(host: HTMLElement): TKImageViewerImage[] {
     </svg>`;
     return {
       src: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,
-      alt: `${label} token composition`,
+      alt,
+      label,
     };
   });
 }

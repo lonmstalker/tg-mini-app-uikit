@@ -10,71 +10,58 @@ import installSnippetSource from "../snippets/install.snippet.txt?raw";
 import telegramSnippetSource from "../snippets/telegram.snippet.tsx?raw";
 import themeSnippetSource from "../snippets/theme.snippet.tsx?raw";
 import { copyText } from "../shared/clipboard";
+import { formatSiteString, useSiteLocale } from "../shared/i18n";
 import { SectionTitle } from "../shared/layout";
 
-export type ShowcaseLocale = "en" | "ru";
 type SnippetId = "install" | "theme" | "telegram";
 
-const localeOptions = [
-  { value: "en", label: "English" },
-  { value: "ru", label: "Русский" },
-];
-
-const snippets: Record<SnippetId, { label: string; code: string }> = {
-  install: { label: "Install", code: installSnippetSource.trimEnd() },
-  theme: { label: "Theme", code: themeSnippetSource.trimEnd() },
-  telegram: { label: "Telegram", code: telegramSnippetSource.trimEnd() },
+const snippetCode: Record<SnippetId, string> = {
+  install: installSnippetSource.trimEnd(),
+  theme: themeSnippetSource.trimEnd(),
+  telegram: telegramSnippetSource.trimEnd(),
 };
 
-const snippetOptions = Object.entries(snippets).map(([value, snippet]) => ({
-  value,
-  label: snippet.label,
-}));
+export function I18nShowcase() {
+  const { strings } = useSiteLocale();
+  const copy = strings.demo.i18n;
 
-export function I18nShowcase({
-  locale,
-  onLocaleChange,
-}: {
-  locale: ShowcaseLocale;
-  onLocaleChange: (locale: ShowcaseLocale) => void;
-}) {
   return (
     <div className="i18n-layout">
       <header className="i18n-intro">
-        <SectionTitle id="i18n-title">Internationalization, live</SectionTitle>
-        <p>Site copy stays in English. The switch changes only strings owned by the kit.</p>
+        <SectionTitle id="i18n-title">{copy.title}</SectionTitle>
+        <p>{copy.intro}</p>
       </header>
 
       <div className="i18n-blocks">
-        <LocaleDemo locale={locale} onLocaleChange={onLocaleChange} />
+        <LocaleDemo />
         <CodeSnippets />
       </div>
     </div>
   );
 }
 
-function LocaleDemo({
-  locale,
-  onLocaleChange,
-}: {
-  locale: ShowcaseLocale;
-  onLocaleChange: (locale: ShowcaseLocale) => void;
-}) {
+function LocaleDemo() {
+  const { locale, setLocale, strings } = useSiteLocale();
+  const copy = strings.demo.i18n;
+  const localeOptions = [
+    { value: "en", label: strings.shared.english },
+    { value: "ru", label: strings.shared.russian },
+  ];
   const [otp, setOtp] = useState("");
 
   return (
     <article className="i18n-card i18n-card--locale">
       <div className="i18n-card-header">
         <div>
-          <h3>Live locale</h3>
-          <p>Try the bundled English and Russian dictionaries without reloading.</p>
+          <h3>{copy.liveLocale}</h3>
+          <p>{copy.liveCopy}</p>
         </div>
         <div className="i18n-locale-control">
           <TKSegmented
             options={localeOptions}
             value={locale}
-            onChange={(value) => onLocaleChange(value === "ru" ? "ru" : "en")}
-            ariaLabel="Kit locale"
+            onChange={(value) => setLocale(value === "ru" ? "ru" : "en")}
+            ariaLabel={copy.localeAria}
             testId="locale-switch"
           />
         </div>
@@ -92,32 +79,46 @@ function LocaleDemo({
       </div>
 
       <p className="i18n-demo-note">
-        The hero PIN pad, ImageViewer counter, NoticeBar close label, and other kit demos follow this choice too.
+        {copy.note}
       </p>
     </article>
   );
 }
 
 function CodeSnippets() {
+  const { strings } = useSiteLocale();
+  const copy = strings.demo.i18n;
   const [activeId, setActiveId] = useState<SnippetId>("install");
   const toast = useTKToast();
+  const snippets: Record<SnippetId, { label: string; code: string }> = {
+    install: { label: copy.install, code: snippetCode.install },
+    theme: { label: copy.theme, code: snippetCode.theme },
+    telegram: { label: copy.telegram, code: snippetCode.telegram },
+  };
+  const snippetOptions = Object.entries(snippets).map(([value, snippet]) => ({
+    value,
+    label: snippet.label,
+  }));
   const activeSnippet = snippets[activeId];
 
   const onCopy = async () => {
-    if (await copyText(activeSnippet.code)) toast.success(`${activeSnippet.label} snippet copied`);
-    else toast.error(`Could not copy the ${activeSnippet.label.toLowerCase()} snippet`);
+    if (await copyText(activeSnippet.code)) {
+      toast.success(formatSiteString(copy.snippetCopied, { label: activeSnippet.label }));
+    } else {
+      toast.error(formatSiteString(copy.snippetCopyError, { label: activeSnippet.label }));
+    }
   };
 
   return (
     <article className="i18n-card i18n-card--snippets">
       <div className="i18n-card-header">
         <div>
-          <h3>Start with the public API</h3>
-          <p>Short teasers from the getting started, theming, and Telegram guides.</p>
+          <h3>{copy.snippetsTitle}</h3>
+          <p>{copy.snippetsCopy}</p>
         </div>
         <TKIconButton
           icon="copy"
-          label={`Copy ${activeSnippet.label} snippet`}
+          label={formatSiteString(copy.copySnippet, { label: activeSnippet.label })}
           onClick={onCopy}
           variant="tonal"
           testId="snippet-copy"
@@ -129,13 +130,13 @@ function CodeSnippets() {
         value={activeId}
         onChange={(value) => setActiveId(value as SnippetId)}
         full
-        ariaLabel="Code snippet"
+        ariaLabel={copy.snippetTabs}
         testId="snippet-tabs"
       />
 
       <pre
         className="snippet-code"
-        aria-label={`${activeSnippet.label} code snippet`}
+        aria-label={formatSiteString(copy.snippetAria, { label: activeSnippet.label })}
         data-testid="snippet-code"
         tabIndex={0}
       >

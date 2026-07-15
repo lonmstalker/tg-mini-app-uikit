@@ -42,6 +42,20 @@ test("demo header theme toggle updates the provider theme", async ({ page }) => 
   await expect(root).toHaveAttribute("data-theme", "light");
 });
 
+test("demo locale switch updates site and kit-owned strings together", async ({ page }) => {
+  await openDemo(page);
+
+  await page.getByTestId("site-locale-ru").click();
+
+  await expect(page.locator("html")).toHaveAttribute("lang", "ru");
+  await expect(page.getByTestId("browser-demo-notice")).toContainText(
+    "UIKit полноценно работает и без Telegram",
+  );
+  await page.getByTestId("locale-demo-cluster").scrollIntoViewIfNeeded();
+  await expect(page.getByTestId("locale-demo-cluster")).toContainText("Не пришёл код?");
+  await expect(page.getByTestId("locale-demo-cluster")).toContainText("Отправить ещё раз");
+});
+
 test("demo bento ImageViewer opens and closes", async ({ page }) => {
   await openDemo(page);
   await page.getByTestId("component-tile-image-viewer").scrollIntoViewIfNeeded();
@@ -102,6 +116,30 @@ test("landing theme toggle updates the provider theme", async ({ page }) => {
   await expect(root).toHaveAttribute("data-theme", "dark");
   await page.getByRole("button", { name: "Switch to light theme" }).click();
   await expect(root).toHaveAttribute("data-theme", "light");
+});
+
+test("landing locale switch persists Russian across reload", async ({ page }) => {
+  await openLanding(page);
+
+  await page.getByTestId("site-locale-ru").click();
+
+  await expect(
+    page.getByRole("heading", {
+      level: 1,
+      name: "React UIKit в стиле iOS для Telegram Mini Apps",
+    }),
+  ).toBeVisible();
+  await expect(page.locator("html")).toHaveAttribute("lang", "ru");
+
+  await page.reload();
+
+  await expect(
+    page.getByRole("heading", {
+      level: 1,
+      name: "React UIKit в стиле iOS для Telegram Mini Apps",
+    }),
+  ).toBeVisible();
+  await expect(page.locator("html")).toHaveAttribute("lang", "ru");
 });
 
 test("landing install copy writes the command and shows a kit toast", async ({ context, page }) => {

@@ -12,6 +12,7 @@ import quickstartSource from "../snippets/quickstart.snippet.tsx?raw";
 import { SiteFooter } from "../shared/SiteFooter";
 import { SiteHeader } from "../shared/SiteHeader";
 import { copyText } from "../shared/clipboard";
+import { useSiteLocale } from "../shared/i18n";
 import { Container, Section, SectionTitle } from "../shared/layout";
 import { TELEGRAM_DEMO_URL } from "../shared/links";
 import { useSiteTheme } from "../shared/theme";
@@ -19,12 +20,6 @@ import { useSiteTheme } from "../shared/theme";
 const INSTALL_COMMAND = "npm i tg-mini-app-uikit";
 const GITHUB_URL = "https://github.com/lonmstalker/tg-mini-app-uikit";
 const NPM_URL = "https://www.npmjs.com/package/tg-mini-app-uikit";
-
-const navigation = [
-  { href: "#features", label: "Features" },
-  { href: "#code", label: "Code" },
-  { href: "#get-started", label: "Get started" },
-] as const;
 
 interface Feature {
   title: string;
@@ -36,13 +31,19 @@ interface Feature {
 
 export function App() {
   const { theme, toggleTheme } = useSiteTheme();
+  const { strings } = useSiteLocale();
   const base = import.meta.env.BASE_URL;
+  const navigation = [
+    { href: "#features", label: strings.landing.navigation.features },
+    { href: "#code", label: strings.landing.navigation.code },
+    { href: "#get-started", label: strings.landing.navigation.getStarted },
+  ] as const;
 
   return (
     <TKProvider theme={theme} className="landing" testId="landing-root">
       <TKToastProvider>
         <a className="skip-link" href="#features">
-          Skip to features
+          {strings.landing.skipToFeatures}
         </a>
 
         <SiteHeader
@@ -50,7 +51,7 @@ export function App() {
           onThemeToggle={toggleTheme}
           navigation={navigation}
           wordmarkHref="#hero"
-          utilityLink={{ href: `${base}demo/`, label: "Demo" }}
+          utilityLink={{ href: `${base}demo/`, label: strings.landing.navigation.demo }}
         />
 
         <main>
@@ -68,6 +69,9 @@ export function App() {
 }
 
 function LandingHero({ base }: { base: string }) {
+  const { strings } = useSiteLocale();
+  const copy = strings.landing.hero;
+
   return (
     <Section
       className="landing-hero"
@@ -78,23 +82,23 @@ function LandingHero({ base }: { base: string }) {
       <Container className="landing-hero-grid">
         <div className="landing-hero-copy">
           <h1 id="landing-hero-title">
-            The iOS-flavored React UI kit for Telegram Mini Apps
+            {copy.title}
           </h1>
           <p className="landing-hero-subline">
-            Zero runtime dependencies · React 18 &amp; 19 · Bot API 9.6
+            {copy.subline}
           </p>
 
-          <div className="landing-install" aria-label={`Install with ${INSTALL_COMMAND}`}>
+          <div className="landing-install" aria-label={`${copy.installWith} ${INSTALL_COMMAND}`}>
             <code>{INSTALL_COMMAND}</code>
             <CopyButton
               text={INSTALL_COMMAND}
-              label="Copy install command"
-              successMessage="Install command copied"
+              label={copy.copyInstall}
+              successMessage={copy.installCopied}
               testId="landing-install-copy"
             />
           </div>
 
-          <div className="landing-badges" aria-label="Package facts">
+          <div className="landing-badges" aria-label={copy.packageFacts}>
             <TKBadge soft>~60 kB brotli</TKBadge>
             <TKBadge soft tone="green">1235 tests</TKBadge>
             <TKBadge soft tone="gray">MIT</TKBadge>
@@ -111,10 +115,10 @@ function LandingHero({ base }: { base: string }) {
               size="lg"
               testId="landing-telegram-cta"
             >
-              Open demo in Telegram
+              {copy.openTelegram}
             </TKButton>
             <TKButton as="a" href={`${base}docs/`} icon="arrowRight" size="lg" variant="outline">
-              Get started
+              {copy.getStarted}
             </TKButton>
           </div>
 
@@ -126,11 +130,11 @@ function LandingHero({ base }: { base: string }) {
               variant="plain"
               testId="landing-demo-cta"
             >
-              Browser demo — no Telegram required
+              {copy.browserDemo}
             </TKButton>
             <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer">
               <TKIcon name="star" size={18} />
-              Star on GitHub
+              {copy.starGithub}
             </a>
           </div>
         </div>
@@ -142,12 +146,15 @@ function LandingHero({ base }: { base: string }) {
 }
 
 function StaticWallet() {
+  const { strings } = useSiteLocale();
+  const copy = strings.landing.wallet;
+
   return (
     <figure className="landing-phone-figure">
       <div
         className="landing-phone"
         role="img"
-        aria-label="Static preview of a wallet screen built with tg-mini-app-uikit"
+        aria-label={copy.preview}
       >
         <div className="landing-phone-screen">
           <div className="landing-statusbar" aria-hidden="true">
@@ -158,91 +165,93 @@ function StaticWallet() {
 
           <div className="landing-wallet-toolbar">
             <span className="landing-wallet-app-icon"><TKIcon name="wallet" size={18} /></span>
-            <strong>Wallet</strong>
+            <strong>{copy.wallet}</strong>
             <TKIcon name="dots" size={20} />
           </div>
 
           <div className="landing-balance">
-            <span>Total balance</span>
+            <span>{copy.totalBalance}</span>
             <strong>$12,480.72</strong>
           </div>
 
           <div className="landing-bank-card">
-            <span>Everyday</span>
+            <span>{copy.everyday}</span>
             <TKIcon name="card" size={22} />
             <strong>•••• 4821</strong>
           </div>
 
           <div className="landing-wallet-actions" aria-hidden="true">
-            <span><TKIcon name="send" size={18} /> Send</span>
-            <span><TKIcon name="plus" size={18} /> Add</span>
-            <span><TKIcon name="qr" size={18} /> Scan</span>
+            <span><TKIcon name="send" size={18} /> {copy.send}</span>
+            <span><TKIcon name="plus" size={18} /> {copy.add}</span>
+            <span><TKIcon name="qr" size={18} /> {copy.scan}</span>
           </div>
 
           <div className="landing-activity-heading">
-            <strong>Activity</strong>
-            <span>Today</span>
+            <strong>{copy.activity}</strong>
+            <span>{copy.today}</span>
           </div>
 
           <div className="landing-activity-list">
             <div>
               <span className="landing-activity-icon"><TKIcon name="gift" size={16} /></span>
-              <span><strong>Telegram Premium</strong><small>Subscription</small></span>
+              <span><strong>Telegram Premium</strong><small>{copy.subscription}</small></span>
               <strong>−$4.99</strong>
             </div>
             <div>
               <span className="landing-activity-icon"><TKIcon name="arrowRight" size={16} /></span>
-              <span><strong>Transfer received</strong><small>Alex Morgan</small></span>
+              <span><strong>{copy.transferReceived}</strong><small>Alex Morgan</small></span>
               <strong className="landing-positive">+$280</strong>
             </div>
           </div>
 
-          <div className="landing-main-button">Send payment</div>
+          <div className="landing-main-button">{copy.sendPayment}</div>
           <div className="landing-home-indicator" aria-hidden="true" />
         </div>
       </div>
-      <figcaption>Frozen UI · zero timers · built from the same token system</figcaption>
+      <figcaption>{copy.caption}</figcaption>
     </figure>
   );
 }
 
 function FeatureSection({ base }: { base: string }) {
+  const { strings } = useSiteLocale();
+  const copy = strings.landing.features;
   const features: Feature[] = [
     {
-      title: "Native-feel gestures",
-      copy: "Sheets, galleries, viewers, and edge-aware interactions feel at home in a mobile WebView.",
+      title: copy.gesturesTitle,
+      copy: copy.gesturesCopy,
       icon: "fingerprint",
       href: `${base}demo/#components`,
       wide: true,
     },
     {
-      title: "Telegram out of the box",
-      copy: "Theme mapping, MainButton wrappers, safe areas, and haptics are first-class APIs.",
+      title: copy.telegramTitle,
+      copy: copy.telegramCopy,
       icon: "phone",
       href: `${base}storybook/?path=/story/foundation-telegram--runtime-provider`,
       wide: true,
     },
     {
-      title: "Motion with a budget",
-      copy: "Compositor-only animation rules are enforced by CI, with reduced motion built in.",
+      title: copy.motionTitle,
+      copy: copy.motionCopy,
       icon: "bolt",
       href: `${base}storybook/?path=/story/foundation-motion--keyframe-library`,
     },
     {
-      title: "Accessible by default",
-      copy: "Keyboard, focus, announcements, names, and touch targets are part of the component contract.",
+      title: copy.accessibilityTitle,
+      copy: copy.accessibilityCopy,
       icon: "shield",
       href: `${base}storybook/?path=/story/atoms-controls--binary-controls`,
     },
     {
-      title: "Zero runtime dependencies",
-      copy: "The full package stays near 60 kB brotli without shipping a dependency graph to every app.",
+      title: copy.dependenciesTitle,
+      copy: copy.dependenciesCopy,
       icon: "document",
       href: `${base}docs/`,
     },
     {
-      title: "Theming and en/ru i18n",
-      copy: "Semantic tokens and bundled English and Russian locales adapt the whole interface at the root.",
+      title: copy.i18nTitle,
+      copy: copy.i18nCopy,
       icon: "globe",
       href: `${base}storybook/?path=/story/foundation-i18n--localized-controls`,
     },
@@ -252,8 +261,8 @@ function FeatureSection({ base }: { base: string }) {
     <Section className="landing-features" id="features">
       <Container>
         <div className="landing-section-heading">
-          <SectionTitle id="features-title">Built for the constraints Telegram actually has</SectionTitle>
-          <p>Production primitives, platform behavior, and proof in one source package.</p>
+          <SectionTitle id="features-title">{copy.title}</SectionTitle>
+          <p>{copy.intro}</p>
         </div>
 
         <div className="landing-feature-grid">
@@ -278,16 +287,16 @@ function FeatureSection({ base }: { base: string }) {
 }
 
 function CodeSection() {
+  const { strings } = useSiteLocale();
+  const copy = strings.landing.code;
+
   return (
     <Section className="landing-code" id="code">
       <Container className="landing-code-grid">
         <div className="landing-code-copy">
-          <SectionTitle id="code-title">From npm to a native-feel screen</SectionTitle>
-          <p>
-            Wrap once, compose normal React, and let the kit bridge Telegram behavior without
-            taking over your app architecture.
-          </p>
-          <a href={`${import.meta.env.BASE_URL}docs/`}>Read the getting started guide →</a>
+          <SectionTitle id="code-title">{copy.title}</SectionTitle>
+          <p>{copy.copy}</p>
+          <a href={`${import.meta.env.BASE_URL}docs/`}>{copy.guide}</a>
         </div>
 
         <div className="landing-code-panel">
@@ -295,12 +304,12 @@ function CodeSection() {
             <span>WalletScreen.tsx</span>
             <CopyButton
               text={quickstartSource.trimEnd()}
-              label="Copy quickstart code"
-              successMessage="Quickstart code copied"
+              label={copy.copyQuickstart}
+              successMessage={copy.quickstartCopied}
               testId="landing-code-copy"
             />
           </div>
-          <pre aria-label="Typechecked React quickstart" tabIndex={0}>
+          <pre aria-label={copy.quickstartAria} tabIndex={0}>
             <code>{quickstartSource.trimEnd()}</code>
           </pre>
         </div>
@@ -310,34 +319,37 @@ function CodeSection() {
 }
 
 function GetStartedSection({ base }: { base: string }) {
+  const { strings } = useSiteLocale();
+  const copy = strings.landing.getStarted;
+
   return (
     <Section className="landing-get-started" id="get-started">
       <Container>
         <div className="landing-section-heading">
-          <SectionTitle id="get-started-title">Ship a Mini App in three moves</SectionTitle>
-          <p>The shortest path keeps the platform details explicit.</p>
+          <SectionTitle id="get-started-title">{copy.title}</SectionTitle>
+          <p>{copy.intro}</p>
         </div>
 
         <ol className="landing-steps">
           <li>
             <span>1</span>
             <div>
-              <strong>Install</strong>
+              <strong>{copy.install}</strong>
               <code>{INSTALL_COMMAND}</code>
             </div>
           </li>
           <li>
             <span>2</span>
             <div>
-              <strong>Wrap providers</strong>
+              <strong>{copy.wrap}</strong>
               <code>{"<TKTelegramProvider><TKProvider telegram>…"}</code>
             </div>
           </li>
           <li>
             <span>3</span>
             <div>
-              <strong>Ship in Telegram</strong>
-              <a href={`${base}docs/telegram-platform.html`}>Connect and validate the platform layer →</a>
+              <strong>{copy.ship}</strong>
+              <a href={`${base}docs/telegram-platform.html`}>{copy.connect}</a>
             </div>
           </li>
         </ol>
@@ -347,19 +359,21 @@ function GetStartedSection({ base }: { base: string }) {
 }
 
 function ExploreSection({ base }: { base: string }) {
+  const { strings } = useSiteLocale();
+  const copy = strings.landing.explore;
   const links = [
-    { label: "Telegram demo", copy: "Open the native Mini App experience", href: TELEGRAM_DEMO_URL, external: true },
-    { label: "Browser demo", copy: "Try the showcase without Telegram", href: `${base}demo/` },
-    { label: "Storybook", copy: "Inspect every component and state", href: `${base}storybook/` },
-    { label: "Docs", copy: "Read guides and API contracts", href: `${base}docs/` },
-    { label: "npm", copy: "Install the published package", href: NPM_URL, external: true },
-    { label: "GitHub", copy: "Explore source, issues, and releases", href: GITHUB_URL, external: true },
+    { label: copy.telegramLabel, copy: copy.telegramCopy, href: TELEGRAM_DEMO_URL, external: true },
+    { label: copy.browserLabel, copy: copy.browserCopy, href: `${base}demo/` },
+    { label: copy.storybookLabel, copy: copy.storybookCopy, href: `${base}storybook/` },
+    { label: copy.docsLabel, copy: copy.docsCopy, href: `${base}docs/` },
+    { label: copy.npmLabel, copy: copy.npmCopy, href: NPM_URL, external: true },
+    { label: copy.githubLabel, copy: copy.githubCopy, href: GITHUB_URL, external: true },
   ];
 
   return (
     <Section className="landing-explore" id="explore" labelledBy="explore-title">
       <Container>
-        <h2 id="explore-title">Explore the project</h2>
+        <h2 id="explore-title">{copy.title}</h2>
         <div className="landing-explore-links">
           {links.map((link) => (
             <a
@@ -390,10 +404,11 @@ function CopyButton({
   testId: string;
 }) {
   const toast = useTKToast();
+  const { strings } = useSiteLocale();
 
   const onCopy = async () => {
     if (await copyText(text)) toast.success(successMessage);
-    else toast.error("Could not copy to the clipboard");
+    else toast.error(strings.landing.copyError);
   };
 
   return (

@@ -7,6 +7,7 @@ import {
   type TKTheme,
 } from "tg-mini-app-uikit";
 import { SectionTitle } from "../shared/layout";
+import { formatSiteString, useSiteLocale } from "../shared/i18n";
 import {
   SHOWCASE_TWEAK_RANGES,
   type ShowcaseTweaks,
@@ -18,15 +19,17 @@ const MOTION_RANGE = SHOWCASE_TWEAK_RANGES.motion;
 const FONT_RANGE = SHOWCASE_TWEAK_RANGES.font;
 
 const ACCENT_PRESETS = [
-  { id: "telegram", label: "Telegram blue", token: "--tk-accent" },
-  { id: "green", label: "Green", token: "--tk-green" },
-  { id: "orange", label: "Orange", token: "--tk-orange" },
-  { id: "purple", label: "Purple", token: "--tk-purple" },
-  { id: "red", label: "Red", token: "--tk-red" },
+  { id: "telegram", token: "--tk-accent" },
+  { id: "green", token: "--tk-green" },
+  { id: "orange", token: "--tk-orange" },
+  { id: "purple", token: "--tk-purple" },
+  { id: "red", token: "--tk-red" },
 ] as const;
 
+type AccentPresetId = (typeof ACCENT_PRESETS)[number]["id"];
+
 interface AccentPreset {
-  id: (typeof ACCENT_PRESETS)[number]["id"];
+  id: AccentPresetId;
   label: string;
   value: string;
 }
@@ -39,7 +42,10 @@ interface TweaksPanelProps {
   onReset: () => void;
 }
 
-function resolveAccentPresets(theme: TKTheme): AccentPreset[] {
+function resolveAccentPresets(
+  theme: TKTheme,
+  labels: Record<AccentPresetId, string>,
+): AccentPreset[] {
   const host = document.createElement("div");
   host.className = "tk";
   host.dataset.theme = theme;
@@ -66,7 +72,7 @@ function resolveAccentPresets(theme: TKTheme): AccentPreset[] {
 
     return ACCENT_PRESETS.flatMap((preset) => {
       const value = resolved.get(preset.id);
-      return value ? [{ id: preset.id, label: preset.label, value }] : [];
+      return value ? [{ id: preset.id, label: labels[preset.id], value }] : [];
     });
   } finally {
     host.remove();
@@ -80,15 +86,23 @@ export function TweaksPanel({
   onDefaultAccentResolved,
   onReset,
 }: TweaksPanelProps) {
+  const { strings } = useSiteLocale();
+  const copy = strings.demo.tweaks;
   const [presets, setPresets] = useState<AccentPreset[]>([]);
   const [previewEnabled, setPreviewEnabled] = useState(true);
   const [previewPressed, setPreviewPressed] = useState(false);
 
   useLayoutEffect(() => {
-    const next = resolveAccentPresets(theme);
+    const next = resolveAccentPresets(theme, {
+      telegram: copy.telegramBlue,
+      green: copy.green,
+      orange: copy.orange,
+      purple: copy.purple,
+      red: copy.red,
+    });
     setPresets(next);
     if (next[0]) onDefaultAccentResolved(next[0].value);
-  }, [onDefaultAccentResolved, theme]);
+  }, [copy, onDefaultAccentResolved, theme]);
 
   const currentAccent = tweaks.accent ?? presets[0]?.value ?? "";
   const selectedPreset = presets.find(
@@ -99,29 +113,26 @@ export function TweaksPanel({
   return (
     <div className="tweaks-layout">
       <div className="tweaks-intro">
-        <SectionTitle id="tweaks-title">Tune every surface</SectionTitle>
-        <p>
-          Adjust the UIKit at its root. Every demo below the provider inherits the same
-          accent, radius, motion speed, and type scale immediately.
-        </p>
+        <SectionTitle id="tweaks-title">{copy.title}</SectionTitle>
+        <p>{copy.intro}</p>
       </div>
 
       <div className="tweaks-panel" data-testid="tweaks-panel">
         <div className="tweaks-panel-heading">
           <div>
-            <strong>Live theme controls</strong>
-            <span>Saved automatically on this device</span>
+            <strong>{copy.controls}</strong>
+            <span>{copy.saved}</span>
           </div>
           <TKButton size="sm" variant="outline" onClick={onReset} testId="tweaks-reset">
-            Reset
+            {copy.reset}
           </TKButton>
         </div>
 
         <div className="tweaks-control tweaks-control--accent">
           <div className="tweaks-control-heading">
-            <span id="tweaks-accent-label">Accent</span>
+            <span id="tweaks-accent-label">{copy.accent}</span>
             <output aria-labelledby="tweaks-accent-label">
-              {selectedPreset?.label ?? "Custom"}
+              {selectedPreset?.label ?? copy.custom}
               {currentAccent ? <code>{currentAccent.toUpperCase()}</code> : null}
             </output>
           </div>
@@ -133,7 +144,7 @@ export function TweaksPanel({
                 <TKChip
                   key={preset.id}
                   selected={selected}
-                  aria-label={`Use ${preset.label} accent`}
+                  aria-label={formatSiteString(copy.useAccent, { label: preset.label })}
                   onClick={() => update({ accent: preset.value })}
                   style={{
                     width: 44,
@@ -158,17 +169,17 @@ export function TweaksPanel({
               <input
                 type="color"
                 value={currentAccent}
-                aria-label="Choose a custom accent color"
+                aria-label={copy.chooseAccent}
                 onChange={(event) => update({ accent: event.currentTarget.value })}
               />
-              <span>Custom</span>
+              <span>{copy.custom}</span>
             </label>
           </div>
         </div>
 
         <div className="tweaks-control">
           <div className="tweaks-control-heading">
-            <span id="tweaks-radius-label">Radius</span>
+            <span id="tweaks-radius-label">{copy.radius}</span>
             <output aria-labelledby="tweaks-radius-label">{tweaks.roundness.toFixed(1)}×</output>
           </div>
           <TKSlider
@@ -177,7 +188,7 @@ export function TweaksPanel({
             step={0.1}
             value={tweaks.roundness}
             onChange={(roundness) => update({ roundness })}
-            label="Global radius scale"
+            label={copy.radiusAria}
             suffix="×"
             testId="tweaks-radius"
           />
@@ -185,7 +196,7 @@ export function TweaksPanel({
 
         <div className="tweaks-control">
           <div className="tweaks-control-heading">
-            <span id="tweaks-motion-label">Motion speed</span>
+            <span id="tweaks-motion-label">{copy.motion}</span>
             <output aria-labelledby="tweaks-motion-label">{tweaks.motionSpeed.toFixed(1)}×</output>
           </div>
           <TKSlider
@@ -194,7 +205,7 @@ export function TweaksPanel({
             step={0.1}
             value={tweaks.motionSpeed}
             onChange={(motionSpeed) => update({ motionSpeed })}
-            label="Global motion speed"
+            label={copy.motionAria}
             suffix="×"
             testId="tweaks-motion"
           />
@@ -202,7 +213,7 @@ export function TweaksPanel({
 
         <div className="tweaks-control">
           <div className="tweaks-control-heading">
-            <span id="tweaks-font-label">Font size</span>
+            <span id="tweaks-font-label">{copy.fontSize}</span>
             <output aria-labelledby="tweaks-font-label">{tweaks.fontSize} px</output>
           </div>
           <TKSlider
@@ -211,22 +222,22 @@ export function TweaksPanel({
             step={1}
             value={tweaks.fontSize}
             onChange={(fontSize) => update({ fontSize })}
-            label="Global base font size"
+            label={copy.fontSizeAria}
             suffix=" px"
             testId="tweaks-font"
           />
         </div>
 
-        <div className="tweaks-preview" aria-label="Live control preview">
+        <div className="tweaks-preview" aria-label={copy.previewAria}>
           <div>
-            <strong>Local preview</strong>
-            <span>These controls use the same inherited tokens.</span>
+            <strong>{copy.previewTitle}</strong>
+            <span>{copy.previewCopy}</span>
           </div>
           <div className="tweaks-preview-actions">
             <TKSwitch
               checked={previewEnabled}
               onChange={setPreviewEnabled}
-              label="Live preview switch"
+              label={copy.previewSwitch}
             />
             <TKButton
               size="sm"
@@ -235,7 +246,7 @@ export function TweaksPanel({
               onClick={() => setPreviewPressed((pressed) => !pressed)}
               testId="tweaks-preview-button"
             >
-              {previewPressed ? "Preview active" : "Preview action"}
+              {previewPressed ? copy.previewActive : copy.previewAction}
             </TKButton>
           </div>
         </div>

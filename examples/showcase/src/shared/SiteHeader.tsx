@@ -1,4 +1,5 @@
 import { TKIcon, type TKTheme } from "tg-mini-app-uikit";
+import { useSiteLocale } from "./i18n";
 import { Container } from "./layout";
 
 export interface SiteLink {
@@ -40,6 +41,7 @@ export function SiteHeader({
   utilityLink,
 }: SiteHeaderProps) {
   const nextTheme = theme === "dark" ? "light" : "dark";
+  const { locale, setLocale, strings } = useSiteLocale();
 
   return (
     <header className="site-header">
@@ -49,7 +51,7 @@ export function SiteHeader({
           {wordmarkContext ? <span>{wordmarkContext}</span> : null}
         </a>
 
-        <nav className="site-navigation" aria-label="Primary navigation">
+        <nav className="site-navigation" aria-label={strings.shared.primaryNavigation}>
           <ul>
             {navigation.map(({ href, label }) => (
               <li key={href}>
@@ -65,10 +67,28 @@ export function SiteHeader({
               {utilityLink.label}
             </a>
           ) : null}
+          <div className="site-locale-switch" role="group" aria-label={strings.shared.localeControl}>
+            {(["en", "ru"] as const).map((option) => (
+              <button
+                key={option}
+                type="button"
+                aria-pressed={locale === option}
+                data-testid={`site-locale-${option}`}
+                lang={option}
+                onClick={() => setLocale(option)}
+              >
+                {option.toUpperCase()}
+              </button>
+            ))}
+          </div>
           <button
             type="button"
             className="site-icon-button"
-            aria-label={`Switch to ${nextTheme} theme`}
+            aria-label={
+              nextTheme === "light"
+                ? strings.shared.switchToLightTheme
+                : strings.shared.switchToDarkTheme
+            }
             onClick={onThemeToggle}
           >
             <TKIcon name={theme === "dark" ? "sun" : "moon"} size={20} />
@@ -78,7 +98,7 @@ export function SiteHeader({
             href="https://github.com/lonmstalker/tg-mini-app-uikit"
             target="_blank"
             rel="noopener noreferrer"
-            aria-label="GitHub repository"
+            aria-label={strings.shared.githubRepository}
           >
             <GitHubIcon />
           </a>

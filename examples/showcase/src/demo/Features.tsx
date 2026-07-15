@@ -24,13 +24,10 @@ import {
   type TKTheme,
 } from "tg-mini-app-uikit";
 import { SectionTitle } from "../shared/layout";
+import { formatSiteString, useSiteLocale } from "../shared/i18n";
 import { useReveal } from "../shared/useReveal";
 
 const FEATURE_STAGGER_MS = 60;
-const busyCopy = {
-  loading: "Checking the accessible flow…",
-  done: "Accessibility check complete.",
-} as const;
 
 interface GestureCounter {
   onRender: ProfilerOnRenderCallback;
@@ -40,6 +37,8 @@ interface GestureCounter {
 }
 
 export function Features({ theme }: { theme: TKTheme }) {
+  const { strings } = useSiteLocale();
+  const copy = strings.demo.features;
   const commitValueRef = useRef<HTMLSpanElement>(null);
   const commitStatusRef = useRef<HTMLParagraphElement>(null);
   const gestureCounter = useGestureCommitCounter(commitValueRef, commitStatusRef);
@@ -47,15 +46,15 @@ export function Features({ theme }: { theme: TKTheme }) {
   return (
     <>
       <div className="features-heading">
-        <SectionTitle id="features-title">Features, proven live</SectionTitle>
-        <p>Try the same interaction, theme, performance, and accessibility contracts your Mini App ships.</p>
+        <SectionTitle id="features-title">{copy.title}</SectionTitle>
+        <p>{copy.intro}</p>
       </div>
 
       <div className="features-grid">
         <FeatureCard
           index={0}
-          title="Native-feel gestures"
-          description="Open the sheet, then drag its handle. The UIKit owns the gesture physics, focus trap, and dismissal."
+          title={copy.gesturesTitle}
+          description={copy.gesturesCopy}
         >
           <Profiler id="feature-sheet" onRender={gestureCounter.onRender}>
             <GestureDemo theme={theme} counter={gestureCounter} />
@@ -64,24 +63,24 @@ export function Features({ theme }: { theme: TKTheme }) {
 
         <FeatureCard
           index={1}
-          title="Telegram out of the box"
-          description="Switch token sources. Telegram uses a real injected WebApp mock and the same provider path as production."
+          title={copy.telegramTitle}
+          description={copy.telegramCopy}
         >
           <ThemeDemo />
         </FeatureCard>
 
         <FeatureCard
           index={2}
-          title="Compositor-only motion"
-          description="The moving layer stays on transform and opacity while React watches the sheet demo next door."
+          title={copy.motionTitle}
+          description={copy.motionCopy}
         >
           <MotionDemo commitValueRef={commitValueRef} commitStatusRef={commitStatusRef} />
         </FeatureCard>
 
         <FeatureCard
           index={3}
-          title="Accessible by default"
-          description="Tab through real UIKit controls, then run an async action to see exactly what assistive tech hears."
+          title={copy.accessibilityTitle}
+          description={copy.accessibilityCopy}
         >
           <AccessibilityDemo />
         </FeatureCard>
@@ -119,6 +118,8 @@ function FeatureCard({
 }
 
 function GestureDemo({ theme, counter }: { theme: TKTheme; counter: GestureCounter }) {
+  const { strings } = useSiteLocale();
+  const copy = strings.demo.features;
   const [open, setOpen] = useState(false);
   const hostRef = useRef<HTMLDivElement>(null);
 
@@ -143,34 +144,34 @@ function GestureDemo({ theme, counter }: { theme: TKTheme; counter: GestureCount
         <TKProvider theme={theme} className="feature-phone-screen">
           <div className="feature-phone-content" data-tk-portal-root>
             <div className="feature-phone-toolbar">
-              <span>Trip planner</span>
+              <span>{copy.tripPlanner}</span>
               <span aria-hidden="true">•••</span>
             </div>
             <div className="feature-phone-body">
-              <strong>Weekend in Lisbon</strong>
-              <p>Everything stays inside this mini viewport.</p>
+              <strong>{copy.lisbonWeekend}</strong>
+              <p>{copy.viewportCopy}</p>
               <TKButton full onClick={() => setOpen(true)}>
-                Open draggable sheet
+                {copy.openSheet}
               </TKButton>
             </div>
 
             <TKSheet
               open={open}
               onClose={() => setOpen(false)}
-              title="Your itinerary"
+              title={copy.itinerary}
               testId="feature-sheet"
             >
               <div className="feature-sheet-body">
-                <p>Drag this header down to dismiss, or press Escape.</p>
+                <p>{copy.dismissSheet}</p>
                 <TKButton full variant="tonal" onClick={() => setOpen(false)}>
-                  Done
+                  {copy.done}
                 </TKButton>
               </div>
             </TKSheet>
           </div>
         </TKProvider>
       </div>
-      <p className="feature-hint">Pointer or touch to drag · Enter to open · Escape to close</p>
+      <p className="feature-hint">{copy.gestureHint}</p>
     </div>
   );
 }
@@ -178,20 +179,27 @@ function GestureDemo({ theme, counter }: { theme: TKTheme; counter: GestureCount
 type ThemeMode = "light" | "dark" | "telegram";
 
 function ThemeDemo() {
+  const { strings } = useSiteLocale();
+  const copy = strings.demo.features;
   const [mode, setMode] = useState<ThemeMode>("light");
   const telegram = useMemo(() => createMockTelegram({ colorScheme: "dark" }), []);
   const previewTheme = mode === "light" ? "light" : "dark";
-  const source = mode === "telegram" ? "Telegram themeParams" : `${mode} UIKit tokens`;
+  const source =
+    mode === "telegram"
+      ? copy.telegramTokens
+      : mode === "light"
+        ? copy.lightTokens
+        : copy.darkTokens;
 
   return (
     <div className="feature-theme-demo" data-theme-mode={mode}>
       <TKSegmented
-        ariaLabel="Mini app theme"
+        ariaLabel={copy.themeAria}
         full
         options={[
-          { value: "light", label: "Light" },
-          { value: "dark", label: "Dark" },
-          { value: "telegram", label: "Telegram" },
+          { value: "light", label: copy.light },
+          { value: "dark", label: copy.dark },
+          { value: "telegram", label: copy.telegram },
         ]}
         value={mode}
         onChange={(value) => setMode(value as ThemeMode)}
@@ -207,23 +215,23 @@ function ThemeDemo() {
           testId="feature-theme-preview"
         >
           <div className="feature-theme-meta">
-            <span>Expense approval</span>
+            <span>{copy.expenseApproval}</span>
             <span>{source}</span>
           </div>
           <div className="feature-theme-amount">
-            <span>Team offsite</span>
+            <span>{copy.teamOffsite}</span>
             <strong>$640</strong>
           </div>
           <TKMainButton
-            label="Approve expense"
-            successLabel="Approved"
+            label={copy.approveExpense}
+            successLabel={copy.approved}
             onClick={() => new Promise<void>((resolve) => window.setTimeout(resolve, 650))}
             style={{ background: "var(--tk-accent)" }}
             testId="feature-main-button"
           />
         </TKProvider>
       </TKTelegramProvider>
-      <p className="feature-hint">Use arrow keys inside the segmented control</p>
+      <p className="feature-hint">{copy.themeHint}</p>
     </div>
   );
 }
@@ -235,6 +243,8 @@ function MotionDemo({
   commitValueRef: RefObject<HTMLSpanElement | null>;
   commitStatusRef: RefObject<HTMLParagraphElement | null>;
 }) {
+  const { strings } = useSiteLocale();
+  const copy = strings.demo.features;
   const playback = useViewportPlayback<HTMLDivElement>();
   const [manuallyPaused, setManuallyPaused] = useState(false);
   const motionState =
@@ -250,7 +260,7 @@ function MotionDemo({
         aria-pressed={manuallyPaused}
         onClick={() => setManuallyPaused((paused) => !paused)}
       >
-        {manuallyPaused ? "Play motion" : "Pause motion"}
+        {manuallyPaused ? copy.playMotion : copy.pauseMotion}
       </TKButton>
       <div className="feature-commit-readout">
         <span
@@ -263,31 +273,33 @@ function MotionDemo({
           0
         </span>
         <div>
-          <strong>React commits while pixels move</strong>
+          <strong>{copy.commitsTitle}</strong>
           <p ref={commitStatusRef} role="status" aria-live="polite">
-            Open and drag the sheet to measure.
+            {copy.commitsInitial}
           </p>
         </div>
       </div>
-      <p className="feature-ci-line">Transform + opacity only · enforced by CI</p>
+      <p className="feature-ci-line">{copy.ciLine}</p>
     </div>
   );
 }
 
 function AccessibilityDemo() {
+  const { strings } = useSiteLocale();
+  const copy = strings.demo.features;
   const [busy, setBusy] = useState<TKBusyState>("idle");
   const [focusRings, setFocusRings] = useState(true);
   const timerRef = useRef<number | undefined>(undefined);
   const liveRegion = useTKBusyAnnounce(busy, {
-    loadingText: busyCopy.loading,
-    doneText: busyCopy.done,
+    loadingText: copy.checking,
+    doneText: copy.checkComplete,
   });
   const visibleAnnouncement =
     busy === "loading"
-      ? busyCopy.loading
+      ? copy.checking
       : busy === "done"
-        ? busyCopy.done
-        : "The next status will appear here.";
+        ? copy.checkComplete
+        : copy.nextStatus;
 
   useEffect(
     () => () => {
@@ -306,16 +318,16 @@ function AccessibilityDemo() {
     <div className="feature-a11y-demo">
       <div className="feature-focus-controls">
         <TKButton variant="outline" onClick={runAnnouncement}>
-          Run async announcement
+          {copy.runAnnouncement}
         </TKButton>
-        <TKSwitch checked={focusRings} onChange={setFocusRings} label="Focus rings use --tk-ring" />
+        <TKSwitch checked={focusRings} onChange={setFocusRings} label={copy.focusRings} />
       </div>
       <div className="feature-live-copy" data-testid="feature-visible-announcement">
-        <span aria-hidden="true">AT hears</span>
+        <span aria-hidden="true">{copy.assistiveTechHears}</span>
         <strong>{visibleAnnouncement}</strong>
       </div>
       <div data-testid="feature-live-region">{liveRegion}</div>
-      <p className="feature-hint">Press Tab to see the same focus treatment on every control</p>
+      <p className="feature-hint">{copy.focusHint}</p>
     </div>
   );
 }
@@ -356,6 +368,8 @@ function useGestureCommitCounter(
   valueRef: RefObject<HTMLSpanElement | null>,
   statusRef: RefObject<HTMLParagraphElement | null>,
 ): GestureCounter {
+  const { strings } = useSiteLocale();
+  const copy = strings.demo.features;
   const activeRef = useRef(false);
   const armingRef = useRef(false);
   const pointerRef = useRef<number | null>(null);
@@ -377,16 +391,16 @@ function useGestureCommitCounter(
       const status =
         statusRef.current ?? document.querySelector<HTMLParagraphElement>(".feature-commit-readout [role='status']");
       if (!status) return;
-      if (dragState === "armed") status.textContent = "Move the sheet to start measuring.";
-      if (dragState === "dragging") status.textContent = "Measuring move-frame commits…";
+      if (dragState === "armed") status.textContent = copy.commitsArmed;
+      if (dragState === "dragging") status.textContent = copy.commitsMeasuring;
       if (dragState === "complete") {
         status.textContent =
           commitsRef.current === 0
-            ? "Last drag: zero move-frame commits."
-            : `Last drag: ${commitsRef.current} move-frame commits.`;
+            ? copy.commitsZero
+            : formatSiteString(copy.commitsResult, { count: commitsRef.current });
       }
     },
-    [statusRef, valueRef],
+    [copy, statusRef, valueRef],
   );
 
   const onPointerDown = useCallback(

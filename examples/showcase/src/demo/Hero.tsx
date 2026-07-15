@@ -16,31 +16,33 @@ import {
   type TKTheme,
 } from "tg-mini-app-uikit";
 import { copyText } from "../shared/clipboard";
+import { formatSiteString, useSiteLocale } from "../shared/i18n";
 import { SectionTitle } from "../shared/layout";
 import { SCENARIO_CYCLE_MS, useScenario } from "./useScenario";
 
 const INSTALL_COMMAND = "npm i tg-mini-app-uikit";
 
 interface WalletCard {
-  id: string;
-  label: string;
+  id: "everyday" | "travel" | "reserve";
   digits: string;
   tone: "accent" | "surface" | "green";
 }
 
 const walletCards: WalletCard[] = [
-  { id: "everyday", label: "Everyday", digits: "4821", tone: "accent" },
-  { id: "travel", label: "Travel", digits: "1068", tone: "surface" },
-  { id: "reserve", label: "Reserve", digits: "7349", tone: "green" },
+  { id: "everyday", digits: "4821", tone: "accent" },
+  { id: "travel", digits: "1068", tone: "surface" },
+  { id: "reserve", digits: "7349", tone: "green" },
 ];
 
 export function Hero({ theme }: { theme: TKTheme }) {
   const toast = useTKToast();
+  const { strings } = useSiteLocale();
+  const copy = strings.demo.hero;
   const base = import.meta.env.BASE_URL;
 
   const onCopy = async () => {
-    if (await copyText(INSTALL_COMMAND)) toast.success("Install command copied");
-    else toast.error("Could not copy the install command");
+    if (await copyText(INSTALL_COMMAND)) toast.success(copy.installCopied);
+    else toast.error(copy.installCopyError);
   };
 
   return (
@@ -50,27 +52,27 @@ export function Hero({ theme }: { theme: TKTheme }) {
           as="h1"
           className="hero-title"
           id="hero-title"
-          aria-label="iOS-flavored UI kit for Telegram Mini Apps"
+          aria-label={copy.title}
         >
           <span aria-hidden="true" className="hero-title-line tk-rise" style={{ animationDelay: "0ms" }}>
-            iOS-flavored UI
+            {copy.line1}
           </span>
           <span aria-hidden="true" className="hero-title-line tk-rise" style={{ animationDelay: "60ms" }}>
-            kit for Telegram
+            {copy.line2}
           </span>
           <span aria-hidden="true" className="hero-title-line tk-rise" style={{ animationDelay: "120ms" }}>
-            Mini Apps
+            {copy.line3}
           </span>
         </SectionTitle>
 
-        <p className="hero-subtitle">Zero runtime dependencies · React 18 &amp; 19 · Bot API 9.6</p>
+        <p className="hero-subtitle">{copy.subline}</p>
 
-        <div className="hero-install" aria-label={`Install with ${INSTALL_COMMAND}`}>
+        <div className="hero-install" aria-label={`${copy.installWith} ${INSTALL_COMMAND}`}>
           <code>{INSTALL_COMMAND}</code>
-          <TKIconButton icon="copy" label="Copy install command" onClick={onCopy} variant="plain" />
+          <TKIconButton icon="copy" label={copy.copyInstall} onClick={onCopy} variant="plain" />
         </div>
 
-        <div className="hero-badges" aria-label="Package facts">
+        <div className="hero-badges" aria-label={copy.packageFacts}>
           <TKBadge soft>~60 kB brotli</TKBadge>
           <TKBadge soft tone="green">1235 tests</TKBadge>
           <TKBadge soft tone="gray">MIT</TKBadge>
@@ -78,10 +80,10 @@ export function Hero({ theme }: { theme: TKTheme }) {
 
         <div className="hero-actions">
           <TKButton as="a" href={`${base}docs/`} icon="arrowRight" size="lg">
-            Get started
+            {copy.getStarted}
           </TKButton>
           <TKButton as="a" href={`${base}storybook/`} size="lg" variant="outline">
-            Browse components
+            {copy.browseComponents}
           </TKButton>
         </div>
       </div>
@@ -92,6 +94,8 @@ export function Hero({ theme }: { theme: TKTheme }) {
 }
 
 function WalletPhone({ theme }: { theme: TKTheme }) {
+  const { strings } = useSiteLocale();
+  const copy = strings.demo.wallet;
   const frameRef = useRef<HTMLDivElement>(null);
   const scenario = useScenario(frameRef);
   const [manualPage, setManualPage] = useState<number>();
@@ -189,7 +193,7 @@ function WalletPhone({ theme }: { theme: TKTheme }) {
             <TKSheet
               open={sheetOpen}
               onClose={() => setManualSheetOpen(false)}
-              title="Confirm payment"
+              title={copy.confirmPayment}
               testId="wallet-sheet"
             >
               <div className="wallet-sheet-body">
@@ -197,9 +201,9 @@ function WalletPhone({ theme }: { theme: TKTheme }) {
                   <span className="wallet-sheet-label">Telegram Premium</span>
                   <strong>$4.99</strong>
                 </div>
-                <p>Everyday •••• 4821</p>
+                <p>{copy.everyday} •••• 4821</p>
                 <TKButton full icon="lock" onClick={showPin}>
-                  Pay securely
+                  {copy.paySecurely}
                 </TKButton>
               </div>
             </TKSheet>
@@ -209,10 +213,10 @@ function WalletPhone({ theme }: { theme: TKTheme }) {
       </div>
       <p className="scenario-hint">
         {scenario.reducedMotion
-          ? "Static preview · reduced motion"
+          ? copy.staticHint
           : scenario.stopped
-            ? "Manual mode · enter 1234"
-            : "Live wallet flow · tap to take over"}
+            ? copy.manualHint
+            : copy.liveHint}
       </p>
     </div>
   );
@@ -227,18 +231,21 @@ function WalletHome({
   onPageChange: (page: number) => void;
   onCardOpen: () => void;
 }) {
+  const { strings } = useSiteLocale();
+  const copy = strings.demo.wallet;
+
   return (
     <div className="wallet-screen">
       <div className="wallet-toolbar">
         <div className="wallet-heading">
           <span className="wallet-app-icon"><TKIcon name="wallet" size={18} /></span>
-          <strong>Wallet</strong>
+          <strong>{copy.wallet}</strong>
         </div>
-        <TKIconButton icon="dots" label="Wallet options" size="sm" variant="plain" />
+        <TKIconButton icon="dots" label={copy.walletOptions} size="sm" variant="plain" />
       </div>
 
       <div className="wallet-balance">
-        <span>Total balance</span>
+        <span>{copy.totalBalance}</span>
         <strong>$12,480.72</strong>
       </div>
 
@@ -251,49 +258,52 @@ function WalletHome({
         page={page}
         onPageChange={onPageChange}
         getKey={(card) => card.id}
-        renderItem={(card) => (
-          <TKCard
-            className={`wallet-card wallet-card-${card.tone}`}
-            onClick={onCardOpen}
-            padding="18px"
-            aria-label={`Pay with ${card.label} card ending ${card.digits}`}
-            style={{
-              background:
-                card.tone === "accent"
-                  ? "linear-gradient(135deg, var(--tk-accent), color-mix(in srgb, var(--tk-accent) 68%, var(--tk-surface)))"
-                  : card.tone === "green"
-                    ? "linear-gradient(135deg, var(--tk-green), color-mix(in srgb, var(--tk-green) 68%, var(--tk-surface)))"
-                    : "linear-gradient(135deg, var(--tk-surface-3), var(--tk-surface))",
-              boxShadow: "none",
-            }}
-          >
-            <span>{card.label}</span>
-            <TKIcon name="card" size={22} />
-            <strong>•••• {card.digits}</strong>
-          </TKCard>
-        )}
+        renderItem={(card) => {
+          const label = copy[card.id];
+          return (
+            <TKCard
+              className={`wallet-card wallet-card-${card.tone}`}
+              onClick={onCardOpen}
+              padding="18px"
+              aria-label={formatSiteString(copy.payWithCard, { card: label, digits: card.digits })}
+              style={{
+                background:
+                  card.tone === "accent"
+                    ? "linear-gradient(135deg, var(--tk-accent), color-mix(in srgb, var(--tk-accent) 68%, var(--tk-surface)))"
+                    : card.tone === "green"
+                      ? "linear-gradient(135deg, var(--tk-green), color-mix(in srgb, var(--tk-green) 68%, var(--tk-surface)))"
+                      : "linear-gradient(135deg, var(--tk-surface-3), var(--tk-surface))",
+                boxShadow: "none",
+              }}
+            >
+              <span>{label}</span>
+              <TKIcon name="card" size={22} />
+              <strong>•••• {card.digits}</strong>
+            </TKCard>
+          );
+        }}
       />
 
-      <div className="wallet-actions" aria-label="Wallet shortcuts">
-        <WalletAction icon="send" label="Send" />
-        <WalletAction icon="plus" label="Add" />
-        <WalletAction icon="qr" label="Scan" />
+      <div className="wallet-actions" aria-label={copy.shortcuts}>
+        <WalletAction icon="send" label={copy.send} />
+        <WalletAction icon="plus" label={copy.add} />
+        <WalletAction icon="qr" label={copy.scan} />
       </div>
 
       <div className="wallet-activity-heading">
-        <strong>Activity</strong>
-        <span>Today</span>
+        <strong>{copy.activity}</strong>
+        <span>{copy.today}</span>
       </div>
       <TKCard inset={false} padding={0}>
         <TKCardCell
           before={<span className="wallet-row-icon"><TKIcon name="gift" size={17} /></span>}
           title="Telegram Premium"
-          subtitle="Subscription"
+          subtitle={copy.subscription}
           after={<strong>−$4.99</strong>}
         />
         <TKCardCell
           before={<span className="wallet-row-icon"><TKIcon name="arrowRight" size={17} /></span>}
-          title="Transfer received"
+          title={copy.transferReceived}
           subtitle="Alex Morgan"
           after={<strong className="wallet-positive">+$280</strong>}
         />
@@ -325,12 +335,14 @@ function PinStep({
   onComplete: (pin: string) => void;
 }) {
   const locale = useTKLocale();
+  const { strings } = useSiteLocale();
+  const copy = strings.demo.wallet;
 
   return (
     <div className="wallet-pin-screen">
       <div className="wallet-pin-toolbar">
-        <TKIconButton icon="chevronLeft" label="Back to wallet" onClick={onBack} size="sm" variant="plain" />
-        <span>Secure payment</span>
+        <TKIconButton icon="chevronLeft" label={copy.backToWallet} onClick={onBack} size="sm" variant="plain" />
+        <span>{copy.securePayment}</span>
       </div>
       <TKPinInput
         error={error}
@@ -350,13 +362,16 @@ function PinStep({
 }
 
 function SuccessPop({ onDone }: { onDone: () => void }) {
+  const { strings } = useSiteLocale();
+  const copy = strings.demo.wallet;
+
   return (
     <div className="wallet-success" role="status" aria-live="polite">
       <div className="wallet-success-card tk-pop-lg">
         <span className="wallet-success-icon"><TKIcon name="check" size={28} strokeWidth={3} /></span>
-        <strong>Payment complete</strong>
-        <span>$4.99 sent securely</span>
-        <TKButton onClick={onDone} size="sm" variant="tonal">Done</TKButton>
+        <strong>{copy.paymentComplete}</strong>
+        <span>{copy.paymentSent}</span>
+        <TKButton onClick={onDone} size="sm" variant="tonal">{copy.done}</TKButton>
       </div>
     </div>
   );

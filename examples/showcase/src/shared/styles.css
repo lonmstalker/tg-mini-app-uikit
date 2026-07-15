@@ -116,7 +116,34 @@ a {
   display: flex;
   margin-inline-start: auto;
   align-items: center;
-  gap: var(--tk-sp-2);
+  gap: var(--tk-sp-1);
+}
+
+.site-locale-switch {
+  display: inline-flex;
+  flex: none;
+  padding: 2px;
+  border: 1px solid var(--tk-sep);
+  border-radius: var(--tk-r-pill);
+  background: var(--tk-surface-2);
+}
+
+.site-locale-switch button {
+  min-inline-size: 28px;
+  min-block-size: 28px;
+  padding: 0 var(--tk-sp-1);
+  border: 0;
+  border-radius: var(--tk-r-pill);
+  color: var(--tk-text-2);
+  background: transparent;
+  font-size: var(--tk-fz-caption);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.site-locale-switch button[aria-pressed="true"] {
+  color: var(--tk-accent-ink);
+  background: var(--tk-accent-12);
 }
 
 .site-icon-button {
@@ -135,6 +162,7 @@ a {
 }
 
 .site-icon-button:focus-visible,
+.site-locale-switch button:focus-visible,
 .site-navigation a:focus-visible,
 .site-wordmark:focus-visible,
 .site-footer-links a:focus-visible,
@@ -142,6 +170,10 @@ a {
   border-radius: var(--tk-r-xs);
   outline: none;
   box-shadow: var(--tk-ring);
+}
+
+.site-header-link {
+  display: none;
 }
 
 .github-icon {
@@ -235,5 +267,11 @@ a {
   .site-footer-inner {
     grid-template-columns: 1fr auto;
     align-items: end;
+  }
+}
+
+@media (min-width: 520px) {
+  .site-header-link {
+    display: block;
   }
 }
