@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { getTelegramWebApp, TKTelegramProvider } from "@tg-mini-app/telegram";
 import {
   enLocale,
   ruLocale,
@@ -52,7 +53,27 @@ export function App() {
     if (defaultAccent) persistShowcaseTweaks(tweaks, defaultAccent);
   }, [defaultAccent, tweaks]);
 
-  return (
+  // The official telegram-web-app.js defines window.Telegram.WebApp even in a
+  // plain browser (platform "unknown", empty initData) — only a REAL client
+  // session counts as "inside Telegram".
+  const [insideTelegram] = useState(() => {
+    const webApp = getTelegramWebApp();
+    return !!webApp && (webApp.initData !== "" || (webApp.platform ?? "unknown") !== "unknown");
+  });
+
+  // Inside a real Telegram client: expand to full height, take over vertical
+  // swipes (macOS/desktop otherwise fights page scroll with its own
+  // rubber-band — the "jittery scroll" report), and mark the root so CSS can
+  // disable overscroll bounce. Plain browsers keep stock scroll behavior.
+  useEffect(() => {
+    if (!insideTelegram) return;
+    const webApp = getTelegramWebApp();
+    document.documentElement.setAttribute("data-tma", "");
+    webApp?.expand?.();
+    webApp?.disableVerticalSwipes?.();
+  }, [insideTelegram]);
+
+  const page = (
     <TKProvider
       theme={theme}
       accent={tweaks.accent ?? undefined}
@@ -135,4 +156,9 @@ export function App() {
       </TKLocaleProvider>
     </TKProvider>
   );
+
+  // The page-level Telegram provider (ready() signal, live theme context)
+  // mounts only for a real client session, so plain-browser behavior — and
+  // the kit's native-vs-fallback chrome decisions — stay untouched.
+  return insideTelegram ? <TKTelegramProvider>{page}</TKTelegramProvider> : page;
 }

@@ -1600,3 +1600,14 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
+
+/* Inside a Telegram WebView (data-tma set by the demo app when the real
+   WebApp bridge is present): kill overscroll bounce so the client's own
+   swipe handling can't fight page scroll into a jitter loop. */
+:root[data-tma] {
+  overscroll-behavior-y: none;
+}
+
+:root[data-tma] body {
+  overscroll-behavior-y: none;
+}

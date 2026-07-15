@@ -14,6 +14,10 @@
     />
     <link rel="icon" href="%BASE_URL%favicon.svg" type="image/svg+xml" />
     <title>Live demo — tg-mini-app-uikit</title>
+    <!-- The official bridge MUST load from telegram.org (updated server-side).
+         Outside Telegram it simply defines window.Telegram and stays inert —
+         the page keeps working as a plain browser demo. -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
   </head>
   <body>
     <div id="root"></div>
