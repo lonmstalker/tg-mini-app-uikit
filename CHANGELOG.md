@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.5.0 — 2026-07-15
+
+`TKCalendar` learns press-and-drag date-range selection (mouse/pen drag
+immediately, touch after a 300 ms hold with haptic arming; the preview clips
+at the first disabled date and controlled consumers get exactly one
+`onRangeChange` at commit). `TKSheet` gains a `modal={false}` mode for
+passive previews that must not capture document focus or lock the page.
+Two fixes: the modal scroll lock restores the page position instantly (hosts
+with `scroll-behavior: smooth` no longer animate from the top on close), and
+the derived `--tk-*-ink` colors recompute on every provider, so a nested
+light preview inside a dark page keeps readable accent text. Ships
+`tg-mini-app-uikit@0.5.0` (`@tg-mini-app/telegram` stays `0.2.1`);
+per-package notes in `packages/uikit/CHANGELOG.md`.
+
 ## 0.4.0 — 2026-07-14
 
 Animation smoothness overhaul (plan phases 0–5): gestures track the finger
