@@ -34,6 +34,13 @@ export interface TKSheetProps {
   defaultSnap?: number;
   /** Set to false to disable closing via scrim, Escape and swipe. */
   dismissible?: boolean;
+  /**
+   * Whether the sheet is modal (default true). `false` renders no scrim and
+   * skips background inerting, focus move/trap/restore, page scroll lock,
+   * Escape/Telegram Back interception, and Telegram's vertical-swipe guard.
+   * The close button and drag gestures remain available when dismissible.
+   */
+  modal?: boolean;
   /** Imperative API: `close()`, `snapTo(i)`, `snapIndex`. */
   sheetRef?: Ref<TKSheetHandle>;
   testId?: string;
@@ -50,6 +57,7 @@ export const TKSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSheetProps>(
     snapPoints,
     defaultSnap = 0,
     dismissible = true,
+    modal = true,
     sheetRef,
     testId,
   },
@@ -96,9 +104,12 @@ export const TKSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSheetProps>(
   // Back button both no-op when the sheet is non-dismissible (INT-DX-001).
   const { scrimZ, panelZ } = useModalOverlay({
     mounted,
-    active: mounted && !closing,
+    active: modal && mounted && !closing,
     ref,
     onClose: dismissible ? requestClose : undefined,
+    scrollLock: modal,
+    swipeGuard: modal,
+    inertBackground: modal,
   });
 
   const openChangeRef = useRef(onOpenChange);
@@ -211,12 +222,12 @@ export const TKSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSheetProps>(
       : "tk-sheet-up var(--tk-t3) var(--tk-spring) both";
   return (
     <>
-      <Scrim closing={closing} onClick={dismissible ? requestClose : undefined} z={scrimZ} />
+      {modal ? <Scrim closing={closing} onClick={dismissible ? requestClose : undefined} z={scrimZ} /> : null}
       <div
         ref={mergeRefs(ref, forwardedRef)}
         data-testid={testId}
         role="dialog"
-        aria-modal="true"
+        aria-modal={modal || undefined}
         aria-labelledby={title ? titleId : undefined}
         tabIndex={-1}
         onAnimationEnd={(e) => {

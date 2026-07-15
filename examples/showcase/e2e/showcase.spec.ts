@@ -118,6 +118,217 @@ test("landing theme toggle updates the provider theme", async ({ page }) => {
   await expect(root).toHaveAttribute("data-theme", "light");
 });
 
+test("explicit theme survives landing to demo navigation and reload while the unstored theme follows the system", async ({ page }) => {
+  await openLanding(page);
+  await page.getByRole("button", { name: "Switch to light theme" }).click();
+  await expect(page.getByTestId("landing-root")).toHaveAttribute("data-theme", "light");
+  await expect.poll(() => page.evaluate(() => localStorage.getItem("showcase-theme"))).toBe("light");
+
+  await page.getByRole("link", { name: /Native-feel gestures/ }).click();
+  await expect(page).toHaveURL(/\/demo\/#components$/);
+  await expect(page.getByTestId("showcase-root")).toHaveAttribute("data-theme", "light");
+  await page.reload();
+  await expect(page.getByTestId("showcase-root")).toHaveAttribute("data-theme", "light");
+
+  await page.evaluate(() => localStorage.setItem("showcase-theme", "sepia"));
+  await page.emulateMedia({ colorScheme: "dark", reducedMotion: "reduce" });
+  await page.reload();
+  await expect(page.getByTestId("showcase-root")).toHaveAttribute("data-theme", "dark");
+  await expect.poll(() => page.evaluate(() => localStorage.getItem("showcase-theme"))).toBeNull();
+
+  await page.evaluate(() => localStorage.removeItem("showcase-theme"));
+  await page.emulateMedia({ colorScheme: "light", reducedMotion: "reduce" });
+  await page.reload();
+  await expect(page.getByTestId("showcase-root")).toHaveAttribute("data-theme", "light");
+});
+
+test("autoplay sheet preserves document focus and scroll for two full scenario cycles", async ({ page }) => {
+  test.setTimeout(45_000);
+  await page.emulateMedia({ colorScheme: "dark", reducedMotion: "no-preference" });
+  await page.goto("/demo/");
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+
+  const stage = page.locator(".showcase-phone-stage");
+  await expect(stage).toHaveAttribute("data-scenario-autoplay", "running");
+  const target = page.getByTestId("tweaks-reset");
+  await target.evaluate((node) => (node as HTMLElement).focus({ preventScroll: true }));
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await expect(stage).toBeInViewport();
+
+  await page.evaluate(() => {
+    const active = document.activeElement as HTMLElement | null;
+    const initialScrollY = window.scrollY;
+    const state = {
+      target: active,
+      initialScrollY,
+      focusChanged: false,
+      maxScrollDelta: 0,
+    };
+    window.addEventListener("focusin", () => {
+      if (document.activeElement !== state.target) state.focusChanged = true;
+    });
+    window.addEventListener("scroll", () => {
+      state.maxScrollDelta = Math.max(state.maxScrollDelta, Math.abs(window.scrollY - initialScrollY));
+    });
+    (window as typeof window & { __focusRepro?: typeof state }).__focusRepro = state;
+  });
+
+  await expect.poll(
+    () => stage.getAttribute("data-scenario-cycle").then((value) => Number(value)),
+    { timeout: 40_000 },
+  ).toBeGreaterThanOrEqual(2);
+
+  const result = await page.evaluate(() => {
+    const state = (window as typeof window & {
+      __focusRepro?: {
+        target: Element | null;
+        initialScrollY: number;
+        focusChanged: boolean;
+        maxScrollDelta: number;
+      };
+    }).__focusRepro!;
+    return {
+      activePreserved: document.activeElement === state.target,
+      focusChanged: state.focusChanged,
+      scrollY: window.scrollY,
+      initialScrollY: state.initialScrollY,
+      maxScrollDelta: state.maxScrollDelta,
+    };
+  });
+  expect(result).toEqual({
+    activePreserved: true,
+    focusChanged: false,
+    scrollY: result.initialScrollY,
+    initialScrollY: result.initialScrollY,
+    maxScrollDelta: 0,
+  });
+});
+
+test("hero sheet becomes fully modal after user takeover", async ({ page }) => {
+  await page.emulateMedia({ colorScheme: "dark", reducedMotion: "no-preference" });
+  await page.goto("/demo/");
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+
+  const stage = page.locator(".showcase-phone-stage");
+  await stage.locator(".scenario-hint").click();
+  await expect(stage).toHaveAttribute("data-scenario-autoplay", "stopped");
+  await page.getByRole("button", { name: /Pay with Everyday.*4821/ }).click();
+
+  const sheet = page.getByTestId("wallet-sheet");
+  await expect(sheet).toHaveAttribute("aria-modal", "true");
+  await expect.poll(() => sheet.evaluate((node) => node.contains(document.activeElement))).toBe(true);
+  await expect(stage.locator("[data-tk-scrim]")).toBeVisible();
+  await sheet.getByRole("button", { name: "Close" }).click();
+
+  const featureDemo = page.locator(".feature-gesture-demo");
+  await featureDemo.scrollIntoViewIfNeeded();
+  await featureDemo.getByRole("button", { name: "Open draggable sheet" }).click();
+  await expect(page.getByTestId("feature-sheet")).toHaveAttribute("aria-modal", "true");
+  await page.getByTestId("feature-sheet").getByRole("button", { name: "Done" }).click();
+
+  const bentoDemo = page.getByTestId("sheet-demo");
+  await bentoDemo.scrollIntoViewIfNeeded();
+  await bentoDemo.getByRole("button", { name: "Open sheet" }).click();
+  await expect(page.getByTestId("bento-sheet")).toHaveAttribute("aria-modal", "true");
+});
+
+test("explore separators stay single-source at every responsive column count and theme", async ({ page }) => {
+  for (const colorScheme of ["light", "dark"] as const) {
+    for (const width of [375, 768, 1080, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+      await page.goto("/");
+      const links = page.locator(".landing-explore-links");
+      await links.scrollIntoViewIfNeeded();
+      const hoverTarget = links.locator("a").nth(1);
+      const relativeBox = () => hoverTarget.evaluate((node) => {
+        const rect = node.getBoundingClientRect();
+        const parentRect = node.parentElement!.getBoundingClientRect();
+        return {
+          x: rect.left - parentRect.left,
+          y: rect.top - parentRect.top,
+          width: rect.width,
+          height: rect.height,
+        };
+      });
+      const beforeHover = await relativeBox();
+      await hoverTarget.hover();
+      expect(await relativeBox(), `${colorScheme} ${width}px hover geometry`).toEqual(beforeHover);
+
+      const metrics = await links.evaluate((node) => {
+        const style = getComputedStyle(node);
+        const rects = Array.from(node.children, (child) => child.getBoundingClientRect());
+        const rows = new Map<number, DOMRect[]>();
+        for (const rect of rects) {
+          const top = Math.round(rect.top * 10) / 10;
+          rows.set(top, [...(rows.get(top) ?? []), rect]);
+        }
+        const sortedRows = [...rows.entries()].sort(([a], [b]) => a - b);
+        const horizontalSeams = sortedRows.flatMap(([, row]) =>
+          row
+            .sort((a, b) => a.left - b.left)
+            .slice(1)
+            .map((rect, index) => rect.left - row[index].right),
+        );
+        const verticalSeams = sortedRows.slice(1).map(([, row], index) => {
+          const previousBottom = Math.max(...sortedRows[index][1].map((rect) => rect.bottom));
+          return Math.min(...row.map((rect) => rect.top)) - previousBottom;
+        });
+        return {
+          rowGap: style.rowGap,
+          columnGap: style.columnGap,
+          borderBlockStart: style.borderBlockStartWidth,
+          borderBlockEnd: style.borderBlockEndWidth,
+          childBorders: Array.from(node.children, (child) => {
+            const childStyle = getComputedStyle(child);
+            return [
+              childStyle.borderBlockStartWidth,
+              childStyle.borderBlockEndWidth,
+              childStyle.borderInlineStartWidth,
+              childStyle.borderInlineEndWidth,
+            ];
+          }),
+          rowCount: sortedRows.length,
+          horizontalSeams,
+          verticalSeams,
+        };
+      });
+
+      expect(metrics.rowGap, `${colorScheme} ${width}px row gap`).toBe("1px");
+      expect(metrics.columnGap, `${colorScheme} ${width}px column gap`).toBe("1px");
+      expect(metrics.borderBlockStart).toBe("1px");
+      expect(metrics.borderBlockEnd).toBe("1px");
+      expect(metrics.childBorders.flat()).toEqual(Array(24).fill("0px"));
+      expect(metrics.rowCount).toBe(width < 768 ? 6 : width < 1080 ? 2 : 1);
+      for (const seam of [...metrics.horizontalSeams, ...metrics.verticalSeams]) {
+        expect(seam).toBeCloseTo(1, 1);
+      }
+    }
+  }
+});
+
+test("skeleton demo replaces content for 1.2 seconds and is instant with reduced motion", async ({ page }) => {
+  await page.emulateMedia({ colorScheme: "dark", reducedMotion: "no-preference" });
+  await page.goto("/demo/");
+  const demo = page.getByTestId("skeleton-demo");
+  await demo.scrollIntoViewIfNeeded();
+  await expect(demo).toHaveAttribute("data-reload-state", "content");
+  await expect(page.getByTestId("skeleton-content")).toBeVisible();
+
+  await demo.getByRole("button", { name: "Reload preview" }).click();
+  await expect(demo).toHaveAttribute("data-reload-state", "loading");
+  await expect(page.getByTestId("skeleton-loading")).toBeVisible();
+  await expect(demo).toHaveAttribute("data-reload-state", "content", { timeout: 2_000 });
+
+  await page.emulateMedia({ colorScheme: "dark", reducedMotion: "reduce" });
+  await page.reload();
+  const reducedDemo = page.getByTestId("skeleton-demo");
+  await reducedDemo.scrollIntoViewIfNeeded();
+  await reducedDemo.getByRole("button", { name: "Reload preview" }).click();
+  await expect(reducedDemo).toHaveAttribute("data-reload-state", "content");
+  await expect(page.getByTestId("skeleton-content")).toBeVisible();
+});
+
 test("landing locale switch persists Russian across reload", async ({ page }) => {
   await openLanding(page);
 

@@ -511,6 +511,9 @@
 
 .landing-explore-links {
   display: grid;
+  gap: 1px;
+  border-block: 1px solid var(--tk-sep);
+  background: var(--tk-sep);
 }
 
 .landing-explore-links a {
@@ -520,12 +523,8 @@
   justify-content: space-between;
   gap: var(--tk-sp-4);
   padding-block: var(--tk-sp-4);
-  border-block-start: 1px solid var(--tk-sep);
+  background: var(--tk-bg);
   text-decoration: none;
-}
-
-.landing-explore-links a:last-child {
-  border-block-end: 1px solid var(--tk-sep);
 }
 
 .landing-explore-links span {
@@ -585,12 +584,7 @@
   .landing-explore-links a,
   .landing-explore-links a:last-child {
     align-content: space-between;
-    border-block-end: 1px solid var(--tk-sep);
-  }
-
-  .landing-explore-links a + a {
-    padding-inline-start: var(--tk-sp-4);
-    border-inline-start: 1px solid var(--tk-sep);
+    padding-inline: var(--tk-sp-4);
   }
 }
 

@@ -5,13 +5,13 @@
  * while validating a third of the suite. This asserts the collected test count
  * never silently drops below a committed floor.
  *
- * The floor is the real executed count (65 package/Storybook smoke +
- * 46 Trailhead + 44 Surface Composer + 10 showcase MPA smoke). Raise it when you add
+ * The floor is the real executed count (66 package/Storybook smoke +
+ * 46 Trailhead + 44 Surface Composer + 15 showcase MPA smoke). Raise it when you add
  * suites; lower it only with an explicit, reviewed reason.
  */
 import { execSync } from "node:child_process";
 
-const FLOOR = 165;
+const FLOOR = 171;
 
 let out;
 try {

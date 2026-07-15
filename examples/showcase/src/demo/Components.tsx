@@ -6,8 +6,10 @@ import {
   type RefObject,
 } from "react";
 import {
+  TKAvatar,
   TKButton,
   TKCalendar,
+  TKCard,
   TKChipGroup,
   TKConfetti,
   TKGallery,
@@ -20,7 +22,7 @@ import {
   TKProvider,
   TKSheet,
   TKSlider,
-  TKSkeletonCard,
+  TKSkeleton,
   TKSkeletonText,
   TKSwitch,
   useReducedMotion,
@@ -562,34 +564,33 @@ function SliderDemo() {
 
 function SkeletonDemo() {
   const { strings } = useSiteLocale();
+  const copy = strings.demo.components;
   const playback = useViewportActivity<HTMLDivElement>();
   const [replay, setReplay] = useState(0);
-  const [running, setRunning] = useState(false);
+  const [loading, setLoading] = useState(false);
   const timerRef = useRef<number | undefined>(undefined);
-  const frameRef = useRef<number | undefined>(undefined);
   const shimmerState = playback.reduced
     ? "reduced"
-    : running && playback.inViewport
+    : loading && playback.active
       ? "running"
       : "paused";
 
   useEffect(
     () => () => {
       window.clearTimeout(timerRef.current);
-      window.cancelAnimationFrame(frameRef.current ?? 0);
     },
     [],
   );
 
-  const replayShimmer = () => {
+  const reloadPreview = () => {
     window.clearTimeout(timerRef.current);
-    window.cancelAnimationFrame(frameRef.current ?? 0);
-    setRunning(false);
-    frameRef.current = window.requestAnimationFrame(() => {
-      setReplay((current) => current + 1);
-      setRunning(true);
-      timerRef.current = window.setTimeout(() => setRunning(false), 1350);
-    });
+    if (playback.reduced) {
+      setLoading(false);
+      return;
+    }
+    setReplay((current) => current + 1);
+    setLoading(true);
+    timerRef.current = window.setTimeout(() => setLoading(false), 1200);
   };
 
   return (
@@ -597,14 +598,37 @@ function SkeletonDemo() {
       ref={playback.ref}
       className="skeleton-demo"
       data-shimmer-state={shimmerState}
+      data-reload-state={loading ? "loading" : "content"}
       data-testid="skeleton-demo"
     >
-      <div key={replay} className="skeleton-demo-group" aria-hidden="true">
-        <TKSkeletonCard />
-        <TKSkeletonText lines={3} />
+      <div className="skeleton-demo-stage">
+        <TKCard
+          className="skeleton-demo-content"
+          padding="var(--tk-sp-4)"
+          aria-hidden={loading}
+          testId="skeleton-content"
+        >
+          <div className="skeleton-demo-row">
+            <TKAvatar initials="UI" size={44} tone="var(--tk-accent)" />
+            <span>
+              <strong>{copy.skeletonPreviewTitle}</strong>
+              <small>{copy.skeletonPreviewCopy}</small>
+              <small>{copy.skeletonPreviewMeta}</small>
+            </span>
+          </div>
+        </TKCard>
+        <div
+          key={replay}
+          className="skeleton-demo-loading tk-skel-group"
+          aria-hidden={!loading}
+          data-testid="skeleton-loading"
+        >
+          <TKSkeleton width={44} height={44} radius="var(--tk-r-pill)" />
+          <TKSkeletonText lines={3} />
+        </div>
       </div>
-      <TKButton size="sm" variant="outline" onClick={replayShimmer}>
-        {strings.demo.components.reloadPreview}
+      <TKButton size="sm" variant="outline" onClick={reloadPreview}>
+        {copy.reloadPreview}
       </TKButton>
     </div>
   );

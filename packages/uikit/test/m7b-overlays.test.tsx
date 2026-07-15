@@ -401,3 +401,35 @@ describe("OVL-012 TKSheet warns on misconfigured snapPoints (dev)", () => {
     expect(warn).toHaveBeenCalledTimes(1);
   });
 });
+
+/* ---------------- OVL-013 — non-modal sheet focus contract ---------------- */
+
+describe("OVL-013 TKSheet can opt out of modal document behavior", () => {
+  it("[D-A11Y] modal=false neither moves focus on open nor restores it on close", () => {
+    function Host({ open }: { open: boolean }) {
+      return (
+        <div>
+          <button type="button">Original focus</button>
+          <button type="button">Later focus</button>
+          <kit.TKSheet open={open} modal={false} title="Preview" testId="sheet">
+            <button type="button">Inside sheet</button>
+          </kit.TKSheet>
+        </div>
+      );
+    }
+
+    const { rerender } = render(<Host open={false} />);
+    const original = screen.getByRole("button", { name: "Original focus" });
+    const later = screen.getByRole("button", { name: "Later focus" });
+    original.focus();
+
+    rerender(<Host open />);
+    expect(document.activeElement).toBe(original);
+    expect(screen.getByTestId("sheet")).not.toHaveAttribute("aria-modal");
+    expect(document.querySelector("[data-tk-scrim]")).toBeNull();
+
+    later.focus();
+    rerender(<Host open={false} />);
+    expect(document.activeElement).toBe(later);
+  });
+});

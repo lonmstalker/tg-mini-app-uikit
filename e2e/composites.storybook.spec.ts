@@ -41,4 +41,13 @@ test.describe("composite Storybook stories", () => {
       }
     });
   }
+
+  test("non-modal sheet opens without stealing document focus", async ({ page }) => {
+    await page.goto("/iframe.html?id=composites-overlays--non-modal-sheet&viewMode=story");
+    const trigger = page.getByTestId("non-modal-sheet-trigger");
+    await trigger.click();
+    await expect(page.getByRole("dialog", { name: "Autoplay preview" })).not.toHaveAttribute("aria-modal");
+    await expect(page.locator("[data-tk-scrim]")).toHaveCount(0);
+    await expect.poll(() => trigger.evaluate((node) => document.activeElement === node)).toBe(true);
+  });
 });

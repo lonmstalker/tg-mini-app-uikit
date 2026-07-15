@@ -192,6 +192,7 @@ function WalletPhone({ theme }: { theme: TKTheme }) {
 
             <TKSheet
               open={sheetOpen}
+              modal={!scenario.autoplay}
               onClose={() => setManualSheetOpen(false)}
               title={copy.confirmPayment}
               testId="wallet-sheet"

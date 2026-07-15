@@ -1117,16 +1117,73 @@
   font-variant-numeric: tabular-nums;
 }
 
-.skeleton-demo-group {
+.skeleton-demo-stage {
   display: grid;
-  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+}
+
+.skeleton-demo-content,
+.skeleton-demo-loading {
+  grid-area: 1 / 1;
+  transition: opacity var(--tk-t2) var(--tk-ease);
+}
+
+.skeleton-demo-content {
+  align-self: stretch;
+}
+
+.skeleton-demo-row,
+.skeleton-demo-loading {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: var(--tk-sp-4);
+}
+
+.skeleton-demo-row > span {
+  display: grid;
+  min-inline-size: 0;
+  gap: var(--tk-sp-1);
+}
+
+.skeleton-demo-row small {
+  color: var(--tk-text-2);
+  font-size: var(--tk-fz-caption);
+  line-height: 1.4;
+}
+
+.skeleton-demo-loading {
+  padding: var(--tk-sp-4);
+  border-radius: var(--tk-r-lg);
+  background: var(--tk-surface);
+  box-shadow: var(--tk-shadow-sm);
+}
+
+.skeleton-demo[data-reload-state="content"] .skeleton-demo-loading,
+.skeleton-demo[data-reload-state="loading"] .skeleton-demo-content {
+  pointer-events: none;
+  opacity: 0;
+}
+
+.skeleton-demo[data-reload-state="content"] .skeleton-demo-content,
+.skeleton-demo[data-reload-state="loading"] .skeleton-demo-loading {
+  opacity: 1;
 }
 
 .skeleton-demo[data-shimmer-state]:not([data-shimmer-state="running"]) .tk-skel::after,
 .skeleton-demo[data-shimmer-state]:not([data-shimmer-state="running"]) .tk-skel-group::after {
   animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-demo-content,
+  .skeleton-demo-loading {
+    transition: none;
+  }
+}
+
+.showcase[data-tk-motion="off"] .skeleton-demo-content,
+.showcase[data-tk-motion="off"] .skeleton-demo-loading {
+  transition: none;
 }
 
 .switch-chips-demo {

@@ -224,3 +224,30 @@ export const ImageViewer = {
   parameters: { fullBleed: true },
   render: () => <ImageViewerPreview />,
 } satisfies Story;
+
+function NonModalSheetPreview() {
+  const [open, setOpen] = useState(false);
+  return (
+    <Section style={{ padding: 16 }}>
+      <TKButton testId="non-modal-sheet-trigger" variant="surface" onClick={() => setOpen(true)}>
+        Play passive preview
+      </TKButton>
+      <TKSheet modal={false} open={open} onClose={() => setOpen(false)} title="Autoplay preview">
+        <Narrow>
+          <p style={{ margin: 0 }}>The page stays interactive and keeps document focus.</p>
+        </Narrow>
+      </TKSheet>
+    </Section>
+  );
+}
+
+export const NonModalSheet = {
+  parameters: {
+    docs: {
+      description: {
+        story: "`modal={false}` omits the scrim and all document-modal behavior for passive previews.",
+      },
+    },
+  },
+  render: () => <NonModalSheetPreview />,
+} satisfies Story;
