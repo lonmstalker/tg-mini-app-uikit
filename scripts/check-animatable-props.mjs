@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /*
- * Static gate: transitions and keyframes in packages/uikit/src must animate
- * compositor-friendly properties only (transform/opacity/color/background...).
+ * Static gate: transitions and keyframes in packages/uikit/src and the
+ * showcase must animate compositor-friendly properties only
+ * (transform/opacity/color/background...).
  * Animating layout (height/width/grid-template-rows/...) or paint-heavy
  * (box-shadow/filter) properties causes jank on low-end devices — the exact
  * "неплавно почти везде" class of bugs from the 2026-07-14 audit.
@@ -15,7 +16,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 
 const ROOT = join(import.meta.dirname, "..");
-const SRC = join(ROOT, "packages/uikit/src");
+const SOURCES = [join(ROOT, "packages/uikit/src"), join(ROOT, "examples/showcase/src")];
 const ALLOWLIST_PATH = join(import.meta.dirname, "animatable-props-allowlist.json");
 
 const BANNED_BASES = [
@@ -141,7 +142,7 @@ function scanFile(file) {
   return findings;
 }
 
-const findings = walk(SRC).flatMap(scanFile);
+const findings = SOURCES.flatMap(walk).flatMap(scanFile);
 const allowlist = JSON.parse(readFileSync(ALLOWLIST_PATH, "utf8")).entries;
 
 // Group findings by (file, property) and reconcile with the allowlist ratchet.

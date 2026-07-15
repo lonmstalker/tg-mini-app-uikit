@@ -22,9 +22,8 @@ export default defineConfig({
     screenshot: "only-on-failure",
   },
   // `webServer` is a top-level array (not per-project): keep the Storybook
-  // server for the kit specs and add the Trailhead demo dev server for its own
-  // `trailhead` project. Playwright boots both, then each project targets its
-  // own baseURL.
+  // server for the kit specs and add one dev server for each demo project.
+  // Playwright boots all of them, then each project targets its own baseURL.
   webServer: [
     {
       command: "npm run stories -w tg-mini-app-uikit",
@@ -41,6 +40,12 @@ export default defineConfig({
     {
       command: "npm run dev -w surface-composer",
       url: "http://127.0.0.1:5174",
+      reuseExistingServer: !process.env.CI,
+      timeout: 60_000,
+    },
+    {
+      command: "npm run dev -w showcase",
+      url: "http://127.0.0.1:5175",
       reuseExistingServer: !process.env.CI,
       timeout: 60_000,
     },
@@ -80,6 +85,19 @@ export default defineConfig({
         viewport: FRAME,
         deviceScaleFactor: 1,
         baseURL: "http://127.0.0.1:5174",
+      },
+    },
+    {
+      // The showcase landing's fast smoke suite targets its dedicated Vite
+      // server and stays isolated from the package Storybook specs.
+      name: "showcase",
+      testDir: "./examples/showcase/e2e",
+      testMatch: ["**/*.spec.ts"],
+      use: {
+        ...devices["Desktop Chrome"],
+        viewport: FRAME,
+        deviceScaleFactor: 1,
+        baseURL: "http://127.0.0.1:5175",
       },
     },
   ],

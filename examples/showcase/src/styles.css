@@ -43,10 +43,14 @@ a {
 }
 
 /* Nested demo providers keep their own light/dark surfaces, while the
-   top-level accent ink remains paired with the inherited accent. The theme
-   demo is intentionally self-contained and keeps its own accent contract. */
+   top-level knobs keep repainting every live demo. The theme demo is
+   intentionally self-contained and keeps its own accent contract. */
 .showcase .tk:not(.feature-theme-preview) {
+  --tk-accent: inherit;
   --tk-on-accent: inherit;
+  --tk-rx: inherit;
+  --tk-ms: inherit;
+  --tk-fz: inherit;
 }
 
 .showcase-container {

@@ -31,6 +31,8 @@ jobs:
       - run: npm run build -w trailhead
       - run: npm run typecheck -w surface-composer
       - run: npm run build -w surface-composer
+      - run: npm run typecheck -w showcase
+      - run: npm run build -w showcase
 
   unit:
     name: unit (vitest)

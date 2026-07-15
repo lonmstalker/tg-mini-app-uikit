@@ -463,7 +463,7 @@ function SheetDemo({ theme }: { theme: TKTheme }) {
 }
 
 function CalendarDemo() {
-  const [date, setDate] = useState(new Date(2026, 5, 13));
+  const [date, setDate] = useState(() => new Date(2026, 5, 13));
   const selected = new Intl.DateTimeFormat("en", { month: "short", day: "numeric", year: "numeric" }).format(date);
 
   return (
