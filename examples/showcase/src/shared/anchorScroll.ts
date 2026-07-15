@@ -29,15 +29,28 @@ export function withScrollAnchor(anchor: Element | null | undefined, mutate: () 
     const delta = anchor.getBoundingClientRect().top - before;
     if (Math.abs(delta) > 1) window.scrollBy({ top: delta, behavior: "instant" });
   };
-  // React flushes the discrete event's state update synchronously within this
-  // task, so a macrotask sees the committed layout. Passive effects (marquee
-  // re-measure, announce hooks) can shift it once more a frame later — with
-  // content-visibility permanently off the geometry is stable after that, so
-  // two trailing passes settle everything. Deliberately NOT rAF: background
-  // tabs throttle animation frames indefinitely.
+  // Seamlessness contract: every correction must land BEFORE the browser
+  // paints the shifted frame, or the page visibly blinks.
+  // - queueMicrotask runs after React's commit microtask but before paint —
+  //   it catches the main re-render.
+  // - The rAF loop pins the anchor pre-paint on every subsequent frame for
+  //   ~600 ms, absorbing the passive-effect shifts (marquee re-measure etc.)
+  //   in the same frame they happen.
+  // - The timeouts are the background-tab fallback, where rAF never fires.
+  queueMicrotask(compensate);
+  const startedAt = performance.now();
+  let raf = 0;
+  const pin = () => {
+    compensate();
+    if (performance.now() - startedAt < 600) raf = requestAnimationFrame(pin);
+  };
+  raf = requestAnimationFrame(pin);
   setTimeout(compensate, 0);
   setTimeout(compensate, 150);
-  setTimeout(compensate, 450);
+  setTimeout(() => {
+    cancelAnimationFrame(raf);
+    compensate();
+  }, 600);
 }
 
 /**

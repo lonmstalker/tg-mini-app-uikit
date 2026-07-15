@@ -97,6 +97,7 @@ export function Hero({ theme }: { theme: TKTheme }) {
 function WalletPhone({ theme }: { theme: TKTheme }) {
   const { strings } = useSiteLocale();
   const copy = strings.demo.wallet;
+  const toast = useTKToast();
   const frameRef = useRef<HTMLDivElement>(null);
   const scenario = useScenario(frameRef);
   const [manualPage, setManualPage] = useState<number>();
@@ -186,6 +187,8 @@ function WalletPhone({ theme }: { theme: TKTheme }) {
                 page={galleryPage}
                 onPageChange={setManualPage}
                 onCardOpen={() => setManualSheetOpen(true)}
+                onSecure={showPin}
+                onDemoAction={() => toast.info(copy.demoShortcut)}
               />
             ) : (
               <PinStep
@@ -253,10 +256,14 @@ function WalletHome({
   page,
   onPageChange,
   onCardOpen,
+  onSecure,
+  onDemoAction,
 }: {
   page: number;
   onPageChange: (page: number) => void;
   onCardOpen: () => void;
+  onSecure: () => void;
+  onDemoAction: () => void;
 }) {
   const { strings } = useSiteLocale();
   const copy = strings.demo.wallet;
@@ -268,7 +275,7 @@ function WalletHome({
           <span className="wallet-app-icon"><TKIcon name="wallet" size={18} /></span>
           <strong>{copy.wallet}</strong>
         </div>
-        <TKIconButton icon="dots" label={copy.walletOptions} size="sm" variant="plain" />
+        <TKIconButton icon="dots" label={copy.walletOptions} size="sm" variant="plain" onClick={onDemoAction} />
       </div>
 
       <div className="wallet-balance">
@@ -312,9 +319,9 @@ function WalletHome({
       />
 
       <div className="wallet-actions" aria-label={copy.shortcuts}>
-        <WalletAction icon="send" label={copy.send} />
-        <WalletAction icon="plus" label={copy.add} />
-        <WalletAction icon="qr" label={copy.scan} />
+        <WalletAction icon="send" label={copy.send} onClick={onCardOpen} />
+        <WalletAction icon="plus" label={copy.add} onClick={onDemoAction} />
+        <WalletAction icon="qr" label={copy.scan} onClick={onSecure} />
       </div>
 
       <div className="wallet-activity-heading">
@@ -327,22 +334,32 @@ function WalletHome({
           title="Telegram Premium"
           subtitle={copy.subscription}
           after={<strong>−$4.99</strong>}
+          onClick={onCardOpen}
         />
         <TKCardCell
           before={<span className="wallet-row-icon"><TKIcon name="arrowRight" size={17} /></span>}
           title={copy.transferReceived}
           subtitle="Alex Morgan"
           after={<strong className="wallet-positive">+$280</strong>}
+          onClick={onDemoAction}
         />
       </TKCard>
     </div>
   );
 }
 
-function WalletAction({ icon, label }: { icon: "send" | "plus" | "qr"; label: string }) {
+function WalletAction({
+  icon,
+  label,
+  onClick,
+}: {
+  icon: "send" | "plus" | "qr";
+  label: string;
+  onClick: () => void;
+}) {
   return (
     <div>
-      <TKIconButton icon={icon} label={label} variant="tonal" />
+      <TKIconButton icon={icon} label={label} variant="tonal" onClick={onClick} />
       <span>{label}</span>
     </div>
   );

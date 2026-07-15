@@ -211,7 +211,6 @@ function ThemeDemo() {
         <TKProvider
           theme={previewTheme}
           telegram={mode === "telegram"}
-          accent={mode === "telegram" ? undefined : "var(--tk-green)"}
           className="feature-theme-preview"
           testId="feature-theme-preview"
         >
