@@ -109,6 +109,10 @@ function WalletPhone({ theme }: { theme: TKTheme }) {
   const [dismissedAutoConfettiCycle, setDismissedAutoConfettiCycle] = useState(-1);
   const [manualConfettiAttempt, setManualConfettiAttempt] = useState<number>();
 
+  // Auto mode covers the parked-out-of-viewport state too: the automaton may
+  // (re)start there, so the frame must stay non-interactive until the visitor
+  // explicitly takes control (or reduced motion disables the scenario).
+  const autoMode = !scenario.reducedMotion && !scenario.stopped;
   const autoPin = ["pin", "success", "confetti", "pause"].includes(scenario.step);
   const autoSuccess = ["success", "confetti", "pause"].includes(scenario.step);
   const galleryPage = manualPage ?? (scenario.reducedMotion ? 1 : scenario.step === "wallet" ? 0 : 1);
@@ -148,6 +152,19 @@ function WalletPhone({ theme }: { theme: TKTheme }) {
     setManualConfettiAttempt(attempt);
   };
 
+  // Deliberate takeover: stop the automaton for the session and reset the
+  // wallet to a clean manual state, whatever step the scenario was mid-way
+  // through (a grabbed mid-animation state is exactly what broke before).
+  const takeControl = () => {
+    scenario.stop();
+    setManualPage(0);
+    setManualSheetOpen(false);
+    setManualView("wallet");
+    setPinOutcome((current) => ({ attempt: current.attempt + 1, kind: "idle" }));
+    setManualConfettiAttempt(undefined);
+    setDismissedAutoConfettiCycle(scenario.cycle);
+  };
+
   return (
     <div
       ref={frameRef}
@@ -160,7 +177,10 @@ function WalletPhone({ theme }: { theme: TKTheme }) {
       <div className="showcase-phone">
         <TKProvider theme={theme} className="showcase-phone-screen">
           <PhoneStatusBar />
-          <div className="showcase-phone-content" data-tk-portal-root>
+          {/* While the automaton drives the demo the content is inert — grabbing
+              a mid-animation state used to corrupt it. Takeover is the explicit
+              button below the frame. */}
+          <div className="showcase-phone-content" data-tk-portal-root inert={autoMode}>
             {view === "wallet" ? (
               <WalletHome
                 page={galleryPage}
@@ -193,7 +213,7 @@ function WalletPhone({ theme }: { theme: TKTheme }) {
 
             <TKSheet
               open={sheetOpen}
-              modal={!scenario.autoplay}
+              modal={!autoMode}
               onClose={() => setManualSheetOpen(false)}
               title={copy.confirmPayment}
               testId="wallet-sheet"
@@ -213,13 +233,18 @@ function WalletPhone({ theme }: { theme: TKTheme }) {
           <div className="showcase-phone-home" />
         </TKProvider>
       </div>
-      <p className="scenario-hint">
-        {scenario.reducedMotion
-          ? copy.staticHint
-          : scenario.stopped
-            ? copy.manualHint
-            : copy.liveHint}
-      </p>
+      {autoMode ? (
+        <div className="scenario-hint scenario-hint--actions">
+          <span>{copy.liveHint}</span>
+          <TKButton size="sm" variant="tonal" onClick={takeControl} testId="wallet-take-control">
+            {copy.tryIt}
+          </TKButton>
+        </div>
+      ) : (
+        <p className="scenario-hint">
+          {scenario.reducedMotion ? copy.staticHint : copy.manualHint}
+        </p>
+      )}
     </div>
   );
 }

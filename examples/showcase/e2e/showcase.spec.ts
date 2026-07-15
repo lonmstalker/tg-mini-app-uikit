@@ -260,8 +260,14 @@ test("hero sheet becomes fully modal after user takeover", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 
   const stage = page.locator(".showcase-phone-stage");
-  await stage.locator(".scenario-hint").click();
+  // While the automaton runs, the frame content is inert — takeover happens
+  // only through the explicit button, which also resets to a clean wallet.
+  const phoneContent = stage.locator(".showcase-phone-content");
+  await expect(phoneContent).toHaveAttribute("inert", "");
+  await stage.getByTestId("wallet-take-control").click();
   await expect(stage).toHaveAttribute("data-scenario-autoplay", "stopped");
+  await expect(phoneContent).not.toHaveAttribute("inert", "");
+  await expect(page.getByTestId("wallet-sheet")).toBeHidden();
   await page.getByRole("button", { name: /Pay with Everyday.*4821/ }).click();
 
   const sheet = page.getByTestId("wallet-sheet");
@@ -280,6 +286,68 @@ test("hero sheet becomes fully modal after user takeover", async ({ page }) => {
   await bentoDemo.scrollIntoViewIfNeeded();
   await bentoDemo.getByRole("button", { name: "Open sheet" }).click();
   await expect(page.getByTestId("bento-sheet")).toHaveAttribute("aria-modal", "true");
+});
+
+test("closing a modal keeps the page scroll position — no smooth restore from the top", async ({ page }) => {
+  await page.emulateMedia({ colorScheme: "dark", reducedMotion: "no-preference" });
+  await page.goto("/demo/");
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+
+  const bentoDemo = page.getByTestId("sheet-demo");
+  await bentoDemo.scrollIntoViewIfNeeded();
+  const before = await page.evaluate(() => window.scrollY);
+  expect(before).toBeGreaterThan(0);
+
+  await bentoDemo.getByRole("button", { name: "Open sheet" }).click();
+  await expect(page.getByTestId("bento-sheet")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByTestId("bento-sheet")).toBeHidden();
+
+  // The scroll-lock release restores instantly; with `scroll-behavior: smooth`
+  // on <html> a plain scrollTo used to animate from 0 back down — sample a few
+  // frames to catch any such transition.
+  const samples = await page.evaluate(
+    () =>
+      new Promise<number[]>((resolve) => {
+        const out: number[] = [];
+        const tick = () => {
+          out.push(window.scrollY);
+          if (out.length >= 8) resolve(out);
+          else requestAnimationFrame(tick);
+        };
+        tick();
+      }),
+  );
+  for (const y of samples) expect(Math.abs(y - before)).toBeLessThan(2);
+});
+
+test("locale switch keeps the clicked control anchored in the viewport", async ({ page }) => {
+  await page.emulateMedia({ colorScheme: "dark", reducedMotion: "reduce" });
+  await page.goto("/demo/");
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+
+  // Sweep to the bottom first so every lazy tile above the i18n section mounts
+  // now — their late mounts shift the layout independently of the locale and
+  // would contaminate the baseline.
+  await page.evaluate(() => window.scrollTo({ top: document.body.scrollHeight, behavior: "instant" }));
+  const control = page.getByTestId("locale-switch");
+  await control.scrollIntoViewIfNeeded();
+  // Baseline only once the control's position is stable across real delays.
+  let before = await control.evaluate((node) => node.getBoundingClientRect().top);
+  for (let stable = 0, attempts = 0; stable < 2 && attempts < 20; attempts++) {
+    await page.waitForTimeout(250);
+    const top = await control.evaluate((node) => node.getBoundingClientRect().top);
+    stable = Math.abs(top - before) < 1 ? stable + 1 : 0;
+    before = top;
+  }
+
+  // Russian copy above the switch is longer — without anchoring the control
+  // drifts out from under the pointer when the page re-renders.
+  await control.getByText("Russian").click();
+  await expect(page.locator("html")).toHaveAttribute("lang", "ru");
+  await expect
+    .poll(async () => Math.abs((await control.evaluate((node) => node.getBoundingClientRect().top)) - before))
+    .toBeLessThan(2);
 });
 
 test("explore separators stay single-source at every responsive column count and theme", async ({ page }) => {

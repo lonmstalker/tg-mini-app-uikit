@@ -35,6 +35,11 @@
   contain-intrinsic-size: auto 520px;
 }
 
+/* See demo/styles.css: one synchronous layout while a locale switch anchors. */
+:root[data-anchoring] .landing .showcase-section:not(.landing-hero) {
+  content-visibility: visible;
+}
+
 .landing-hero {
   display: grid;
   min-block-size: calc(100dvh - var(--tk-tap-min));

@@ -31,6 +31,9 @@ const sourceAliases = [
 
 export default defineConfig({
   base: "/",
+  // MPA: dev must 404 unknown paths (/storybook/, /docs/ exist only in the
+  // deployed artifact) instead of silently serving the landing for them.
+  appType: "mpa",
   define: {
     __TK_PACKAGE_VERSION__: JSON.stringify(uikitPackage.version),
   },

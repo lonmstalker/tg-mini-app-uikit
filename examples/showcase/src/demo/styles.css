@@ -66,6 +66,13 @@
   contain-intrinsic-size: auto 400px;
 }
 
+/* While a locale switch is being anchored, force one full synchronous layout:
+   content-visibility:auto would otherwise re-measure off-screen sections at
+   idle time, shifting the page long after the anchor compensation ran. */
+:root[data-anchoring] .showcase-section:not(.showcase-hero) {
+  content-visibility: visible;
+}
+
 .showcase-hero {
   min-block-size: calc(100dvh - var(--tk-tap-min));
 }
@@ -234,6 +241,13 @@
   color: var(--tk-text-2);
   font-size: var(--tk-fz-caption);
   text-align: center;
+}
+
+.scenario-hint--actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--tk-sp-3);
 }
 
 .wallet-screen,

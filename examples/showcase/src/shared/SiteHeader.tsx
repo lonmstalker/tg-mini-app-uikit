@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { TKIcon, type TKTheme } from "tg-mini-app-uikit";
+import { readingAnchor, withScrollAnchor } from "./anchorScroll";
 import { useSiteLocale } from "./i18n";
 import { Container } from "./layout";
 import { Wordmark } from "./Wordmark";
@@ -122,7 +123,11 @@ export function SiteHeader({
                 aria-pressed={locale === option}
                 data-testid={`site-locale-${option}`}
                 lang={option}
-                onClick={() => setLocale(option)}
+                onClick={() => {
+                  // The header is sticky, so anchor the section the visitor is
+                  // reading — not the button — across the copy-length change.
+                  withScrollAnchor(readingAnchor(), () => setLocale(option));
+                }}
               >
                 {option.toUpperCase()}
               </button>

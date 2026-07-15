@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   TKIconButton,
   TKOTP,
@@ -9,6 +9,7 @@ import {
 import installSnippetSource from "../snippets/install.snippet.txt?raw";
 import telegramSnippetSource from "../snippets/telegram.snippet.tsx?raw";
 import themeSnippetSource from "../snippets/theme.snippet.tsx?raw";
+import { withScrollAnchor } from "../shared/anchorScroll";
 import { copyText } from "../shared/clipboard";
 import { useSiteLocale } from "../shared/i18n";
 import { formatSiteString } from "../shared/strings";
@@ -44,6 +45,7 @@ export function I18nShowcase() {
 function LocaleDemo() {
   const { locale, setLocale, strings } = useSiteLocale();
   const copy = strings.demo.i18n;
+  const controlRef = useRef<HTMLDivElement>(null);
   const localeOptions = [
     { value: "en", label: strings.shared.english },
     { value: "ru", label: strings.shared.russian },
@@ -57,11 +59,15 @@ function LocaleDemo() {
           <h3>{copy.liveLocale}</h3>
           <p>{copy.liveCopy}</p>
         </div>
-        <div className="i18n-locale-control">
+        <div className="i18n-locale-control" ref={controlRef}>
           <TKSegmented
             options={localeOptions}
             value={locale}
-            onChange={(value) => setLocale(value === "ru" ? "ru" : "en")}
+            onChange={(value) => {
+              // Copy above this switch changes length with the locale — keep
+              // the control pinned under the visitor's pointer.
+              withScrollAnchor(controlRef.current, () => setLocale(value === "ru" ? "ru" : "en"));
+            }}
             ariaLabel={copy.localeAria}
             testId="locale-switch"
           />

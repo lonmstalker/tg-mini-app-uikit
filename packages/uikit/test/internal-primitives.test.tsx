@@ -455,6 +455,23 @@ describe("INT-005 useScrollLock shares a reference-counted registry", () => {
     expect(document.body.style.position).toBe("");
   });
 
+  it("[INT-006] restores the pinned scroll position instantly, never via smooth scrolling", async () => {
+    // With the body unpinned the document sits at 0 for the restoring call; a
+    // host page with `scroll-behavior: smooth` would animate a plain
+    // scrollTo(x, y) from the top on every modal close.
+    const scrollTo = vi.spyOn(window, "scrollTo").mockImplementation(() => {});
+    Object.defineProperty(window, "scrollY", { value: 480, configurable: true, writable: true });
+    try {
+      const { unmount } = render(<LockProbe active />);
+      await nextFrame();
+      unmount();
+      expect(scrollTo).toHaveBeenCalledWith({ left: 0, top: 480, behavior: "instant" });
+    } finally {
+      scrollTo.mockRestore();
+      Object.defineProperty(window, "scrollY", { value: 0, configurable: true, writable: true });
+    }
+  });
+
   it("parks its counter on the shared globalThis registry (not a module local)", async () => {
     render(<LockProbe active />);
     await nextFrame();

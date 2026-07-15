@@ -1,4 +1,4 @@
-import { useEffect, useState, type RefObject } from "react";
+import { useCallback, useEffect, useState, type RefObject } from "react";
 import { useReducedMotion } from "tg-mini-app-uikit";
 
 export type ScenarioStep =
@@ -116,20 +116,14 @@ export function useScenario(frameRef: RefObject<HTMLElement | null>) {
     return () => observer.disconnect();
   }, [frameRef]);
 
+  // Explicit, deliberate takeover (the "Try it yourself" button). Flipping
+  // `stopped` re-runs the scenario effect, whose cleanup aborts the timer chain.
+  const stop = useCallback(() => setStopped(true), []);
+
   useEffect(() => {
     const controller = new AbortController();
-    const frame = frameRef.current;
 
     if (!reducedMotion && !stopped && inViewport) {
-      frame?.addEventListener(
-        "pointerdown",
-        () => {
-          controller.abort();
-          setStopped(true);
-        },
-        { capture: true, once: true, signal: controller.signal },
-      );
-
       void (async () => {
         if (!(await waitWhileVisible(FIRST_PAINT_DELAY_MS, controller.signal))) return;
 
@@ -155,5 +149,6 @@ export function useScenario(frameRef: RefObject<HTMLElement | null>) {
     autoplay: !reducedMotion && !stopped && inViewport,
     reducedMotion,
     stopped,
+    stop,
   };
 }

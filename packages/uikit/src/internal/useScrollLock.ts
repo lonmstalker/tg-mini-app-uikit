@@ -76,8 +76,11 @@ function tkReleaseScrollLock() {
     body.style.overflow = s.prevBody.overflow;
     s.prevBody = null;
   }
-  // restore the scroll position the body was pinned at
-  window.scrollTo(0, s.scrollY);
+  // Restore the scroll position the body was pinned at. Must be instant: with
+  // the body unpinned the document is momentarily at 0, and a host page with
+  // `scroll-behavior: smooth` would otherwise ANIMATE from the top back to the
+  // stored position on every modal close (INT-006).
+  window.scrollTo({ left: 0, top: s.scrollY, behavior: "instant" });
 }
 
 /**
