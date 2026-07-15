@@ -67,7 +67,9 @@ export function TKSwipeCell({ children, leading = [], trailing = [], fullSwipe =
   const [dragging, setDragging] = useState(false);
   const [focused, setFocused] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
-  const idRef = useRef(Symbol("swipecell"));
+  // Lazy init: keep one Symbol per instance without allocating a new one every render.
+  const idRef = useRef<symbol | null>(null);
+  if (idRef.current === null) idRef.current = Symbol("swipecell");
 
   useEffect(() => {
     const close = (e: Event) => {

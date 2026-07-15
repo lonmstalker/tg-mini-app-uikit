@@ -8,9 +8,9 @@ import {
   TKText,
   TKTitle,
   useNav,
-  useOptionalHaptics,
   useTKToast,
 } from "tg-mini-app-uikit";
+import { useOptionalHaptics } from "@tg-mini-app/telegram";
 import { getExperience } from "../../data/mockApi";
 import { useLang, useT } from "../../i18n";
 import { useAppDispatch, useAppState } from "../../store";
@@ -81,7 +81,7 @@ export function RescheduleSlot({ active }: { active: boolean }) {
 
   const e = exp.data;
   const slots = e.slots.map((s) => s.time);
-  const busy = e.slots.filter((s) => s.soldOut).map((s) => s.time);
+  const busy = e.slots.flatMap((s) => (s.soldOut ? [s.time] : []));
   const selectedDate = date || booking.date;
   const calendarValue = new Date(`${selectedDate}T00:00:00`);
   // Enable confirm only on a real change to a free slot.

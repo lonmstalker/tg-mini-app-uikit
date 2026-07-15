@@ -13,6 +13,7 @@ import {
   type ReactNode,
 } from "react";
 import { tkShouldCommit, useDragGesture } from "../internal/useDragGesture";
+import { useLatest } from "../internal/useLatest";
 import { useBackIntercept, useWebApp } from "../foundation/telegram";
 import { useHasNativeChrome } from "../foundation/chrome";
 import { useReducedMotion } from "../foundation/theme";
@@ -81,6 +82,38 @@ export function TKNavPanel({ children }: TKNavPanelProps) {
   return <>{children}</>;
 }
 
+/**
+ * Publishes the nav api scoped to ONE panel (its own id/params/depth). A
+ * component (not an inline `{ ...api }` in the map) so the derived value can
+ * be memoized: the stack re-renders with a stable api on every drag start/end
+ * and settle-guard update, and a fresh object each time would re-render every
+ * `useNav` consumer in the still-mounted under panels. The SAME type serves
+ * the top, under and exit renders — a panel changing role must never remount
+ * its live subtree (typed input, scroll, in-flight requests).
+ */
+function NavScope({
+  api,
+  top = false,
+  panel,
+  params,
+  depth,
+  children,
+}: {
+  api: TKNavApi;
+  /** The top panel publishes the stack's own (already memoized) api as-is. */
+  top?: boolean;
+  panel: string;
+  params: unknown;
+  depth: number;
+  children: ReactNode;
+}) {
+  const scoped = useMemo<TKNavApi>(
+    () => ({ ...api, activePanel: panel, params, depth }),
+    [api, panel, params, depth],
+  );
+  return <TKNavContext.Provider value={top ? api : scoped}>{children}</TKNavContext.Provider>;
+}
+
 export interface TKNavStackProps {
   /** Panel id shown first (uncontrolled). */
   initial: string;
@@ -144,8 +177,7 @@ export function TKNavStack({
   // Controlled when `stack` is provided: render from props, route mutations
   // through `onChange` so deep-link / history restore works (NAV2-007).
   const isControlled = stackProp !== undefined;
-  const isControlledRef = useRef(isControlled);
-  isControlledRef.current = isControlled;
+  const isControlledRef = useLatest(isControlled);
   // Controlled entries get stable keys via an append/truncate diff against
   // the previously keyed stack — never the array index: an index key returns
   // on the next push to the same depth, which poisons the settled-guard (a
@@ -197,10 +229,8 @@ export function TKNavStack({
   // children and a leaked compositor layer per panel (sheet.tsx settled-guard).
   const [settledKeys, setSettledKeys] = useState<ReadonlySet<number>>(() => new Set());
   const rootRef = useRef<HTMLDivElement>(null);
-  const changeRef = useRef(onStackChange);
-  changeRef.current = onStackChange;
-  const onChangeRef = useRef(onChange);
-  onChangeRef.current = onChange;
+  const changeRef = useLatest(onStackChange);
+  const onChangeRef = useLatest(onChange);
 
   const commit = useCallback((next: NavEntry[]) => {
     if (!isControlledRef.current) setInternalStack(next);
@@ -208,8 +238,7 @@ export function TKNavStack({
     changeRef.current?.(next.map((entry) => entry.panel));
   }, []);
 
-  const stackRef = useRef(stack);
-  stackRef.current = stack;
+  const stackRef = useLatest(stack);
   // Last navigation direction, read during render to pick the slide animation.
   // A push enters from the right (tk-nav-in); a pop must NOT replay that — the
   // revealed panel instead transitions from its -30% "under" offset back to 0,
@@ -220,7 +249,9 @@ export function TKNavStack({
   // Back button API is reachable. Injected mocks (storybook, demos, tests
   // without window.Telegram) count as "no native chrome": their in-DOM header
   // arrow is the only visible back control, so it must stay.
-  const hasNativeBack = useHasNativeChrome() && !!useWebApp()?.BackButton;
+  const hasNativeChrome = useHasNativeChrome();
+  const webApp = useWebApp();
+  const hasNativeBack = hasNativeChrome && !!webApp?.BackButton;
 
   const api = useMemo<TKNavApi>(() => {
     const top = stack[stack.length - 1];
@@ -561,14 +592,15 @@ export function TKNavStack({
                   // imperative transform a rejected swipe left on this node.
                   transform: `translateX(${exit.fromX}px)`,
                   animation: "tk-nav-out var(--tk-t2) var(--tk-ease) forwards",
+                  // Scoped by the node's own lifetime, not a settled-guard: this
+                  // layer leaves the DOM when tk-nav-out ends (animationend +
+                  // timer fallback), so the hint can never pin a resting layer.
                   willChange: "transform",
                 }}
               >
-                <TKNavContext.Provider
-                  value={{ ...api, activePanel: entry.panel, params: entry.params, depth: stack.length + 1 }}
-                >
+                <NavScope api={api} panel={entry.panel} params={entry.params} depth={stack.length + 1}>
                   {panels.get(entry.panel) ?? null}
-                </TKNavContext.Provider>
+                </NavScope>
               </div>
             );
           }
@@ -616,11 +648,9 @@ export function TKNavStack({
                   : null),
               }}
             >
-              <TKNavContext.Provider
-                value={top ? api : { ...api, activePanel: entry.panel, params: entry.params, depth: index + 1 }}
-              >
+              <NavScope api={api} top={top} panel={entry.panel} params={entry.params} depth={index + 1}>
                 {panels.get(entry.panel) ?? null}
-              </TKNavContext.Provider>
+              </NavScope>
             </div>
           );
         })}

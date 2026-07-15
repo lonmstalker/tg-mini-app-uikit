@@ -50,6 +50,9 @@ export const TKActionSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKAction
         }}
         style={{
           ...panelProps.style,
+          // Deliberate: the panel is tabIndex={-1} (never Tab-reachable) and only
+          // takes programmatic focus as a trap fallback; real keyboard focus lands
+          // on the sheet's buttons, which keep the `.tk :focus-visible` outline.
           outline: "none",
           position: "absolute",
           left: 10,

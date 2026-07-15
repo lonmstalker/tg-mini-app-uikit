@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { tkZ } from "../internal/dom";
+import { useLatest } from "../internal/useLatest";
 
 export interface TKConfettiProps {
   /** Particle count (default 150). */
@@ -30,8 +31,7 @@ export function TKConfetti({ count = 150, duration = 1800, colors, onDone, testI
   const n = Math.max(0, Math.min(Math.floor(count) || 0, 600));
   const [alive, setAlive] = useState(() => !prefersReducedMotion());
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const doneRef = useRef(onDone);
-  doneRef.current = onDone;
+  const doneRef = useLatest(onDone);
 
   useEffect(() => {
     if (!alive) doneRef.current?.();

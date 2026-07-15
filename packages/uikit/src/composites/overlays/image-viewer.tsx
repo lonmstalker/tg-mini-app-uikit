@@ -14,6 +14,7 @@ import { mergeRefs } from "../../internal/dom";
 import { tkDragVelocity, tkShouldCommit, type TKDragSample } from "../../internal/useDragGesture";
 import { useControllable } from "../../internal/useControllable";
 import { useIsomorphicLayoutEffect } from "../../internal/useIsomorphicLayoutEffect";
+import { useLatest } from "../../internal/useLatest";
 import { useModalOverlay, useMountTransition } from "./shared";
 
 export interface TKImageViewerImage {
@@ -47,6 +48,36 @@ const motionOff = (el: HTMLElement) =>
 
 type GestureMode = "idle" | "press" | "swipe" | "dismiss" | "pan" | "pinch";
 
+const withTransition = (el: HTMLElement | null, run: () => void) => {
+  if (!el) return;
+  el.style.transition = "transform var(--tk-t2) var(--tk-spring)";
+  const clear = () => {
+    el.style.transition = "";
+    el.removeEventListener("transitionend", clear);
+  };
+  el.addEventListener("transitionend", clear);
+  // Fallback for engines that skip transitionend on a no-op write.
+  window.setTimeout(clear, 700);
+  run();
+};
+
+const slotStyle = (offset: -1 | 0 | 1): CSSProperties => ({
+  position: "absolute",
+  inset: 0,
+  transform: offset === 0 ? undefined : `translateX(${offset * 100}%)`,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+});
+
+const imgStyle: CSSProperties = {
+  maxWidth: "100%",
+  maxHeight: "100%",
+  objectFit: "contain",
+  userSelect: "none",
+  WebkitUserSelect: "none",
+};
+
 /**
  * Full-screen photo viewer (Telegram media viewer / iOS Photos): shared-element
  * open from the tapped preview, pinch-zoom 1–3× with rubber-banding, double-tap
@@ -69,13 +100,11 @@ export const TKImageViewer = /* @__PURE__ */ forwardRef<HTMLDivElement, TKImageV
   const { mounted, closing } = useMountTransition(open, 260, stageRef);
   const [indexRaw, setIndex] = useControllable(indexProp, defaultIndex ?? 0, onIndexChange);
   const index = Math.min(Math.max(indexRaw, 0), Math.max(images.length - 1, 0));
-  const indexRef = useRef(index);
-  indexRef.current = index;
+  const indexRef = useLatest(index);
   // Which exit plays: swipe hand-off (image continues under the finger) vs
   // plain zoom-out fade for button/Escape/Back closes.
   const [exitViaSwipe, setExitViaSwipe] = useState(false);
-  const closeRef = useRef(onClose);
-  closeRef.current = onClose;
+  const closeRef = useLatest(onClose);
 
   const { scrimZ, panelZ, panelProps, scrimProps } = useModalOverlay({
     mounted,
@@ -109,19 +138,6 @@ export const TKImageViewer = /* @__PURE__ */ forwardRef<HTMLDivElement, TKImageV
     const el = content();
     const g = gs.current;
     if (el) el.style.transform = `translate(${g.tx}px, ${g.ty}px) scale(${g.scale})`;
-  };
-
-  const withTransition = (el: HTMLElement | null, run: () => void) => {
-    if (!el) return;
-    el.style.transition = "transform var(--tk-t2) var(--tk-spring)";
-    const clear = () => {
-      el.style.transition = "";
-      el.removeEventListener("transitionend", clear);
-    };
-    el.addEventListener("transitionend", clear);
-    // Fallback for engines that skip transitionend on a no-op write.
-    window.setTimeout(clear, 700);
-    run();
   };
 
   const clampPan = (g: { scale: number; tx: number; ty: number }) => {
@@ -508,22 +524,6 @@ export const TKImageViewer = /* @__PURE__ */ forwardRef<HTMLDivElement, TKImageV
   if (!mounted || images.length === 0) return null;
 
   const current = images[index];
-  const slotStyle = (offset: -1 | 0 | 1): CSSProperties => ({
-    position: "absolute",
-    inset: 0,
-    transform: offset === 0 ? undefined : `translateX(${offset * 100}%)`,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-  });
-  const imgStyle: CSSProperties = {
-    maxWidth: "100%",
-    maxHeight: "100%",
-    objectFit: "contain",
-    userSelect: "none",
-    WebkitUserSelect: "none",
-  };
-
   const slots = ([-1, 0, 1] as const)
     .map((offset) => ({ offset, i: index + offset }))
     .filter(({ i }) => i >= 0 && i < images.length);
@@ -555,6 +555,10 @@ export const TKImageViewer = /* @__PURE__ */ forwardRef<HTMLDivElement, TKImageV
           position: "absolute",
           inset: 0,
           zIndex: panelZ,
+          // Deliberate: the stage is tabIndex={-1} (never Tab-reachable) and only
+          // takes programmatic focus when the trap has nothing else; Tab-reachable
+          // chrome (close button) keeps the `.tk :focus-visible` outline, and the
+          // arrow-key handler works from any focus inside via bubbling.
           outline: "none",
           overflow: "hidden",
           // Claims every touch: iOS Telegram must not page-zoom or scroll under

@@ -20,8 +20,6 @@ export const SC_DURATION = {
   remix: 460,
 } as const;
 
-export const SC_STAGGER = 45;
-
 /** Under reduced motion the timeline advances with ~0ms holds (identical events). */
 export function holdFor(ms: number, reducedMotion: boolean): number {
   return reducedMotion ? 0 : ms;

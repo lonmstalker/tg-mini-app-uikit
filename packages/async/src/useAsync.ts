@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useInsertionEffect, useRef, useState } from "react";
 
 export interface AsyncState<T> {
   data: T | null;
@@ -18,7 +18,9 @@ export function useAsync<T>(producer: () => Promise<T>, deps: unknown[]): AsyncS
   const [error, setError] = useState(false);
   const reqId = useRef(0);
   const producerRef = useRef(producer);
-  producerRef.current = producer;
+  useInsertionEffect(() => {
+    producerRef.current = producer;
+  });
 
   const run = useCallback(() => {
     const id = ++reqId.current;

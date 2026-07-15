@@ -105,7 +105,7 @@ export const TKSelect = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKSelectPr
       move(e.key === "ArrowDown" ? 1 : -1);
     } else if (e.key === "Home" || e.key === "End") {
       e.preventDefault();
-      const enabled = items.map((item, i) => (item.disabled ? -1 : i)).filter((i) => i >= 0);
+      const enabled = items.flatMap((item, i) => (item.disabled ? [] : [i]));
       if (enabled.length) setActive(e.key === "Home" ? enabled[0] : enabled[enabled.length - 1]);
     } else if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();

@@ -1,6 +1,7 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { useWebApp } from "@tg-mini-app/telegram";
 import { tkSharedState } from "./registry";
+import { useLatest } from "./useLatest";
 
 /*
  * Suppresses Telegram's native "swipe down to minimize/close the Mini App"
@@ -76,8 +77,7 @@ function tkReleaseSwipeGuard(wa: SwipeApi | undefined) {
  */
 export function useVerticalSwipeGuard(active: boolean) {
   const wa = useWebApp() as SwipeApi | undefined;
-  const waRef = useRef(wa);
-  waRef.current = wa;
+  const waRef = useLatest(wa);
   const apiReady = typeof wa?.disableVerticalSwipes === "function";
   useEffect(() => {
     if (!active) return;

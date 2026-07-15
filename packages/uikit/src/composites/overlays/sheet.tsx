@@ -2,6 +2,7 @@ import { forwardRef, useCallback, useEffect, useId, useImperativeHandle, useRef,
 import { TKIconButton } from "../../atoms/buttons";
 import { mergeRefs } from "../../internal/dom";
 import { tkShouldCommit, useDragGesture } from "../../internal/useDragGesture";
+import { useLatest } from "../../internal/useLatest";
 import { useTKLocale } from "../../foundation/i18n";
 import { Scrim, useModalOverlay, useMountTransition } from "./shared";
 
@@ -82,8 +83,7 @@ export const TKSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSheetProps>(
   const [snap, setSnap] = useState(() =>
     snapPoints ? Math.min(Math.max(defaultSnap, 0), snapPoints.length - 1) : 0,
   );
-  const snapRef = useRef(snap);
-  snapRef.current = snap;
+  const snapRef = useLatest(snap);
   const [dragging, setDragging] = useState(false);
   // Per-gesture geometry, measured once at drag start: the finger then moves
   // the sheet through imperative transform writes — zero layout, zero React
@@ -93,8 +93,7 @@ export const TKSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSheetProps>(
   // (or any later re-render) never re-runs the full `translateY(104%)→0` slide.
   const [settled, setSettled] = useState(false);
 
-  const closeRequest = useRef(onClose);
-  closeRequest.current = onClose;
+  const closeRequest = useLatest(onClose);
   const requestClose = useCallback(() => {
     closeRequest.current?.();
   }, []);
@@ -112,8 +111,7 @@ export const TKSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSheetProps>(
     inertBackground: modal,
   });
 
-  const openChangeRef = useRef(onOpenChange);
-  openChangeRef.current = onOpenChange;
+  const openChangeRef = useLatest(onOpenChange);
   useEffect(() => {
     openChangeRef.current?.(open);
     // Each fresh open replays the entrance keyframes once; `settled` then pins

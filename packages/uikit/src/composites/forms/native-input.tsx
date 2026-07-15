@@ -51,8 +51,12 @@ export const TKNativeField = /* @__PURE__ */ forwardRef<HTMLInputElement, TKNati
   const borderColor = error ? "var(--tk-red)" : focus ? "var(--tk-accent)" : "transparent";
   return (
     <TKFormField label={label} hint={hint} error={error} htmlFor={inputId} describedBy={describedBy} disabled={disabled} testId={testId} style={style}>
-      {/* Clicking anywhere in the field opens the OS picker (not just the tiny indicator). */}
+      {/* Clicking anywhere in the field opens the OS picker (not just the tiny
+          indicator) — a mouse-only hit-area extender. The real control is the
+          native <input> inside: keyboard users focus it via Tab/label and open
+          the picker natively (Enter/Space/arrows), so this div is presentational. */}
       <div
+        role="presentation"
         onClick={() => openNativePicker(inputRef.current)}
         style={{
           display: "flex",

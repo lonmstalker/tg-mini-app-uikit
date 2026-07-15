@@ -9,7 +9,7 @@
  * content; the frame, theme, safe-area, origin and action-slot position are
  * never touched here.
  */
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useInsertionEffect, useRef } from "react";
 import { nextContext, type BusinessContext } from "../../app/composerReducer";
 import { useComposer, useComposerDispatch } from "../../app/composerStore";
 import { useLang } from "../../i18n";
@@ -34,7 +34,9 @@ export function RangeRemixScene() {
   const settled = motionState === "idle" || motionState === "locked" || motionState === "continuity";
 
   const reducedRef = useRef(reducedMotion);
-  reducedRef.current = reducedMotion;
+  useInsertionEffect(() => {
+    reducedRef.current = reducedMotion;
+  });
   const remixRef = useRef<RemixControls | null>(null);
 
   const remixTo = useCallback(

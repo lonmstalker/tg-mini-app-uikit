@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useInsertionEffect, useRef, useState } from "react";
 import type { Page } from "./page";
 
 export type TKInfiniteDataPhase = "first-loading" | "first-error" | "ready" | "paging" | "page-error";
@@ -47,13 +47,15 @@ export function useTKInfiniteData<T>(
   const reqId = useRef(0);
   const cursorRef = useRef<number | null>(0);
   const fetchRef = useRef(fetchPage);
-  fetchRef.current = fetchPage;
   // Read `fetchPage`/`getKey` through refs so an inline callback (a fresh
   // identity every render — the common case) does NOT re-create `loadFirst`
   // and re-trigger the mount effect in a loop. `deps` is the explicit re-fetch
   // trigger; identity churn must never be.
   const getKeyRef = useRef(getKey);
-  getKeyRef.current = getKey;
+  useInsertionEffect(() => {
+    fetchRef.current = fetchPage;
+    getKeyRef.current = getKey;
+  });
   // Mirror cursor into a ref (in an effect, not during render) so async
   // `loadMore` reads the latest value without a render-phase side effect.
   useEffect(() => {

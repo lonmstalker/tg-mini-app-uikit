@@ -1,4 +1,5 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useState } from "react";
+import { useLatest } from "./useLatest";
 
 /**
  * Options-object form of {@link useControllable} (INT-DX-007). Self-documents
@@ -49,7 +50,7 @@ export function useControllable<T>(
 
   const [internal, setInternal] = useState(defaultValue);
   const isControlled = controlled !== undefined;
-  const isControlledRef = useRef(isControlled);
+  const isControlledRef = useLatest(isControlled);
 
   if (process.env.NODE_ENV !== "production" && isControlledRef.current !== isControlled) {
     const label = name ?? "A useControllable value";
@@ -61,10 +62,8 @@ export function useControllable<T>(
         "`value={data?.x ?? defaultValue}` instead of letting it start undefined.",
     );
   }
-  isControlledRef.current = isControlled;
 
-  const onChangeRef = useRef(onChange);
-  onChangeRef.current = onChange;
+  const onChangeRef = useLatest(onChange);
 
   const set = useCallback((next: T) => {
     if (!isControlledRef.current) setInternal(next);

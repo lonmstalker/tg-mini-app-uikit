@@ -108,22 +108,7 @@ export function TKToastProvider({ children, offset = 14, duration = 2400, max = 
       const id = ++idRef.current;
       // Cap the WHOLE stack at `max`; `slice(-(max-1))` was `slice(-0)`=keep-all
       // for max=1, so the bound never applied (OVL-001).
-      setToasts((t) => {
-        const next = [...t, { ...toast, id, out: false }].slice(-Math.max(1, max));
-        // Clear the auto-dismiss timer of any toast evicted by the cap so it can't
-        // later fire a no-op dismiss + stray removal timer (OVL-009). Idempotent,
-        // so a StrictMode double-invoke is harmless.
-        const kept = new Set(next.map((x) => x.id));
-        for (const x of t) {
-          if (kept.has(x.id)) continue;
-          const at = autoTimers.current.get(x.id);
-          if (at != null) {
-            window.clearTimeout(at);
-            autoTimers.current.delete(x.id);
-          }
-        }
-        return next;
-      });
+      setToasts((t) => [...t, { ...toast, id, out: false }].slice(-Math.max(1, max)));
       // A non-finite duration (used by `promise`) is sticky — no auto-dismiss timer.
       const d = toast.duration ?? duration;
       if (Number.isFinite(d)) autoTimers.current.set(id, window.setTimeout(() => dismiss(id), d));
@@ -131,6 +116,21 @@ export function TKToastProvider({ children, offset = 14, duration = 2400, max = 
     },
     [dismiss, duration, max],
   );
+
+  // Clear the auto-dismiss timer of any toast that left the stack WITHOUT going
+  // through dismiss() — i.e. one evicted by the `max` cap above — so it can't
+  // later fire a no-op dismiss + stray removal timer (OVL-009). An effect on the
+  // committed list, not inside the setToasts updater: updaters must stay pure
+  // (StrictMode replays them), and only committed evictions matter. dismiss()
+  // clears its own toast's timer, so this is a no-op for normal removals.
+  useEffect(() => {
+    const timers = autoTimers.current;
+    for (const [id, timer] of timers) {
+      if (toasts.some((x) => x.id === id)) continue;
+      window.clearTimeout(timer);
+      timers.delete(id);
+    }
+  }, [toasts]);
 
   const api = useMemo<TKToastApi>(
     () => ({

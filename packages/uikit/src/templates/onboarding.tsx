@@ -215,8 +215,11 @@ export function TKOnboardingTooltip({
         // No measurable target: TKPopper needs an anchor, so it would render NOTHING
         // and strand the user with no Skip/Next. Fall back to a centered dialog card
         // over a transparent interceptor — no opaque blackout (ONB-004); a tap outside
-        // the card dismisses it when dismissable (ONB-001).
+        // the card dismisses it when dismissable (ONB-001). The interceptor is a
+        // presentational scrim-like click-catcher: keyboard users dismiss via the
+        // Skip/Done buttons inside the dialog, which run the same action.
         <div
+          role="presentation"
           data-testid={testId}
           onClick={dismissable ? skip : undefined}
           style={{ position: "fixed", inset: 0, zIndex: tkZ.popper, display: "flex", alignItems: "center", justifyContent: "center", padding: 24, pointerEvents: "auto" }}

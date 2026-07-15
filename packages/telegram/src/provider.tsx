@@ -1,4 +1,14 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useInsertionEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import type { TelegramEventMap, TelegramEventName, TelegramWebApp } from "./types";
 import { tkBackState } from "./back-registry";
 
@@ -48,7 +58,9 @@ function subscribeBackButton(listener: () => void): () => void {
  */
 export function useBackIntercept(active: boolean, handler: BackHandler, showNativeButton = true): void {
   const ref = useRef(handler);
-  ref.current = handler;
+  useInsertionEffect(() => {
+    ref.current = handler;
+  });
   useEffect(() => {
     if (!active) return;
     const state = tkBackState();
@@ -197,7 +209,9 @@ export function useTelegramEvent(event: string, handler?: (...args: unknown[]) =
 export function useTelegramEvent(event: string, handler?: (...args: unknown[]) => void): void {
   const wa = useWebApp();
   const ref = useRef(handler);
-  ref.current = handler;
+  useInsertionEffect(() => {
+    ref.current = handler;
+  });
   useEffect(() => {
     if (!wa?.onEvent) return;
     const h = (...args: unknown[]) => ref.current?.(...args);

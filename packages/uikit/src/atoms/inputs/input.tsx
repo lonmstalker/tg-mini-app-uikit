@@ -103,7 +103,12 @@ export const TKInput = /* @__PURE__ */ forwardRef<HTMLInputElement, TKInputProps
   const borderColor = shownError ? "var(--tk-red)" : focus ? "var(--tk-accent)" : "transparent";
   return (
     <TKFormField label={label} hint={hint} error={shownError} htmlFor={inputId} describedBy={describedBy} disabled={disabled} testId={testId}>
+      {/* Mouse-only convenience: a press on the field chrome forwards focus to the
+          real <input> (excluded targets keep their own behavior). Keyboard users
+          reach the input directly via Tab + the TKFormField label, so this div is
+          presentational, not an interactive control. */}
       <div
+        role="presentation"
         onMouseDown={(event) => {
           if (disabled) return;
           const target = event.target as HTMLElement;

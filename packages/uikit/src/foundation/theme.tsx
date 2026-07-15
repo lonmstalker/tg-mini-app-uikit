@@ -2,6 +2,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type CSSProperties,
@@ -228,8 +229,15 @@ export function TKProvider({
       node.style.setProperty(`--tk-safe-${edge}`, `max(env(safe-area-inset-${edge}, 0px), ${px(edge)}px)`);
     }
   }, [inset, contentInset]);
+  // Memoized: the provider re-renders with UNCHANGED knobs all the time (safe-area
+  // sync, live themeChanged events, reduced-motion flips) — an inline object here
+  // would republish the context and re-render every `useTKTheme` consumer each time.
+  const themeValue = useMemo<TKThemeValue>(
+    () => ({ theme, accent, roundness, motionSpeed, motion, fontSize }),
+    [theme, accent, roundness, motionSpeed, motion, fontSize],
+  );
   return (
-    <TKThemeContext.Provider value={{ theme, accent, roundness, motionSpeed, motion, fontSize }}>
+    <TKThemeContext.Provider value={themeValue}>
       <div
         ref={rootRef}
         className={["tk", telegram ? "tk-tg" : "", className ?? ""].filter(Boolean).join(" ")}

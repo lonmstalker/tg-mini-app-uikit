@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 
 import { TKIcon } from "../../atoms/icons";
 import { tkFormat, useTKLocale } from "../../foundation/i18n";
 import { useOptionalHaptics } from "../../foundation/telegram";
+import { useLatest } from "../../internal/useLatest";
 
 /* ---------------- Pin input ---------------- */
 
@@ -41,8 +42,7 @@ export function TKPinInput({
   // when `error` stays `true` across repeated wrong entries (a one-shot CSS
   // animation only restarts when the element is keyed afresh).
   const [shakeKey, setShakeKey] = useState(0);
-  const completeRef = useRef(onComplete);
-  completeRef.current = onComplete;
+  const completeRef = useLatest(onComplete);
   // Holds the post-complete clear so the filled dots paint for a beat first.
   const resetTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => () => clearTimeout(resetTimer.current), []);
@@ -98,25 +98,6 @@ export function TKPinInput({
   const push = (digit: string) => {
     if (pin.length >= maxDigits) return;
     setDigits(pin + digit);
-  };
-
-  const keyStyle: CSSProperties = {
-    minWidth: 44,
-    height: 56,
-    border: "none",
-    borderRadius: "var(--tk-r-md)",
-    background: "var(--tk-surface)",
-    boxShadow: "var(--tk-shadow-sm)",
-    fontFamily: "inherit",
-    fontSize: "var(--tk-fz-title3)",
-    fontWeight: 600,
-    color: "var(--tk-text)",
-    cursor: "pointer",
-    // Centre the contents: digit glyphs *and* the block-level icon keys
-    // (biometrics, backspace), which otherwise hug the left edge.
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
   };
 
   return (
@@ -181,7 +162,7 @@ export function TKPinInput({
         </div>
         <div role="group" aria-label={locale.oneTimeCode} style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
           {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((d) => (
-            <button key={d} type="button" className="tk-press" style={keyStyle} onClick={() => push(d)}>
+            <button key={d} type="button" className="tk-press" style={KEY_STYLE} onClick={() => push(d)}>
               {d}
             </button>
           ))}
@@ -190,7 +171,7 @@ export function TKPinInput({
               type="button"
               className="tk-press"
               aria-label={locale.biometrics}
-              style={{ ...keyStyle, color: "var(--tk-accent-ink)" }}
+              style={{ ...KEY_STYLE, color: "var(--tk-accent-ink)" }}
               onClick={onBiometricRequest}
             >
               <TKIcon name="fingerprint" size={24} />
@@ -198,14 +179,14 @@ export function TKPinInput({
           ) : (
             <span />
           )}
-          <button type="button" className="tk-press" style={keyStyle} onClick={() => push("0")}>
+          <button type="button" className="tk-press" style={KEY_STYLE} onClick={() => push("0")}>
             0
           </button>
           <button
             type="button"
             className="tk-press"
             aria-label={locale.backspace}
-            style={{ ...keyStyle, color: "var(--tk-text-2)" }}
+            style={{ ...KEY_STYLE, color: "var(--tk-text-2)" }}
             onClick={() => setPin((p) => p.slice(0, -1))}
           >
             <TKIcon name="backspace" size={22} />
@@ -217,7 +198,7 @@ export function TKPinInput({
             className="tk-press"
             disabled={pin.length < length}
             onClick={() => complete(pin)}
-            style={keyStyle}
+            style={KEY_STYLE}
           >
             {locale.done}
           </button>
@@ -229,6 +210,25 @@ export function TKPinInput({
 
 // How long the fully-entered dots stay lit before the field resets on success.
 const PIN_FILL_HOLD_MS = 180;
+
+const KEY_STYLE: CSSProperties = {
+  minWidth: 44,
+  height: 56,
+  border: "none",
+  borderRadius: "var(--tk-r-md)",
+  background: "var(--tk-surface)",
+  boxShadow: "var(--tk-shadow-sm)",
+  fontFamily: "inherit",
+  fontSize: "var(--tk-fz-title3)",
+  fontWeight: 600,
+  color: "var(--tk-text)",
+  cursor: "pointer",
+  // Centre the contents: digit glyphs *and* the block-level icon keys
+  // (biometrics, backspace), which otherwise hug the left edge.
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+};
 
 // Visually hidden but readable by assistive tech.
 const SR_ONLY: CSSProperties = {
