@@ -10,9 +10,13 @@ const storybookDist = join(root, "packages/uikit/storybook-static");
 const docsDist = join(root, "docs/site/dist");
 const siteDist = join(root, "site-dist");
 
-function runNpm(script) {
+// GH Pages serves the site from /tg-mini-app-uikit/; root-domain hosts
+// (Cloudflare Pages, Netlify, …) need "/". Override via SITE_BASE=/ .
+const siteBase = process.env.SITE_BASE || "/tg-mini-app-uikit/";
+
+function runNpm(script, extraArgs = []) {
   return new Promise((resolve, reject) => {
-    const child = spawn("npm", ["run", script], {
+    const child = spawn("npm", ["run", script, ...extraArgs], {
       cwd: root,
       stdio: "inherit",
       shell: process.platform === "win32",
@@ -46,7 +50,7 @@ async function requireBuild(name, directory) {
 }
 
 async function buildSite() {
-  await runNpm("site:build");
+  await runNpm("build", ["-w", "showcase", "--", "--base", siteBase]);
   await runNpm("stories:build");
   await runNpm("docs:build");
 

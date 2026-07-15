@@ -1,3 +1,4 @@
-// TODO: The Mini App is not registered with BotFather yet. Replace this URL
-// with the real Mini App URL before enabling the Pages deploy.
+// The bot @tg_mini_app_uikit_bot exists. This link goes live once the Mini App
+// is registered via BotFather /newapp with the short name "demo" and its Web
+// App URL pointing at the deployed /demo/ page.
 export const TELEGRAM_DEMO_URL = "https://t.me/tg_mini_app_uikit_bot/demo";
