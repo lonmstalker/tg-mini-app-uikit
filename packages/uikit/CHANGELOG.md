@@ -1,5 +1,17 @@
 # tg-mini-app-uikit
 
+## 0.5.0
+
+### Minor Changes
+
+- 1b77173: Add press-and-drag date-range selection to `TKCalendar`, including long-press touch arming and disabled-date clipping.
+
+### Patch Changes
+
+- 3d2b239: Add a non-modal `TKSheet` mode for passive previews that must not capture document focus or lock the surrounding page.
+- 7c5c107: Modal scroll lock now restores the page position instantly on release — host pages with `scroll-behavior: smooth` no longer animate from the top after closing a sheet, dialog or image viewer.
+- cc6cb14: Derived ink colors (`--tk-accent-ink`, `--tk-red-ink`, `--tk-green-ink`, `--tk-orange-ink`) now recompute on every provider instead of only the outermost one — a nested `TKProvider` with its own theme (e.g. a light preview inside a dark page) no longer inherits the outer theme's unreadable mixes.
+
 ## 0.4.0
 
 ### Minor Changes
@@ -32,7 +44,7 @@
     fade in, the PTR spinner turns/scales with the pull, toast exits run faster
     than entries and the stack reflows via FLIP transforms.
   - Back-button dedup: `TKNavStack` exposes `nativeBack` and `TKHeader
-    back="auto"` hides its arrow while the native Telegram Back button is shown
+back="auto"` hides its arrow while the native Telegram Back button is shown
     for the same pop; in plain browsers the arrow remains.
 
 ## 0.3.1
