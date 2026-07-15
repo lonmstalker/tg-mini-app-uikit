@@ -350,6 +350,21 @@ test("locale switch keeps the clicked control anchored in the viewport", async (
     .toBeLessThan(2);
 });
 
+test("nested light theme preview recomputes ink colors on a dark page", async ({ page }) => {
+  await page.emulateMedia({ colorScheme: "dark", reducedMotion: "reduce" });
+  await page.goto("/demo/");
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+
+  const card = page.getByTestId("feature-theme-preview");
+  await card.scrollIntoViewIfNeeded();
+  await page.getByTestId("feature-theme-switch").getByText("Light", { exact: true }).click();
+  // The ink formula must resolve against the PREVIEW's light text (#131c26),
+  // not inherit the page's dark-theme mix (FND-004 regression guard).
+  await expect
+    .poll(() => card.evaluate((node) => getComputedStyle(node).getPropertyValue("--tk-accent-ink")))
+    .toContain("#131c26");
+});
+
 test("feature pages render localized content without console errors", async ({ page }) => {
   const errors: string[] = [];
   page.on("console", (message) => {

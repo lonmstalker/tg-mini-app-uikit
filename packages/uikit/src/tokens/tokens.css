@@ -137,14 +137,21 @@
       color-mix(in srgb, var(--tk-accent) 88%, #ffffff) 0%,
       var(--tk-accent) 100%);
 
-  /* ---- "ink" text colors: brand colors darkened (light) / lightened (dark)
-     toward the text color until small text passes WCAG AA on the tinted
-     12%-surfaces and plain backgrounds ---- */
+  --tk-ring: 0 0 0 3.5px var(--tk-accent-20);
+}
+
+/* ---- "ink" text colors: brand colors darkened (light) / lightened (dark)
+   toward the text color until small text passes WCAG AA on the tinted
+   12%-surfaces and plain backgrounds. Declared on EVERY provider — not in the
+   outermost-only block above — because they depend on the theme via
+   `--tk-text`: a nested provider with its own `data-theme` must recompute
+   them locally instead of inheriting the outer theme's resolved mix
+   (FND-004: light-in-dark previews got unreadable dark-theme inks). ---- */
+.tk {
   --tk-accent-ink: color-mix(in srgb, var(--tk-accent) 62%, var(--tk-text));
   --tk-red-ink: color-mix(in srgb, var(--tk-red) 62%, var(--tk-text));
   --tk-green-ink: color-mix(in srgb, var(--tk-green) 58%, var(--tk-text));
   --tk-orange-ink: color-mix(in srgb, var(--tk-orange) 50%, var(--tk-text));
-  --tk-ring: 0 0 0 3.5px var(--tk-accent-20);
   --tk-separator: var(--tk-sep);
 }
 
