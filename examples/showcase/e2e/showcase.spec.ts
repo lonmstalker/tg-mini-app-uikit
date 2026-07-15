@@ -387,7 +387,7 @@ test("landing locale switch persists Russian across reload", async ({ page }) =>
   await expect(
     page.getByRole("heading", {
       level: 1,
-      name: "React UIKit в стиле iOS для Telegram Mini Apps",
+      name: "React UIKit в стиле iOS для мини-приложений Telegram",
     }),
   ).toBeVisible();
   await expect(page.locator("html")).toHaveAttribute("lang", "ru");
@@ -397,7 +397,7 @@ test("landing locale switch persists Russian across reload", async ({ page }) =>
   await expect(
     page.getByRole("heading", {
       level: 1,
-      name: "React UIKit в стиле iOS для Telegram Mini Apps",
+      name: "React UIKit в стиле iOS для мини-приложений Telegram",
     }),
   ).toBeVisible();
   await expect(page.locator("html")).toHaveAttribute("lang", "ru");

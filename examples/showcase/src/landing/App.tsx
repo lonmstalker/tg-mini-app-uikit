@@ -25,6 +25,7 @@ interface Feature {
   title: string;
   copy: string;
   icon: TKIconName;
+  tone: "accent" | "green" | "orange";
   href: string;
   wide?: boolean;
 }
@@ -73,75 +74,79 @@ function LandingHero({ base }: { base: string }) {
   const copy = strings.landing.hero;
 
   return (
-    <Section
-      className="landing-hero"
-      id="hero"
-      labelledBy="landing-hero-title"
-      reveal={false}
-    >
-      <Container className="landing-hero-grid">
-        <div className="landing-hero-copy">
-          <h1 id="landing-hero-title">
-            {copy.title}
-          </h1>
-          <p className="landing-hero-subline">
-            {copy.subline}
-          </p>
+    <TKProvider theme="dark" className="landing-hero-theme">
+      <Section
+        className="landing-hero"
+        id="hero"
+        labelledBy="landing-hero-title"
+        reveal={false}
+      >
+        <Container className="landing-hero-grid">
+          <div className="landing-hero-copy">
+            <h1 id="landing-hero-title">
+              {copy.titleBefore}{" "}
+              <span className="landing-hero-title-accent">{copy.titleAccent}</span>
+              {copy.titleAfter}
+            </h1>
+            <p className="landing-hero-subline">
+              {copy.subline}
+            </p>
 
-          <div className="landing-install" aria-label={`${copy.installWith} ${INSTALL_COMMAND}`}>
-            <code>{INSTALL_COMMAND}</code>
-            <CopyButton
-              text={INSTALL_COMMAND}
-              label={copy.copyInstall}
-              successMessage={copy.installCopied}
-              testId="landing-install-copy"
-            />
+            <div className="landing-install" aria-label={`${copy.installWith} ${INSTALL_COMMAND}`}>
+              <code>{INSTALL_COMMAND}</code>
+              <CopyButton
+                text={INSTALL_COMMAND}
+                label={copy.copyInstall}
+                successMessage={copy.installCopied}
+                testId="landing-install-copy"
+              />
+            </div>
+
+            <div className="landing-badges" aria-label={copy.packageFacts}>
+              <TKBadge soft>~60 kB brotli</TKBadge>
+              <TKBadge soft tone="green">1245 tests</TKBadge>
+              <TKBadge soft tone="gray">MIT</TKBadge>
+              <TKBadge soft tone="gray">v{__TK_PACKAGE_VERSION__}</TKBadge>
+            </div>
+
+            <div className="landing-hero-actions">
+              <TKButton
+                as="a"
+                href={TELEGRAM_DEMO_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                icon="send"
+                size="lg"
+                testId="landing-telegram-cta"
+              >
+                {copy.openTelegram}
+              </TKButton>
+              <TKButton as="a" href={`${base}docs/`} icon="arrowRight" size="lg" variant="outline">
+                {copy.getStarted}
+              </TKButton>
+            </div>
+
+            <div className="landing-hero-links">
+              <TKButton
+                as="a"
+                href={`${base}demo/`}
+                size="lg"
+                variant="plain"
+                testId="landing-demo-cta"
+              >
+                {copy.browserDemo}
+              </TKButton>
+              <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer">
+                <TKIcon name="star" size={18} />
+                {copy.starGithub}
+              </a>
+            </div>
           </div>
 
-          <div className="landing-badges" aria-label={copy.packageFacts}>
-            <TKBadge soft>~60 kB brotli</TKBadge>
-            <TKBadge soft tone="green">1235 tests</TKBadge>
-            <TKBadge soft tone="gray">MIT</TKBadge>
-            <TKBadge soft tone="gray">v{__TK_PACKAGE_VERSION__}</TKBadge>
-          </div>
-
-          <div className="landing-hero-actions">
-            <TKButton
-              as="a"
-              href={TELEGRAM_DEMO_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              icon="send"
-              size="lg"
-              testId="landing-telegram-cta"
-            >
-              {copy.openTelegram}
-            </TKButton>
-            <TKButton as="a" href={`${base}docs/`} icon="arrowRight" size="lg" variant="outline">
-              {copy.getStarted}
-            </TKButton>
-          </div>
-
-          <div className="landing-hero-links">
-            <TKButton
-              as="a"
-              href={`${base}demo/`}
-              size="lg"
-              variant="plain"
-              testId="landing-demo-cta"
-            >
-              {copy.browserDemo}
-            </TKButton>
-            <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer">
-              <TKIcon name="star" size={18} />
-              {copy.starGithub}
-            </a>
-          </div>
-        </div>
-
-        <StaticWallet />
-      </Container>
-    </Section>
+          <StaticWallet />
+        </Container>
+      </Section>
+    </TKProvider>
   );
 }
 
@@ -221,6 +226,7 @@ function FeatureSection({ base }: { base: string }) {
       title: copy.gesturesTitle,
       copy: copy.gesturesCopy,
       icon: "fingerprint",
+      tone: "accent",
       href: `${base}demo/#components`,
       wide: true,
     },
@@ -228,6 +234,7 @@ function FeatureSection({ base }: { base: string }) {
       title: copy.telegramTitle,
       copy: copy.telegramCopy,
       icon: "phone",
+      tone: "accent",
       href: `${base}storybook/?path=/story/foundation-telegram--runtime-provider`,
       wide: true,
     },
@@ -235,24 +242,28 @@ function FeatureSection({ base }: { base: string }) {
       title: copy.motionTitle,
       copy: copy.motionCopy,
       icon: "bolt",
+      tone: "orange",
       href: `${base}storybook/?path=/story/foundation-motion--keyframe-library`,
     },
     {
       title: copy.accessibilityTitle,
       copy: copy.accessibilityCopy,
       icon: "shield",
+      tone: "green",
       href: `${base}storybook/?path=/story/atoms-controls--binary-controls`,
     },
     {
       title: copy.dependenciesTitle,
       copy: copy.dependenciesCopy,
       icon: "document",
+      tone: "orange",
       href: `${base}docs/`,
     },
     {
       title: copy.i18nTitle,
       copy: copy.i18nCopy,
       icon: "globe",
+      tone: "green",
       href: `${base}storybook/?path=/story/foundation-i18n--localized-controls`,
     },
   ];
@@ -260,10 +271,12 @@ function FeatureSection({ base }: { base: string }) {
   return (
     <Section className="landing-features" id="features">
       <Container>
-        <div className="landing-section-heading">
-          <SectionTitle id="features-title">{copy.title}</SectionTitle>
-          <p>{copy.intro}</p>
-        </div>
+        <LandingSectionHeading
+          eyebrow={copy.eyebrow}
+          title={copy.title}
+          titleId="features-title"
+          intro={copy.intro}
+        />
 
         <div className="landing-feature-grid">
           {features.map((feature) => (
@@ -272,7 +285,9 @@ function FeatureSection({ base }: { base: string }) {
               href={feature.href}
               key={feature.title}
             >
-              <TKIcon name={feature.icon} size={22} />
+              <span className={`landing-feature-icon landing-feature-icon--${feature.tone}`}>
+                <TKIcon name={feature.icon} size={22} />
+              </span>
               <span>
                 <strong>{feature.title}</strong>
                 <small>{feature.copy}</small>
@@ -294,14 +309,24 @@ function CodeSection() {
     <Section className="landing-code" id="code">
       <Container className="landing-code-grid">
         <div className="landing-code-copy">
-          <SectionTitle id="code-title">{copy.title}</SectionTitle>
-          <p>{copy.copy}</p>
+          <LandingSectionHeading
+            className="landing-section-heading--code"
+            eyebrow={copy.eyebrow}
+            title={copy.title}
+            titleId="code-title"
+            intro={copy.copy}
+          />
           <a href={`${import.meta.env.BASE_URL}docs/`}>{copy.guide}</a>
         </div>
 
         <div className="landing-code-panel">
           <div className="landing-code-toolbar">
-            <span>WalletScreen.tsx</span>
+            <span className="landing-code-dots" aria-hidden="true">
+              <span />
+              <span />
+              <span />
+            </span>
+            <span className="landing-code-filename">WalletScreen.tsx</span>
             <CopyButton
               text={quickstartSource.trimEnd()}
               label={copy.copyQuickstart}
@@ -325,10 +350,12 @@ function GetStartedSection({ base }: { base: string }) {
   return (
     <Section className="landing-get-started" id="get-started">
       <Container>
-        <div className="landing-section-heading">
-          <SectionTitle id="get-started-title">{copy.title}</SectionTitle>
-          <p>{copy.intro}</p>
-        </div>
+        <LandingSectionHeading
+          eyebrow={copy.eyebrow}
+          title={copy.title}
+          titleId="get-started-title"
+          intro={copy.intro}
+        />
 
         <ol className="landing-steps">
           <li>
@@ -373,7 +400,12 @@ function ExploreSection({ base }: { base: string }) {
   return (
     <Section className="landing-explore" id="explore" labelledBy="explore-title">
       <Container>
-        <h2 id="explore-title">{copy.title}</h2>
+        <LandingSectionHeading
+          className="landing-section-heading--explore"
+          eyebrow={copy.eyebrow}
+          title={copy.title}
+          titleId="explore-title"
+        />
         <div className="landing-explore-links">
           {links.map((link) => (
             <a
@@ -389,6 +421,28 @@ function ExploreSection({ base }: { base: string }) {
         </div>
       </Container>
     </Section>
+  );
+}
+
+function LandingSectionHeading({
+  eyebrow,
+  title,
+  titleId,
+  intro,
+  className,
+}: {
+  eyebrow: string;
+  title: string;
+  titleId: string;
+  intro?: string;
+  className?: string;
+}) {
+  return (
+    <div className={["landing-section-heading", className].filter(Boolean).join(" ")}>
+      <p className="landing-eyebrow">{eyebrow}</p>
+      <SectionTitle id={titleId}>{title}</SectionTitle>
+      {intro ? <p>{intro}</p> : null}
+    </div>
   );
 }
 

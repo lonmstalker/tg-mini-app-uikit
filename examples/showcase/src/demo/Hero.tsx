@@ -75,7 +75,7 @@ export function Hero({ theme }: { theme: TKTheme }) {
 
         <div className="hero-badges" aria-label={copy.packageFacts}>
           <TKBadge soft>~60 kB brotli</TKBadge>
-          <TKBadge soft tone="green">1235 tests</TKBadge>
+          <TKBadge soft tone="green">1245 tests</TKBadge>
           <TKBadge soft tone="gray">MIT</TKBadge>
         </div>
 

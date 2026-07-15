@@ -36,7 +36,9 @@ const en = {
       demo: "Demo",
     },
     hero: {
-      title: "The iOS-flavored React UI kit for Telegram Mini Apps",
+      titleBefore: "The iOS-flavored React UI kit for",
+      titleAccent: "Telegram Mini Apps",
+      titleAfter: "",
       subline: "Zero runtime dependencies · React 18 & 19 · Bot API 9.6",
       installWith: "Install with",
       copyInstall: "Copy install command",
@@ -63,6 +65,7 @@ const en = {
       caption: "Frozen UI · zero timers · built from the same token system",
     },
     features: {
+      eyebrow: "Platform foundation",
       title: "Built for the constraints Telegram actually has",
       intro: "Production primitives, platform behavior, and proof in one source package.",
       gesturesTitle: "Native-feel gestures",
@@ -79,6 +82,7 @@ const en = {
       i18nCopy: "Semantic tokens and bundled English and Russian locales adapt the whole interface at the root.",
     },
     code: {
+      eyebrow: "Quickstart",
       title: "From npm to a native-feel screen",
       copy: "Wrap once, compose normal React, and let the kit bridge Telegram behavior without taking over your app architecture.",
       guide: "Read the getting started guide →",
@@ -87,6 +91,7 @@ const en = {
       quickstartAria: "Typechecked React quickstart",
     },
     getStarted: {
+      eyebrow: "Three steps",
       title: "Ship a Mini App in three moves",
       intro: "The shortest path keeps the platform details explicit.",
       install: "Install",
@@ -95,6 +100,7 @@ const en = {
       connect: "Connect and validate the platform layer →",
     },
     explore: {
+      eyebrow: "Resources",
       title: "Explore the project",
       telegramLabel: "Telegram demo",
       telegramCopy: "Open the native Mini App experience",
@@ -382,7 +388,9 @@ const ru: SiteStrings = {
       demo: "Демо",
     },
     hero: {
-      title: "React UIKit в стиле iOS для Telegram Mini Apps",
+      titleBefore: "React UIKit в стиле iOS для",
+      titleAccent: "мини-приложений Telegram",
+      titleAfter: "",
       subline: "Без зависимостей в рантайме · React 18 и 19 · Bot API 9.6",
       installWith: "Установить командой",
       copyInstall: "Скопировать команду установки",
@@ -409,6 +417,7 @@ const ru: SiteStrings = {
       caption: "Статичный UI · без таймеров · та же система токенов",
     },
     features: {
+      eyebrow: "Основа платформы",
       title: "Создан с учётом реальных ограничений Telegram",
       intro: "Компоненты, поведение платформы и доказательства качества — в одном пакете.",
       gesturesTitle: "Жесты как в нативном приложении",
@@ -425,6 +434,7 @@ const ru: SiteStrings = {
       i18nCopy: "Семантические токены и встроенные русская и английская локали адаптируют весь интерфейс на уровне корня.",
     },
     code: {
+      eyebrow: "Быстрый старт",
       title: "От npm до нативного интерфейса",
       copy: "Один раз подключите провайдеры, пишите обычный React, а UIKit возьмёт на себя интеграцию с Telegram, не диктуя архитектуру приложения.",
       guide: "Открыть руководство по началу работы →",
@@ -433,6 +443,7 @@ const ru: SiteStrings = {
       quickstartAria: "Проверенный TypeScript-компилятором пример React",
     },
     getStarted: {
+      eyebrow: "Три шага",
       title: "Три шага до готового Mini App",
       intro: "Короткий путь, на котором детали платформы остаются явными.",
       install: "Установите",
@@ -441,6 +452,7 @@ const ru: SiteStrings = {
       connect: "Подключить и проверить платформенный слой →",
     },
     explore: {
+      eyebrow: "Ресурсы",
       title: "Изучите проект",
       telegramLabel: "Демо в Telegram",
       telegramCopy: "Откройте Mini App в нативной среде",
