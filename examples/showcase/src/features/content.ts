@@ -112,7 +112,7 @@ const en: Record<FeatureSlug, FeatureContent> = {
     title: "Accessible by default",
     intro:
       "Accessibility is part of each component's contract, not an add-on: keyboard operability, focus management, announcements and touch targets ship with every control.",
-    demo: { run: "Run async action", hears: "What a screen reader would say", idle: "Run the action — the announcement text appears here.", loading: "Checking the flow…", done: "Action complete.", caption: "The status is written to a polite aria-live region. There is no sound on its own — turn on VoiceOver or NVDA and the same text is spoken; without one, this line shows exactly what they would say." },
+    demo: { run: "Run async action", hears: "What a screen reader would say", idle: "Run the action — the announcement text appears here.", loading: "Checking the flow…", done: "Action complete.", caption: "The status is written to a polite aria-live region. There is no sound on its own — with a screen reader running, the same text is spoken aloud.", tipsTitle: "Try it with a real screen reader — the same shortcut turns it back off:", tipMac: "macOS: Cmd+F5 toggles VoiceOver on and off.", tipWin: "Windows: Win+Ctrl+Enter toggles Narrator on and off (or use NVDA).", tipMobile: "iPhone / Android: VoiceOver or TalkBack in the system accessibility settings — the same switch disables it." },
     blocks: [
       {
         heading: "Keyboard everywhere",
@@ -283,7 +283,7 @@ const ru: Record<FeatureSlug, FeatureContent> = {
     title: "Доступность по умолчанию",
     intro:
       "Доступность — часть контракта каждого компонента, а не надстройка: клавиатура, управление фокусом, озвучивание и размеры целей входят в каждый контрол.",
-    demo: { run: "Запустить действие", hears: "Что произнесёт скринридер", idle: "Запустите действие — здесь появится текст объявления.", loading: "Проверяем сценарий…", done: "Действие выполнено.", caption: "Статус записывается в вежливый aria-live-регион. Сам по себе он не звучит: включите VoiceOver или NVDA — и этот же текст будет произнесён; без них строка показывает ровно то, что они скажут." },
+    demo: { run: "Запустить действие", hears: "Что произнесёт скринридер", idle: "Запустите действие — здесь появится текст объявления.", loading: "Проверяем сценарий…", done: "Действие выполнено.", caption: "Статус записывается в вежливый aria-live-регион. Сам по себе он не звучит — при включённом скринридере этот же текст произносится вслух.", tipsTitle: "Попробуйте с настоящим скринридером — той же комбинацией он и выключается:", tipMac: "macOS: Cmd+F5 включает и выключает VoiceOver.", tipWin: "Windows: Win+Ctrl+Enter включает и выключает «Экранный диктор» (или поставьте NVDA).", tipMobile: "iPhone / Android: VoiceOver или TalkBack в системных настройках доступности — тем же переключателем отключается." },
     blocks: [
       {
         heading: "Клавиатура везде",

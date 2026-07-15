@@ -103,6 +103,14 @@ function AccessibilityDemo({ copy }: { copy: Record<string, string> }) {
         <strong>{visible}</strong>
       </p>
       {liveRegion}
+      <div className="feature-hero-tips">
+        <strong>{copy.tipsTitle}</strong>
+        <ul>
+          <li>{copy.tipMac}</li>
+          <li>{copy.tipWin}</li>
+          <li>{copy.tipMobile}</li>
+        </ul>
+      </div>
     </div>
   );
 }

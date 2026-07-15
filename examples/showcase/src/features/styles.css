@@ -186,3 +186,24 @@
     grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
   }
 }
+
+.feature-hero-tips {
+  display: grid;
+  gap: var(--tk-sp-2);
+  padding-block-start: var(--tk-sp-3);
+  border-block-start: 1px solid var(--tk-sep);
+  color: var(--tk-text-2);
+  font-size: var(--tk-fz-caption);
+}
+
+.feature-hero-tips strong {
+  color: var(--tk-text);
+  font-weight: 600;
+}
+
+.feature-hero-tips ul {
+  display: grid;
+  gap: var(--tk-sp-1);
+  padding-inline-start: var(--tk-sp-5);
+  margin: 0;
+}
