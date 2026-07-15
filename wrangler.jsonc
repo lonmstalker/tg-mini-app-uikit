@@ -1,0 +1,13 @@
+// Cloudflare Workers (static assets) config for the combined showcase site.
+// The Workers Builds flow runs the build command (`SITE_BASE=/ npm run site:deploy`,
+// which assembles landing + /demo + /storybook + /docs into site-dist/) and then
+// `npx wrangler deploy`, which serves that directory as static assets — no worker
+// script needed.
+{
+  "name": "tg-mini-app-uikit",
+  "compatibility_date": "2026-07-01",
+  "assets": {
+    "directory": "./site-dist",
+    "html_handling": "auto-trailing-slash"
+  }
+}
