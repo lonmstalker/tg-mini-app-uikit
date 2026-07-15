@@ -25,6 +25,8 @@ export interface FeatureContent {
   title: string;
   intro: string;
   blocks: FeatureBlock[];
+  /** Copy for the live hero demo strip (keys are slug-specific). */
+  demo: Record<string, string>;
 }
 
 const en: Record<FeatureSlug, FeatureContent> = {
@@ -33,6 +35,7 @@ const en: Record<FeatureSlug, FeatureContent> = {
     title: "Telegram out of the box",
     intro:
       "The kit ships a typed Bot API 9.6 bridge. Every capability below is a first-class hook with a graceful no-op fallback, so the same code runs inside Telegram and in a plain browser.",
+    demo: { button: "Approve expense", success: "Approved", caption: "A real TKMainButton fallback running on the injected WebApp mock — press it." },
     blocks: [
       {
         heading: "Native chrome",
@@ -79,6 +82,7 @@ const en: Record<FeatureSlug, FeatureContent> = {
     title: "Motion with a budget",
     intro:
       "Every animation in the kit is compositor-only and token-driven — and a CI gate keeps it that way. Low-end WebViews stay smooth because layout and paint never animate.",
+    demo: { slider: "Springy thumb", caption: "Drag the slider or press the button — transform and opacity only.", press: "Press me" },
     blocks: [
       {
         heading: "Transform and opacity only",
@@ -108,6 +112,7 @@ const en: Record<FeatureSlug, FeatureContent> = {
     title: "Accessible by default",
     intro:
       "Accessibility is part of each component's contract, not an add-on: keyboard operability, focus management, announcements and touch targets ship with every control.",
+    demo: { run: "Run async action", hears: "AT hears", idle: "The announcement will appear here.", loading: "Checking the flow…", done: "Done — announced politely." },
     blocks: [
       {
         heading: "Keyboard everywhere",
@@ -141,6 +146,7 @@ const en: Record<FeatureSlug, FeatureContent> = {
     title: "Zero runtime dependencies",
     intro:
       "The full kit is a single package that stays near 60 kB brotli with nothing but React peers underneath — and the budgets are CI gates, not aspirations.",
+    demo: { caption: "The numbers are CI gates, not aspirations." },
     blocks: [
       {
         heading: "Nothing under the hood",
@@ -166,6 +172,7 @@ const en: Record<FeatureSlug, FeatureContent> = {
     title: "Theming and i18n at the root",
     intro:
       "One provider re-themes the whole tree: semantic tokens drive color, radius, type scale and motion, while bundled locales switch every built-in string live.",
+    demo: { caption: "Pick an accent — the ink recomputes for contrast.", sample: "Readable ink", action: "Primary action" },
     blocks: [
       {
         heading: "Semantic tokens",
@@ -199,6 +206,7 @@ const ru: Record<FeatureSlug, FeatureContent> = {
     title: "Готов к Telegram из коробки",
     intro:
       "В комплекте — типизированный мост Bot API 9.6. Каждая возможность ниже — полноценный хук с безопасным фолбэком: один и тот же код работает и внутри Telegram, и в обычном браузере.",
+    demo: { button: "Согласовать расход", success: "Согласовано", caption: "Настоящий фолбэк TKMainButton на внедрённом моке WebApp — нажмите." },
     blocks: [
       {
         heading: "Нативный интерфейс клиента",
@@ -245,6 +253,7 @@ const ru: Record<FeatureSlug, FeatureContent> = {
     title: "Анимация с бюджетом",
     intro:
       "Каждая анимация кита работает только на композиторе и управляется токенами — и это охраняет CI-гейт. Слабые WebView остаются плавными, потому что layout и paint не анимируются никогда.",
+    demo: { slider: "Пружинящий ползунок", caption: "Потяните слайдер или нажмите кнопку — только transform и opacity.", press: "Нажми меня" },
     blocks: [
       {
         heading: "Только transform и opacity",
@@ -274,6 +283,7 @@ const ru: Record<FeatureSlug, FeatureContent> = {
     title: "Доступность по умолчанию",
     intro:
       "Доступность — часть контракта каждого компонента, а не надстройка: клавиатура, управление фокусом, озвучивание и размеры целей входят в каждый контрол.",
+    demo: { run: "Запустить действие", hears: "Скринридер слышит", idle: "Здесь появится озвученный текст.", loading: "Проверяем сценарий…", done: "Готово — озвучено вежливо." },
     blocks: [
       {
         heading: "Клавиатура везде",
@@ -307,6 +317,7 @@ const ru: Record<FeatureSlug, FeatureContent> = {
     title: "Ноль зависимостей в рантайме",
     intro:
       "Весь кит — один пакет около 60 кБ brotli, под которым нет ничего, кроме peer-зависимостей React. И эти бюджеты — CI-гейты, а не намерения.",
+    demo: { caption: "Эти цифры — CI-гейты, а не намерения." },
     blocks: [
       {
         heading: "Ничего под капотом",
@@ -332,6 +343,7 @@ const ru: Record<FeatureSlug, FeatureContent> = {
     title: "Темизация и i18n на уровне корня",
     intro:
       "Один провайдер перекрашивает всё дерево: семантические токены управляют цветом, радиусами, типографикой и движением, а встроенные локали переключают все строки кита вживую.",
+    demo: { caption: "Выберите акцент — цвет текста пересчитается по контрасту.", sample: "Читаемый текст", action: "Основное действие" },
     blocks: [
       {
         heading: "Семантические токены",
@@ -368,3 +380,46 @@ export const FEATURE_SLUGS: readonly FeatureSlug[] = [
 ];
 
 export const FEATURE_CONTENT: Record<SiteLocale, Record<FeatureSlug, FeatureContent>> = { en, ru };
+
+/** Locale-independent block presentation: kit icon + tinted chip tone, zipped with blocks by index. */
+export interface FeatureBlockMeta {
+  icon: string;
+  tone: "accent" | "green" | "orange";
+}
+
+export const BLOCK_META: Record<FeatureSlug, FeatureBlockMeta[]> = {
+  telegram: [
+    { icon: "phone", tone: "accent" },
+    { icon: "sun", tone: "orange" },
+    { icon: "tune", tone: "accent" },
+    { icon: "bolt", tone: "green" },
+    { icon: "send", tone: "accent" },
+    { icon: "lock", tone: "orange" },
+    { icon: "verified", tone: "green" },
+  ],
+  motion: [
+    { icon: "bolt", tone: "accent" },
+    { icon: "clock", tone: "orange" },
+    { icon: "fingerprint", tone: "green" },
+    { icon: "moon", tone: "accent" },
+  ],
+  accessibility: [
+    { icon: "shield", tone: "green" },
+    { icon: "lock", tone: "accent" },
+    { icon: "bell", tone: "orange" },
+    { icon: "eye", tone: "accent" },
+    { icon: "globe", tone: "green" },
+  ],
+  architecture: [
+    { icon: "document", tone: "accent" },
+    { icon: "tune", tone: "orange" },
+    { icon: "verified", tone: "green" },
+    { icon: "download", tone: "accent" },
+  ],
+  theming: [
+    { icon: "sun", tone: "accent" },
+    { icon: "tune", tone: "orange" },
+    { icon: "moon", tone: "accent" },
+    { icon: "globe", tone: "green" },
+  ],
+};

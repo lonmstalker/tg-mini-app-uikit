@@ -81,3 +81,108 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* ---- hero demo strip ---- */
+.feature-hero-grid {
+  display: grid;
+  gap: var(--tk-sp-6);
+  align-items: center;
+}
+
+.feature-hero-demo {
+  display: grid;
+  gap: var(--tk-sp-3);
+  margin: 0;
+}
+
+.feature-hero-demo figcaption {
+  color: var(--tk-text-3);
+  font-size: var(--tk-fz-caption);
+}
+
+.feature-hero-panel,
+.feature-hero-device {
+  display: grid;
+  gap: var(--tk-sp-4);
+  padding: var(--tk-sp-5);
+  border: 1px solid var(--tk-sep);
+  border-radius: var(--tk-r-lg);
+  background: var(--tk-surface);
+}
+
+.feature-hero-device {
+  color: var(--tk-text);
+}
+
+.feature-hero-device-body {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--tk-sp-3);
+  color: var(--tk-text-2);
+}
+
+.feature-hero-device-body strong {
+  color: var(--tk-text);
+  font-size: var(--tk-fz-title2);
+}
+
+.feature-hero-badges {
+  grid-auto-flow: column;
+  justify-content: start;
+  gap: var(--tk-sp-2);
+  flex-wrap: wrap;
+}
+
+.feature-hero-live {
+  display: grid;
+  gap: var(--tk-sp-1);
+  margin: 0;
+}
+
+.feature-hero-live span {
+  color: var(--tk-text-3);
+  font-size: var(--tk-fz-caption2);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.feature-hero-swatches {
+  display: flex;
+  gap: var(--tk-sp-2);
+}
+
+.feature-hero-swatches button {
+  inline-size: var(--tk-sp-7);
+  block-size: var(--tk-sp-7);
+  padding: 0;
+  border: 1px solid var(--tk-sep);
+  border-radius: var(--tk-r-pill);
+  cursor: pointer;
+}
+
+.feature-hero-swatches button:focus-visible {
+  outline: none;
+  box-shadow: var(--tk-ring);
+}
+
+.feature-hero-swatches button[aria-pressed="true"] {
+  box-shadow: var(--tk-ring);
+}
+
+.feature-hero-sample {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--tk-sp-3);
+  padding: var(--tk-sp-3) var(--tk-sp-4);
+  border-radius: var(--tk-r-md);
+  background: var(--tk-accent-06);
+  font-weight: 600;
+}
+
+@media (min-width: 1080px) {
+  .feature-hero-grid {
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  }
+}

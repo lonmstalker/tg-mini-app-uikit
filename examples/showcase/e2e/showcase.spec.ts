@@ -378,6 +378,7 @@ test("feature pages render localized content without console errors", async ({ p
     await expect(title).toBeVisible();
     const englishTitle = await title.textContent();
     await expect(page.getByTestId("feature-blocks").locator("article").first()).toBeVisible();
+    await expect(page.getByTestId("feature-hero-demo")).toBeVisible();
 
     await page.getByTestId("site-locale-ru").click();
     await expect(page.locator("html")).toHaveAttribute("lang", "ru");
