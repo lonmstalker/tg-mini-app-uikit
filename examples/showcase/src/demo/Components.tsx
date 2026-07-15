@@ -31,7 +31,8 @@ import {
   type TKTheme,
 } from "tg-mini-app-uikit";
 import { SectionTitle } from "../shared/layout";
-import { formatSiteString, useSiteLocale } from "../shared/i18n";
+import { useSiteLocale } from "../shared/i18n";
+import { formatSiteString } from "../shared/strings";
 import { resolveTokenColor } from "./themeColors";
 import { useReveal } from "../shared/useReveal";
 

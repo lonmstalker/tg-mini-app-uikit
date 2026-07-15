@@ -16,7 +16,8 @@ import {
   type TKTheme,
 } from "tg-mini-app-uikit";
 import { copyText } from "../shared/clipboard";
-import { formatSiteString, useSiteLocale } from "../shared/i18n";
+import { useSiteLocale } from "../shared/i18n";
+import { formatSiteString } from "../shared/strings";
 import { SectionTitle } from "../shared/layout";
 import { SCENARIO_CYCLE_MS, useScenario } from "./useScenario";
 

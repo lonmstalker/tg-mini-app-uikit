@@ -10,7 +10,8 @@ import installSnippetSource from "../snippets/install.snippet.txt?raw";
 import telegramSnippetSource from "../snippets/telegram.snippet.tsx?raw";
 import themeSnippetSource from "../snippets/theme.snippet.tsx?raw";
 import { copyText } from "../shared/clipboard";
-import { formatSiteString, useSiteLocale } from "../shared/i18n";
+import { useSiteLocale } from "../shared/i18n";
+import { formatSiteString } from "../shared/strings";
 import { SectionTitle } from "../shared/layout";
 
 type SnippetId = "install" | "theme" | "telegram";

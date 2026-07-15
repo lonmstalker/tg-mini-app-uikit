@@ -24,7 +24,8 @@ import {
   type TKTheme,
 } from "tg-mini-app-uikit";
 import { SectionTitle } from "../shared/layout";
-import { formatSiteString, useSiteLocale } from "../shared/i18n";
+import { useSiteLocale } from "../shared/i18n";
+import { formatSiteString } from "../shared/strings";
 import { useReveal } from "../shared/useReveal";
 
 const FEATURE_STAGGER_MS = 60;
