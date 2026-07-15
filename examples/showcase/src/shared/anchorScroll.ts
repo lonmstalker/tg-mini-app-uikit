@@ -17,13 +17,18 @@ export function withScrollAnchor(anchor: Element | null | undefined, mutate: () 
     mutate();
     return;
   }
+  // Measure BEFORE forcing the sections open: this is where the visitor
+  // actually sees the anchor. Setting data-anchoring first would fold any
+  // still-collapsed content-visibility expansion above the anchor into the
+  // baseline and pin the control to its post-expansion spot instead of the
+  // spot under the visitor's pointer.
+  const before = anchor.getBoundingClientRect().top;
   // Deliberately NEVER removed: re-enabling content-visibility lets the
   // browser re-collapse sections at idle time, shifting the page again long
   // after any settle window. Its benefit (cheap first paint) is already spent
   // by the time the visitor interacts, so the page stays fully laid out for
   // the rest of the session.
   document.documentElement.setAttribute("data-anchoring", "");
-  const before = anchor.getBoundingClientRect().top;
   mutate();
   const compensate = () => {
     const delta = anchor.getBoundingClientRect().top - before;

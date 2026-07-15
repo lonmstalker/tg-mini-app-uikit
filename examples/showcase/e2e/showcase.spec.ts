@@ -332,21 +332,43 @@ test("locale switch keeps the clicked control anchored in the viewport", async (
   await page.evaluate(() => window.scrollTo({ top: document.body.scrollHeight, behavior: "instant" }));
   const control = page.getByTestId("locale-switch");
   await control.scrollIntoViewIfNeeded();
-  // Baseline only once the control's position is stable across real delays.
-  let before = await control.evaluate((node) => node.getBoundingClientRect().top);
+  // Wait for the layout to settle across real delays before clicking.
+  let settle = await control.evaluate((node) => node.getBoundingClientRect().top);
   for (let stable = 0, attempts = 0; stable < 2 && attempts < 20; attempts++) {
     await page.waitForTimeout(250);
     const top = await control.evaluate((node) => node.getBoundingClientRect().top);
-    stable = Math.abs(top - before) < 1 ? stable + 1 : 0;
-    before = top;
+    stable = Math.abs(top - settle) < 1 ? stable + 1 : 0;
+    settle = top;
   }
+
+  // The anchoring contract is "the control stays under the pointer", so the
+  // baseline must be the control's position at POINTERDOWN time — not before
+  // the click: when the settled control sits fractionally outside the
+  // viewport, Playwright's click actionability re-scrolls it into view first,
+  // and a pre-click baseline goes stale by a full viewport (the 827px CI
+  // failure: linux font metrics parked the control 0.06px above the fold).
+  await control.evaluate((node) => {
+    (window as unknown as { __anchorBefore: number | null }).__anchorBefore = null;
+    node.addEventListener(
+      "pointerdown",
+      () => {
+        (window as unknown as { __anchorBefore: number | null }).__anchorBefore =
+          node.getBoundingClientRect().top;
+      },
+      { capture: true, once: true },
+    );
+  });
 
   // Russian copy above the switch is longer — without anchoring the control
   // drifts out from under the pointer when the page re-renders.
   await control.getByText("Russian").click();
   await expect(page.locator("html")).toHaveAttribute("lang", "ru");
+  const before = await page.evaluate(
+    () => (window as unknown as { __anchorBefore: number | null }).__anchorBefore,
+  );
+  expect(before).not.toBeNull();
   await expect
-    .poll(async () => Math.abs((await control.evaluate((node) => node.getBoundingClientRect().top)) - before))
+    .poll(async () => Math.abs((await control.evaluate((node) => node.getBoundingClientRect().top)) - (before as number)))
     .toBeLessThan(2);
 });
 
