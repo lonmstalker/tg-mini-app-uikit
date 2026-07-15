@@ -9,8 +9,8 @@ import {
 import installSnippetSource from "../snippets/install.snippet.txt?raw";
 import telegramSnippetSource from "../snippets/telegram.snippet.tsx?raw";
 import themeSnippetSource from "../snippets/theme.snippet.tsx?raw";
-import { copyText } from "./clipboard";
-import { SectionTitle } from "./layout";
+import { copyText } from "../shared/clipboard";
+import { SectionTitle } from "../shared/layout";
 
 export type ShowcaseLocale = "en" | "ru";
 type SnippetId = "install" | "theme" | "telegram";

@@ -15,8 +15,8 @@ import {
   useTKToast,
   type TKTheme,
 } from "tg-mini-app-uikit";
-import { copyText } from "./clipboard";
-import { SectionTitle } from "./layout";
+import { copyText } from "../shared/clipboard";
+import { SectionTitle } from "../shared/layout";
 import { SCENARIO_CYCLE_MS, useScenario } from "./useScenario";
 
 const INSTALL_COMMAND = "npm i tg-mini-app-uikit";

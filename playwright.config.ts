@@ -88,8 +88,8 @@ export default defineConfig({
       },
     },
     {
-      // The showcase landing's fast smoke suite targets its dedicated Vite
-      // server and stays isolated from the package Storybook specs.
+      // The showcase MPA's landing + live-demo smoke suite targets its dedicated
+      // Vite server and stays isolated from the package Storybook specs.
       name: "showcase",
       testDir: "./examples/showcase/e2e",
       testMatch: ["**/*.spec.ts"],

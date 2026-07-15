@@ -2,36 +2,38 @@ import { useCallback, useEffect, useState } from "react";
 import {
   enLocale,
   ruLocale,
+  TKIcon,
   TKLocaleProvider,
+  TKNoticeBar,
   TKProvider,
   TKToastProvider,
-  type TKTheme,
 } from "tg-mini-app-uikit";
-import { Hero } from "./ui/Hero";
-import { Features } from "./ui/Features";
-import { Components } from "./ui/Components";
-import { I18nShowcase, type ShowcaseLocale } from "./ui/I18nShowcase";
-import { SiteFooter } from "./ui/SiteFooter";
-import { SiteHeader } from "./ui/SiteHeader";
-import { Container, Section } from "./ui/layout";
+import { SiteFooter } from "../shared/SiteFooter";
+import { SiteHeader } from "../shared/SiteHeader";
+import { Container, Section } from "../shared/layout";
+import { TELEGRAM_DEMO_URL } from "../shared/links";
+import { useSiteTheme } from "../shared/theme";
+import { Components } from "./Components";
+import { Features } from "./Features";
+import { Hero } from "./Hero";
+import { I18nShowcase, type ShowcaseLocale } from "./I18nShowcase";
 import {
   clearShowcaseTweaksStorage,
   createDefaultShowcaseTweaks,
   getInitialShowcaseTweaks,
   persistShowcaseTweaks,
-} from "./ui/showcaseTweaks";
-import { TweaksPanel } from "./ui/TweaksPanel";
+} from "./showcaseTweaks";
+import { TweaksPanel } from "./TweaksPanel";
 
-function getInitialTheme(): TKTheme {
-  if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
-    return "dark";
-  }
-
-  return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
-}
+const navigation = [
+  { href: "#features", label: "Features" },
+  { href: "#components", label: "Components" },
+  { href: "#tweaks", label: "Tweaks" },
+  { href: "#i18n", label: "i18n" },
+] as const;
 
 export function App() {
-  const [theme, setTheme] = useState<TKTheme>(getInitialTheme);
+  const { theme, toggleTheme } = useSiteTheme();
   const [locale, setLocale] = useState<ShowcaseLocale>("en");
   const [tweaks, setTweaks] = useState(getInitialShowcaseTweaks);
   const [defaultAccent, setDefaultAccent] = useState<string | null>(null);
@@ -72,10 +74,29 @@ export function App() {
 
           <SiteHeader
             theme={theme}
-            onThemeToggle={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
+            onThemeToggle={toggleTheme}
+            navigation={navigation}
+            wordmarkHref="../"
+            wordmarkContext="Demo"
+            utilityLink={{ href: "../", label: "Landing" }}
           />
 
           <main>
+            <Container className="demo-browser-notice">
+              <TKNoticeBar
+                className="demo-browser-notice-bar"
+                icon={<TKIcon name="info" size={18} />}
+                action={
+                  <a href={TELEGRAM_DEMO_URL} target="_blank" rel="noopener noreferrer">
+                    Open in Telegram
+                  </a>
+                }
+                testId="browser-demo-notice"
+              >
+                Browser demo — the kit runs fully without Telegram.
+              </TKNoticeBar>
+            </Container>
+
             <Section className="showcase-hero" id="hero" reveal={false}>
               <Container>
                 <Hero theme={theme} />

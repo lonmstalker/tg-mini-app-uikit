@@ -6,7 +6,7 @@ import {
   TKSwitch,
   type TKTheme,
 } from "tg-mini-app-uikit";
-import { SectionTitle } from "./layout";
+import { SectionTitle } from "../shared/layout";
 import {
   SHOWCASE_TWEAK_RANGES,
   type ShowcaseTweaks,

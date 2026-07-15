@@ -1,12 +1,10 @@
 import { TKIcon, type TKTheme } from "tg-mini-app-uikit";
 import { Container } from "./layout";
 
-const navigation = [
-  { href: "#features", label: "Features" },
-  { href: "#components", label: "Components" },
-  { href: "#tweaks", label: "Tweaks" },
-  { href: "#i18n", label: "i18n" },
-] as const;
+export interface SiteLink {
+  href: string;
+  label: string;
+}
 
 function GitHubIcon() {
   return (
@@ -27,16 +25,28 @@ function GitHubIcon() {
 interface SiteHeaderProps {
   theme: TKTheme;
   onThemeToggle: () => void;
+  navigation: readonly SiteLink[];
+  wordmarkHref: string;
+  wordmarkContext?: string;
+  utilityLink?: SiteLink;
 }
 
-export function SiteHeader({ theme, onThemeToggle }: SiteHeaderProps) {
+export function SiteHeader({
+  theme,
+  onThemeToggle,
+  navigation,
+  wordmarkHref,
+  wordmarkContext,
+  utilityLink,
+}: SiteHeaderProps) {
   const nextTheme = theme === "dark" ? "light" : "dark";
 
   return (
     <header className="site-header">
       <Container className="site-header-inner">
-        <a className="site-wordmark" href="#hero">
+        <a className="site-wordmark" href={wordmarkHref}>
           tg-mini-app-uikit
+          {wordmarkContext ? <span>{wordmarkContext}</span> : null}
         </a>
 
         <nav className="site-navigation" aria-label="Primary navigation">
@@ -50,6 +60,11 @@ export function SiteHeader({ theme, onThemeToggle }: SiteHeaderProps) {
         </nav>
 
         <div className="site-header-actions">
+          {utilityLink ? (
+            <a className="site-header-link" href={utilityLink.href}>
+              {utilityLink.label}
+            </a>
+          ) : null}
           <button
             type="button"
             className="site-icon-button"
@@ -62,7 +77,7 @@ export function SiteHeader({ theme, onThemeToggle }: SiteHeaderProps) {
             className="site-icon-button"
             href="https://github.com/lonmstalker/tg-mini-app-uikit"
             target="_blank"
-            rel="noopener"
+            rel="noopener noreferrer"
             aria-label="GitHub repository"
           >
             <GitHubIcon />

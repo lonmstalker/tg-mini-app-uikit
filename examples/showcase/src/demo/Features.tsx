@@ -23,8 +23,8 @@ import {
   type TKBusyState,
   type TKTheme,
 } from "tg-mini-app-uikit";
-import { SectionTitle } from "./layout";
-import { useReveal } from "./useReveal";
+import { SectionTitle } from "../shared/layout";
+import { useReveal } from "../shared/useReveal";
 
 const FEATURE_STAGGER_MS = 60;
 const busyCopy = {

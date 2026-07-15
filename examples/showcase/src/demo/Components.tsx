@@ -28,9 +28,9 @@ import {
   type TKImageViewerImage,
   type TKTheme,
 } from "tg-mini-app-uikit";
-import { SectionTitle } from "./layout";
+import { SectionTitle } from "../shared/layout";
 import { resolveTokenColor } from "./themeColors";
-import { useReveal } from "./useReveal";
+import { useReveal } from "../shared/useReveal";
 
 const TILE_STAGGER_MS = 60;
 
@@ -233,7 +233,7 @@ function BentoTile({
             <h3>{title}</h3>
             <p>{description}</p>
           </div>
-          <a className="component-story-link" href={storyUrl} target="_blank" rel="noopener">
+          <a className="component-story-link" href={storyUrl} target="_blank" rel="noopener noreferrer">
             Storybook <span aria-hidden="true">→</span>
           </a>
         </header>

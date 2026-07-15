@@ -49,5 +49,11 @@ export default defineConfig({
   build: {
     sourcemap: true,
     outDir: "dist",
+    rollupOptions: {
+      input: {
+        landing: fromHere("index.html"),
+        demo: fromHere("demo/index.html"),
+      },
+    },
   },
 });
