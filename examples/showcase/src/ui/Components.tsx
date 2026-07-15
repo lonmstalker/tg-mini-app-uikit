@@ -24,10 +24,12 @@ import {
   TKSkeletonText,
   TKSwitch,
   useReducedMotion,
+  useTKTheme,
   type TKImageViewerImage,
   type TKTheme,
 } from "tg-mini-app-uikit";
 import { SectionTitle } from "./layout";
+import { resolveTokenColor } from "./themeColors";
 import { useReveal } from "./useReveal";
 
 const TILE_STAGGER_MS = 60;
@@ -266,9 +268,10 @@ function LazyDemo({
 }
 
 function ImageViewerDemo({ theme }: { theme: TKTheme }) {
+  const { accent } = useTKTheme();
   const hostRef = useRef<HTMLDivElement>(null);
   const originRef = useRef<HTMLElement | null>(null);
-  const images = useTokenImages(hostRef, theme);
+  const images = useTokenImages(hostRef, theme, accent);
   const [open, setOpen] = useState(false);
   const [index, setIndex] = useState(0);
 
@@ -653,14 +656,18 @@ function useViewportActivity<T extends HTMLElement>() {
   } as const;
 }
 
-function useTokenImages(hostRef: RefObject<HTMLElement | null>, theme: TKTheme) {
+function useTokenImages(
+  hostRef: RefObject<HTMLElement | null>,
+  theme: TKTheme,
+  accent: string | undefined,
+) {
   const [images, setImages] = useState<TKImageViewerImage[]>([]);
 
   useEffect(() => {
     const host = hostRef.current;
     if (!host) return;
     setImages(buildTokenImages(host));
-  }, [hostRef, theme]);
+  }, [accent, hostRef, theme]);
 
   return images;
 }
@@ -699,13 +706,4 @@ function buildTokenImages(host: HTMLElement): TKImageViewerImage[] {
       alt: `${label} token composition`,
     };
   });
-}
-
-function resolveTokenColor(host: HTMLElement, token: string) {
-  const probe = document.createElement("span");
-  probe.style.color = `var(${token})`;
-  host.append(probe);
-  const color = getComputedStyle(probe).color;
-  probe.remove();
-  return color;
 }

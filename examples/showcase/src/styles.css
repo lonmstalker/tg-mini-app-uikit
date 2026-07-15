@@ -42,6 +42,13 @@ a {
     radial-gradient(circle at 34% 84%, var(--tk-accent-06), transparent 22%);
 }
 
+/* Nested demo providers keep their own light/dark surfaces, while the
+   top-level accent ink remains paired with the inherited accent. The theme
+   demo is intentionally self-contained and keeps its own accent contract. */
+.showcase .tk:not(.feature-theme-preview) {
+  --tk-on-accent: inherit;
+}
+
 .showcase-container {
   box-sizing: border-box;
   inline-size: min(100%, 1080px);
@@ -130,8 +137,8 @@ a {
   border: 1px solid var(--tk-sep);
   border-radius: var(--tk-r-pill);
   place-items: center;
-  color: var(--tk-text);
-  background: var(--tk-surface-2);
+  color: var(--tk-accent-ink);
+  background: var(--tk-accent-12);
   text-decoration: none;
   cursor: pointer;
 }
@@ -246,7 +253,7 @@ a {
   box-sizing: border-box;
   inline-size: 100%;
   padding: 9px;
-  border-radius: 46px;
+  border-radius: calc(46px * var(--tk-rx));
   background: var(--tk-surface-3);
   box-shadow: var(--tk-shadow-lg), inset 0 0 0 2px var(--tk-sep);
 }
@@ -258,7 +265,7 @@ a {
   block-size: clamp(560px, 156vw, 690px);
   min-block-size: 0;
   flex-direction: column;
-  border-radius: 38px;
+  border-radius: calc(38px * var(--tk-rx));
   color: var(--tk-text);
   background: var(--tk-bg);
 }
@@ -871,7 +878,7 @@ a {
   padding: clamp(var(--tk-sp-4), 4vw, var(--tk-sp-6));
   border-radius: var(--tk-r-lg);
   background: var(--tk-surface);
-  box-shadow: var(--tk-shadow-sm);
+  box-shadow: inset 0 0 0 1px var(--tk-accent-12), var(--tk-shadow-sm);
   cursor: default;
   transition: transform var(--tk-t1) var(--tk-ease);
 }
@@ -1233,6 +1240,184 @@ a {
   align-content: center;
 }
 
+.showcase-tweaks {
+  min-block-size: 100dvh;
+  align-items: start;
+}
+
+.tweaks-layout {
+  display: grid;
+  min-inline-size: 0;
+  gap: var(--tk-sp-7);
+}
+
+.tweaks-intro {
+  display: grid;
+  max-inline-size: 58ch;
+  gap: var(--tk-sp-4);
+}
+
+.tweaks-intro p {
+  margin: 0;
+  color: var(--tk-text-2);
+  line-height: 1.6;
+}
+
+.tweaks-panel {
+  display: grid;
+  min-inline-size: 0;
+  overflow: clip;
+  border-radius: var(--tk-r-lg);
+  background: var(--tk-surface);
+  box-shadow: var(--tk-shadow-md);
+}
+
+.tweaks-panel-heading,
+.tweaks-control,
+.tweaks-preview {
+  padding: var(--tk-sp-4);
+}
+
+.tweaks-panel-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--tk-sp-3);
+}
+
+.tweaks-panel-heading > div,
+.tweaks-preview > div:first-child {
+  display: grid;
+  gap: var(--tk-sp-1);
+}
+
+.tweaks-panel-heading strong,
+.tweaks-preview strong {
+  color: var(--tk-text);
+  font-size: var(--tk-fz-body);
+}
+
+.tweaks-panel-heading span,
+.tweaks-preview span {
+  color: var(--tk-text-2);
+  font-size: var(--tk-fz-caption);
+}
+
+.tweaks-control,
+.tweaks-preview {
+  display: grid;
+  min-inline-size: 0;
+  gap: var(--tk-sp-4);
+  border-block-start: 1px solid var(--tk-sep);
+}
+
+.tweaks-control-heading {
+  display: flex;
+  min-inline-size: 0;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--tk-sp-3);
+}
+
+.tweaks-control-heading > span {
+  color: var(--tk-text);
+  font-size: var(--tk-fz-sub);
+  font-weight: 700;
+}
+
+.tweaks-control-heading output {
+  display: flex;
+  min-inline-size: 0;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: var(--tk-sp-2);
+  color: var(--tk-accent-ink);
+  font-size: var(--tk-fz-sub);
+  font-weight: 700;
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.tweaks-control-heading code {
+  color: var(--tk-text-2);
+  font-size: var(--tk-fz-caption2);
+  font-weight: 600;
+}
+
+.tweaks-swatches {
+  display: flex;
+  min-inline-size: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--tk-sp-2);
+}
+
+.tweaks-swatch-dot {
+  display: block;
+  inline-size: 20px;
+  block-size: 20px;
+  border-radius: var(--tk-r-pill);
+  box-shadow: inset 0 0 0 1px var(--tk-sep);
+}
+
+.tweaks-color-input {
+  display: inline-flex;
+  min-block-size: var(--tk-tap-min);
+  align-items: center;
+  gap: var(--tk-sp-2);
+  padding-inline: var(--tk-sp-2) var(--tk-sp-3);
+  border-radius: var(--tk-r-pill);
+  color: var(--tk-text);
+  background: var(--tk-surface-2);
+  box-shadow: inset 0 0 0 1px var(--tk-sep);
+  cursor: pointer;
+}
+
+.tweaks-color-input:focus-within {
+  box-shadow: var(--tk-ring);
+}
+
+.tweaks-color-input input {
+  inline-size: 28px;
+  block-size: 28px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.tweaks-color-input input:focus-visible {
+  outline: none;
+}
+
+.tweaks-color-input input::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.tweaks-color-input input::-webkit-color-swatch,
+.tweaks-color-input input::-moz-color-swatch {
+  border: 0;
+  border-radius: var(--tk-r-pill);
+}
+
+.tweaks-color-input span {
+  font-size: var(--tk-fz-caption);
+  font-weight: 650;
+}
+
+.tweaks-preview {
+  background: var(--tk-accent-06);
+}
+
+.tweaks-preview-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--tk-sp-3);
+}
+
 @keyframes feature-compositor-pulse {
   0%,
   100% {
@@ -1379,6 +1564,17 @@ a {
 
   .components-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .tweaks-layout {
+    grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.28fr);
+    align-items: start;
+    min-block-size: 110dvh;
+  }
+
+  .tweaks-panel {
+    position: sticky;
+    inset-block-start: calc(var(--tk-tap-min) + var(--tk-sp-4) + 1px);
   }
 
   .component-tile--wide,
