@@ -1418,6 +1418,125 @@ a {
   gap: var(--tk-sp-3);
 }
 
+.showcase-i18n {
+  min-block-size: 100dvh;
+}
+
+.i18n-layout,
+.i18n-intro,
+.i18n-card,
+.i18n-demo-cluster {
+  display: grid;
+  min-inline-size: 0;
+}
+
+.i18n-layout {
+  gap: var(--tk-sp-7);
+}
+
+.i18n-intro {
+  max-inline-size: 58ch;
+  gap: var(--tk-sp-4);
+}
+
+.i18n-intro p,
+.i18n-card-header p,
+.i18n-demo-note {
+  margin: 0;
+  color: var(--tk-text-2);
+  line-height: 1.6;
+}
+
+.i18n-blocks {
+  display: grid;
+  min-inline-size: 0;
+  gap: var(--tk-sp-4);
+}
+
+.i18n-card {
+  align-content: start;
+  gap: var(--tk-sp-5);
+  padding: var(--tk-sp-4);
+  border: 1px solid var(--tk-sep);
+  border-radius: var(--tk-r-lg);
+  background: var(--tk-surface);
+  box-shadow: var(--tk-shadow-sm);
+}
+
+.i18n-card-header {
+  display: flex;
+  min-inline-size: 0;
+  flex-wrap: wrap;
+  align-items: start;
+  justify-content: space-between;
+  gap: var(--tk-sp-3);
+}
+
+.i18n-card-header > div:first-child {
+  display: grid;
+  min-inline-size: 0;
+  flex: 1 1 220px;
+  gap: var(--tk-sp-1);
+}
+
+.i18n-card-header h3 {
+  margin: 0;
+  color: var(--tk-text);
+  font-size: var(--tk-fz-title3);
+}
+
+.i18n-card-header p,
+.i18n-demo-note {
+  font-size: var(--tk-fz-sub);
+}
+
+.i18n-locale-control {
+  flex: 0 1 auto;
+  min-inline-size: 0;
+}
+
+.i18n-demo-cluster {
+  gap: var(--tk-sp-5);
+  padding: var(--tk-sp-4);
+  border-radius: var(--tk-r-md);
+  background: var(--tk-surface-2);
+}
+
+.i18n-demo-note {
+  padding: var(--tk-sp-3);
+  border-radius: var(--tk-r-md);
+  background: var(--tk-accent-06);
+}
+
+.snippet-code {
+  box-sizing: border-box;
+  max-inline-size: 100%;
+  min-block-size: 230px;
+  padding: var(--tk-sp-4);
+  margin: 0;
+  overflow-x: auto;
+  border: 1px solid var(--tk-sep);
+  border-radius: var(--tk-r-md);
+  color: var(--tk-text);
+  background: var(--tk-surface-3);
+  font-size: var(--tk-fz-caption);
+  line-height: 1.6;
+  overscroll-behavior-inline: contain;
+}
+
+.snippet-code:focus-visible {
+  outline: none;
+  box-shadow: var(--tk-ring);
+}
+
+.snippet-code code {
+  display: block;
+  inline-size: max-content;
+  min-inline-size: 100%;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  white-space: pre;
+}
+
 @keyframes feature-compositor-pulse {
   0%,
   100% {
@@ -1575,6 +1694,10 @@ a {
   .tweaks-panel {
     position: sticky;
     inset-block-start: calc(var(--tk-tap-min) + var(--tk-sp-4) + 1px);
+  }
+
+  .i18n-blocks {
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
   }
 
   .component-tile--wide,

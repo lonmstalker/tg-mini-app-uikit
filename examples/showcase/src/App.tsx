@@ -1,11 +1,19 @@
 import { useCallback, useEffect, useState } from "react";
-import { TKProvider, TKToastProvider, type TKTheme } from "tg-mini-app-uikit";
+import {
+  enLocale,
+  ruLocale,
+  TKLocaleProvider,
+  TKProvider,
+  TKToastProvider,
+  type TKTheme,
+} from "tg-mini-app-uikit";
 import { Hero } from "./ui/Hero";
 import { Features } from "./ui/Features";
 import { Components } from "./ui/Components";
+import { I18nShowcase, type ShowcaseLocale } from "./ui/I18nShowcase";
 import { SiteFooter } from "./ui/SiteFooter";
 import { SiteHeader } from "./ui/SiteHeader";
-import { Container, Section, SectionTitle } from "./ui/layout";
+import { Container, Section } from "./ui/layout";
 import {
   clearShowcaseTweaksStorage,
   createDefaultShowcaseTweaks,
@@ -13,10 +21,6 @@ import {
   persistShowcaseTweaks,
 } from "./ui/showcaseTweaks";
 import { TweaksPanel } from "./ui/TweaksPanel";
-
-const sections = [
-  { id: "i18n", title: "Internationalization" },
-] as const;
 
 function getInitialTheme(): TKTheme {
   if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
@@ -28,6 +32,7 @@ function getInitialTheme(): TKTheme {
 
 export function App() {
   const [theme, setTheme] = useState<TKTheme>(getInitialTheme);
+  const [locale, setLocale] = useState<ShowcaseLocale>("en");
   const [tweaks, setTweaks] = useState(getInitialShowcaseTweaks);
   const [defaultAccent, setDefaultAccent] = useState<string | null>(null);
 
@@ -45,6 +50,10 @@ export function App() {
     if (defaultAccent) persistShowcaseTweaks(tweaks, defaultAccent);
   }, [defaultAccent, tweaks]);
 
+  useEffect(() => {
+    document.documentElement.lang = locale;
+  }, [locale]);
+
   return (
     <TKProvider
       theme={theme}
@@ -55,58 +64,58 @@ export function App() {
       className="showcase"
       testId="showcase-root"
     >
-      <TKToastProvider>
-        <a className="skip-link" href="#components">
-          Skip to components
-        </a>
+      <TKLocaleProvider locale={locale === "ru" ? ruLocale : enLocale}>
+        <TKToastProvider>
+          <a className="skip-link" href="#components">
+            Skip to components
+          </a>
 
-        <SiteHeader
-          theme={theme}
-          onThemeToggle={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
-        />
+          <SiteHeader
+            theme={theme}
+            onThemeToggle={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
+          />
 
-        <main>
-          <Section className="showcase-hero" id="hero" reveal={false}>
-            <Container>
-              <Hero theme={theme} />
-            </Container>
-          </Section>
-
-          <Section className="showcase-features" id="features" reveal={false}>
-            <Container>
-              <Features theme={theme} />
-            </Container>
-          </Section>
-
-          <Section className="showcase-components" id="components" reveal={false}>
-            <Container>
-              <Components theme={theme} />
-            </Container>
-          </Section>
-
-          <Section className="showcase-tweaks" id="tweaks" revealIndex={3}>
-            <Container>
-              <TweaksPanel
-                theme={theme}
-                tweaks={tweaks}
-                onChange={setTweaks}
-                onDefaultAccentResolved={handleDefaultAccentResolved}
-                onReset={resetTweaks}
-              />
-            </Container>
-          </Section>
-
-          {sections.map(({ id, title }, index) => (
-            <Section id={id} key={id} revealIndex={index + 4}>
+          <main>
+            <Section className="showcase-hero" id="hero" reveal={false}>
               <Container>
-                <SectionTitle id={`${id}-title`}>{title}</SectionTitle>
+                <Hero theme={theme} />
               </Container>
             </Section>
-          ))}
-        </main>
 
-        <SiteFooter />
-      </TKToastProvider>
+            <Section className="showcase-features" id="features" reveal={false}>
+              <Container>
+                <Features theme={theme} />
+              </Container>
+            </Section>
+
+            <Section className="showcase-components" id="components" reveal={false}>
+              <Container>
+                <Components theme={theme} />
+              </Container>
+            </Section>
+
+            <Section className="showcase-tweaks" id="tweaks" revealIndex={3}>
+              <Container>
+                <TweaksPanel
+                  theme={theme}
+                  tweaks={tweaks}
+                  onChange={setTweaks}
+                  onDefaultAccentResolved={handleDefaultAccentResolved}
+                  onReset={resetTweaks}
+                />
+              </Container>
+            </Section>
+
+            <Section className="showcase-i18n" id="i18n" revealIndex={4}>
+              <Container>
+                <I18nShowcase locale={locale} onLocaleChange={setLocale} />
+              </Container>
+            </Section>
+          </main>
+
+          <SiteFooter />
+        </TKToastProvider>
+      </TKLocaleProvider>
     </TKProvider>
   );
 }

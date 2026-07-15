@@ -11,9 +11,11 @@ import {
   TKPinInput,
   TKProvider,
   TKSheet,
+  useTKLocale,
   useTKToast,
   type TKTheme,
 } from "tg-mini-app-uikit";
+import { copyText } from "./clipboard";
 import { SectionTitle } from "./layout";
 import { SCENARIO_CYCLE_MS, useScenario } from "./useScenario";
 
@@ -32,39 +34,12 @@ const walletCards: WalletCard[] = [
   { id: "reserve", label: "Reserve", digits: "7349", tone: "green" },
 ];
 
-async function copyInstallCommand(): Promise<boolean> {
-  if (navigator.clipboard) {
-    try {
-      await navigator.clipboard.writeText(INSTALL_COMMAND);
-      return true;
-    } catch {
-      // Older and non-secure WebViews fall through to execCommand.
-    }
-  }
-
-  const field = document.createElement("textarea");
-  field.value = INSTALL_COMMAND;
-  field.readOnly = true;
-  field.style.position = "fixed";
-  field.style.opacity = "0";
-  document.body.append(field);
-  field.select();
-
-  try {
-    return document.execCommand("copy");
-  } catch {
-    return false;
-  } finally {
-    field.remove();
-  }
-}
-
 export function Hero({ theme }: { theme: TKTheme }) {
   const toast = useTKToast();
   const base = import.meta.env.BASE_URL;
 
   const onCopy = async () => {
-    if (await copyInstallCommand()) toast.success("Install command copied");
+    if (await copyText(INSTALL_COMMAND)) toast.success("Install command copied");
     else toast.error("Could not copy the install command");
   };
 
@@ -349,6 +324,8 @@ function PinStep({
   onBiometric: () => void;
   onComplete: (pin: string) => void;
 }) {
+  const locale = useTKLocale();
+
   return (
     <div className="wallet-pin-screen">
       <div className="wallet-pin-toolbar">
@@ -363,8 +340,8 @@ function PinStep({
         title={
           <div className="wallet-pin-title">
             <span className="wallet-lock"><TKIcon name="lock" size={20} /></span>
-            <strong>Unlock your wallet</strong>
-            <span>Use Face ID or enter PIN 1234</span>
+            <strong>{locale.wallet}</strong>
+            <span>{locale.oneTimeCode}: 1234</span>
           </div>
         }
       />

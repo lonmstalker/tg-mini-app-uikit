@@ -373,6 +373,7 @@ function GalleryDemo() {
 
 function NoticeBarDemo() {
   const playback = useViewportActivity<HTMLDivElement>();
+  const [visible, setVisible] = useState(true);
 
   return (
     <div
@@ -381,9 +382,21 @@ function NoticeBarDemo() {
       data-marquee-state={playback.active ? "running" : playback.reduced ? "reduced" : "parked"}
       data-testid="notice-marquee-demo"
     >
-      <TKNoticeBar marquee={playback.active} tone="accent" testId="bento-notice-bar">
-        UIKit 2.4 is ready: accessible controls, Telegram runtime adapters, tuned gesture physics, and no runtime dependencies. Read the migration notes before upgrading.
-      </TKNoticeBar>
+      {visible ? (
+        <TKNoticeBar
+          closable
+          marquee={playback.active}
+          onClose={() => setVisible(false)}
+          tone="accent"
+          testId="bento-notice-bar"
+        >
+          UIKit 2.4 is ready: accessible controls, Telegram runtime adapters, tuned gesture physics, and no runtime dependencies. Read the migration notes before upgrading.
+        </TKNoticeBar>
+      ) : (
+        <TKButton size="sm" variant="tonal" onClick={() => setVisible(true)}>
+          Restore notice
+        </TKButton>
+      )}
       <p className="component-demo-hint" aria-live="polite">
         {playback.active ? "Ticker running in view" : "Ticker parked"}
       </p>
