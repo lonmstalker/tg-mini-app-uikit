@@ -9,9 +9,9 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
+# Build-and-smoke only: the live site (landing + /docs + /storybook + /demo)
+# deploys from Cloudflare Workers Builds (see wrangler.jsonc), not GitHub Pages.
 jobs:
   docs:
     name: docs build and smoke
@@ -26,9 +26,3 @@ jobs:
       - run: npm run docs:check
       - run: npm run docs:build
       - run: npm run build
-      - uses: actions/upload-pages-artifact@v3
-        if: github.event_name != 'pull_request'
-        with:
-          path: docs/site/dist
-      - uses: actions/deploy-pages@v4
-        if: github.event_name != 'pull_request'
