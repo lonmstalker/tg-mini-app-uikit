@@ -350,6 +350,30 @@ test("locale switch keeps the clicked control anchored in the viewport", async (
     .toBeLessThan(2);
 });
 
+test("feature pages render localized content without console errors", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("console", (message) => {
+    if (message.type() === "error") errors.push(message.text());
+  });
+  await page.emulateMedia({ colorScheme: "dark", reducedMotion: "reduce" });
+
+  for (const slug of ["telegram", "motion", "accessibility", "architecture", "theming"]) {
+    await page.goto(`/${slug}/`);
+    const title = page.getByRole("heading", { level: 1 });
+    await expect(title).toBeVisible();
+    const englishTitle = await title.textContent();
+    await expect(page.getByTestId("feature-blocks").locator("article").first()).toBeVisible();
+
+    await page.getByTestId("site-locale-ru").click();
+    await expect(page.locator("html")).toHaveAttribute("lang", "ru");
+    await expect(title).not.toHaveText(englishTitle ?? "");
+    // Reset the persisted locale so the next page starts from English.
+    await page.evaluate(() => window.localStorage.removeItem("showcase-locale"));
+  }
+
+  expect(errors).toEqual([]);
+});
+
 test("explore separators stay single-source at every responsive column count and theme", async ({ page }) => {
   for (const colorScheme of ["light", "dark"] as const) {
     for (const width of [375, 768, 1080, 1440]) {

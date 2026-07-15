@@ -235,7 +235,7 @@ function FeatureSection({ base }: { base: string }) {
       copy: copy.telegramCopy,
       icon: "phone",
       tone: "accent",
-      href: `${base}storybook/?path=/story/foundation-telegram--runtime-provider`,
+      href: `${base}telegram/`,
       wide: true,
     },
     {
@@ -243,28 +243,28 @@ function FeatureSection({ base }: { base: string }) {
       copy: copy.motionCopy,
       icon: "bolt",
       tone: "orange",
-      href: `${base}storybook/?path=/story/foundation-motion--keyframe-library`,
+      href: `${base}motion/`,
     },
     {
       title: copy.accessibilityTitle,
       copy: copy.accessibilityCopy,
       icon: "shield",
       tone: "green",
-      href: `${base}storybook/?path=/story/atoms-controls--binary-controls`,
+      href: `${base}accessibility/`,
     },
     {
       title: copy.dependenciesTitle,
       copy: copy.dependenciesCopy,
       icon: "document",
       tone: "orange",
-      href: `${base}docs/`,
+      href: `${base}architecture/`,
     },
     {
       title: copy.i18nTitle,
       copy: copy.i18nCopy,
       icon: "globe",
       tone: "green",
-      href: `${base}storybook/?path=/story/foundation-i18n--localized-controls`,
+      href: `${base}theming/`,
     },
   ];
 

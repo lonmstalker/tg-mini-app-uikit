@@ -6,12 +6,12 @@
  * never silently drops below a committed floor.
  *
  * The floor is the real executed count (67 package/Storybook smoke +
- * 46 Trailhead + 44 Surface Composer + 20 showcase MPA smoke). Raise it when you add
+ * 46 Trailhead + 44 Surface Composer + 21 showcase MPA smoke). Raise it when you add
  * suites; lower it only with an explicit, reviewed reason.
  */
 import { execSync } from "node:child_process";
 
-const FLOOR = 177;
+const FLOOR = 178;
 
 let out;
 try {

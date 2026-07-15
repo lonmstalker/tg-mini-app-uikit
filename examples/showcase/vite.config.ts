@@ -116,6 +116,11 @@ export default defineConfig({
       input: {
         landing: fromHere("index.html"),
         demo: fromHere("demo/index.html"),
+        telegram: fromHere("telegram/index.html"),
+        motion: fromHere("motion/index.html"),
+        accessibility: fromHere("accessibility/index.html"),
+        architecture: fromHere("architecture/index.html"),
+        theming: fromHere("theming/index.html"),
       },
     },
   },
