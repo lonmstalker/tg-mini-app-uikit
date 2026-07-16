@@ -486,7 +486,13 @@ export function Feed() {
         difficultyChips={difficultyChips}
         onDifficulty={(value) => dispatchUi({ type: "difficulty", value })}
         activeCount={filterCount}
-        onReset={resetFilters}
+        // Reset closes the sheet: its only intent is "show me everything", so
+        // the cleared feed IS the feedback — keeping the sheet open made the
+        // reset feel like it did nothing.
+        onReset={() => {
+          resetFilters();
+          dispatchUi({ type: "filtersOpen", value: false });
+        }}
       />
       </TKPage>
     </TKPullToRefresh>

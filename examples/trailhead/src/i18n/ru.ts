@@ -76,6 +76,8 @@ export const ru: Dict = {
   "detail.guide": "Ваш гид",
   "detail.guideChannel": "Канал гида",
   "detail.suggest": "Посоветовать в чате",
+  "detail.suggestFailed": "У бота нет inline-режима — поделиться в чат не получится.",
+  "guide.sendFailed": "Сообщение не отправилось — проверьте связь и попробуйте снова.",
   "detail.route": "Маршрут",
   "detail.stat.distance": "Дистанция",
   "detail.stat.duration": "Длительность",

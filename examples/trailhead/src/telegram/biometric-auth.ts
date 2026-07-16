@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import type { TKBiometrics } from "@tg-mini-app/telegram";
 import { useTKToast } from "tg-mini-app-uikit";
 import { useT } from "../i18n";
@@ -20,6 +21,22 @@ export async function authenticateWithBiometrics(biometrics: TKBiometrics, reaso
 
   const result = await biometrics.authenticate(reason);
   return result.ok ? "ok" : "failed";
+}
+
+/**
+ * Whether the biometric key should be RENDERED at all. `isSupported` is a
+ * trap — the official bridge creates BiometricManager on every platform
+ * (desktop included) — so this inits the manager once and gates on the
+ * device-level `isAvailable`. Until availability is known the key stays
+ * hidden (progressive reveal beats a dead control).
+ */
+export function useBiometricKeyAvailable(biometrics: TKBiometrics): boolean {
+  const { isSupported, manager } = biometrics;
+  useEffect(() => {
+    if (isSupported && manager && !manager.isInited) void biometrics.init();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSupported, manager]);
+  return isSupported && biometrics.isAvailable === true;
 }
 
 /**

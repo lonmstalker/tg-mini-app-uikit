@@ -78,6 +78,8 @@ export const en = {
   "detail.guide": "Your guide",
   "detail.guideChannel": "Guide's channel",
   "detail.suggest": "Suggest to a chat",
+  "detail.suggestFailed": "This bot has no inline mode — sharing to a chat isn't available.",
+  "guide.sendFailed": "The message didn't send — check the connection and try again.",
   "detail.route": "Route",
   "detail.stat.distance": "Distance",
   "detail.stat.duration": "Duration",

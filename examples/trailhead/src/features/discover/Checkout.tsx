@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import {
   TKButton,
   TKCard,
@@ -14,7 +14,6 @@ import {
   TKTitle,
   useNav,
   useTKToast,
-  type TKSheetHandle,
 } from "tg-mini-app-uikit";
 import {
   getTelegramWebApp,
@@ -31,7 +30,7 @@ import { useGoToTab } from "../../tab-nav";
 import { useMockBackHeader } from "../../components/MockBackHeader";
 import { PrimaryAction, SecondaryAction } from "../../components/PrimaryAction";
 import { useMockHandle } from "../../telegram/mock-context";
-import { useBiometricAuth } from "../../telegram/biometric-auth";
+import { useBiometricAuth, useBiometricKeyAvailable } from "../../telegram/biometric-auth";
 import { formatDate, starsLabel } from "./format";
 
 type Phase = "idle" | "confirm" | "pin" | "paying" | "error" | "done";
@@ -55,6 +54,7 @@ export function Checkout({ active }: { active: boolean }) {
   const toast = useTKToast();
   const biometrics = useBiometrics();
   const biometricAuth = useBiometricAuth(biometrics);
+  const biometricKey = useBiometricKeyAvailable(biometrics);
   const invoice = useInvoice();
   const haptics = useOptionalHaptics();
   const goToTab = useGoToTab();
@@ -65,7 +65,6 @@ export function Checkout({ active }: { active: boolean }) {
   const [pinError, setPinError] = useState(false);
   const [confetti, setConfetti] = useState(false);
   const [snap, setSnap] = useState<PaySnapshot | null>(null);
-  const sheetRef = useRef<TKSheetHandle>(null);
   // Synchronous re-entry latch: state updates are async, so a double biometric
   // tap (or the biometric+PIN cross-path) could otherwise both pass through
   // `settle` and book twice. A ref blocks the second caller immediately.
@@ -217,11 +216,6 @@ export function Checkout({ active }: { active: boolean }) {
 
   const sheetOpen = phase !== "idle";
 
-  useEffect(() => {
-    if (!sheetOpen) return;
-    sheetRef.current?.snapTo(phase === "pin" ? 1 : 0);
-  }, [phase, sheetOpen]);
-
   const pinTitle = (headline: string): ReactNode => (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
       <TKText as="div" weight={700}>
@@ -304,11 +298,12 @@ export function Checkout({ active }: { active: boolean }) {
 
       <TKPaymentSummary testId="summary-rows" rows={rows} />
 
+      {/* Content-sized (no snapPoints): the confirm copy and the pay CTA must
+          be fully visible the moment the sheet opens — a fixed small snap cut
+          them off and asked the user to drag first. */}
       <TKSheet
         open={sheetOpen}
         onClose={closeSheet}
-        snapPoints={[0.55, 0.92]}
-        sheetRef={sheetRef}
         title={phase === "done" ? t("checkout.successTitle") : t("checkout.confirmTitle")}
         testId="checkout-sheet"
       >
@@ -344,7 +339,7 @@ export function Checkout({ active }: { active: boolean }) {
               maxLength={8}
               title={pinTitle(pin ? t("checkout.pinTitle") : t("checkout.pinSetTitle"))}
               error={pinError}
-              onBiometricRequest={biometrics.isSupported ? () => void onBiometric() : undefined}
+              onBiometricRequest={biometricKey ? () => void onBiometric() : undefined}
               onComplete={onPinComplete}
             />
           ) : null}

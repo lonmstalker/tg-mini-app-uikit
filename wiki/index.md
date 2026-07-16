@@ -18,6 +18,7 @@ overwriting, and never rewrite the append-only logs.
 - [[trailhead-demo]] — the flagship demo Mini App (Trailhead): architecture, signature chain, milestones, where the ExecPlan is.
 - [[telegram-runtime]] — the Telegram WebApp layer: provider, injectable mock, back-button arbitration, vertical-swipe guard.
 - [[navstack]] — the `TKNavStack` swipe-back navigation spine, the kit's headline differentiator.
+- [[device-testing]] — 2026-07-16 real-device findings (phone + Telegram Desktop): the method-presence trap, per-issue root causes, fixes and their tests.
 - [[i18n]] — localization: the kit's `TKLocale`/`TKLocaleProvider` and the demo's full Russian + English policy.
 - [[testing-and-review]] — TDD (unit + e2e), visual + contrast verification, and the per-checkpoint reviewer-agent protocol.
 

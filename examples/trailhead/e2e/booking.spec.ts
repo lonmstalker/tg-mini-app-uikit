@@ -286,7 +286,9 @@ test("feed: filters live in a sheet and reset without crowding the feed header",
 
   await page.getByTestId("feed-filter-open").click();
   await page.getByTestId("feed-filter-reset-sheet").click();
-  await page.getByTestId("feed-filter-apply").click();
+  // Reset means "show me everything": it closes the sheet itself and the
+  // restored feed is the feedback.
+  await expect(page.getByTestId("feed-filter-sheet")).toBeHidden();
   await expect(page.getByTestId("feed-card-sunrise-ridge")).toBeVisible();
 });
 

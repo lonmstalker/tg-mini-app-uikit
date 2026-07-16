@@ -10,6 +10,7 @@ import {
   TKTimeline,
   TKTitle,
   useNav,
+  useTKToast,
 } from "tg-mini-app-uikit";
 import { useDataTransport, useTelegramColors, useTelegramLinks } from "@tg-mini-app/telegram";
 import { getExperience, getPerson } from "../../data/mockApi";
@@ -62,6 +63,7 @@ export function ExperienceDetail({ active }: { active: boolean }) {
   const dataTransport = useDataTransport();
   const links = useTelegramLinks();
   const colors = useTelegramColors();
+  const toast = useTKToast();
 
   // Route theming: tint the native header to the hike's palette while the
   // detail is the ACTIVE panel (nav keeps inactive panels mounted, so `active`
@@ -147,13 +149,19 @@ export function ExperienceDetail({ active }: { active: boolean }) {
       <TKTitle level={3}>{t("detail.about")}</TKTitle>
       <TKText tone="secondary">{e.summary}</TKText>
 
-      {/* Inline-mode share: picks a chat and drops the bot query there. */}
+      {/* Inline-mode share: picks a chat and drops the bot query there. A bot
+          without inline mode is NOT detectable upfront — the client throws at
+          call time (the hook returns false), so the failure must speak. */}
       {dataTransport.isSupported ? (
         <TKButton
           variant="tonal"
           icon="send"
           testId="detail-suggest"
-          onClick={() => dataTransport.switchInlineQuery(`trail:${e.id}`, ["users", "groups"])}
+          onClick={() => {
+            if (!dataTransport.switchInlineQuery(`trail:${e.id}`, ["users", "groups"])) {
+              toast.error(t("detail.suggestFailed"));
+            }
+          }}
         >
           {t("detail.suggest")}
         </TKButton>

@@ -1,0 +1,115 @@
+# Device testing — 2026-07-16 findings (real phone + Telegram Desktop)
+
+Nine issues reported from testing the deployed Trailhead Mini App on an iPhone
+and Telegram Desktop on a laptop. Every reproducible one is pinned by
+`packages/uikit/test/device-findings.test.tsx`; fixes land at the kit level
+where the trap is generic, in the demo where it is product behavior. Related:
+[[telegram-runtime]], [[trailhead-demo]].
+
+The single most important lesson, verified against the official
+`telegram-web-app.js`: **the bridge defines every method on every client and
+THROWS at call time** (`WebAppMethodUnsupported`, `WebAppInlineModeDisabled`,
+`WebAppRequestChatOpened`…). Method presence is NOT feature detection. Version
+gates + try/catch around every native call are mandatory.
+
+## 1. "Suggest to a chat" does nothing
+
+- **Root cause**: `switchInlineQuery` throws `WebAppInlineModeDisabled` when
+  the bot has no inline mode. Not detectable upfront — `initParams.
+  tgWebAppBotInline` is private to the script. The hook let the throw escape.
+- **Kit**: `useDataTransport` catches and returns `false` (plus a 6.6 version
+  gate); `sendData` same treatment.
+- **Demo**: the button toasts "bot has no inline mode" on `false`.
+- **Follow-up option**: enable inline mode for the bot via BotFather, then the
+  button works end-to-end.
+
+## 2. "Create the group chat" does nothing
+
+- **Root cause**: `WebApp.requestChat` is Bot API **9.6+**; older clients have
+  the method and throw on call. `isSupported = !!wa.requestChat` was always
+  true, so the cell rendered and the tap exploded silently.
+- **Kit**: `TK_MIN_VERSION.requestChat = "9.6"` gates `isSupported`;
+  `request()` try/catches (`WebAppRequestChatOpened` on re-entry).
+  `useContactRequest` / `useWriteAccess` got the same 6.9 gates + catches.
+- **Demo**: the cell is gated on `isSupported`, so pre-9.6 clients simply
+  don't see it.
+
+## 3. Fingerprint key shows on a laptop and does nothing
+
+- **Root cause**: the official bridge creates `BiometricManager` on EVERY
+  platform, desktop included — `isSupported` (presence + version) is a trap.
+  Real absence only surfaces as `isBiometricAvailable === false` after
+  `init()`.
+- **Kit**: `useBiometrics` now exposes reactive `isAvailable`
+  (`undefined` until known → init + `biometricManagerUpdated` event).
+- **Demo**: `useBiometricKeyAvailable` inits once and renders the key only on
+  `isAvailable === true` (progressive reveal — hidden until proven).
+
+## 4. Payment sheet opens too small; dragging shows a grey area
+
+- **Root cause A (demo)**: `snapPoints={[0.55, 0.92]}` opened at 55% and cut
+  off the confirm copy + CTA. Removed — the checkout sheet is content-sized.
+- **Root cause B (kit)**: with snap points the content box was sized to the
+  CURRENT snap and resized only on commit, so a drag-up revealed blank panel
+  until release. Fixed (OVL-013): the box is pinned to the full height for the
+  duration of the gesture (one imperative write at drag start, cleared at
+  end), so revealed area always shows content.
+
+## 5. Should "Reset" close the filter sheet?
+
+- **Call**: yes, closed now. Standard iOS pattern keeps it open (user may keep
+  adjusting), but reset's only intent here is "show me everything" — the
+  restored feed is the feedback. e2e updated to the new contract.
+
+## 6. On the phone, the pay CTA sits below the visible area, unreachable
+
+- **Root cause (best supported hypothesis)**: the app never called
+  `expand()` and sized itself at `100%` of a layout viewport that exceeds the
+  compact launch height on iOS — the bottom bar landed below the fold of a
+  non-scrollable flex layout.
+- **Demo**: `AppFrame` calls `expand()` on mount; `#root` is capped at
+  `var(--tg-viewport-stable-height, 100%)`.
+- **Not reproducible** in jsdom/mock (the mock viewport matches). Needs a
+  re-test on device; if it persists, next suspect is the host viewport CSS.
+
+## 7. "Check in" button is hard to hit
+
+- **Kit**: the booking-card action was a bare text button (`padding: 0`). Now
+  a ≥44px hit target (padding extended, negative margins keep the visual
+  rhythm) — TCRD-004.
+
+## 8. Buttons feel slow on the phone
+
+- **Kit**: `.tk-press` gets `touch-action: manipulation` — kills the mobile
+  double-tap-zoom wait. The demo's viewport meta was already correct, but the
+  kit must not rely on host metas. Perceived latency also had a share from #9
+  (the keyboard jump landing mid-tap).
+- **Residual**: the prep actions await a native permission round-trip before
+  toasting — that part is inherent.
+
+## 9. iPhone keyboard: harsh jumps; send does nothing and locks up
+
+- **Root cause A (kit)**: the page height / footer collapse followed
+  `--tk-kb-height` in discrete jumps per visualViewport event. Now both ride
+  one eased movement (`--tk-t3`, collapses under reduced motion).
+- **Root cause B (kit)**: tapping the composer's send button first BLURRED the
+  textarea → keyboard began closing → the bar moved out from under the finger
+  → the click never landed; repeated taps repeated the cycle ("can't press
+  again"). Fixed (CHT-007): the send button prevents the pointerdown default,
+  focus stays in the textarea, the click lands, and the composer stays put.
+- **Demo**: `GuideThread.send` also catches API failures and toasts (the
+  composer clears optimistically, so a silent failure looked like a dead send).
+
+## Verification status
+
+| # | Reproduced by test | Fix level |
+|---|--------------------|-----------|
+| 1 | device-findings #1 | kit + demo toast |
+| 2 | device-findings #2 | kit gate (cell hides itself) |
+| 3 | device-findings #3 | kit `isAvailable` + demo gate |
+| 4 | device-findings #4 | kit OVL-013 + demo content-sized sheet |
+| 5 | booking.spec (updated) | demo UX call |
+| 6 | not reproducible off-device | demo expand + stable-height cap |
+| 7 | device-findings #7 | kit hit target |
+| 8 | device-findings #8 (CSS contract) | kit touch-action |
+| 9 | device-findings #9 + CSS contract | kit (pointerdown + eased shift) + demo toast |
