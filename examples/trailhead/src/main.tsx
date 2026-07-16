@@ -1,10 +1,3 @@
-// FIRST import: the official Telegram bridge, vendored inside the kit and
-// bundled into the app — by the time anything below runs,
-// `window.Telegram.WebApp` exists in a real client. The previous runtime
-// injection from telegram.org raced a 1.5s timeout, and on slow mobile routes
-// the timeout won — browser-fallback mode inside Telegram, the pay bar half
-// off-screen (wiki/device-testing.md #6, v3).
-import "@tg-mini-app/telegram/bridge";
 import "./index.css";
 import "tg-mini-app-uikit/style.css";
 import { StrictMode } from "react";
@@ -51,7 +44,24 @@ function getTelegramLaunchBridge() {
   return null;
 }
 
-function bootstrap() {
+async function bootstrap() {
+  /*
+   * The official bridge, vendored inside the kit and bundled as an app chunk.
+   * Loaded ONLY when a host hasn't already provided `window.Telegram.WebApp`
+   * (the e2e probe pre-injects one, and the vendored script would clobber it)
+   * — same origin and properly awaited, unlike the old runtime injection from
+   * telegram.org that raced a 1.5s timeout and, on slow mobile routes, lost —
+   * browser-fallback mode inside Telegram, the pay bar half off-screen
+   * (wiki/device-testing.md #6, v3).
+   */
+  if (!getTelegramWebApp()) {
+    try {
+      await import("@tg-mini-app/telegram/bridge");
+    } catch {
+      /* chunk unreachable — stay an honest plain browser */
+    }
+  }
+
   /*
    * Production must not silently turn into a fake Telegram runtime: real Mini
    * Apps get the official bridge, local/dev previews get the injected mock, and
@@ -93,4 +103,4 @@ function bootstrap() {
   );
 }
 
-bootstrap();
+void bootstrap();

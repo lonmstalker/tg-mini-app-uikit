@@ -100,10 +100,14 @@ gates + try/catch around every native call are mandatory.
   got a bridge to classify.
 - **Kit fix**: the script is VENDORED into the kit as the
   `@tg-mini-app/telegram/bridge` side-effect export; Trailhead and the demo
-  import it as the FIRST line of their entry modules, so the bridge is bundled
-  with the app and has executed before anything else runs — no race and no
-  external fetch to lose. Refresh the vendored copy when bumping the supported
-  Bot API level (`curl -o packages/telegram/bridge/telegram-web-app.cjs
+  load it at startup when no bridge exists yet
+  (`if (!getTelegramWebApp()) await import("@tg-mini-app/telegram/bridge")`),
+  so it ships as an app chunk — same origin, properly awaited, no timeout race
+  and no external fetch to lose. The absence gate matters: the script assigns
+  `window.Telegram.WebApp` unconditionally, and an unconditional first-line
+  import clobbered the e2e probe's pre-injected bridge. Refresh the vendored
+  copy when bumping the supported Bot API level
+  (`curl -o packages/telegram/bridge/telegram-web-app.cjs
   https://telegram.org/js/telegram-web-app.js`).
 
 ## 7. "Check in" button is hard to hit

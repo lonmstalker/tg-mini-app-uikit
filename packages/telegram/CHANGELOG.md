@@ -6,13 +6,17 @@
 
 - New `@tg-mini-app/telegram/bridge` export: the official
   `telegram-web-app.js`, vendored and shipped inside the package as a
-  side-effect module. Import it FIRST in the app entry
-  (`import "@tg-mini-app/telegram/bridge";`) and the bridge is bundled with
-  the app — no runtime `<script src="https://telegram.org/…">` fetch to lose
-  on a slow mobile route (losing it ran the app in browser-fallback mode
-  INSIDE Telegram: no native MainButton, no `expand()`, the CTA half
-  off-screen — wiki/device-testing.md #6, v3). Refresh the vendored copy when
-  bumping the supported Bot API level:
+  side-effect module. Load it at startup, gated on the bridge being absent —
+  the script assigns `window.Telegram.WebApp` unconditionally, so an
+  unconditional import would clobber a bridge the host already provided
+  (e.g. a test harness):
+  `if (!getTelegramWebApp()) await import("@tg-mini-app/telegram/bridge");`
+  The bridge ships as an app chunk — same origin, properly awaited — instead
+  of a runtime `<script src="https://telegram.org/…">` fetch that can lose on
+  a slow mobile route (losing it ran the app in browser-fallback mode INSIDE
+  Telegram: no native MainButton, no `expand()`, the CTA half off-screen —
+  wiki/device-testing.md #6, v3). Refresh the vendored copy when bumping the
+  supported Bot API level:
   `curl -o bridge/telegram-web-app.cjs https://telegram.org/js/telegram-web-app.js`.
 
 ## 0.3.0
