@@ -11,22 +11,24 @@ import {
   TKSpinner,
   TKText,
   TKTitle,
+  useNav,
+  useTKToast,
+  type TKSheetHandle,
+} from "tg-mini-app-uikit";
+import {
+  getTelegramWebApp,
   useBiometrics,
   useClosingConfirmation,
   useInvoice,
-  useNav,
   useOptionalHaptics,
-  useTKToast,
-  getTelegramWebApp,
-  type TKSheetHandle,
-} from "tg-mini-app-uikit";
+} from "@tg-mini-app/telegram";
 import { bookingView, type Booking } from "../../data/mockApi";
 import { checkoutLineItems, computeCheckout, type Checkout as CheckoutTotals } from "../../data/pricing";
 import { useLang, useT } from "../../i18n";
 import { useAppDispatch, useAppState } from "../../store";
 import { useGoToTab } from "../../tab-nav";
 import { useMockBackHeader } from "../../components/MockBackHeader";
-import { PrimaryAction } from "../../components/PrimaryAction";
+import { PrimaryAction, SecondaryAction } from "../../components/PrimaryAction";
 import { useMockHandle } from "../../telegram/mock-context";
 import { authenticateWithBiometrics } from "../../telegram/biometric-auth";
 import { formatDate, starsLabel } from "./format";
@@ -251,13 +253,28 @@ export function Checkout({ active }: { active: boolean }) {
       header={header}
       gap={10}
       footer={
-        <PrimaryAction
-          active={active && !sheetOpen}
-          testId="summary-pay"
-          disabled={!ready}
-          label={t("checkout.pay", { price: starsLabel(t, liveCheckout.total) })}
-          onClick={startPay}
-        />
+        <>
+          <PrimaryAction
+            active={active && !sheetOpen}
+            testId="summary-pay"
+            disabled={!ready}
+            label={t("checkout.pay", { price: starsLabel(t, liveCheckout.total) })}
+            onClick={startPay}
+          />
+          {/* Native cancel/back companion: closes the sheet mid-flow, backs out
+              of the summary otherwise. Hidden while paying (the invoice
+              round-trip must not be interrupted) and on success (the sheet's
+              own CTA finishes the flow). Renders nothing outside Telegram —
+              the mock back header and sheet close already cover cancel. */}
+          <SecondaryAction
+            active={active && phase !== "paying" && phase !== "done"}
+            label={t("common.cancel")}
+            onClick={() => {
+              if (sheetOpen) closeSheet();
+              else nav.pop();
+            }}
+          />
+        </>
       }
     >
       <TKTitle level={2}>{t("checkout.title")}</TKTitle>

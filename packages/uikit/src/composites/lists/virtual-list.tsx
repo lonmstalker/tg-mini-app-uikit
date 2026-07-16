@@ -2,6 +2,7 @@ import {
   forwardRef,
   useEffect,
   useImperativeHandle,
+  useInsertionEffect,
   useRef,
   useState,
   type CSSProperties,
@@ -40,6 +41,12 @@ export interface TKVirtualListProps<T> {
    * ignored. Use this when the list lives inside a page-level scroller.
    */
   scrollParent?: "window" | RefObject<HTMLElement | null>;
+  /**
+   * Accessible name for the scrollable region (fixed-height mode). The scroller
+   * is keyboard-focusable so keyboard users can scroll it; naming it tells them
+   * what the region contains.
+   */
+  "aria-label"?: string;
   testId?: string;
   style?: CSSProperties;
 }
@@ -50,7 +57,7 @@ export interface TKVirtualListProps<T> {
  * the variable-height candidate).
  */
 function TKVirtualListImpl<T>(
-  { items, itemHeight, height, renderItem, getKey, overscan = 6, scrollParent, testId, style }: TKVirtualListProps<T>,
+  { items, itemHeight, height, renderItem, getKey, overscan = 6, scrollParent, "aria-label": ariaLabel, testId, style }: TKVirtualListProps<T>,
   ref: Ref<TKVirtualListHandle>,
 ) {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -198,7 +205,10 @@ function TKVirtualListImpl<T>(
   };
 
   const first = Math.max(0, Math.floor(scrollTop / itemHeight) - overscan);
-  firstRef.current = first;
+  // Committed window start, mirrored for the scroll dedupers (render-safe write).
+  useInsertionEffect(() => {
+    firstRef.current = first;
+  });
   const visible = Math.ceil(viewport / itemHeight) + 1 + overscan * 2;
   const end = Math.min(items.length, first + visible);
   const slice = items.slice(first, end);
@@ -224,6 +234,12 @@ function TKVirtualListImpl<T>(
     <div
       ref={scrollRef}
       data-testid={testId}
+      // Scrollable-region keyboard access (axe: scrollable-region-focusable):
+      // the scroller must be Tab-reachable so keyboard users can arrow/page it.
+      // role="region" + aria-label name it; an unnamed region maps to generic,
+      // so the role is inert until a consumer passes the label.
+      role="region"
+      aria-label={ariaLabel}
       tabIndex={0}
       onScroll={(e) => onScroll(e.currentTarget.scrollTop)}
       style={{ height: heightStyle, overflowY: "auto", WebkitOverflowScrolling: "touch", position: "relative", ...style }}

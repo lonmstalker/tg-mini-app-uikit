@@ -73,17 +73,18 @@ export interface TKDotProps extends HTMLAttributes<HTMLSpanElement> {
   testId?: string;
 }
 
+const DOT_TONES: Record<TKTone, string> = {
+  green: "var(--tk-green)",
+  red: "var(--tk-red)",
+  orange: "var(--tk-orange)",
+  accent: "var(--tk-accent)",
+  gray: "var(--tk-text-3)",
+};
+
 export const TKDot = /* @__PURE__ */ forwardRef<HTMLSpanElement, TKDotProps>(function TKDot(
   { tone = "green", pulse, className, style, testId, ...rest },
   ref,
 ) {
-  const map: Record<TKTone, string> = {
-    green: "var(--tk-green)",
-    red: "var(--tk-red)",
-    orange: "var(--tk-orange)",
-    accent: "var(--tk-accent)",
-    gray: "var(--tk-text-3)",
-  };
   return (
     <span
       ref={ref}
@@ -94,7 +95,7 @@ export const TKDot = /* @__PURE__ */ forwardRef<HTMLSpanElement, TKDotProps>(fun
         width: 9,
         height: 9,
         borderRadius: "50%",
-        background: map[tone],
+        background: DOT_TONES[tone],
         display: "inline-block",
         ...style,
       }}
@@ -110,11 +111,16 @@ export interface TKCounterProps extends HTMLAttributes<HTMLSpanElement> {
   testId?: string;
 }
 
+const COUNTER_TONES: Record<NonNullable<TKCounterProps["tone"]>, string> = {
+  red: "var(--tk-red)",
+  accent: "var(--tk-accent)",
+  gray: "var(--tk-text-3)",
+};
+
 export const TKCounter = /* @__PURE__ */ forwardRef<HTMLSpanElement, TKCounterProps>(function TKCounter(
   { value, tone = "red", max, className, style, testId, ...rest },
   ref,
 ) {
-  const map = { red: "var(--tk-red)", accent: "var(--tk-accent)", gray: "var(--tk-text-3)" };
   // Coerce numeric strings, clamp negatives to 0, and apply `max+` consistently
   // (DSP-006) — a non-numeric ReactNode falls through unchanged.
   const numeric = typeof value === "number" ? value : typeof value === "string" ? Number(value) : Number.NaN;
@@ -138,7 +144,7 @@ export const TKCounter = /* @__PURE__ */ forwardRef<HTMLSpanElement, TKCounterPr
         height: 21,
         padding: "0 6px",
         borderRadius: "var(--tk-r-pill)",
-        background: map[tone],
+        background: COUNTER_TONES[tone],
         color: "var(--tk-on-accent, #fff)",
         fontSize: "var(--tk-fz-caption2)",
         fontWeight: 700,

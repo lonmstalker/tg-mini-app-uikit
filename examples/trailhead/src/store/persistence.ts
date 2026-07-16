@@ -1,4 +1,4 @@
-import type { useCloudStorage } from "tg-mini-app-uikit";
+import type { useCloudStorage } from "@tg-mini-app/telegram";
 import type { Booking } from "../data/mockApi";
 import type { PersistedState, StreakState, ThemePrefs, WalletState } from "./reducer";
 

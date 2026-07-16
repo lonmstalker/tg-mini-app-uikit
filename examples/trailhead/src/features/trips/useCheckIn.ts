@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { useBiometrics, useLocation, useOptionalHaptics, useQrScanner } from "tg-mini-app-uikit";
+import { useBiometrics, useLocation, useOptionalHaptics, useQrScanner } from "@tg-mini-app/telegram";
 import { useT } from "../../i18n";
 import { useAppDispatch } from "../../store";
 

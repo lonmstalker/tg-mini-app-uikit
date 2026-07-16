@@ -1,6 +1,7 @@
 import { forwardRef, useEffect, useRef, useState, type HTMLAttributes, type ReactNode } from "react";
 import { useTKLocale } from "../../foundation/i18n";
 import { mergeRefs } from "../../internal/dom";
+import { useLatest } from "../../internal/useLatest";
 import { tkAnimateHeight } from "../../internal/useCollapse";
 import { TKIcon } from "../../atoms/icons";
 
@@ -12,6 +13,8 @@ const TONES: Record<TKNoticeBarTone, [bg: string, ink: string, solid: string]> =
   orange: ["var(--tk-orange-12)", "var(--tk-orange-ink)", "var(--tk-orange)"],
   red: ["var(--tk-red-12)", "var(--tk-red-ink)", "var(--tk-red)"],
 };
+
+const COPY_STYLE = { whiteSpace: "nowrap", paddingRight: "var(--tk-sp-7)" } as const;
 
 export interface TKNoticeBarProps extends HTMLAttributes<HTMLDivElement> {
   tone?: TKNoticeBarTone;
@@ -45,8 +48,11 @@ export const TKNoticeBar = /* @__PURE__ */ forwardRef<HTMLDivElement, TKNoticeBa
   const clipRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLSpanElement>(null);
   const closingRef = useRef(false);
-  const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
+  const onCloseRef = useLatest(onClose);
+  // The in-flight collapse animation; cancelled on unmount so its "finish"
+  // listener can't fire a stale onClose after the bar is already gone.
+  const closeAnimRef = useRef<Animation | null>(null);
+  useEffect(() => () => closeAnimRef.current?.cancel(), []);
   // 0 = no ticker; otherwise the measured copy width in px (drives duration).
   const [tickerWidth, setTickerWidth] = useState(0);
   const ticking = !!marquee && tickerWidth > 0;
@@ -75,13 +81,14 @@ export const TKNoticeBar = /* @__PURE__ */ forwardRef<HTMLDivElement, TKNoticeBa
     closingRef.current = true;
     const el = rootRef.current;
     const anim = el ? tkAnimateHeight(el, el.offsetHeight, 0) : null;
-    if (anim) anim.addEventListener("finish", () => onCloseRef.current?.());
-    else onCloseRef.current?.();
+    if (anim) {
+      closeAnimRef.current = anim;
+      anim.addEventListener("finish", () => onCloseRef.current?.(), { once: true });
+    } else onCloseRef.current?.();
   };
 
   // ~35 px/s, never faster than 8s per loop — long strings scroll calmly.
   const tickerDur = `${Math.max(8, Math.round(tickerWidth / 35))}s`;
-  const copyStyle = { whiteSpace: "nowrap", paddingRight: "var(--tk-sp-7)" } as const;
   return (
     <div
       ref={mergeRefs(rootRef, ref)}
@@ -117,10 +124,10 @@ export const TKNoticeBar = /* @__PURE__ */ forwardRef<HTMLDivElement, TKNoticeBa
               className="tk-marquee-track"
               style={{ display: "flex", width: "max-content", "--tk-marquee-dur": tickerDur } as React.CSSProperties}
             >
-              <span ref={textRef} style={copyStyle}>
+              <span ref={textRef} style={COPY_STYLE}>
                 {children}
               </span>
-              <span style={copyStyle}>{children}</span>
+              <span style={COPY_STYLE}>{children}</span>
             </div>
           </>
         ) : (

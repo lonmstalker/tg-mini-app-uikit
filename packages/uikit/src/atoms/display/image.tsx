@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useState, type HTMLAttributes } from "react";
+import { forwardRef, useState, type HTMLAttributes } from "react";
 import { useTKLocale } from "../../foundation/i18n";
 
 export interface TKImgProps extends HTMLAttributes<HTMLDivElement> {
@@ -69,7 +69,14 @@ export const TKImage = /* @__PURE__ */ forwardRef<HTMLDivElement, TKImageProps>(
 ) {
   const locale = useTKLocale();
   const [state, setState] = useState<"loading" | "ready" | "error">(src ? "loading" : "error");
-  useEffect(() => setState(src ? "loading" : "error"), [src]);
+  // A new `src` restarts the load state via the adjust-state-during-render
+  // pattern (the nav.tsx prevStack rationale) — an effect would paint one stale
+  // "ready"/"error" frame for the OLD image before the placeholder returns.
+  const [prevSrc, setPrevSrc] = useState(src);
+  if (prevSrc !== src) {
+    setPrevSrc(src);
+    setState(src ? "loading" : "error");
+  }
 
   if (!src || state === "error") {
     return (

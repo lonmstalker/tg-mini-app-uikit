@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { TKIcon, type TKIconName } from "../icons";
 import { useControllable } from "../../internal/useControllable";
+import { useLatest } from "../../internal/useLatest";
 import { useTKLocale } from "../../foundation/i18n";
 
 export interface TKStepperProps {
@@ -18,8 +19,7 @@ export function TKStepper({ value, defaultValue = 1, min = 0, max = 99, onChange
   const locale = useTKLocale();
   const [v, setV] = useControllable(value, defaultValue, onChange);
   const [draft, setDraft] = useState<string | null>(null);
-  const vRef = useRef(v);
-  vRef.current = v;
+  const vRef = useLatest(v);
   const repeat = useRef<{ t?: number; i?: number }>({});
 
   const stopRepeat = () => {

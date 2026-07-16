@@ -72,7 +72,9 @@ export const TKCard = /* @__PURE__ */ forwardRef<HTMLDivElement, TKCardProps>(fu
         cursor: disabled ? "default" : onClick ? "pointer" : "default",
         opacity: disabled ? 0.5 : undefined,
         pointerEvents: disabled ? "none" : undefined,
-        outline: "none",
+        // No inline `outline: none` here: the card is Tab-reachable when
+        // interactive, and the kit-wide `.tk :focus-visible` outline is its
+        // visible focus indicator (an inline none would override it).
         ...style,
       }}
     >
@@ -151,7 +153,8 @@ function TKCardCellImpl(
         cursor: onClick || Tag === "a" ? "pointer" : "default",
         color: "inherit",
         textDecoration: "none",
-        outline: "none",
+        // No inline `outline: none`: the cell is Tab-reachable (div-button or
+        // link) and relies on the kit-wide `.tk :focus-visible` outline.
         ...style,
       }}
     >

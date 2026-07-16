@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useInsertionEffect, useMemo, useRef } from "react";
 import type {
   TelegramMainButton,
   TelegramPopupParams,
@@ -17,7 +17,9 @@ function useSimpleButton(
   visible: boolean,
 ): { isSupported: boolean } {
   const ref = useRef(onClick);
-  ref.current = onClick;
+  useInsertionEffect(() => {
+    ref.current = onClick;
+  });
   useEffect(() => {
     if (!button?.onClick) return;
     const h = () => ref.current?.();
@@ -96,9 +98,11 @@ function useNativeButton(
   themeParams?: TelegramThemeParams,
 ): { isSupported: boolean } {
   const clickRef = useRef(onClick);
-  clickRef.current = onClick;
   const clickEnabledRef = useRef(false);
-  clickEnabledRef.current = visible && !disabled && !loading;
+  useInsertionEffect(() => {
+    clickRef.current = onClick;
+    clickEnabledRef.current = visible && !disabled && !loading;
+  });
   // Tracks the last applied custom icon so we can clear it once (sending "")
   // when the prop drops, without spamming an empty id every render.
   const iconRef = useRef<string | undefined>(undefined);

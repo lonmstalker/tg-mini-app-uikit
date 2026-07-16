@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useState, type HTMLAttributes, type ReactNode } from "react";
+import { forwardRef, useState, type HTMLAttributes, type ReactNode } from "react";
 import { useTKLocale } from "../../foundation/i18n";
 
 export interface TKAvatarProps extends HTMLAttributes<HTMLSpanElement> {
@@ -22,7 +22,14 @@ export const TKAvatar = /* @__PURE__ */ forwardRef<HTMLSpanElement, TKAvatarProp
 ) {
   const locale = useTKLocale();
   const [failed, setFailed] = useState(false);
-  useEffect(() => setFailed(false), [src]);
+  // A new `src` clears a previous failure via the adjust-state-during-render
+  // pattern (the nav.tsx prevStack rationale) — an effect would paint one stale
+  // frame where the old failure still hides the fresh photo.
+  const [prevSrc, setPrevSrc] = useState(src);
+  if (prevSrc !== src) {
+    setPrevSrc(src);
+    setFailed(false);
+  }
   const showingPhoto = !!(src && !failed);
   // One accessible name for the whole atom: the photo's `alt`, else the initials
   // when there's no photo. A loaded photo without `alt` is left unnamed rather than

@@ -1,4 +1,5 @@
 import { useEffect, useRef, type PointerEvent } from "react";
+import { useLatest } from "./useLatest";
 
 /*
  * Internal drag-gesture plumbing (NOT exported from the package until the
@@ -98,6 +99,8 @@ export interface TKDragHandlers {
   onPointerCancel: (e: PointerEvent<HTMLElement>) => void;
 }
 
+const POINTER_KEYS = ["onPointerDown", "onPointerMove", "onPointerUp", "onPointerCancel"] as const;
+
 export interface TKDragBinding {
   /**
    * Pointer handlers for the dragged element. Pass consumer props to merge them:
@@ -153,8 +156,7 @@ export function useDragGesture({
 
   // `enabled` is snapshotted into a ref so a mid-gesture flip is honored — not
   // just read once at pointerdown (INT-002).
-  const enabledRef = useRef(enabled);
-  enabledRef.current = enabled;
+  const enabledRef = useLatest(enabled);
 
   const read = (e: PointerEvent<HTMLElement>) => ({
     main: axis === "x" ? e.clientX : e.clientY,
@@ -276,7 +278,6 @@ export function useDragGesture({
     },
   };
 
-  const POINTER_KEYS = ["onPointerDown", "onPointerMove", "onPointerUp", "onPointerCancel"] as const;
   const bind = (userProps?: Partial<TKDragHandlers> & Record<string, unknown>): TKDragHandlers => {
     if (!userProps) return handlers;
     // Non-pointer props (onClick, data-*, etc.) pass through; pointer handlers are

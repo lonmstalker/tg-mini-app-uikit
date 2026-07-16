@@ -1,6 +1,7 @@
-import { Children, useCallback, useEffect, useRef, type CSSProperties, type ReactNode } from "react";
+import { Children, useCallback, useEffect, useInsertionEffect, useRef, type CSSProperties, type ReactNode } from "react";
 import { TKVisuallyHidden } from "../../atoms/service";
 import { useTKLocale } from "../../foundation/i18n";
+import { useLatest } from "../../internal/useLatest";
 
 /* ---------------- Infinite list ---------------- */
 
@@ -44,12 +45,9 @@ export function TKInfiniteList({
   style,
 }: TKInfiniteListProps) {
   const sentinelRef = useRef<HTMLDivElement>(null);
-  const loadRef = useRef(onLoadMore);
-  loadRef.current = onLoadMore;
-  const hasMoreRef = useRef(hasMore);
-  hasMoreRef.current = hasMore;
-  const loadingRef = useRef(loading);
-  loadingRef.current = loading;
+  const loadRef = useLatest(onLoadMore);
+  const hasMoreRef = useLatest(hasMore);
+  const loadingRef = useLatest(loading);
   // One load-more per page: set when a load fires, re-armed when the sentinel
   // leaves the viewport or `loading` settles. Without it the two observers
   // below (both seeded on mount with the sentinel already in the 240px margin)
@@ -75,7 +73,9 @@ export function TKInfiniteList({
   // the rootMargin would load page 1 and then silently stall: the persistent
   // observer never re-fires for an unchanged "still visible" state.
   const childCount = Children.count(children);
-  childCountRef.current = childCount;
+  useInsertionEffect(() => {
+    childCountRef.current = childCount;
+  });
 
   // Persistent observer for scroll-driven loading. Re-arms the guard whenever
   // the sentinel scrolls out of view so a later re-entry can load again.

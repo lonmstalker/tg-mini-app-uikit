@@ -50,7 +50,9 @@ export const TKMultiselect = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKMul
   const ref = useRef<HTMLDivElement>(null);
   const id = useId();
   const listId = `${id}-list`;
-  const chosen = items.filter((item) => selected.includes(item.value));
+  // Selection checks run per item per render (and renders ride every hover) — Set, not includes.
+  const selectedSet = new Set(selected);
+  const chosen = items.filter((item) => selectedSet.has(item.value));
   const setOpen = (next: boolean) => {
     setOpenRaw(next);
     setActive(next ? items.findIndex((item) => !item.disabled) : -1);
@@ -210,11 +212,11 @@ export const TKMultiselect = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKMul
             <button
               type="button"
               role="option"
-              aria-selected={items.filter((i) => !i.disabled).every((i) => selected.includes(i.value))}
+              aria-selected={items.filter((i) => !i.disabled).every((i) => selectedSet.has(i.value))}
               tabIndex={-1}
               onClick={() => {
-                const enabled = items.filter((i) => !i.disabled).map((i) => i.value);
-                const allOn = enabled.every((v) => selected.includes(v));
+                const enabled = items.flatMap((i) => (i.disabled ? [] : [i.value]));
+                const allOn = enabled.every((v) => selectedSet.has(v));
                 setSelected(allOn ? [] : enabled);
               }}
               style={{
@@ -238,7 +240,7 @@ export const TKMultiselect = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKMul
             </button>
           ) : null}
           {items.map((item, i) => {
-            const isSelected = selected.includes(item.value);
+            const isSelected = selectedSet.has(item.value);
             return (
               <button
                 type="button"

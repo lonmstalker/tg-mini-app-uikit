@@ -1,4 +1,4 @@
-import type { TKBiometrics } from "tg-mini-app-uikit";
+import type { TKBiometrics } from "@tg-mini-app/telegram";
 
 export async function authenticateWithBiometrics(biometrics: TKBiometrics, reason: string): Promise<boolean> {
   const manager = biometrics.manager;

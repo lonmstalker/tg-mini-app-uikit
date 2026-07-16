@@ -55,5 +55,27 @@ export default {
     // The TS target is ES2020; `[...list].sort()` is already an immutable copy.
     // `Array.prototype.toSorted` (ES2023) isn't in our lib, so prefer the spread.
     "react-doctor/js-tosorted-immutable": "off",
+
+    // A component library co-locates each component with its hook API by
+    // design (TKNavStack + useNav, TKProvider + useTheme, i18n provider +
+    // useLocale…). Fast-refresh module boundaries are an app concern, not a
+    // published-package one.
+    "react-doctor/only-export-components": "off",
+
+    // The frosted glass chrome (header/tabbar/toast/write-bar backdrop
+    // blur(14px)) is the kit's Telegram-native design signature. The flagged
+    // surfaces are small fixed bars, not full-screen layers, and the blur is
+    // static — only the bar itself animates in/out.
+    "react-doctor/no-large-animated-blur": "off",
+
+    // TKDialog/TKSheet deliberately do not use <dialog>: the native top layer
+    // escapes TKProvider's theming scope and bypasses the kit's overlay stack
+    // (Telegram BackButton queue, scroll lock, staged animations).
+    "react-doctor/prefer-html-dialog": "off",
+
+    // The showcase is a Vite MPA (demo/, telegram/, motion/… each with its own
+    // index.html entry). The scanner only follows the root entry, so every
+    // page-module tree behind a non-root entry false-positives as unreachable.
+    "deslop/unused-file": "off",
   },
 };

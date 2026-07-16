@@ -3,6 +3,7 @@ import { TKIcon } from "../icons";
 import { mergeRefs } from "../../internal/dom";
 import { TKFocusRing } from "../../internal/FocusRing";
 import { useControllable } from "../../internal/useControllable";
+import { useLatest } from "../../internal/useLatest";
 import { useTKLocale } from "../../foundation/i18n";
 
 export interface TKOTPProps {
@@ -47,15 +48,17 @@ export const TKOTP = /* @__PURE__ */ forwardRef<HTMLInputElement, TKOTPProps>(fu
   const mergedRef = useMemo(() => mergeRefs(ref, forwardedRef), [forwardedRef]);
   const done = v.length === length;
 
-  const completeRef = useRef(onComplete);
-  completeRef.current = onComplete;
+  const completeRef = useLatest(onComplete);
   useEffect(() => {
     if (done) completeRef.current?.(v);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [done]);
 
   return (
-    <div data-testid={testId} onClick={() => ref.current?.focus()} style={{ cursor: "text", position: "relative", ...style }}>
+    // Mouse-only convenience: the real control is the full-cover hidden <input>
+    // below (focusable, aria-labelled); this click just re-focuses it from the
+    // caption area, so the wrapper stays presentational.
+    <div role="presentation" data-testid={testId} onClick={() => ref.current?.focus()} style={{ cursor: "text", position: "relative", ...style }}>
       <input
         ref={mergedRef}
         value={v}

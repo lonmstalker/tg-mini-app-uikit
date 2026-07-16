@@ -8,7 +8,7 @@
  * Reduced motion is handled by the shared timeline/CSS (identical events, static
  * frames) — nothing scene-specific needed here.
  */
-import { useEffect, useRef } from "react";
+import { useEffect, useInsertionEffect, useRef } from "react";
 import type { BusinessContext } from "../../app/composerReducer";
 import { IS_FROZEN } from "../../app/devFreeze";
 import { useComposer, useComposerDispatch } from "../../app/composerStore";
@@ -45,7 +45,9 @@ export function FirstLaunchScene() {
   // Birth on mount. reducedMotion is read via ref so the effect runs once and a
   // mid-flight preference change never restarts the birth (StrictMode-safe).
   const reducedRef = useRef(reducedMotion);
-  reducedRef.current = reducedMotion;
+  useInsertionEffect(() => {
+    reducedRef.current = reducedMotion;
+  });
   useEffect(() => {
     if (IS_FROZEN) return; // snapshot mode: hold the frozen frame, no auto-advance
     const controls = runBirth(dispatch, reducedRef.current);

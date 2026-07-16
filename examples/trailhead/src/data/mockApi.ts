@@ -725,9 +725,4 @@ export function experienceById(lang: Lang, id: string): Experience | undefined {
   return raw ? flattenExperience(raw, lang) : undefined;
 }
 
-export function personById(lang: Lang, id: string): Person | undefined {
-  const raw = RAW_PEOPLE.find((p) => p.id === id);
-  return raw ? flattenPerson(raw, lang) : undefined;
-}
-
 export const TOTAL_EXPERIENCES = RAW_EXPERIENCES.length;

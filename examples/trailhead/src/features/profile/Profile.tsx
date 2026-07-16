@@ -11,11 +11,9 @@ import {
   TKTitle,
   TKWalletConnectButton,
   TKWalletStatusCell,
-  useClosingConfirmation,
-  useInitData,
   useNav,
-  useOptionalHaptics,
 } from "tg-mini-app-uikit";
+import { useClosingConfirmation, useInitData, useOptionalHaptics } from "@tg-mini-app/telegram";
 import { useT } from "../../i18n";
 import { useAppDispatch, useAppState } from "../../store";
 import { useMockHandle } from "../../telegram/mock-context";

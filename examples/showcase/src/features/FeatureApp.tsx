@@ -146,6 +146,9 @@ function ThemingDemo({ copy }: { copy: Record<string, string> }) {
           <button
             key={hex}
             type="button"
+            // The hex value is the only honest per-swatch name we have; the
+            // surrounding group is already labelled with copy.caption.
+            aria-label={hex}
             aria-pressed={accent === hex}
             style={{ background: hex }}
             onClick={() => setAccent(hex)}

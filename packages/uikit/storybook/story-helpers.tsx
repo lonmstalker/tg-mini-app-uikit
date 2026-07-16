@@ -1,7 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
 
-export const noop = () => undefined;
-
 export const options = [
   { value: "one", label: "One" },
   { value: "two", label: "Two" },

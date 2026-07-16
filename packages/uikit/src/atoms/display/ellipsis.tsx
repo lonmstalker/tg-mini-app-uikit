@@ -93,6 +93,11 @@ export const TKEllipsis = /* @__PURE__ */ forwardRef<HTMLDivElement, TKEllipsisP
     if (clamped && el) el.style.height = "";
   }, [clamped]);
 
+  // A WAAPI tween outlives its detached element: cancel any in-flight one on
+  // unmount so its "finish" handler (below) never pins styles or setClamped
+  // against a dead component. Cancel never fires "finish", so this is enough.
+  useEffect(() => () => animRef.current?.cancel(), []);
+
   const flip = () => {
     const el = textRef.current;
     const next = !expanded;
@@ -122,15 +127,21 @@ export const TKEllipsis = /* @__PURE__ */ forwardRef<HTMLDivElement, TKEllipsisP
         anim = tkAnimateHeight(el, from, to);
         animRef.current = anim;
         if (anim) {
-          anim.addEventListener("finish", () => {
-            // The tween has no fill: on finish the box would snap back to the
-            // full text height for one painted frame before React commits the
-            // clamp. Pin the collapsed geometry inline; the [clamped] layout
-            // effect below releases it in the same commit that re-clamps.
-            s.height = `${to}px`;
-            s.overflow = "hidden";
-            setClamped(true);
-          });
+          anim.addEventListener(
+            "finish",
+            () => {
+              // The tween has no fill: on finish the box would snap back to the
+              // full text height for one painted frame before React commits the
+              // clamp. Pin the collapsed geometry inline; the [clamped] layout
+              // effect below releases it in the same commit that re-clamps.
+              s.height = `${to}px`;
+              s.overflow = "hidden";
+              setClamped(true);
+            },
+            // Fires at most once; a superseded or unmounted tween is cancelled
+            // (flip/effect/unmount above), and cancel never fires "finish".
+            { once: true },
+          );
         }
       }
       if (!anim) setClamped(true);

@@ -187,7 +187,11 @@ export function TKChipsInput({ value, defaultValue = [], onChange, placeholder, 
           {label}
         </div>
       ) : null}
+      {/* Mouse-only convenience: a click on the field chrome forwards focus to the
+          real <input> (chips' remove buttons stopPropagation). Keyboard users Tab
+          to the input directly, so this wrapper is presentational. */}
       <div
+        role="presentation"
         onClick={() => inputRef.current?.focus()}
         style={{
           display: "flex",
@@ -260,10 +264,14 @@ export function TKChipsInput({ value, defaultValue = [], onChange, placeholder, 
             // updates don't clobber one another, de-duping against existing tags.
             if (next.includes(",")) {
               const parts = next.split(",");
+              const seen = new Set(tags);
               const additions: string[] = [];
               for (const part of parts.slice(0, -1)) {
                 const tag = part.trim();
-                if (tag && !tags.includes(tag) && !additions.includes(tag)) additions.push(tag);
+                if (tag && !seen.has(tag)) {
+                  seen.add(tag);
+                  additions.push(tag);
+                }
               }
               if (additions.length) setTags([...tags, ...additions]);
               setDraft(parts[parts.length - 1].trimStart());

@@ -65,16 +65,19 @@ function GuideRow({
         if (suppress.current) return;
         onOpen();
       }}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onOpen();
-        }
-      }}
       {...longPress}
       onPointerDown={(e) => {
         suppress.current = false;
         longPress.onPointerDown(e);
+      }}
+      // Compose with the kit's handler: it owns the ContextMenu-key long-press
+      // trigger, the row owns Enter/Space activation.
+      onKeyDown={(e) => {
+        longPress.onKeyDown(e);
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onOpen();
+        }
       }}
       className="tk-press tk-press-soft"
       style={{

@@ -8,6 +8,3 @@ export { formatDate, toIsoDate } from "@tg-mini-app/intl";
 
 /** "450 Stars" / "450 Stars" (Stars is a Telegram brand term, kept in both). */
 export const starsLabel = (t: T, count: number) => t("unit.stars", { count });
-
-/** "★ 450" compact form for cards. */
-export const starsShort = (t: T, count: number) => t("unit.starsShort", { count });

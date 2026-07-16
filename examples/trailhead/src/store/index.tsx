@@ -8,7 +8,7 @@ import {
   type Dispatch,
   type ReactNode,
 } from "react";
-import { useCloudStorage, useDeviceStorage, useInitData, useSecureStorage, useTelegramTheme } from "tg-mini-app-uikit";
+import { useCloudStorage, useDeviceStorage, useInitData, useSecureStorage, useTelegramTheme } from "@tg-mini-app/telegram";
 import { initialLangFor, type Lang } from "../i18n";
 import { loadPersisted, savePersisted, type StorageBackends } from "./persistence";
 import { createInitialState, reducer, toPersisted, type Action, type AppState } from "./reducer";

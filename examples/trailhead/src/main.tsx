@@ -3,7 +3,7 @@ import "tg-mini-app-uikit/style.css";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { TonConnectUIProvider } from "@tonconnect/ui-react";
-import { TKTelegramProvider, getTelegramWebApp } from "tg-mini-app-uikit";
+import { TKTelegramProvider, getTelegramWebApp } from "@tg-mini-app/telegram";
 import { createMockTelegram } from "@tg-mini-app/telegram/testing";
 import { AppFrame } from "./AppFrame";
 import { configureMockApi, getMockApiConfig } from "./data/mockApi";

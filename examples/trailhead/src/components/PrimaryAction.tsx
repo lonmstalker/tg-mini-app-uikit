@@ -1,4 +1,5 @@
-import { TKBottomBar, TKMainButton, useHasNativeChrome, useMainButton } from "tg-mini-app-uikit";
+import { TKBottomBar, TKMainButton, useHasNativeChrome } from "tg-mini-app-uikit";
+import { useMainButton, useSecondaryButton } from "@tg-mini-app/telegram";
 
 /*
  * The funnel's primary action. Inside Telegram it drives the NATIVE MainButton
@@ -35,4 +36,28 @@ export function PrimaryAction({ label, onClick, disabled, active, testId }: Prim
       ) : null}
     </>
   );
+}
+
+function NativeSecondaryButton({ label, onClick, disabled }: { label: string; onClick: () => void; disabled?: boolean }) {
+  useSecondaryButton({ text: label, onClick, disabled, visible: true });
+  return null;
+}
+
+export interface SecondaryActionProps {
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+  /** True only while this panel should own the single native SecondaryButton. */
+  active: boolean;
+}
+
+/*
+ * Companion cancel/back action to `PrimaryAction`, driving the NATIVE Telegram
+ * SecondaryButton (Bot API 7.10+; the hook no-ops on older clients and outside
+ * Telegram). Deliberately native-only — the in-DOM screens already carry their
+ * own cancel affordances (mock back header, sheet close), so unlike
+ * `PrimaryAction` there is no browser fallback bar to render.
+ */
+export function SecondaryAction({ label, onClick, disabled, active }: SecondaryActionProps) {
+  return active ? <NativeSecondaryButton label={label} onClick={onClick} disabled={disabled} /> : null;
 }

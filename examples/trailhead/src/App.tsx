@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { TKTabView, useVerticalSwipes } from "tg-mini-app-uikit";
+import { TKTabView } from "tg-mini-app-uikit";
+import { useVerticalSwipes, useViewport } from "@tg-mini-app/telegram";
 import { useT } from "./i18n";
 import { TABS, type TabId } from "./tabs";
 import { MockBadge } from "./components/MockBadge";
@@ -27,6 +28,7 @@ export function App() {
     profile: 1,
   });
   const verticalSwipes = useVerticalSwipes();
+  const viewport = useViewport();
   const tabbarRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -34,6 +36,9 @@ export function App() {
   // The kit's overlays/page already guard this; disabling at the app root closes
   // the last gap. (No-op outside Telegram / when unsupported.)
   useEffect(() => {
+    // A real client can launch the app half-height — claim the full viewport
+    // once at startup. (No-op outside Telegram; idempotent when already expanded.)
+    viewport.expand();
     verticalSwipes.disable();
     return () => {
       verticalSwipes.enable();

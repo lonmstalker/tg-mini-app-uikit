@@ -1,5 +1,6 @@
 import { useEffect } from "react";
-import { TKProvider, TKToastProvider, useTelegramTheme } from "tg-mini-app-uikit";
+import { TKProvider, TKToastProvider } from "tg-mini-app-uikit";
+import { useTelegramTheme } from "@tg-mini-app/telegram";
 import { App } from "./App";
 import { LangProvider } from "./i18n";
 import { useStore } from "./store";

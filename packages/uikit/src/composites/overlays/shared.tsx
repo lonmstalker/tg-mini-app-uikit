@@ -10,6 +10,7 @@ import { tkZ } from "../../internal/dom";
 import { useScrollLock } from "../../internal/useScrollLock";
 import { useOverlayLayer } from "../../internal/useOverlayLayer";
 import { useVerticalSwipeGuard } from "../../internal/useVerticalSwipeGuard";
+import { useLatest } from "../../internal/useLatest";
 import { useBackIntercept } from "../../foundation/telegram";
 
 /*
@@ -82,8 +83,7 @@ function parseCssDuration(value: string | undefined): number {
  */
 export function useMountTransition(open: boolean, closeMs: number, ref?: RefObject<HTMLElement | null>) {
   const [state, setState] = useState<"closed" | "open" | "closing">(open ? "open" : "closed");
-  const stateRef = useRef(state);
-  stateRef.current = state;
+  const stateRef = useLatest(state);
   useEffect(() => {
     if (open) {
       setState("open");
@@ -188,10 +188,8 @@ export function useOverlayA11y(
    */
   inertBackground = true,
 ) {
-  const closeRef = useRef(onClose);
-  closeRef.current = onClose;
-  const confirmRef = useRef(onConfirm);
-  confirmRef.current = onConfirm;
+  const closeRef = useLatest(onClose);
+  const confirmRef = useLatest(onConfirm);
   // captured once on false->true so re-running the effect (e.g. ref change)
   // never overwrites the element we should hand focus back to
   const restoreRef = useRef<HTMLElement | null>(null);
@@ -372,7 +370,12 @@ export function useModalOverlay({
 
 export function Scrim({ closing, onClick, z }: { closing: boolean; onClick?: () => void; z?: number }) {
   return (
+    // Decorative backdrop click-catcher: tap-to-dismiss is a redundant pointer
+    // affordance — keyboard users close the overlay with Escape (handled by
+    // useOverlayA11y above), so the scrim is presentational and hidden from AT.
     <div
+      role="presentation"
+      aria-hidden="true"
       onClick={onClick}
       data-tk-scrim
       style={{

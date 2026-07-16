@@ -13,6 +13,7 @@ import {
   type ReactNode,
 } from "react";
 import { useControllable } from "../internal/useControllable";
+import { useLatest } from "../internal/useLatest";
 import { tkFormat, useTKLocale } from "../foundation/i18n";
 import { useOptionalHaptics } from "../foundation/telegram";
 import { TKPageDots } from "./navigation";
@@ -53,6 +54,9 @@ export interface TKGalleryProps<T = unknown> extends HTMLAttributes<HTMLDivEleme
   testId?: string;
 }
 
+const prefersReduce = () =>
+  typeof window !== "undefined" && !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
 function TKGalleryImpl<T>(
   { children, items, renderItem, getKey, page: pageProp, defaultPage, onPageChange, dots = true, gap = 10, edgeInset = 16, height, haptics = true, viewerImages, testId, className, style, ...rest }: TKGalleryProps<T>,
   forwardedRef: ForwardedRef<HTMLDivElement>,
@@ -89,8 +93,7 @@ function TKGalleryImpl<T>(
   // every later user swipe (CRS-004).
   const settleTimerRef = useRef<number | undefined>(undefined);
   // Latest committed page, read by the resize realigner without re-subscribing.
-  const pageRef = useRef(page);
-  pageRef.current = page;
+  const pageRef = useLatest(page);
   const endProgrammatic = () => {
     programmaticRef.current = false;
   };
@@ -135,9 +138,6 @@ function TKGalleryImpl<T>(
     }
     if (typeof el.scrollTo === "function") el.scrollTo({ left: clamped * stride, behavior: smooth ? "smooth" : "auto" });
   };
-
-  const prefersReduce = () =>
-    typeof window !== "undefined" && !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
   // User-driven jump (dot tap / arrow key): scroll AND report the change.
   const scrollTo = (index: number) => {

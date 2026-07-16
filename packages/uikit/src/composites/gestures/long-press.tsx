@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, type KeyboardEvent, type MouseEvent, type PointerEvent, type SyntheticEvent } from "react";
 import { useOptionalHaptics } from "../../foundation/telegram";
+import { useLatest } from "../../internal/useLatest";
 
 /* ---------------- useLongPress ---------------- */
 
@@ -52,8 +53,7 @@ export function useLongPress(
   // True once a press fired in the current gesture, so the trailing synthetic
   // click is swallowed exactly once (GES-001).
   const firedRef = useRef(false);
-  const fnRef = useRef(onLongPress);
-  fnRef.current = onLongPress;
+  const fnRef = useLatest(onLongPress);
 
   const cancel = useCallback(() => {
     window.clearTimeout(timer.current);

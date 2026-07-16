@@ -23,6 +23,12 @@ export interface TKPullToRefreshProps {
 
 const resistPull = (delta: number) => Math.max(0, delta) * 0.5;
 
+// The indicator is a FIXED 48px box that slides in via transform — the pull
+// never writes layout properties, so a pull frame is compositor-only (the
+// old `height` write + scrollTop read pair forced a reflow every frame).
+const indicatorTransform = (pull: number, resting: boolean) =>
+  pull > 2 || resting ? `translateY(${(Math.max(pull, 48) - 48) / 2}px)` : "translateY(-56px)";
+
 // A hidden scroller (display:none keep-mount tab) pins scrollTop at 0 forever
 // and must not vote in the pull gate. checkVisibility where available (also
 // covers visibility/content-visibility); otherwise walk for display:none —
@@ -115,11 +121,6 @@ export function TKPullToRefresh({ children, onRefresh, threshold = 72, disabled,
     for (const el of resolveScrollTargets()) top = Math.max(top, el.scrollTop);
     return top;
   };
-  // The indicator is a FIXED 48px box that slides in via transform — the pull
-  // never writes layout properties, so a pull frame is compositor-only (the
-  // old `height` write + scrollTop read pair forced a reflow every frame).
-  const indicatorTransform = (pull: number, resting: boolean) =>
-    pull > 2 || resting ? `translateY(${(Math.max(pull, 48) - 48) / 2}px)` : "translateY(-56px)";
   const applyPull = (nextPull: number) => {
     const next = Math.max(0, nextPull);
     pullRef.current = next;

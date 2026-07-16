@@ -140,6 +140,8 @@ export const en = {
   "trips.empty.title": "No trips yet",
   "trips.empty.text": "Book a guided hike and it will show up here.",
   "trips.empty.cta": "Browse hikes",
+  "trips.share": "Share to story",
+  "trips.shareFailed": "Couldn't share the trip. Try again.",
 
   // Trail check-in (the signature QR → biometric → location chain)
   "checkin.title": "Trail check-in",
@@ -199,6 +201,8 @@ export const en = {
   "lab.appearance.light": "Light",
   "lab.appearance.dark": "Dark",
   "lab.language": "Language",
+  "lab.fullscreen": "Fullscreen",
+  "lab.fullscreenUnsupported": "Unavailable here — needs Telegram 8.0 or newer.",
   "lab.previewCard": "Sunrise Ridge · 1 Star checkout",
   "lab.reset": "Reset to defaults",
 
