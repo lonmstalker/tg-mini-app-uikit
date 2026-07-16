@@ -275,9 +275,16 @@ export function useHideKeyboard(): { hide: () => boolean; isSupported: boolean }
   return useMemo(
     () => ({
       hide: () => {
+        // Today's bridge never throws here (a bare postEvent), but a drifted
+        // script/client combination must degrade to the blur fallback, not
+        // abort the caller's tap handler mid-flow.
         if (wa?.hideKeyboard) {
-          wa.hideKeyboard();
-          return true;
+          try {
+            wa.hideKeyboard();
+            return true;
+          } catch {
+            /* fall through to the DOM blur */
+          }
         }
         if (typeof document !== "undefined" && document.activeElement instanceof HTMLElement) {
           document.activeElement.blur();
@@ -658,15 +665,26 @@ export function useOrientationLock(): {
   return useMemo(
     () => ({
       isLocked,
+      // Today's bridge never throws here, but callers run these around camera
+      // flows (check-in) where an escape would strand their re-entry latch —
+      // degrade to false on any drifted script/client combination.
       lock: () => {
         if (!wa?.lockOrientation) return false;
-        wa.lockOrientation();
+        try {
+          wa.lockOrientation();
+        } catch {
+          return false;
+        }
         setIsLocked(wa.isOrientationLocked ?? true);
         return true;
       },
       unlock: () => {
         if (!wa?.unlockOrientation) return false;
-        wa.unlockOrientation();
+        try {
+          wa.unlockOrientation();
+        } catch {
+          return false;
+        }
         setIsLocked(wa.isOrientationLocked ?? false);
         return true;
       },

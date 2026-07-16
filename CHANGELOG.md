@@ -1,13 +1,18 @@
 # Changelog
 
-## Unreleased
+## 0.6.0 — 2026-07-16
 
 Native-chrome arbitration: modal overlays now suppress the native Telegram
 Main/Secondary buttons while open (opt out per overlay with
 `nativeButtons="keep"`), and `TKHeader back` defaults to `"auto"` so an
 in-DOM arrow never duplicates the native Back button for the same press.
 New platform hooks: `useSuppressNativeButtons`, `useNativeButtonsSuppressed`,
-`useBackButtonWanted`. Per-package notes in `packages/*/CHANGELOG.md`.
+`useBackButtonWanted`. Plus the real-device sweep (wiki/device-testing.md):
+version gates + try/catch across the bridge hooks, reactive biometric
+availability, snap-sheet drag fix, composer pointerdown fix, eased keyboard
+shift, 44px hit targets. Ships `tg-mini-app-uikit@0.6.0`
+(`@tg-mini-app/telegram@0.3.0`, peer range bumped accordingly);
+per-package notes in `packages/*/CHANGELOG.md`.
 
 ## 0.5.0 — 2026-07-15
 

@@ -52,6 +52,30 @@ describe("finding #2 — requestChat exists on every client but is Bot API 9.6+"
   });
 });
 
+describe("review follow-up — a throwing bridge must not abort the caller's flow", () => {
+  it("hideKeyboard falls back to the DOM blur instead of escaping the tap handler", () => {
+    const telegram = createMockTelegram();
+    telegram.webApp.hideKeyboard = () => {
+      throw new Error("WebAppMethodUnsupported");
+    };
+    const { result } = renderHook(() => kit.useHideKeyboard(), { wrapper: wrap(telegram.webApp) });
+    expect(() => result.current.hide()).not.toThrow();
+  });
+
+  it("orientation lock/unlock degrade to false — a check-in latch must never strand", () => {
+    const telegram = createMockTelegram();
+    telegram.webApp.lockOrientation = () => {
+      throw new Error("WebAppMethodUnsupported");
+    };
+    telegram.webApp.unlockOrientation = () => {
+      throw new Error("WebAppMethodUnsupported");
+    };
+    const { result } = renderHook(() => kit.useOrientationLock(), { wrapper: wrap(telegram.webApp) });
+    expect(result.current.lock()).toBe(false);
+    expect(result.current.unlock()).toBe(false);
+  });
+});
+
 describe("finding #3 — BiometricManager exists on desktop where no biometrics do", () => {
   it("isSupported alone is the trap; isAvailable resolves false after init on a desktop-shaped client", async () => {
     const telegram = createMockTelegram();

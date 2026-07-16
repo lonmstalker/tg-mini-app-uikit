@@ -1,6 +1,6 @@
 # @tg-mini-app/telegram
 
-## Unreleased
+## 0.3.0
 
 ### Minor Changes
 

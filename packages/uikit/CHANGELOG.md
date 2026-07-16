@@ -1,6 +1,6 @@
 # tg-mini-app-uikit
 
-## Unreleased
+## 0.6.0
 
 ### Minor Changes
 
@@ -20,6 +20,9 @@
 
 ### Patch Changes (2026-07-16 device-testing sweep)
 
+- The `@tg-mini-app/telegram` peer range is now `^0.3.0` — this release
+  imports `useSuppressNativeButtons`/`useBackButtonWanted`, which older 0.2.x
+  peer builds do not export.
 - `TKSheet` with snap points no longer reveals blank panel background while
   dragged between snaps — the content box is pinned to the full height for the
   duration of the gesture and handed back to the committed snap on release
