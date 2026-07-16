@@ -25,14 +25,21 @@ gates + try/catch around every native call are mandatory.
 
 ## 2. "Create the group chat" does nothing
 
-- **Root cause**: `WebApp.requestChat` is Bot API **9.6+**; older clients have
-  the method and throw on call. `isSupported = !!wa.requestChat` was always
-  true, so the cell rendered and the tap exploded silently.
-- **Kit**: `TK_MIN_VERSION.requestChat = "9.6"` gates `isSupported`;
-  `request()` try/catches (`WebAppRequestChatOpened` on re-entry).
-  `useContactRequest` / `useWriteAccess` got the same 6.9 gates + catches.
-- **Demo**: the cell is gated on `isSupported`, so pre-9.6 clients simply
-  don't see it.
+- **Root cause, revised after "my client is the latest"**: two layers.
+  (a) Older clients: `requestChat` exists and THROWS below 9.6 — fixed with a
+  version gate + try/catch (`useContactRequest`/`useWriteAccess` got the same
+  6.9 treatment).
+  (b) **Fresh clients**: the bridge script ships AHEAD of the apps. The call
+  posts `web_app_request_chat` and waits for `requested_chat_sent/failed`; a
+  client that passes the 9.6 version check but hasn't implemented the event
+  handler silently drops it — **the callback never fires, the promise never
+  settles**, no toast, nothing. No version gate can catch this.
+- **Kit**: `useChatRequest` keeps the gate + catch and now documents the
+  client-lag hazard; the generic rule went into the docs Runtime Policy.
+- **Demo**: the trip-prep action no longer uses `requestChat` at all. "Invite
+  the group" opens `https://t.me/share/url?...` via `openTelegramLink` — the
+  one chat-picker mechanism every shipping client implements. The invite text
+  carries the hike title/date and the bot link.
 
 ## 3. Fingerprint key shows on a laptop and does nothing
 
@@ -44,6 +51,13 @@ gates + try/catch around every native call are mandatory.
   (`undefined` until known → init + `biometricManagerUpdated` event).
 - **Demo**: `useBiometricKeyAvailable` inits once and renders the key only on
   `isAvailable === true` (progressive reveal — hidden until proven).
+- **Expected laptop behavior after redeploy**: the fingerprint key does not
+  render at all — PIN is the only path. This holds on BOTH desktop answer
+  paths: the client reports `isBiometricAvailable=false` (key stays hidden),
+  or the client silently drops the biometry init event (availability stays
+  `undefined` → key stays hidden). If a desktop client ever ships Touch ID
+  support for Mini Apps, the key appears automatically — availability is read
+  from the client, not hardcoded per platform.
 
 ## 4. Payment sheet opens too small; dragging shows a grey area
 
@@ -105,7 +119,7 @@ gates + try/catch around every native call are mandatory.
 | # | Reproduced by test | Fix level |
 |---|--------------------|-----------|
 | 1 | device-findings #1 | kit + demo toast |
-| 2 | device-findings #2 | kit gate (cell hides itself) |
+| 2 | device-findings #2 (throw layer; the client-drop layer is untestable off-device) | kit gate + demo switched to t.me/share |
 | 3 | device-findings #3 | kit `isAvailable` + demo gate |
 | 4 | device-findings #4 | kit OVL-013 + demo content-sized sheet |
 | 5 | booking.spec (updated) | demo UX call |

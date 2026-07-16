@@ -154,6 +154,15 @@ export function useDownloadFile(): {
   );
 }
 
+/**
+ * `WebApp.requestChat` (Bot API 9.6+). CAUTION: the official bridge script
+ * ships AHEAD of the clients — a client that reports 9.6 but has not
+ * implemented `web_app_request_chat` silently drops the event, the
+ * `requested_chat_sent/failed` answer never arrives and the returned promise
+ * NEVER settles. Until the event is broadly implemented, prefer the
+ * `https://t.me/share/url` deep link (openTelegramLink) for share-into-a-chat
+ * flows; treat this hook as opt-in for clients you have verified.
+ */
 export function useChatRequest(): {
   request: (reqId: string) => Promise<boolean>;
   isSupported: boolean;

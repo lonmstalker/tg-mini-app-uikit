@@ -26,6 +26,11 @@ The package-local Storybook stories and e2e specs exercise mocked runtime states
 
 The hooks use capability detection first: a method or field is called only when it exists on the active `Telegram.WebApp` object. The kit does not maintain an exhaustive Telegram client version matrix in runtime code. This keeps ordinary browsers, Storybook, SSR, older Telegram clients, and partial mocks on the same path.
 
+Two traps the official bridge script sets, and how the hooks defuse them:
+
+- **Method presence is not feature detection.** The script defines every method on every client and THROWS at call time (`WebAppMethodUnsupported` below the feature's version, `WebAppInlineModeDisabled` for a bot without inline mode, `WebAppRequestChatOpened` on re-entry). Version-gated hooks (`useChatRequest` 9.6, `useContactRequest`/`useWriteAccess` 6.9, `switchInlineQuery` 6.6) plus try/catch turn those into honest `false`s.
+- **The script ships ahead of the clients.** A client can pass the version gate yet not implement the underlying `web_app_*` event — the event is silently dropped and the callback never fires (observed with `requestChat` on current clients). A promise from such a hook may never settle; design UI so a missing answer is survivable, or use a universally implemented mechanism (e.g. the `t.me/share/url` deep link) for must-work flows.
+
 `getTelegramWebApp()` returns the real `window.Telegram.WebApp` or `null` when the host is missing. `useWebApp()` returns `undefined` outside Telegram so hook consumers can branch naturally.
 
 Native side effects happen in effects or explicit callbacks, not during render. For example, native buttons subscribe on mount, update from hook params, and hide on cleanup. Link, invoice, share, QR, clipboard, and device APIs run only when the returned callback is invoked.

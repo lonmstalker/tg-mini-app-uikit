@@ -14,13 +14,13 @@ import {
   useTKToast,
 } from "tg-mini-app-uikit";
 import {
-  useChatRequest,
   useClipboard,
   useContactRequest,
   useDownloadFile,
   useEmojiStatus,
   useShare,
   useTelegramEnvironment,
+  useTelegramLinks,
   useWebApp,
   useWriteAccess,
 } from "@tg-mini-app/telegram";
@@ -42,6 +42,8 @@ const PROGRESS: Record<string, string> = {
 // ponytail: one shared start point for every demo hike — per-experience coords
 // belong in mockApi once a real map feature needs them.
 const TRAILHEAD_COORDS = "47.5162, 13.6493";
+// The link the group invite shares — the bot itself.
+const BOT_URL = import.meta.env.VITE_TRAILHEAD_BOT_URL ?? "https://t.me/lonmstalker_bot";
 // Demo custom-emoji id for the "on the trail" status; a real client validates
 // it against actual emoji, so outside the mock the set can legitimately fail.
 const TRAIL_STATUS_EMOJI_ID = "5309832892262654231";
@@ -56,7 +58,7 @@ export function TripDetail({ active }: { active: boolean }) {
   const checkin = useCheckIn();
   const share = useShare();
   const toast = useTKToast();
-  const chatReq = useChatRequest();
+  const links = useTelegramLinks();
   const writeAccess = useWriteAccess();
   const contact = useContactRequest();
   const download = useDownloadFile();
@@ -104,8 +106,15 @@ export function TripDetail({ active }: { active: boolean }) {
 
   /* Trip-prep actions: each is one native permission/API round-trip with a
    * toast on both outcomes, so a declined dialog never reads as a dead tap. */
-  const prepChat = async () =>
-    (await chatReq.request(`trip-${booking.id}`)) ? toast.success(t("trip.prep.chatOk")) : toast.error(t("trip.prep.declined"));
+  // Group invite via the t.me/share deep link — the one chat-picker mechanism
+  // every shipping client implements. `WebApp.requestChat` is NOT usable here:
+  // the 9.6 bridge script is ahead of the clients, which silently drop the
+  // event and the callback never fires (wiki/device-testing.md #2).
+  const inviteGroup = () => {
+    const text = t("trip.prep.inviteText", { title: view.title, date: formatDate(booking.date, lang) });
+    const ok = links.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(BOT_URL)}&text=${encodeURIComponent(text)}`);
+    if (!ok) toast.error(t("trip.prep.declined"));
+  };
   const prepRemind = async () =>
     (await writeAccess.request()) ? toast.success(t("trip.prep.remindOk")) : toast.error(t("trip.prep.declined"));
   const prepPhone = async () =>
@@ -204,8 +213,8 @@ export function TripDetail({ active }: { active: boolean }) {
 
       {!checkedIn ? (
         <TKListGroup title={t("trip.prep.title")} testId="trip-prep">
-          {chatReq.isSupported ? (
-            <TKCell icon="chat" title={t("trip.prep.chat")} onClick={() => void prepChat()} testId="prep-chat" />
+          {links.isSupported ? (
+            <TKCell icon="chat" title={t("trip.prep.invite")} onClick={inviteGroup} testId="prep-invite" />
           ) : null}
           {writeAccess.isSupported ? (
             <TKCell icon="bell" title={t("trip.prep.remind")} onClick={() => void prepRemind()} testId="prep-remind" />
