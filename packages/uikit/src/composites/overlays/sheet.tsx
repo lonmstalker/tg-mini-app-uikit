@@ -44,6 +44,14 @@ export interface TKSheetProps {
   modal?: boolean;
   /** Imperative API: `close()`, `snapTo(i)`, `snapIndex`. */
   sheetRef?: Ref<TKSheetHandle>;
+  /**
+   * Native Telegram Main/Secondary buttons while the sheet is open: the default
+   * `"suppress"` hides them (they sit in the client chrome beyond the scrim's
+   * reach and would keep acting on the covered screen). Pass `"keep"` when the
+   * sheet itself is confirmed by the native button. Non-modal sheets never
+   * suppress.
+   */
+  nativeButtons?: "suppress" | "keep";
   testId?: string;
 }
 
@@ -60,6 +68,7 @@ export const TKSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSheetProps>(
     dismissible = true,
     modal = true,
     sheetRef,
+    nativeButtons = "suppress",
     testId,
   },
   forwardedRef,
@@ -109,6 +118,7 @@ export const TKSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSheetProps>(
     scrollLock: modal,
     swipeGuard: modal,
     inertBackground: modal,
+    nativeButtons: modal ? nativeButtons : "keep",
   });
 
   const openChangeRef = useLatest(onOpenChange);

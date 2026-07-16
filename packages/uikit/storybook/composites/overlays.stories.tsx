@@ -74,6 +74,11 @@ function ModalSurfacesPreview() {
 
 export const ModalSurfaces = {
   // Overlays fill the device screen (backdrop, centered dialog, bottom sheet) like a real app.
+  // Inside Telegram every modal overlay also hides the native Main/Secondary
+  // buttons while open (they sit in the client chrome beyond the scrim's
+  // reach) and restores them on close — `nativeButtons="keep"` opts a single
+  // overlay out when the native button is its own CTA. Not visible here:
+  // Storybook runs without native chrome.
   parameters: { fullBleed: true },
   render: () => <ModalSurfacesPreview />,
 } satisfies Story;

@@ -1,5 +1,20 @@
 # @tg-mini-app/telegram
 
+## Unreleased
+
+### Minor Changes
+
+- Native-chrome suppression registry (shared on `globalThis`, dedupe-safe
+  across package copies like the back registry): `useSuppressNativeButtons(active)`
+  counts a suppressor, `useNativeButtonsSuppressed()` reads the state, and
+  `useMainButton`/`useSecondaryButton` render the native button hidden while
+  any suppressor is active, restoring the requested params after. A dev-only
+  warning points at the overlay's `nativeButtons` prop the first time a
+  visible button is suppressed.
+- `useBackButtonWanted()`: true while at least one interceptor (overlay, nav
+  stack) wants the native Back button visible — lets in-DOM back affordances
+  avoid rendering a second arrow for the same press.
+
 ## 0.2.1
 
 ### Fixed

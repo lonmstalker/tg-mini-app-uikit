@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+Native-chrome arbitration: modal overlays now suppress the native Telegram
+Main/Secondary buttons while open (opt out per overlay with
+`nativeButtons="keep"`), and `TKHeader back` defaults to `"auto"` so an
+in-DOM arrow never duplicates the native Back button for the same press.
+New platform hooks: `useSuppressNativeButtons`, `useNativeButtonsSuppressed`,
+`useBackButtonWanted`. Per-package notes in `packages/*/CHANGELOG.md`.
+
 ## 0.5.0 — 2026-07-15
 
 `TKCalendar` learns press-and-drag date-range selection (mouse/pen drag

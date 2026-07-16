@@ -1,5 +1,23 @@
 # tg-mini-app-uikit
 
+## Unreleased
+
+### Minor Changes
+
+- Modal overlays (`TKSheet`, `TKDialog`, `TKActionSheet`, `TKImageViewer`) now
+  hide the native Telegram Main/Secondary buttons while open and restore them
+  when the last overlay closes — the buttons live in the client chrome beyond
+  the scrim's reach, so without this a "Pay" stayed tappable under a
+  confirmation sheet. **Behavior change** with a per-overlay opt-out: pass
+  `nativeButtons="keep"` when the overlay itself is confirmed by the native
+  button. The Back button is unaffected (it keeps closing the overlay).
+- `TKHeader back` now defaults to `"auto"`: the arrow renders only when it is
+  the only back control — it follows an enclosing `TKNavStack`, needs an
+  `onBack` when standalone, and steps aside when a real client already shows
+  the native Back button (`useBackButtonWanted`). **Behavior change**: a bare
+  `<TKHeader>` without `onBack`/nav stack no longer renders a dead arrow;
+  pass `back={true}` to force the old rendering.
+
 ## 0.5.0
 
 ### Minor Changes

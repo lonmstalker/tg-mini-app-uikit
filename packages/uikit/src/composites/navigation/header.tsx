@@ -1,7 +1,8 @@
 import { type ReactNode } from "react";
 import { TKIcon } from "../../atoms/icons";
 import { useTKLocale } from "../../foundation/i18n";
-import { useSafeArea } from "../../foundation/telegram";
+import { useBackButtonWanted, useSafeArea } from "../../foundation/telegram";
+import { useHasNativeChrome } from "../../foundation/chrome";
 import { useOptionalNav } from "../nav";
 import { usePageHeaderCollapsed } from "../../internal/pageScroll";
 import { useCollapse } from "../../internal/useCollapse";
@@ -12,14 +13,20 @@ export interface TKHeaderProps {
   large?: boolean;
   /** Large title collapses into the compact bar as the `TKPage` content scrolls. */
   collapsing?: boolean;
-  /** `true`/`false` to force the back control, or `"auto"` to derive it from the enclosing `TKNavStack` (shown while depth > 1, popping it). */
+  /**
+   * `"auto"` (default) renders the arrow only when it is the ONLY back control:
+   * inside a `TKNavStack` it follows the stack (depth > 1, hidden while the
+   * stack drives the NATIVE Telegram Back button); standalone it needs an
+   * `onBack` and steps aside when a real client already shows the native
+   * button. `true`/`false` force it.
+   */
   back?: boolean | "auto";
   onBack?: () => void;
   actions?: ReactNode;
   testId?: string;
 }
 
-export function TKHeader({ title, subtitle, large, collapsing, back = true, onBack, actions, testId }: TKHeaderProps) {
+export function TKHeader({ title, subtitle, large, collapsing, back = "auto", onBack, actions, testId }: TKHeaderProps) {
   const locale = useTKLocale();
   // The enclosing TKPage publishes ONE hysteresis-guarded boolean (collapse
   // past 36px, expand under 20px) — the header re-renders only on the two
@@ -27,13 +34,21 @@ export function TKHeader({ title, subtitle, large, collapsing, back = true, onBa
   const collapsed = usePageHeaderCollapsed();
   const { inset, contentInset } = useSafeArea();
   const safeTop = inset.top + contentInset.top;
-  // `back="auto"` derives visibility + handler from the enclosing nav stack —
-  // and hides the arrow while the stack drives the NATIVE Telegram Back button
-  // (nav.nativeBack), so the user never sees two back controls for one pop.
-  // In a plain browser (no Telegram chrome) the arrow is the only "back" and
-  // stays.
+  // `back="auto"` (the default) renders the arrow only when it is the ONLY
+  // back control. In a nav stack it defers to the stack — hidden while the
+  // stack drives the NATIVE Telegram Back button (nav.nativeBack). Standalone
+  // it needs an `onBack`, and steps aside when a real client already shows the
+  // native button for the same press (an overlay's or `useBackButton`'s
+  // intercept). In a plain browser the arrow is the only "back" and stays.
   const nav = useOptionalNav();
-  const showBack = back === "auto" ? (nav?.depth ?? 1) > 1 && !nav?.nativeBack : back;
+  const hasNativeChrome = useHasNativeChrome();
+  const backWanted = useBackButtonWanted();
+  const showBack =
+    back === "auto"
+      ? nav
+        ? nav.depth > 1 && !nav.nativeBack
+        : !!onBack && !(hasNativeChrome && backWanted)
+      : back;
   const handleBack = onBack ?? (back === "auto" ? nav?.pop : undefined);
   const collapsible = !!collapsing && large === true;
   const isCollapsed = collapsible && collapsed;

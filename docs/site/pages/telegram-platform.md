@@ -30,6 +30,14 @@ The hooks use capability detection first: a method or field is called only when 
 
 Native side effects happen in effects or explicit callbacks, not during render. For example, native buttons subscribe on mount, update from hook params, and hide on cleanup. Link, invoice, share, QR, clipboard, and device APIs run only when the returned callback is invoked.
 
+## Native Chrome Arbitration
+
+The Main/Secondary buttons live in the client chrome outside the webview, so an in-DOM scrim or focus trap can never disable them. The kit arbitrates them the same way it already arbitrates the Back button:
+
+- While any modal overlay (`TKSheet`, `TKDialog`, `TKActionSheet`, `TKImageViewer`) is open, `useMainButton`/`useSecondaryButton` render the buttons hidden and restore the requested state when the last overlay closes. A single overlay opts out with `nativeButtons="keep"` when the native button is its own CTA (e.g. a picker sheet confirmed by the MainButton). The primitives are public: `useSuppressNativeButtons(active)` registers a suppressor, `useNativeButtonsSuppressed()` reads the state.
+- The Back button is never suppressed — an open overlay intercepts it to close itself (the existing back queue).
+- `useBackButtonWanted()` reports whether some interceptor already shows the native Back button; `TKHeader back="auto"` (now the default) uses it so an in-DOM arrow never duplicates the native control for the same press.
+
 ## Storage
 
 `useCloudStorage()` uses Telegram `CloudStorage` when available. Outside Telegram it falls back to a `tk-cloud:` localStorage namespace when browser storage is available.

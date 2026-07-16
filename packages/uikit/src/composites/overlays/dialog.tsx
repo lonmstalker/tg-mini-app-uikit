@@ -63,11 +63,13 @@ export interface TKDialogProps {
    * or long localized labels don't truncate in a narrow WebView (OVL-005).
    */
   actionsLayout?: "row" | "stacked" | "auto";
+  /** Native Telegram Main/Secondary buttons while open: `"suppress"` (default) hides them, `"keep"` leaves them to the app. */
+  nativeButtons?: "suppress" | "keep";
   testId?: string;
 }
 
 export const TKDialog = /* @__PURE__ */ forwardRef<HTMLDivElement, TKDialogProps>(function TKDialog(
-  { open, onClose, onConfirm, icon, tone = "accent", title, text, children, actions, actionsLayout = "auto", testId },
+  { open, onClose, onConfirm, icon, tone = "accent", title, text, children, actions, actionsLayout = "auto", nativeButtons, testId },
   forwardedRef,
 ) {
   const ref = useRef<HTMLDivElement>(null);
@@ -79,7 +81,7 @@ export const TKDialog = /* @__PURE__ */ forwardRef<HTMLDivElement, TKDialogProps
   const textId = useId();
   // One ordered call for the five modal hooks: focus-trap + Escape, scroll-lock,
   // swipe-guard, z-stacking and the Telegram Back button (INT-DX-001).
-  const { scrimZ, panelZ } = useModalOverlay({ mounted, active: mounted && !closing, ref, onClose, onConfirm });
+  const { scrimZ, panelZ } = useModalOverlay({ mounted, active: mounted && !closing, ref, onClose, onConfirm, nativeButtons });
   const keyboardCenter = useViewportCenter(mounted && !closing);
   if (!mounted) return null;
   const [color, bg] = DIALOG_TONES[tone] ?? DIALOG_TONES.accent;

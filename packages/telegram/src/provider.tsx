@@ -95,6 +95,22 @@ export function useBackDispatcher(): () => boolean {
   }, []);
 }
 
+/**
+ * True while at least one active interceptor (an open overlay, a deep nav
+ * stack) wants the native Back button visible — i.e. Telegram is already
+ * showing a back control. In-DOM back affordances (e.g. `TKHeader
+ * back="auto"`) read this to avoid rendering a second arrow for one press.
+ */
+export function useBackButtonWanted(): boolean {
+  const [wanted, setWanted] = useState(backButtonWanted);
+  useEffect(() => {
+    const sync = () => setWanted(backButtonWanted());
+    sync();
+    return subscribeBackButton(sync);
+  }, []);
+  return wanted;
+}
+
 export interface TKTelegramProviderProps {
   /** WebApp implementation; defaults to `window.Telegram.WebApp`. Inject a mock here in demos and tests. */
   webApp?: TelegramWebApp;
