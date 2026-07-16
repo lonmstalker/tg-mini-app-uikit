@@ -13,7 +13,16 @@ import {
   useViewport,
 } from "@tg-mini-app/telegram";
 import { createStorageApi } from "../../telegram/src/storage";
-import { __tkResetBackState, tkBackState } from "../../telegram/src/back-registry";
+import { tkBackState } from "../../telegram/src/back-registry";
+
+// Test-local reset: the registry deliberately exports no reset helper (it
+// would be dead weight on the public surface) — mutate the shared slot direct.
+function resetBackState(): void {
+  const s = tkBackState();
+  s.queue.length = 0;
+  s.want = 0;
+  s.listeners.clear();
+}
 import { wrapperFor } from "./helpers/telegram";
 
 /* M2 telegram runtime: FND-001/004/006/007/008/DX-005/009. */
@@ -183,7 +192,7 @@ function Intercept({ active }: { active: boolean }) {
 }
 
 describe("FND-004 back-intercept state lives on a shared singleton", () => {
-  beforeEach(() => __tkResetBackState());
+  beforeEach(() => resetBackState());
 
   it("parks want/queue on a globalThis Symbol slot", () => {
     expect((globalThis as Record<symbol, unknown>)[Symbol.for("tg-mini-app/telegram/back-registry")]).toBeDefined();
@@ -200,10 +209,10 @@ describe("FND-004 back-intercept state lives on a shared singleton", () => {
     expect(mock.getState().back.visible).toBe(true);
   });
 
-  it("__tkResetBackState clears the shared state", () => {
+  it("the shared slot is directly resettable between suites", () => {
     tkBackState().want = 3;
     tkBackState().queue.push(() => {});
-    __tkResetBackState();
+    resetBackState();
     expect(tkBackState().want).toBe(0);
     expect(tkBackState().queue).toHaveLength(0);
   });

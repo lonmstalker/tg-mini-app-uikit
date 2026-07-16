@@ -22,11 +22,3 @@ export function tkBackState(): TKBackState {
   const g = globalThis as Record<symbol, unknown>;
   return (g[KEY] ??= { queue: [], want: 0, listeners: new Set() }) as TKBackState;
 }
-
-/** Test-only: clear the shared back-intercept state so a suite starts clean. */
-export function __tkResetBackState(): void {
-  const s = tkBackState();
-  s.queue.length = 0;
-  s.want = 0;
-  s.listeners.clear();
-}

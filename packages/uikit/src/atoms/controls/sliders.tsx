@@ -1,4 +1,4 @@
-import { useRef, useState, type KeyboardEvent } from "react";
+import { useRef, useState, type KeyboardEvent, type MutableRefObject } from "react";
 import { useControllable } from "../../internal/useControllable";
 import { useOptionalHaptics } from "../../foundation/telegram";
 import { useTKLocale, tkFormat } from "../../foundation/i18n";
@@ -287,8 +287,17 @@ function TKRangeSliderImpl({
   const isControlled = rangeValue !== undefined;
   const [drag, setDrag] = useState<-1 | 0 | 1>(-1);
   const ref = useRef<HTMLDivElement>(null);
-  const railRefs = [useRef<HTMLDivElement>(null), useRef<HTMLDivElement>(null)] as const;
-  const thumbRefs = [useRef<HTMLDivElement>(null), useRef<HTMLDivElement>(null)] as const;
+  // Stable ref tuples, created once and parked in a single useRef — a fresh
+  // array per render read as a new value to anything diffing it. Plain
+  // `{ current: null }` literals ARE RefObjects; React fills them via `ref=`.
+  const railRefs = useRef<readonly [MutableRefObject<HTMLDivElement | null>, MutableRefObject<HTMLDivElement | null>]>([
+    { current: null },
+    { current: null },
+  ]).current;
+  const thumbRefs = useRef<readonly [MutableRefObject<HTMLDivElement | null>, MutableRefObject<HTMLDivElement | null>]>([
+    { current: null },
+    { current: null },
+  ]).current;
   const fillRef = useRef<HTMLDivElement>(null);
   const session = useRef<{
     rect: DOMRect;

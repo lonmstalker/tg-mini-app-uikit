@@ -312,10 +312,11 @@ export function Feed() {
   const filtered = useMemo(() => {
     const cat = CATEGORIES[category];
     const q = query.trim().toLowerCase();
+    const difficultySet = new Set(difficulty); // Set lookup — no rescan per feed item
     return feed.items.filter(
       (e) =>
         (cat === "all" || e.category === cat) &&
-        (difficulty.length === 0 || difficulty.includes(e.difficulty)) &&
+        (difficultySet.size === 0 || difficultySet.has(e.difficulty)) &&
         (q === "" || `${e.title} ${e.location} ${e.summary}`.toLowerCase().includes(q)),
     );
   }, [feed.items, category, difficulty, query]);

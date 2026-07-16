@@ -326,7 +326,7 @@ function CodeSection() {
               <span />
               <span />
             </span>
-            <span className="landing-code-filename">WalletScreen.tsx</span>
+            <span className="landing-code-filename">main.tsx</span>
             <CopyButton
               text={quickstartSource.trimEnd()}
               label={copy.copyQuickstart}

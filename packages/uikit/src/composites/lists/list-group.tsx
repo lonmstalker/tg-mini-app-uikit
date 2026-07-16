@@ -42,17 +42,21 @@ export function TKListGroup({ children, title, footer, inset = true, separatorIn
       >
         {/* Drop conditional null/false children FIRST (so `cond ? <Cell/> : null` doesn't
             leave an empty wrapper or shift the separator count), then key each wrapper by
-            the child's own key — a keyed child is moved, not remounted, on reorder (LST-009). */}
-        {Children.toArray(children)
-          .filter(isValidElement)
-          .map((child, i) => (
+            the child's own key — a keyed child is moved, not remounted, on reorder (LST-009).
+            One pass (reduce), not filter().map(): the filtered index IS acc.length. */}
+        {Children.toArray(children).reduce<ReactNode[]>((acc, child) => {
+          if (!isValidElement(child)) return acc;
+          const i = acc.length;
+          acc.push(
             <div key={child.key ?? i}>
               {i > 0 ? (
                 <div style={{ height: 0.5, background: "var(--tk-sep)", marginLeft: separatorInset }} />
               ) : null}
               {child}
-            </div>
-          ))}
+            </div>,
+          );
+          return acc;
+        }, [])}
       </div>
       {footer ? (
         <div style={{ fontSize: "var(--tk-fz-caption)", color: "var(--tk-text-2)", margin: "7px 16px 0" }}>

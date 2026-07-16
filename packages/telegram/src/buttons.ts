@@ -1,4 +1,4 @@
-import { useEffect, useInsertionEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useInsertionEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import type {
   TelegramMainButton,
   TelegramPopupParams,
@@ -94,19 +94,21 @@ export function useSuppressNativeButtons(active: boolean): void {
   }, [active]);
 }
 
+// External-store plumbing for useSyncExternalStore: module-scope so the
+// subscribe identity is stable and no effect ever re-renders the parent.
+function subscribeChrome(listener: () => void): () => void {
+  const { listeners } = tkChromeState();
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+const readChromeSuppressed = () => tkChromeState().suppress > 0;
+const readChromeSuppressedServer = () => false;
+
 /** True while at least one modal overlay suppresses the native Main/Secondary buttons. */
 export function useNativeButtonsSuppressed(): boolean {
-  const [suppressed, setSuppressed] = useState(() => tkChromeState().suppress > 0);
-  useEffect(() => {
-    const state = tkChromeState();
-    const sync = () => setSuppressed(state.suppress > 0);
-    sync();
-    state.listeners.add(sync);
-    return () => {
-      state.listeners.delete(sync);
-    };
-  }, []);
-  return suppressed;
+  return useSyncExternalStore(subscribeChrome, readChromeSuppressed, readChromeSuppressedServer);
 }
 
 export interface TKNativeButtonParams {

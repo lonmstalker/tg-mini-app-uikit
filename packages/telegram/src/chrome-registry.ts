@@ -23,10 +23,3 @@ export function tkChromeState(): TKChromeState {
   const g = globalThis as Record<symbol, unknown>;
   return (g[KEY] ??= { suppress: 0, listeners: new Set() }) as TKChromeState;
 }
-
-/** Test-only: clear the shared suppression state so a suite starts clean. */
-export function __tkResetChromeState(): void {
-  const s = tkChromeState();
-  s.suppress = 0;
-  s.listeners.clear();
-}
