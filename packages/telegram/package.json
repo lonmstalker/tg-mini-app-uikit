@@ -9,7 +9,8 @@
   "types": "./dist/index.d.ts",
   "typesVersions": {
     "*": {
-      "testing": ["./dist/testing.d.ts"]
+      "testing": ["./dist/testing.d.ts"],
+      "bridge": ["./bridge/telegram-web-app.d.cts"]
     }
   },
   "exports": {
@@ -32,14 +33,21 @@
         "types": "./dist/testing.d.cts",
         "default": "./dist/testing.cjs"
       }
+    },
+    "./bridge": {
+      "types": "./bridge/telegram-web-app.d.cts",
+      "default": "./bridge/telegram-web-app.cjs"
     }
   },
   "engines": {
     "node": ">=18"
   },
-  "sideEffects": false,
+  "sideEffects": [
+    "./bridge/*"
+  ],
   "files": [
     "dist",
+    "bridge",
     "CHANGELOG.md"
   ],
   "scripts": {

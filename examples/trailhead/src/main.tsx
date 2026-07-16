@@ -1,3 +1,10 @@
+// FIRST import: the official Telegram bridge, vendored inside the kit and
+// bundled into the app — by the time anything below runs,
+// `window.Telegram.WebApp` exists in a real client. The previous runtime
+// injection from telegram.org raced a 1.5s timeout, and on slow mobile routes
+// the timeout won — browser-fallback mode inside Telegram, the pay bar half
+// off-screen (wiki/device-testing.md #6, v3).
+import "@tg-mini-app/telegram/bridge";
 import "./index.css";
 import "tg-mini-app-uikit/style.css";
 import { StrictMode } from "react";
@@ -24,34 +31,6 @@ configureMockApi({
   delayMs: params.get("fast") === "1" ? 60 : getMockApiConfig().delayMs,
 });
 
-async function ensureTelegramWebAppScript(): Promise<void> {
-  if (forceMock || import.meta.env.DEV || getTelegramWebApp()) return;
-
-  const src = "https://telegram.org/js/telegram-web-app.js";
-  const existing = document.querySelector<HTMLScriptElement>(`script[src="${src}"]`);
-  await new Promise<void>((resolve) => {
-    let done = false;
-    const finish = () => {
-      if (done) return;
-      done = true;
-      resolve();
-    };
-
-    const script = existing ?? document.createElement("script");
-    script.addEventListener("load", finish, { once: true });
-    script.addEventListener("error", finish, { once: true });
-
-    if (!existing) {
-      script.src = src;
-      script.async = false;
-      script.dataset.trailheadTelegramWebApp = "true";
-      document.head.append(script);
-    }
-
-    window.setTimeout(finish, 1500);
-  });
-}
-
 function getTelegramLaunchBridge() {
   const bridge = getTelegramWebApp();
   if (!bridge) return null;
@@ -72,13 +51,12 @@ function getTelegramLaunchBridge() {
   return null;
 }
 
-async function bootstrap() {
+function bootstrap() {
   /*
    * Production must not silently turn into a fake Telegram runtime: real Mini
    * Apps get the official bridge, local/dev previews get the injected mock, and
    * production browser fallback stays honest unless `?mock=1` is explicit.
    */
-  await ensureTelegramWebAppScript();
   const realBridge = getTelegramLaunchBridge();
   const shouldUseMock = !realBridge && !disableMock && (import.meta.env.DEV || forceMock);
   const mock = shouldUseMock ? createMockTelegram({ colorScheme: "light" }) : null;
@@ -115,4 +93,4 @@ async function bootstrap() {
   );
 }
 
-void bootstrap();
+bootstrap();

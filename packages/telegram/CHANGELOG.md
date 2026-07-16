@@ -1,5 +1,20 @@
 # @tg-mini-app/telegram
 
+## Unreleased
+
+### Minor Changes
+
+- New `@tg-mini-app/telegram/bridge` export: the official
+  `telegram-web-app.js`, vendored and shipped inside the package as a
+  side-effect module. Import it FIRST in the app entry
+  (`import "@tg-mini-app/telegram/bridge";`) and the bridge is bundled with
+  the app — no runtime `<script src="https://telegram.org/…">` fetch to lose
+  on a slow mobile route (losing it ran the app in browser-fallback mode
+  INSIDE Telegram: no native MainButton, no `expand()`, the CTA half
+  off-screen — wiki/device-testing.md #6, v3). Refresh the vendored copy when
+  bumping the supported Bot API level:
+  `curl -o bridge/telegram-web-app.cjs https://telegram.org/js/telegram-web-app.js`.
+
 ## 0.3.0
 
 ### Minor Changes

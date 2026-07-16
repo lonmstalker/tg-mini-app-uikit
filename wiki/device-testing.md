@@ -91,6 +91,20 @@ gates + try/catch around every native call are mandatory.
   a presence signal. Pinned by `launch.test.ts`. The v1 layer stays too:
   `expand()` on mount + `#root` capped at
   `min(100%, var(--tg-viewport-stable-height, 100%))`.
+- **Root cause, v3 (confirmed by the second retest — still "half a button")**:
+  the bridge script itself. `main.tsx` injected
+  `https://telegram.org/js/telegram-web-app.js` at runtime and raced it
+  against a 1.5s timeout; on a slow mobile route the timeout won, no
+  `window.Telegram.WebApp` ever appeared, and the app fell into the same
+  browser-fallback mode — sticky until reload, and the v2 classifier never
+  got a bridge to classify.
+- **Kit fix**: the script is VENDORED into the kit as the
+  `@tg-mini-app/telegram/bridge` side-effect export; Trailhead and the demo
+  import it as the FIRST line of their entry modules, so the bridge is bundled
+  with the app and has executed before anything else runs — no race and no
+  external fetch to lose. Refresh the vendored copy when bumping the supported
+  Bot API level (`curl -o packages/telegram/bridge/telegram-web-app.cjs
+  https://telegram.org/js/telegram-web-app.js`).
 
 ## 7. "Check in" button is hard to hit
 
