@@ -15,6 +15,7 @@ import {
   useNav,
 } from "tg-mini-app-uikit";
 import { useTKInfiniteData } from "@tg-mini-app/async";
+import { useHideKeyboard } from "@tg-mini-app/telegram";
 import { listExperiences, type Experience, type ExperienceCategory } from "../../data/mockApi";
 import { useLang, useT } from "../../i18n";
 import { starsLabel } from "./format";
@@ -303,6 +304,7 @@ export function Feed() {
   });
   const [ui, dispatchUi] = useReducer(feedUiReducer, initialFeedUi);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const keyboard = useHideKeyboard();
   const { category, difficulty, query, filtersOpen, searchFocused } = ui;
 
   const open = (id: string) => nav.push("detail", { id });
@@ -416,6 +418,7 @@ export function Feed() {
           variant={filterCount ? "tonal" : "surface"}
           onClick={() => {
             searchInputRef.current?.blur();
+            keyboard.hide(); // native soft-keyboard dismissal (Bot API 9.1); the blur covers browsers
             dispatchUi({ type: "searchFocused", value: false });
             dispatchUi({ type: "filtersOpen", value: true });
           }}

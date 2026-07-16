@@ -1,7 +1,11 @@
 import {
   TKButton,
   TKCard,
+  TKCell,
   TKEmptyState,
+  TKIcon,
+  TKListGroup,
+  TKNoticeBar,
   TKPage,
   TKSpinner,
   TKText,
@@ -9,7 +13,17 @@ import {
   useNav,
   useTKToast,
 } from "tg-mini-app-uikit";
-import { useShare } from "@tg-mini-app/telegram";
+import {
+  useChatRequest,
+  useClipboard,
+  useContactRequest,
+  useDownloadFile,
+  useEmojiStatus,
+  useShare,
+  useTelegramEnvironment,
+  useWebApp,
+  useWriteAccess,
+} from "@tg-mini-app/telegram";
 import { bookingView } from "../../data/mockApi";
 import { useLang, useT } from "../../i18n";
 import { useAppState } from "../../store";
@@ -25,6 +39,13 @@ const PROGRESS: Record<string, string> = {
   locating: "checkin.locating",
 };
 
+// ponytail: one shared start point for every demo hike — per-experience coords
+// belong in mockApi once a real map feature needs them.
+const TRAILHEAD_COORDS = "47.5162, 13.6493";
+// Demo custom-emoji id for the "on the trail" status; a real client validates
+// it against actual emoji, so outside the mock the set can legitimately fail.
+const TRAIL_STATUS_EMOJI_ID = "5309832892262654231";
+
 export function TripDetail({ active }: { active: boolean }) {
   const t = useT();
   const { lang } = useLang();
@@ -35,8 +56,20 @@ export function TripDetail({ active }: { active: boolean }) {
   const checkin = useCheckIn();
   const share = useShare();
   const toast = useTKToast();
+  const chatReq = useChatRequest();
+  const writeAccess = useWriteAccess();
+  const contact = useContactRequest();
+  const download = useDownloadFile();
+  const clipboard = useClipboard();
+  const emojiStatus = useEmojiStatus();
+  const env = useTelegramEnvironment();
   const headerTitle = booking ? bookingView(booking.experienceId, lang).title : t("trips.title");
   const header = useMockBackHeader(headerTitle);
+
+  // Camera + biometric check-in are mobile-client features; desktop/web (and
+  // the plain-browser fallback) get a pointer to the phone instead of dead taps.
+  const platform = useWebApp()?.platform;
+  const mobileClient = env.inside && (platform === "ios" || platform === "android");
 
   if (!booking) {
     return (
@@ -69,6 +102,38 @@ export function TripDetail({ active }: { active: boolean }) {
     if (!ok) toast.error(t("trips.shareFailed"));
   };
 
+  /* Trip-prep actions: each is one native permission/API round-trip with a
+   * toast on both outcomes, so a declined dialog never reads as a dead tap. */
+  const prepChat = async () =>
+    (await chatReq.request(`trip-${booking.id}`)) ? toast.success(t("trip.prep.chatOk")) : toast.error(t("trip.prep.declined"));
+  const prepRemind = async () =>
+    (await writeAccess.request()) ? toast.success(t("trip.prep.remindOk")) : toast.error(t("trip.prep.declined"));
+  const prepPhone = async () =>
+    (await contact.request()) ? toast.success(t("trip.prep.phoneOk")) : toast.error(t("trip.prep.declined"));
+  const prepGpx = async () =>
+    (await download.download({ url: `${import.meta.env.BASE_URL}route.gpx`, fileName: `${booking.experienceId}.gpx` }))
+      ? toast.success(t("trip.prep.gpxOk"))
+      : toast.error(t("trip.prep.gpxFail"));
+  const prepCoords = async () => {
+    try {
+      await navigator.clipboard.writeText(TRAILHEAD_COORDS);
+      toast.success(t("trip.prep.coordsOk"));
+    } catch {
+      toast.error(t("trip.prep.coordsFail"));
+    }
+  };
+  // QR fallback: the trailhead code can arrive in the guide's chat — paste it
+  // instead of scanning and the rest of the device chain runs unchanged.
+  const pasteCode = async () => {
+    const text = (await clipboard.readText())?.trim();
+    if (text) void checkin.run(booking.id, text);
+    else toast.error(t("checkin.pasteEmpty"));
+  };
+  const setTrailStatus = async () =>
+    (await emojiStatus.set(TRAIL_STATUS_EMOJI_ID, { duration: 6 * 3600 }))
+      ? toast.success(t("trip.statusEmojiOk"))
+      : toast.error(t("trip.statusEmojiFail"));
+
   return (
     <TKPage
       testId="panel-trips-detail"
@@ -88,6 +153,12 @@ export function TripDetail({ active }: { active: boolean }) {
       }
     >
       <TKTitle level={2}>{title}</TKTitle>
+
+      {!checkedIn && !mobileClient ? (
+        <TKNoticeBar tone="orange" icon={<TKIcon name="info" size={18} />} testId="checkin-desktop-notice">
+          {t("checkin.desktopNotice")}
+        </TKNoticeBar>
+      ) : null}
 
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <div
@@ -132,6 +203,28 @@ export function TripDetail({ active }: { active: boolean }) {
       ) : null}
 
       {!checkedIn ? (
+        <TKListGroup title={t("trip.prep.title")} testId="trip-prep">
+          {chatReq.isSupported ? (
+            <TKCell icon="chat" title={t("trip.prep.chat")} onClick={() => void prepChat()} testId="prep-chat" />
+          ) : null}
+          {writeAccess.isSupported ? (
+            <TKCell icon="bell" title={t("trip.prep.remind")} onClick={() => void prepRemind()} testId="prep-remind" />
+          ) : null}
+          {contact.isSupported ? (
+            <TKCell icon="phone" title={t("trip.prep.phone")} onClick={() => void prepPhone()} testId="prep-phone" />
+          ) : null}
+          <TKCell icon="download" title={t("trip.prep.gpx")} onClick={() => void prepGpx()} testId="prep-gpx" />
+          <TKCell
+            icon="copy"
+            title={t("trip.prep.coords")}
+            subtitle={TRAILHEAD_COORDS}
+            onClick={() => void prepCoords()}
+            testId="prep-coords"
+          />
+        </TKListGroup>
+      ) : null}
+
+      {!checkedIn ? (
         <TKCard padding={12} testId="checkin-test-card" style={{ border: "0.5px solid var(--tk-sep)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <div style={{ minWidth: 0, flex: 1, display: "flex", flexDirection: "column", gap: 3 }}>
@@ -162,9 +255,16 @@ export function TripDetail({ active }: { active: boolean }) {
       ) : null}
 
       {checkin.phase === "error" ? (
-        <TKText tone="secondary" testId="checkin-error">
-          {t("checkin.failed")}
-        </TKText>
+        <>
+          <TKText tone="secondary" testId="checkin-error">
+            {t("checkin.failed")}
+          </TKText>
+          {clipboard.isSupported ? (
+            <TKButton variant="tonal" icon="copy" testId="checkin-paste" onClick={() => void pasteCode()}>
+              {t("checkin.paste")}
+            </TKButton>
+          ) : null}
+        </>
       ) : null}
 
       {checkedIn ? (
@@ -174,6 +274,17 @@ export function TripDetail({ active }: { active: boolean }) {
           </span>
           <TKText tone="secondary">{wasChecked ? t("checkin.already") : t("checkin.done")}</TKText>
         </div>
+      ) : null}
+
+      {checkedIn && emojiStatus.isSupported ? (
+        <TKButton
+          variant="tonal"
+          testId="trip-emoji-status"
+          loading={emojiStatus.status === "pending"}
+          onClick={() => void setTrailStatus()}
+        >
+          {t("trip.statusEmoji")}
+        </TKButton>
       ) : null}
     </TKPage>
   );

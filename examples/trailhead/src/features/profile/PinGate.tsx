@@ -3,7 +3,7 @@ import { TKPinInput, TKSheet, TKText } from "tg-mini-app-uikit";
 import { useBiometrics, useOptionalHaptics } from "@tg-mini-app/telegram";
 import { useT } from "../../i18n";
 import { useAppDispatch, useAppState } from "../../store";
-import { authenticateWithBiometrics } from "../../telegram/biometric-auth";
+import { useBiometricAuth } from "../../telegram/biometric-auth";
 
 /*
  * Reusable PIN gate for sensitive actions (wallet connect). Backed by the
@@ -25,6 +25,7 @@ export function PinGate({
   const { pin } = useAppState();
   const dispatch = useAppDispatch();
   const biometrics = useBiometrics();
+  const biometricAuth = useBiometricAuth(biometrics);
   const haptics = useOptionalHaptics();
   const [error, setError] = useState(false);
   const errorTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -52,7 +53,7 @@ export function PinGate({
   };
 
   const onBiometric = async () => {
-    if (await authenticateWithBiometrics(biometrics, t("wallet.gateTitle"))) succeed();
+    if (await biometricAuth(t("wallet.gateTitle"))) succeed();
   };
 
   return (
@@ -66,7 +67,7 @@ export function PinGate({
           length={4}
           maxLength={8}
           error={error}
-          onBiometricRequest={() => void onBiometric()}
+          onBiometricRequest={biometrics.isSupported ? () => void onBiometric() : undefined}
           onComplete={onComplete}
         />
       </div>

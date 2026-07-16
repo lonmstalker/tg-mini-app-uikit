@@ -1,5 +1,7 @@
+import { useEffect } from "react";
 import {
   TKBlockquote,
+  TKButton,
   TKEmptyState,
   TKGallery,
   TKPage,
@@ -9,6 +11,7 @@ import {
   TKTitle,
   useNav,
 } from "tg-mini-app-uikit";
+import { useDataTransport, useTelegramColors, useTelegramLinks } from "@tg-mini-app/telegram";
 import { getExperience, getPerson } from "../../data/mockApi";
 import { useLang, useT } from "../../i18n";
 import { useAppDispatch } from "../../store";
@@ -16,6 +19,21 @@ import { useMockBackHeader } from "../../components/MockBackHeader";
 import { PrimaryAction } from "../../components/PrimaryAction";
 import { starsLabel } from "./format";
 import { useAsync } from "@tg-mini-app/async";
+
+// The guide's public presence — the demo bot doubles as the "channel".
+const GUIDE_CHANNEL_URL = import.meta.env.VITE_TRAILHEAD_BOT_URL ?? "https://t.me/lonmstalker_bot";
+
+// `setHeaderColor` wants #rrggbb; the demo palette is hsl-based.
+function hslToHex(h: number, s: number, l: number): string {
+  const f = (n: number) => {
+    const k = (n + h / 30) % 12;
+    const c = l / 100 - (s / 100) * Math.min(l / 100, 1 - l / 100) * Math.max(-1, Math.min(k - 3, 9 - k, 1));
+    return Math.round(255 * c)
+      .toString(16)
+      .padStart(2, "0");
+  };
+  return `#${f(0)}${f(8)}${f(4)}`;
+}
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
@@ -41,6 +59,21 @@ export function ExperienceDetail({ active }: { active: boolean }) {
     exp.data?.guideId,
   ]);
   const header = useMockBackHeader(exp.data?.title);
+  const dataTransport = useDataTransport();
+  const links = useTelegramLinks();
+  const colors = useTelegramColors();
+
+  // Route theming: tint the native header to the hike's palette while the
+  // detail is the ACTIVE panel (nav keeps inactive panels mounted, so `active`
+  // — not unmount — is the "left the screen" signal), restore on leave.
+  const hue = exp.data?.hue;
+  useEffect(() => {
+    if (hue == null || !active) return;
+    if (!colors.setHeaderColor(hslToHex(hue, 55, 45))) return;
+    return () => void colors.setHeaderColor("bg_color");
+    // `colors` regenerates on its own set-calls — depending on it would loop.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hue, active]);
 
   if (exp.loading) {
     return (
@@ -114,12 +147,36 @@ export function ExperienceDetail({ active }: { active: boolean }) {
       <TKTitle level={3}>{t("detail.about")}</TKTitle>
       <TKText tone="secondary">{e.summary}</TKText>
 
+      {/* Inline-mode share: picks a chat and drops the bot query there. */}
+      {dataTransport.isSupported ? (
+        <TKButton
+          variant="tonal"
+          icon="send"
+          testId="detail-suggest"
+          onClick={() => dataTransport.switchInlineQuery(`trail:${e.id}`, ["users", "groups"])}
+        >
+          {t("detail.suggest")}
+        </TKButton>
+      ) : null}
+
       {guide.data ? (
         <>
           <TKTitle level={3}>{t("detail.guide")}</TKTitle>
           <TKBlockquote author={`${guide.data.name} · ${guide.data.role}`} icon={<span aria-hidden>{guide.data.emoji}</span>}>
             {guide.data.bio}
           </TKBlockquote>
+          {links.isSupported ? (
+            <TKButton
+              size="sm"
+              variant="plain"
+              icon="externalLink"
+              testId="detail-guide-channel"
+              style={{ alignSelf: "flex-start" }}
+              onClick={() => links.openTelegramLink(GUIDE_CHANNEL_URL)}
+            >
+              {t("detail.guideChannel")}
+            </TKButton>
+          ) : null}
         </>
       ) : null}
 
