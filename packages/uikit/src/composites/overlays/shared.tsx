@@ -11,7 +11,7 @@ import { useScrollLock } from "../../internal/useScrollLock";
 import { useOverlayLayer } from "../../internal/useOverlayLayer";
 import { useVerticalSwipeGuard } from "../../internal/useVerticalSwipeGuard";
 import { useLatest } from "../../internal/useLatest";
-import { useBackIntercept } from "../../foundation/telegram";
+import { useBackIntercept, useSuppressNativeButtons } from "../../foundation/telegram";
 
 /*
  * Overlays position themselves against the nearest positioned ancestor —
@@ -306,6 +306,16 @@ export interface TKModalOverlayOptions {
   swipeGuard?: boolean;
   /** Inert/aria-hide the background (default true; pass false for a non-scrim anchored modal). */
   inertBackground?: boolean;
+  /**
+   * Native Telegram Main/Secondary button handling while mounted. Those
+   * buttons live in the client chrome OUTSIDE the webview — the scrim and
+   * focus-trap cannot reach them — so the default `"suppress"` hides them for
+   * the overlay's lifetime and restores them on close. Pass `"keep"` when the
+   * overlay itself is driven by the native button (e.g. a picker sheet
+   * confirmed by the MainButton). The Back button is never suppressed — it
+   * closes the overlay instead.
+   */
+  nativeButtons?: "suppress" | "keep";
 }
 
 export interface TKModalOverlayResult {
@@ -347,12 +357,14 @@ export function useModalOverlay({
   scrollLock = true,
   swipeGuard = true,
   inertBackground = true,
+  nativeButtons = "suppress",
 }: TKModalOverlayOptions): TKModalOverlayResult {
   const layer = useOverlayLayer(mounted);
   useScrollLock(scrollLock ? mounted : false);
   useVerticalSwipeGuard(swipeGuard ? mounted : false);
   useOverlayA11y(active, ref, onClose, onConfirm, inertBackground);
   useBackIntercept(active && !!onClose, () => onClose?.());
+  useSuppressNativeButtons(mounted && nativeButtons !== "keep");
   return {
     scrimZ: layer.scrimZ,
     panelZ: layer.panelZ,

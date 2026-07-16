@@ -54,6 +54,18 @@
       "property": "box-shadow",
       "count": 2,
       "reason": "card hover elevation; pointer-only surface, not a mobile hot path"
+    },
+    {
+      "file": "packages/uikit/src/tokens/tokens.css",
+      "property": "grid-template-rows",
+      "count": 2,
+      "reason": "keyboard footer collapse rides the OS keyboard as one eased movement — the discrete jump read as a violent snap on real iOS (wiki/device-testing.md #9); bounded to the ~300ms keyboard moment when the browser reflows anyway, and reduced-motion collapses it via --tk-t3"
+    },
+    {
+      "file": "packages/uikit/src/tokens/tokens.css",
+      "property": "height",
+      "count": 1,
+      "reason": "keyboard page shrink, same movement as the footer collapse above (wiki/device-testing.md #9); fires only on keyboard open/close, never per-frame gesture work"
     }
   ]
 }

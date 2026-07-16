@@ -20,11 +20,13 @@ export interface TKActionSheetProps {
   cancelLabel?: ReactNode;
   /** Accessible name for the dialog (defaults to the localized `locale.actions`). */
   ariaLabel?: string;
+  /** Native Telegram Main/Secondary buttons while open: `"suppress"` (default) hides them, `"keep"` leaves them to the app. */
+  nativeButtons?: "suppress" | "keep";
   testId?: string;
 }
 
 export const TKActionSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKActionSheetProps>(function TKActionSheet(
-  { open, onClose, items, cancelLabel, ariaLabel, testId },
+  { open, onClose, items, cancelLabel, ariaLabel, nativeButtons, testId },
   forwardedRef,
 ) {
   const locale = useTKLocale();
@@ -35,7 +37,7 @@ export const TKActionSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKAction
   const [entered, setEntered] = useState(false);
   // Five modal hooks in one ordered call; panelProps pre-builds role/aria-modal/
   // tabIndex/z so the panel is spread-ready (INT-DX-001).
-  const { scrimZ, panelProps } = useModalOverlay({ mounted, active: mounted && !closing, ref, onClose });
+  const { scrimZ, panelProps } = useModalOverlay({ mounted, active: mounted && !closing, ref, onClose, nativeButtons });
   if (!mounted) return null;
   return (
     <>

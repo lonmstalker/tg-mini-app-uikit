@@ -7,6 +7,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
 import type { TelegramEventMap, TelegramEventName, TelegramWebApp } from "./types";
@@ -93,6 +94,18 @@ export function useBackDispatcher(): () => boolean {
     top();
     return true;
   }, []);
+}
+
+const backButtonWantedServer = () => false;
+
+/**
+ * True while at least one active interceptor (an open overlay, a deep nav
+ * stack) wants the native Back button visible — i.e. Telegram is already
+ * showing a back control. In-DOM back affordances (e.g. `TKHeader
+ * back="auto"`) read this to avoid rendering a second arrow for one press.
+ */
+export function useBackButtonWanted(): boolean {
+  return useSyncExternalStore(subscribeBackButton, backButtonWanted, backButtonWantedServer);
 }
 
 export interface TKTelegramProviderProps {

@@ -15,6 +15,7 @@ import {
   useNav,
 } from "tg-mini-app-uikit";
 import { useTKInfiniteData } from "@tg-mini-app/async";
+import { useHideKeyboard } from "@tg-mini-app/telegram";
 import { listExperiences, type Experience, type ExperienceCategory } from "../../data/mockApi";
 import { useLang, useT } from "../../i18n";
 import { starsLabel } from "./format";
@@ -303,6 +304,7 @@ export function Feed() {
   });
   const [ui, dispatchUi] = useReducer(feedUiReducer, initialFeedUi);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const keyboard = useHideKeyboard();
   const { category, difficulty, query, filtersOpen, searchFocused } = ui;
 
   const open = (id: string) => nav.push("detail", { id });
@@ -310,10 +312,11 @@ export function Feed() {
   const filtered = useMemo(() => {
     const cat = CATEGORIES[category];
     const q = query.trim().toLowerCase();
+    const difficultySet = new Set(difficulty); // Set lookup — no rescan per feed item
     return feed.items.filter(
       (e) =>
         (cat === "all" || e.category === cat) &&
-        (difficulty.length === 0 || difficulty.includes(e.difficulty)) &&
+        (difficultySet.size === 0 || difficultySet.has(e.difficulty)) &&
         (q === "" || `${e.title} ${e.location} ${e.summary}`.toLowerCase().includes(q)),
     );
   }, [feed.items, category, difficulty, query]);
@@ -416,6 +419,7 @@ export function Feed() {
           variant={filterCount ? "tonal" : "surface"}
           onClick={() => {
             searchInputRef.current?.blur();
+            keyboard.hide(); // native soft-keyboard dismissal (Bot API 9.1); the blur covers browsers
             dispatchUi({ type: "searchFocused", value: false });
             dispatchUi({ type: "filtersOpen", value: true });
           }}
@@ -483,7 +487,13 @@ export function Feed() {
         difficultyChips={difficultyChips}
         onDifficulty={(value) => dispatchUi({ type: "difficulty", value })}
         activeCount={filterCount}
-        onReset={resetFilters}
+        // Reset closes the sheet: its only intent is "show me everything", so
+        // the cleared feed IS the feedback — keeping the sheet open made the
+        // reset feel like it did nothing.
+        onReset={() => {
+          resetFilters();
+          dispatchUi({ type: "filtersOpen", value: false });
+        }}
       />
       </TKPage>
     </TKPullToRefresh>

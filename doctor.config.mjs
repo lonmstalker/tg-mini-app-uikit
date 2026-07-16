@@ -77,5 +77,36 @@ export default {
     // index.html entry). The scanner only follows the root entry, so every
     // page-module tree behind a non-root entry false-positives as unreachable.
     "deslop/unused-file": "off",
+
+    // Modal panels/stages (sheet, action sheet, image viewer) are tabIndex={-1}
+    // — never Tab-reachable — and take only programmatic focus as the trap's
+    // fallback; every keyboard-reachable control keeps the kit-wide
+    // `.tk :focus-visible` outline. `outline: none` on those panels is the
+    // documented pattern (commented at each site), not a focus-ring removal.
+    "react-doctor/no-outline-none": "off",
+
+    // will-change lives in deliberate promotion windows: nav exit layers leave
+    // the DOM at animationend, and toasts clear it imperatively after the
+    // entrance keyframes. The repo enforces the stronger invariant itself —
+    // check-animatable-props (CI) plus the perf e2e that assert no per-frame
+    // layout and no resting promoted layers.
+    "react-doctor/no-permanent-will-change": "off",
+
+    // Measured-DOM lifecycles (the onboarding spotlight re-measuring its
+    // target's rect once after refs resolve post-commit) re-render once by
+    // design and are documented at the call site.
+    "react-doctor/no-effect-chain": "off",
+
+    // Lifecycle transitions set state in effects by design: onboarding's
+    // finish-on-empty-steps (ONB-003) persists the seen flag and notifies the
+    // consumer when the step set drains. Same family as the already-disabled
+    // no-adjust-state-on-prop-change / no-derived-state above.
+    "react-doctor/no-chain-state-updates": "off",
+
+    // The platform bridge's whole job is syncing declarative hook params to
+    // Telegram's IMPERATIVE chrome (MainButton.setParams/show/hide) inside
+    // effects — there is no parent React component receiving state, so the
+    // "pushing state up costs a render" premise doesn't apply to these calls.
+    "react-doctor/no-pass-live-state-to-parent": "off",
   },
 };

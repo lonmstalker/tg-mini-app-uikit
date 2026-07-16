@@ -165,7 +165,7 @@ async function main() {
   if (botUsername) {
     console.log(`[telegram] Open the bot in Telegram: https://t.me/${botUsername}`);
   }
-  console.log("[telegram] Press the bot menu button, then run the real-client checklist in plans.md.");
+  console.log("[telegram] Press the bot menu button, then run the real-client checklist (git show 6aa57cb:plans.md).");
   console.log("[trailhead] Stop with Ctrl-C when the Telegram pass is finished.");
 }
 

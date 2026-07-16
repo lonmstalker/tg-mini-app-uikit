@@ -1,5 +1,43 @@
 # tg-mini-app-uikit
 
+## 0.6.0
+
+### Minor Changes
+
+- Modal overlays (`TKSheet`, `TKDialog`, `TKActionSheet`, `TKImageViewer`) now
+  hide the native Telegram Main/Secondary buttons while open and restore them
+  when the last overlay closes — the buttons live in the client chrome beyond
+  the scrim's reach, so without this a "Pay" stayed tappable under a
+  confirmation sheet. **Behavior change** with a per-overlay opt-out: pass
+  `nativeButtons="keep"` when the overlay itself is confirmed by the native
+  button. The Back button is unaffected (it keeps closing the overlay).
+- `TKHeader back` now defaults to `"auto"`: the arrow renders only when it is
+  the only back control — it follows an enclosing `TKNavStack`, needs an
+  `onBack` when standalone, and steps aside when a real client already shows
+  the native Back button (`useBackButtonWanted`). **Behavior change**: a bare
+  `<TKHeader>` without `onBack`/nav stack no longer renders a dead arrow;
+  pass `back={true}` to force the old rendering.
+
+### Patch Changes (2026-07-16 device-testing sweep)
+
+- The `@tg-mini-app/telegram` peer range is now `^0.3.0` — this release
+  imports `useSuppressNativeButtons`/`useBackButtonWanted`, which older 0.2.x
+  peer builds do not export.
+- `TKSheet` with snap points no longer reveals blank panel background while
+  dragged between snaps — the content box is pinned to the full height for the
+  duration of the gesture and handed back to the committed snap on release
+  (OVL-013).
+- `TKWriteBar`'s send button prevents the pointerdown default so the tap no
+  longer blurs the composer first — on iOS the closing keyboard moved the bar
+  out from under the finger and the click never landed (CHT-007).
+- The page and its footer now ride the keyboard as one eased movement
+  (`--tk-t3`, collapses under reduced motion) instead of a discrete jump per
+  visualViewport event.
+- `.tk-press` sets `touch-action: manipulation` — no mobile double-tap-zoom
+  wait on kit controls.
+- The booking-card action (`TKBookingCard actionLabel`) is a real ≥44px hit
+  target (TCRD-004).
+
 ## 0.5.0
 
 ### Minor Changes

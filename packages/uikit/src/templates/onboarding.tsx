@@ -131,14 +131,15 @@ export function TKOnboardingTooltip({
     (onSkip ?? onFinish)?.();
   };
 
-  // Keep `index` valid when the step set shrinks under it, and finish cleanly on an
-  // empty set so a consumer's seen-flag still flips (ONB-003).
+  // Finish cleanly on an empty step set so a consumer's seen-flag still flips
+  // (ONB-003). An out-of-range `index` needs NO state write: rendering clamps
+  // through `safeIndex` and the Next button advances from it, so chaining a
+  // corrective setIndex here only bought an extra render.
   useEffect(() => {
     if (status !== "open") return;
     if (steps.length === 0) finish();
-    else if (index > steps.length - 1) setIndex(steps.length - 1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status, steps.length, index]);
+  }, [status, steps.length]);
 
   const safeIndex = steps.length ? Math.min(index, steps.length - 1) : 0;
   const step = steps[safeIndex];

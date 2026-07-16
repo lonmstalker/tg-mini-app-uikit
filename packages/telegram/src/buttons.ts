@@ -1,4 +1,4 @@
-import { useEffect, useInsertionEffect, useMemo, useRef } from "react";
+import { useEffect, useInsertionEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import type {
   TelegramMainButton,
   TelegramPopupParams,
@@ -8,6 +8,7 @@ import type {
   TKNotificationType,
 } from "./types";
 import { useBackIntercept, useWebApp } from "./provider";
+import { tkChromeState } from "./chrome-registry";
 import { TK_MIN_VERSION, tkSupports } from "./version";
 
 
@@ -66,6 +67,50 @@ export function useSettingsButton(onClick?: () => void, visible: boolean = !!onC
   return useSimpleButton(useWebApp()?.SettingsButton, onClick, visible);
 }
 
+/* ---------------- Native-chrome suppression (modal overlays) ---------------- */
+
+function notifyChrome(): void {
+  for (const listener of tkChromeState().listeners) listener();
+}
+
+/**
+ * Counts a native Main/Secondary button suppressor while `active` (the kit's
+ * modal overlays register one by default, see `nativeButtons` on the overlay).
+ * Those buttons live in the client chrome OUTSIDE the webview, so an in-DOM
+ * scrim/focus-trap can never disable them — without suppression a bottom "Pay"
+ * stays tappable under a confirmation sheet, acting on hidden context. Counted,
+ * so nested overlays compose; the buttons restore when the last one leaves.
+ */
+export function useSuppressNativeButtons(active: boolean): void {
+  useEffect(() => {
+    if (!active) return;
+    const state = tkChromeState();
+    state.suppress += 1;
+    notifyChrome();
+    return () => {
+      state.suppress = Math.max(0, state.suppress - 1);
+      notifyChrome();
+    };
+  }, [active]);
+}
+
+// External-store plumbing for useSyncExternalStore: module-scope so the
+// subscribe identity is stable and no effect ever re-renders the parent.
+function subscribeChrome(listener: () => void): () => void {
+  const { listeners } = tkChromeState();
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+const readChromeSuppressed = () => tkChromeState().suppress > 0;
+const readChromeSuppressedServer = () => false;
+
+/** True while at least one modal overlay suppresses the native Main/Secondary buttons. */
+export function useNativeButtonsSuppressed(): boolean {
+  return useSyncExternalStore(subscribeChrome, readChromeSuppressed, readChromeSuppressedServer);
+}
+
 export interface TKNativeButtonParams {
   text?: string;
   visible?: boolean;
@@ -97,12 +142,29 @@ function useNativeButton(
   supported: boolean = !!button,
   themeParams?: TelegramThemeParams,
 ): { isSupported: boolean } {
+  // A modal overlay suppresses the native buttons (they live outside the
+  // webview, beyond the scrim's reach); the declarative sync below simply
+  // treats "suppressed" as hidden and restores the requested state after.
+  const suppressed = useNativeButtonsSuppressed();
+  const shown = visible && !suppressed;
   const clickRef = useRef(onClick);
   const clickEnabledRef = useRef(false);
   useInsertionEffect(() => {
     clickRef.current = onClick;
-    clickEnabledRef.current = visible && !disabled && !loading;
+    clickEnabledRef.current = shown && !disabled && !loading;
   });
+  // One-time discoverability warning: a visible button vanishing under an
+  // overlay should be traceable to the overlay's `nativeButtons` prop.
+  const suppressWarnedRef = useRef(false);
+  useEffect(() => {
+    if (process.env.NODE_ENV === "production" || suppressWarnedRef.current) return;
+    if (supported && !!button && suppressed && visible) {
+      suppressWarnedRef.current = true;
+      console.warn(
+        'A native Telegram button was hidden while a modal overlay is open. If the overlay itself is confirmed by this button, pass nativeButtons="keep" to the overlay.',
+      );
+    }
+  }, [supported, button, suppressed, visible]);
   // Tracks the last applied custom icon so we can clear it once (sending "")
   // when the prop drops, without spamming an empty id every render.
   const iconRef = useRef<string | undefined>(undefined);
@@ -123,7 +185,7 @@ function useNativeButton(
     try {
       if (button.setParams) {
         const params: Parameters<NonNullable<TelegramMainButton["setParams"]>>[0] = {
-          is_visible: visible,
+          is_visible: shown,
           is_active: active,
         };
         if (text != null) params.text = text;
@@ -147,7 +209,7 @@ function useNativeButton(
         button.setParams(params);
       } else {
         if (text != null) button.setText?.(text);
-        if (visible) button.show?.();
+        if (shown) button.show?.();
         else button.hide?.();
         if (active) button.enable?.();
         else button.disable?.();
@@ -157,7 +219,7 @@ function useNativeButton(
     } catch {
       /* native button not available on this client version */
     }
-  }, [button, supported, text, visible, disabled, loading, color, textColor, shine, position, iconCustomEmojiId, themeParams]);
+  }, [button, supported, text, shown, disabled, loading, color, textColor, shine, position, iconCustomEmojiId, themeParams]);
   useEffect(() => {
     if (!supported || !button) return;
     return () => {

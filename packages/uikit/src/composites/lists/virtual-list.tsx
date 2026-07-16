@@ -53,7 +53,7 @@ export interface TKVirtualListProps<T> {
 
 /**
  * Windowed list for weak WebViews: renders only the visible rows plus
- * overscan. Fixed row height in this first iteration (see plans.md M11 for
+ * overscan. Fixed row height in this first iteration (see M11 in the archived plan, `git show 6aa57cb:plans.md`, for
  * the variable-height candidate).
  */
 function TKVirtualListImpl<T>(

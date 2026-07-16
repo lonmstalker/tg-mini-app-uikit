@@ -71,6 +71,9 @@ export function TKSlotPicker({
   }, [slotsKey, busyKey, slotVal, setSlotVal]);
   // Clamp the active day so an out-of-range index still highlights a real day (PTN-005).
   const activeDay = days.length > 0 ? Math.max(0, Math.min(dayIdx, days.length - 1)) : -1;
+  // Set lookup for the per-slot busy check — `.includes` inside the slots map
+  // rescans the whole list per cell.
+  const busySet = new Set(busy);
   return (
     <div data-testid={testId} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
       <div style={{ display: "flex", gap: 7 }}>
@@ -118,7 +121,7 @@ export function TKSlotPicker({
       </div>
       <div style={{ display: "grid", gridTemplateColumns: `repeat(${columns}, 1fr)`, gap: 8 }}>
         {slots.map((slotItem) => {
-          const disabled = busy.includes(slotItem);
+          const disabled = busySet.has(slotItem);
           const on = slotItem === slotVal;
           return (
             <button

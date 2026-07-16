@@ -76,3 +76,44 @@ describe("TKHeader back=\"auto\" dedups against the native Telegram Back button"
     expect(document.querySelector('[data-tk-nav-panel="detail"]')).toBeNull();
   });
 });
+
+/* `back` now defaults to `"auto"`: a header must never render the SECOND back
+ * control for one press, and a bare header must not render a dead arrow. */
+describe("TKHeader default back — standalone headers", () => {
+  afterEach(() => {
+    Reflect.deleteProperty(window, "Telegram");
+  });
+
+  it("standalone + onBack in a browser: the arrow is the only back and stays", () => {
+    const onBack = () => {};
+    render(<kit.TKHeader title="Detail" onBack={onBack} testId="h" />);
+    expect(screen.getByRole("button", { name: "Back" })).toBeInTheDocument();
+  });
+
+  it("standalone + onBack while a real client shows the native Back button: no second arrow", () => {
+    const telegram = createMockTelegram();
+    (window as unknown as { Telegram?: { WebApp: unknown } }).Telegram = { WebApp: telegram.webApp };
+    function NativeBackOwner() {
+      // e.g. a screen driving the native Back button itself
+      kit.useBackButton(() => {});
+      return <kit.TKHeader title="Detail" onBack={() => {}} testId="h" />;
+    }
+    render(
+      <kit.TKTelegramProvider webApp={telegram.webApp} signalReady={false}>
+        <NativeBackOwner />
+      </kit.TKTelegramProvider>,
+    );
+    expect(telegram.webApp.BackButton?.isVisible).toBe(true);
+    expect(screen.queryByRole("button", { name: "Back" })).toBeNull();
+  });
+
+  it("no onBack and no nav stack: no dead arrow", () => {
+    render(<kit.TKHeader title="Plain" testId="h" />);
+    expect(screen.queryByRole("button", { name: "Back" })).toBeNull();
+  });
+
+  it("explicit back={true} still forces the arrow", () => {
+    render(<kit.TKHeader title="Forced" back onBack={() => {}} testId="h" />);
+    expect(screen.getByRole("button", { name: "Back" })).toBeInTheDocument();
+  });
+});

@@ -26,6 +26,10 @@ export const TK_MIN_VERSION = {
   downloadFile: "8.0",
   shareMessage: "8.0",
   scanQrPopup: "6.4",
+  switchInlineQuery: "6.6",
+  requestContact: "6.9",
+  writeAccess: "6.9",
+  requestChat: "9.6",
 } as const;
 
 /**

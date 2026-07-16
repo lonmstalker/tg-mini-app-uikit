@@ -126,6 +126,11 @@ export function TKWriteBar({
         className="tk-press"
         aria-label={locale.send}
         disabled={disabled || !text.trim()}
+        // Keep the composer focused: without this the tap first BLURS the
+        // textarea, the keyboard starts closing, the bar moves out from under
+        // the finger and the click never lands (CHT-007). Preventing the
+        // pointerdown default keeps focus in the textarea; click still fires.
+        onPointerDown={(event) => event.preventDefault()}
         onClick={send}
         style={{
           display: "inline-flex",

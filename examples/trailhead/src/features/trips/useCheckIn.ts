@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { useBiometrics, useLocation, useOptionalHaptics, useQrScanner } from "@tg-mini-app/telegram";
+import { useBiometrics, useLocation, useOptionalHaptics, useOrientationLock, useQrScanner } from "@tg-mini-app/telegram";
 import { useT } from "../../i18n";
 import { useAppDispatch } from "../../store";
 
@@ -20,6 +20,7 @@ export function useCheckIn() {
   const qr = useQrScanner();
   const biometrics = useBiometrics();
   const location = useLocation();
+  const orientation = useOrientationLock();
   const dispatch = useAppDispatch();
   const haptics = useOptionalHaptics();
   const [phase, setPhase] = useState<CheckInPhase>("idle");
@@ -34,12 +35,16 @@ export function useCheckIn() {
     setPhase("done");
   };
 
-  const run = async (bookingId: string) => {
+  /** `manualCode` skips the camera: a pasted trailhead code stands in for the QR scan. */
+  const run = async (bookingId: string, manualCode?: string) => {
     if (running.current) return;
     running.current = true;
+    // Camera scanning is a portrait flow — hold the orientation for its
+    // duration (no-op on clients without the lock API).
+    orientation.lock();
     try {
       setPhase("scanning");
-      const scanned = await qr.open({ text: t("checkin.scanning") }, () => true);
+      const scanned = manualCode ?? (await qr.open({ text: t("checkin.scanning") }, () => true));
       if (!scanned) throw new Error("qr");
 
       setPhase("verifying");
@@ -57,6 +62,7 @@ export function useCheckIn() {
       haptics.notification("error");
       setPhase("error");
     } finally {
+      orientation.unlock();
       running.current = false;
     }
   };

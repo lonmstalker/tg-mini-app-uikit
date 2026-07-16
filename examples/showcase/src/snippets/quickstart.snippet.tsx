@@ -1,4 +1,5 @@
 import "tg-mini-app-uikit/style.css";
+import { createRoot } from "react-dom/client";
 import {
   TKButton,
   TKCard,
@@ -8,7 +9,7 @@ import {
   TKTelegramProvider,
 } from "tg-mini-app-uikit";
 
-export function WalletScreen() {
+function WalletScreen() {
   return (
     <TKTelegramProvider haptics>
       <TKProvider telegram>
@@ -26,3 +27,5 @@ export function WalletScreen() {
     </TKTelegramProvider>
   );
 }
+
+createRoot(document.getElementById("root")!).render(<WalletScreen />);

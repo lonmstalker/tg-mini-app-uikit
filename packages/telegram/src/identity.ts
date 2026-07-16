@@ -154,27 +154,45 @@ export function useDownloadFile(): {
   );
 }
 
+/**
+ * `WebApp.requestChat` (Bot API 9.6+). CAUTION: the official bridge script
+ * ships AHEAD of the clients — a client that reports 9.6 but has not
+ * implemented `web_app_request_chat` silently drops the event, the
+ * `requested_chat_sent/failed` answer never arrives and the returned promise
+ * NEVER settles. Until the event is broadly implemented, prefer the
+ * `https://t.me/share/url` deep link (openTelegramLink) for share-into-a-chat
+ * flows; treat this hook as opt-in for clients you have verified.
+ */
 export function useChatRequest(): {
   request: (reqId: string) => Promise<boolean>;
   isSupported: boolean;
 } & TKTelegramAsyncState<TelegramGenericHookError> {
   const wa = useWebApp();
   const [state, setState] = useState<TKTelegramAsyncState<TelegramGenericHookError>>({ status: "idle" });
-  const isSupported = !!wa?.requestChat;
+  // requestChat is Bot API 9.6+: the official bridge defines the method on
+  // every client and THROWS WebAppMethodUnsupported below that — mere method
+  // presence produced a visible control that silently exploded on tap.
+  const isSupported = !!wa?.requestChat && tkSupports(wa, TK_MIN_VERSION.requestChat);
   return useMemo(
     () => ({
       request: (reqId) => {
         setState({ status: "pending" });
         return new Promise<boolean>((resolve) => {
-          if (!wa?.requestChat) {
+          if (!isSupported || !wa?.requestChat) {
             setState({ status: "error", error: "UNSUPPORTED" });
             resolve(false);
             return;
           }
-          wa.requestChat(reqId, (ok) => {
-            setState(ok ? { status: "success" } : { status: "error", error: "USER_DECLINED" });
-            resolve(!!ok);
-          });
+          try {
+            wa.requestChat(reqId, (ok) => {
+              setState(ok ? { status: "success" } : { status: "error", error: "USER_DECLINED" });
+              resolve(!!ok);
+            });
+          } catch {
+            // WebAppRequestChatOpened — a picker is already open
+            setState({ status: "error", error: "UNSUPPORTED" });
+            resolve(false);
+          }
         });
       },
       status: isSupported ? state.status : "unsupported",

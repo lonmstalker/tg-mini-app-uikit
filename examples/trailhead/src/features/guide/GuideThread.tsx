@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { AsyncBoundary, TKMessages, TKPage, TKWriteBar, useNav } from "tg-mini-app-uikit";
+import { AsyncBoundary, TKMessages, TKPage, TKWriteBar, useNav, useTKToast } from "tg-mini-app-uikit";
 import { useOptionalHaptics } from "@tg-mini-app/telegram";
 import { listMessages, sendMessage, type Message, type MessageStatus } from "../../data/mockApi";
 import { useLang, useT } from "../../i18n";
@@ -20,6 +20,7 @@ export function GuideThread() {
   const loaded = useAsync(() => listMessages(lang, id), [lang, id]);
   const [sent, setSent] = useState<Message[]>([]);
   const haptics = useOptionalHaptics();
+  const toast = useTKToast();
   const header = useMockBackHeader(t("guide.action.message"));
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
@@ -28,12 +29,19 @@ export function GuideThread() {
     setSent((prev) => prev.map((m) => (m.id === msgId ? { ...m, status } : m)));
 
   const send = async (text: string) => {
-    const msg = await sendMessage(id, text);
-    setSent((prev) => [...prev, msg]);
-    haptics.selection();
-    // progress the status ticks: sent → delivered → read
-    timers.current.push(setTimeout(() => bump(msg.id, "delivered"), 450));
-    timers.current.push(setTimeout(() => bump(msg.id, "read"), 1000));
+    try {
+      const msg = await sendMessage(id, text);
+      setSent((prev) => [...prev, msg]);
+      haptics.selection();
+      // progress the status ticks: sent → delivered → read
+      timers.current.push(setTimeout(() => bump(msg.id, "delivered"), 450));
+      timers.current.push(setTimeout(() => bump(msg.id, "read"), 1000));
+    } catch {
+      // The composer already cleared the draft — say WHY nothing appeared
+      // instead of eating the message silently.
+      haptics.notification("error");
+      toast.error(t("guide.sendFailed"));
+    }
   };
 
   const messages = [...(loaded.data ?? []), ...sent].map((m) => ({

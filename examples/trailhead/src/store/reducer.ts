@@ -16,6 +16,8 @@ export interface CartDraft {
   date?: string; // ISO YYYY-MM-DD
   slot?: string;
   basePriceStars?: number;
+  /** Rented gear items (trekking poles) added on the checkout summary. */
+  gearCount?: number;
   emoji?: string;
   hue?: number;
 }

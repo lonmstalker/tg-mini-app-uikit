@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import {
   TKButton,
   TKCard,
@@ -9,11 +9,11 @@ import {
   TKPinInput,
   TKSheet,
   TKSpinner,
+  TKStepper,
   TKText,
   TKTitle,
   useNav,
   useTKToast,
-  type TKSheetHandle,
 } from "tg-mini-app-uikit";
 import {
   getTelegramWebApp,
@@ -23,14 +23,14 @@ import {
   useOptionalHaptics,
 } from "@tg-mini-app/telegram";
 import { bookingView, type Booking } from "../../data/mockApi";
-import { checkoutLineItems, computeCheckout, type Checkout as CheckoutTotals } from "../../data/pricing";
+import { GEAR_RENTAL_STARS, checkoutLineItems, computeCheckout, type Checkout as CheckoutTotals } from "../../data/pricing";
 import { useLang, useT } from "../../i18n";
 import { useAppDispatch, useAppState } from "../../store";
 import { useGoToTab } from "../../tab-nav";
 import { useMockBackHeader } from "../../components/MockBackHeader";
 import { PrimaryAction, SecondaryAction } from "../../components/PrimaryAction";
 import { useMockHandle } from "../../telegram/mock-context";
-import { authenticateWithBiometrics } from "../../telegram/biometric-auth";
+import { useBiometricAuth, useBiometricKeyAvailable } from "../../telegram/biometric-auth";
 import { formatDate, starsLabel } from "./format";
 
 type Phase = "idle" | "confirm" | "pin" | "paying" | "error" | "done";
@@ -53,6 +53,8 @@ export function Checkout({ active }: { active: boolean }) {
   const dispatch = useAppDispatch();
   const toast = useTKToast();
   const biometrics = useBiometrics();
+  const biometricAuth = useBiometricAuth(biometrics);
+  const biometricKey = useBiometricKeyAvailable(biometrics);
   const invoice = useInvoice();
   const haptics = useOptionalHaptics();
   const goToTab = useGoToTab();
@@ -63,7 +65,6 @@ export function Checkout({ active }: { active: boolean }) {
   const [pinError, setPinError] = useState(false);
   const [confetti, setConfetti] = useState(false);
   const [snap, setSnap] = useState<PaySnapshot | null>(null);
-  const sheetRef = useRef<TKSheetHandle>(null);
   // Synchronous re-entry latch: state updates are async, so a double biometric
   // tap (or the biometric+PIN cross-path) could otherwise both pass through
   // `settle` and book twice. A ref blocks the second caller immediately.
@@ -77,7 +78,7 @@ export function Checkout({ active }: { active: boolean }) {
   // Declarative: warn before closing the app while the success state is up.
   useClosingConfirmation(phase === "done");
 
-  const liveCheckout = computeCheckout(cart.basePriceStars ?? 0, wallet.trailPassActive);
+  const liveCheckout = computeCheckout(cart.basePriceStars ?? 0, wallet.trailPassActive, cart.gearCount ?? 0);
   const liveView = cart.experienceId ? bookingView(cart.experienceId, lang) : null;
   const ready = Boolean(cart.experienceId && cart.date && cart.slot);
 
@@ -189,7 +190,7 @@ export function Checkout({ active }: { active: boolean }) {
   };
 
   const onBiometric = async () => {
-    if (await authenticateWithBiometrics(biometrics, t("checkout.pinTitle"))) void settle();
+    if (await biometricAuth(t("checkout.pinTitle"))) void settle();
   };
 
   const completeDemoPayment = () => {
@@ -214,11 +215,6 @@ export function Checkout({ active }: { active: boolean }) {
   };
 
   const sheetOpen = phase !== "idle";
-
-  useEffect(() => {
-    if (!sheetOpen) return;
-    sheetRef.current?.snapTo(phase === "pin" ? 1 : 0);
-  }, [phase, sheetOpen]);
 
   const pinTitle = (headline: string): ReactNode => (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -261,19 +257,11 @@ export function Checkout({ active }: { active: boolean }) {
             label={t("checkout.pay", { price: starsLabel(t, liveCheckout.total) })}
             onClick={startPay}
           />
-          {/* Native cancel/back companion: closes the sheet mid-flow, backs out
-              of the summary otherwise. Hidden while paying (the invoice
-              round-trip must not be interrupted) and on success (the sheet's
-              own CTA finishes the flow). Renders nothing outside Telegram —
-              the mock back header and sheet close already cover cancel. */}
-          <SecondaryAction
-            active={active && phase !== "paying" && phase !== "done"}
-            label={t("common.cancel")}
-            onClick={() => {
-              if (sheetOpen) closeSheet();
-              else nav.pop();
-            }}
-          />
+          {/* Native back companion for the summary page. The kit hides it
+              automatically while the sheet is up (modal overlays suppress the
+              native buttons); outside Telegram it renders nothing — the mock
+              back header covers it. */}
+          <SecondaryAction active={active} label={t("common.cancel")} onClick={() => nav.pop()} />
         </>
       }
     >
@@ -287,13 +275,35 @@ export function Checkout({ active }: { active: boolean }) {
         </>
       ) : null}
 
+      {/* Gear rental add-on — priced per item, discounted and capped with the rest. */}
+      <TKCard
+        padding={12}
+        testId="gear-addon"
+        style={{ display: "flex", alignItems: "center", gap: 12, border: "0.5px solid var(--tk-sep)" }}
+      >
+        <div style={{ minWidth: 0, flex: 1, display: "flex", flexDirection: "column", gap: 3 }}>
+          <TKText weight={600}>{t("checkout.gearTitle")}</TKText>
+          <TKText tone="secondary" size="footnote">
+            {t("checkout.gearHint", { price: starsLabel(t, GEAR_RENTAL_STARS) })}
+          </TKText>
+        </div>
+        <TKStepper
+          value={cart.gearCount ?? 0}
+          min={0}
+          max={4}
+          onChange={(value) => dispatch({ type: "SET_CART", payload: { gearCount: value } })}
+          testId="gear-stepper"
+        />
+      </TKCard>
+
       <TKPaymentSummary testId="summary-rows" rows={rows} />
 
+      {/* Content-sized (no snapPoints): the confirm copy and the pay CTA must
+          be fully visible the moment the sheet opens — a fixed small snap cut
+          them off and asked the user to drag first. */}
       <TKSheet
         open={sheetOpen}
         onClose={closeSheet}
-        snapPoints={[0.55, 0.92]}
-        sheetRef={sheetRef}
         title={phase === "done" ? t("checkout.successTitle") : t("checkout.confirmTitle")}
         testId="checkout-sheet"
       >
@@ -329,7 +339,7 @@ export function Checkout({ active }: { active: boolean }) {
               maxLength={8}
               title={pinTitle(pin ? t("checkout.pinTitle") : t("checkout.pinSetTitle"))}
               error={pinError}
-              onBiometricRequest={() => void onBiometric()}
+              onBiometricRequest={biometricKey ? () => void onBiometric() : undefined}
               onComplete={onPinComplete}
             />
           ) : null}

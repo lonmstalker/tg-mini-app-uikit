@@ -9,7 +9,7 @@ import type {
   TelegramMotionSensorError,
   TKTelegramAsyncState,
 } from "./types";
-import { useWebApp } from "./provider";
+import { useTelegramEvent, useWebApp } from "./provider";
 import { TK_MIN_VERSION, tkSupports } from "./version";
 
 export interface TKKeyboardState {
@@ -275,9 +275,16 @@ export function useHideKeyboard(): { hide: () => boolean; isSupported: boolean }
   return useMemo(
     () => ({
       hide: () => {
+        // Today's bridge never throws here (a bare postEvent), but a drifted
+        // script/client combination must degrade to the blur fallback, not
+        // abort the caller's tap handler mid-flow.
         if (wa?.hideKeyboard) {
-          wa.hideKeyboard();
-          return true;
+          try {
+            wa.hideKeyboard();
+            return true;
+          } catch {
+            /* fall through to the DOM blur */
+          }
         }
         if (typeof document !== "undefined" && document.activeElement instanceof HTMLElement) {
           document.activeElement.blur();
@@ -299,6 +306,14 @@ export interface TKBiometrics extends TKTelegramAsyncState<TelegramBiometricErro
   updateToken: (token: string) => Promise<boolean>;
   openSettings: () => boolean;
   isSupported: boolean;
+  /**
+   * Whether the DEVICE actually has usable biometrics — `undefined` until the
+   * manager reports it (call `init()` to find out). `isSupported` alone is a
+   * trap: the official bridge creates `BiometricManager` on every platform
+   * (desktop included), so gate biometric UI on `isAvailable === true`, not on
+   * `isSupported`.
+   */
+  isAvailable: boolean | undefined;
 }
 
 export function useBiometrics(): TKBiometrics {
@@ -306,6 +321,17 @@ export function useBiometrics(): TKBiometrics {
   const manager = wa?.BiometricManager;
   const [state, setState] = useState<TKTelegramAsyncState<TelegramBiometricError>>({ status: "idle" });
   const isSupported = !!manager && tkSupports(wa, TK_MIN_VERSION.biometric);
+  // Availability is only known after init(): track it reactively — the manager
+  // mutates in place and fires biometricManagerUpdated instead of re-rendering.
+  const [isAvailable, setIsAvailable] = useState<boolean | undefined>(() =>
+    manager?.isInited ? manager.isBiometricAvailable : undefined,
+  );
+  const readAvailability = useCallback(() => {
+    const m = wa?.BiometricManager;
+    setIsAvailable(m?.isInited ? m.isBiometricAvailable : undefined);
+  }, [wa]);
+  useEffect(() => readAvailability(), [readAvailability]);
+  useTelegramEvent("biometricManagerUpdated", readAvailability);
   return useMemo(
     () => ({
       manager,
@@ -320,6 +346,7 @@ export function useBiometrics(): TKBiometrics {
           try {
             manager.init(() => {
               setState({ status: "success" });
+              readAvailability();
               resolve(true);
             });
           } catch {
@@ -401,8 +428,9 @@ export function useBiometrics(): TKBiometrics {
       status: isSupported ? state.status : "unsupported",
       error: isSupported ? state.error : "UNSUPPORTED",
       isSupported,
+      isAvailable: isSupported ? isAvailable : false,
     }),
-    [isSupported, manager, state.error, state.status],
+    [isSupported, isAvailable, manager, readAvailability, state.error, state.status],
   );
 }
 
@@ -637,15 +665,26 @@ export function useOrientationLock(): {
   return useMemo(
     () => ({
       isLocked,
+      // Today's bridge never throws here, but callers run these around camera
+      // flows (check-in) where an escape would strand their re-entry latch —
+      // degrade to false on any drifted script/client combination.
       lock: () => {
         if (!wa?.lockOrientation) return false;
-        wa.lockOrientation();
+        try {
+          wa.lockOrientation();
+        } catch {
+          return false;
+        }
         setIsLocked(wa.isOrientationLocked ?? true);
         return true;
       },
       unlock: () => {
         if (!wa?.unlockOrientation) return false;
-        wa.unlockOrientation();
+        try {
+          wa.unlockOrientation();
+        } catch {
+          return false;
+        }
         setIsLocked(wa.isOrientationLocked ?? false);
         return true;
       },

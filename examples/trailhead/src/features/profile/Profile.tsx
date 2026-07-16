@@ -13,7 +13,7 @@ import {
   TKWalletStatusCell,
   useNav,
 } from "tg-mini-app-uikit";
-import { useClosingConfirmation, useInitData, useOptionalHaptics } from "@tg-mini-app/telegram";
+import { useClosingConfirmation, useInitData, useOptionalHaptics, useTelegramPopup } from "@tg-mini-app/telegram";
 import { useT } from "../../i18n";
 import { useAppDispatch, useAppState } from "../../store";
 import { useMockHandle } from "../../telegram/mock-context";
@@ -79,6 +79,25 @@ export function Profile() {
     setDisconnectOpen(false);
   };
 
+  const popup = useTelegramPopup();
+  // Native confirm where the real client provides one; the in-DOM TKDialog
+  // covers browsers AND the mock (whose popups wait for a manual resolve).
+  const askDisconnect = async () => {
+    if (!mock && popup.isSupported) {
+      const pressed = await popup.show({
+        title: t("wallet.disconnectTitle"),
+        message: t("wallet.disconnectBody"),
+        buttons: [
+          { id: "disconnect", type: "destructive", text: t("wallet.disconnect") },
+          { id: "cancel", type: "cancel" },
+        ],
+      });
+      if (pressed === "disconnect") disconnect();
+      return;
+    }
+    setDisconnectOpen(true);
+  };
+
   const walletName = tonWallet?.device.appName ?? t("wallet.name");
 
   return (
@@ -140,7 +159,7 @@ export function Profile() {
               testId="wallet-disconnect"
               icon="logout"
               title={t("wallet.disconnect")}
-              onClick={() => setDisconnectOpen(true)}
+              onClick={() => void askDisconnect()}
             />
           ) : null}
         </TKListGroup>

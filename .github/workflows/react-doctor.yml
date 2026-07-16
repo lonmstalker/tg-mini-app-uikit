@@ -30,6 +30,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          # Full history: React Doctor diffs the PR against the merge base with
+          # main to report only the issues the PR introduces — a shallow
+          # checkout has no merge base, and the scan degrades to "every issue
+          # in the changed files", including pre-existing ones.
+          fetch-depth: 0
 
       - uses: millionco/react-doctor@v2
         # Advisory by default: React Doctor reports findings on every PR — a

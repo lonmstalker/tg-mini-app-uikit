@@ -1,6 +1,7 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   TKBadge,
+  TKButton,
   TKCell,
   TKLeaderboard,
   TKListGroup,
@@ -15,7 +16,7 @@ import {
   TKXPHeader,
   useNav,
 } from "tg-mini-app-uikit";
-import { useInitData } from "@tg-mini-app/telegram";
+import { useActivity, useInitData, useMotionSensors } from "@tg-mini-app/telegram";
 import { listPeople, listSessions, type TrainingSession } from "../../data/mockApi";
 import { useLang, useT } from "../../i18n";
 import { useAppState } from "../../store";
@@ -28,6 +29,60 @@ const initialsOf = (name: string) =>
     .slice(0, 2)
     .join("")
     .toUpperCase();
+
+const CARDINALS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+
+/*
+ * Trail compass: DeviceOrientation → heading. Telegram mutates the sensor
+ * object in place (no per-reading events), so a small poll IS the render loop.
+ * The sensor and the poll both pause while the app is backgrounded
+ * (useActivity) and stop on unmount via the hook's own cleanup.
+ */
+function CompassCard() {
+  const t = useT();
+  const { deviceOrientation } = useMotionSensors();
+  const activity = useActivity();
+  const [on, setOn] = useState(false);
+  const [heading, setHeading] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!on || !activity.isActive) return;
+    void deviceOrientation.start(250, { needAbsolute: true });
+    const id = window.setInterval(() => {
+      const alpha = deviceOrientation.sensor?.alpha;
+      // alpha is radians CCW; a compass heading is degrees CW from north.
+      if (alpha != null) setHeading((360 - (alpha * 180) / Math.PI + 360) % 360);
+    }, 250);
+    return () => {
+      window.clearInterval(id);
+      void deviceOrientation.stop();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [on, activity.isActive]);
+
+  if (!deviceOrientation.isSupported) return null;
+  return (
+    <TKListGroup title={t("train.compass")}>
+      <div style={{ display: "flex", alignItems: "center", gap: 16, padding: 16 }} data-testid="train-compass">
+        <TKText weight={700} style={{ fontSize: 26, fontVariantNumeric: "tabular-nums", minWidth: 92 }}>
+          {on && heading != null ? `${Math.round(heading)}° ${CARDINALS[Math.round(heading / 45) % 8]}` : "—"}
+        </TKText>
+        <TKText as="div" tone="secondary" size="footnote" style={{ flex: 1 }}>
+          {t("train.compassHint")}
+        </TKText>
+        <TKButton
+          size="sm"
+          pill
+          variant={on ? "tonal" : "surface"}
+          onClick={() => setOn((v) => !v)}
+          testId="train-compass-toggle"
+        >
+          {on ? t("train.compassStop") : t("train.compassStart")}
+        </TKButton>
+      </div>
+    </TKListGroup>
+  );
+}
 
 export function Train() {
   const t = useT();
@@ -119,6 +174,8 @@ export function Train() {
         <TKStatTile label={t("train.stat.minutes")} value={`${totalMin}`} bars={[3, 2, 4, 3, 5]} up />
         <TKStatTile label={t("train.streakTitle")} value={`${streak.dayOfWeek}`} bars={[1, 1, 2, 3, 5]} up />
       </div>
+
+      <CompassCard />
 
       <TKListGroup title={t("train.weeklyGoal")}>
         <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 8 }}>

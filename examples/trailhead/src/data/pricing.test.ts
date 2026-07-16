@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { TRAIL_PASS_RATE, checkoutLineItems, computeCheckout, trailPassDiscount } from "./pricing";
+import { GEAR_RENTAL_STARS, TRAIL_PASS_RATE, checkoutLineItems, computeCheckout, trailPassDiscount } from "./pricing";
 
 describe("pricing — Trail Pass discount", () => {
   it("applies 15% only when the pass is active", () => {
@@ -16,10 +16,16 @@ describe("pricing — Trail Pass discount", () => {
 
   it("computeCheckout applies Trail Pass accounting before the 1 Star demo cap", () => {
     const without = computeCheckout(450, false);
-    expect(without).toEqual({ subtotal: 450, discount: 0, demoCap: 449, total: 1, trailPassApplied: false });
+    expect(without).toEqual({
+      base: 450, gearCount: 0, gearStars: 0,
+      subtotal: 450, discount: 0, demoCap: 449, total: 1, trailPassApplied: false,
+    });
 
     const withPass = computeCheckout(450, true);
-    expect(withPass).toEqual({ subtotal: 450, discount: 68, demoCap: 381, total: 1, trailPassApplied: true });
+    expect(withPass).toEqual({
+      base: 450, gearCount: 0, gearStars: 0,
+      subtotal: 450, discount: 68, demoCap: 381, total: 1, trailPassApplied: true,
+    });
     expect(withPass.discount).toBeGreaterThan(without.discount);
   });
 
@@ -35,5 +41,27 @@ describe("pricing — Trail Pass discount", () => {
     expect(discounted[2]).toMatchObject({ labelKey: "checkout.lineDemoCap", stars: -381 });
     // Line items sum to the total.
     expect(discounted.reduce((sum, i) => sum + i.stars, 0)).toBe(1);
+  });
+});
+
+describe("pricing — gear rental add-on", () => {
+  it("adds gear to the subtotal and discounts the combined amount", () => {
+    const c = computeCheckout(450, true, 2);
+    expect(c.gearStars).toBe(2 * GEAR_RENTAL_STARS); // 80
+    expect(c.subtotal).toBe(530);
+    expect(c.discount).toBe(Math.round(530 * TRAIL_PASS_RATE)); // 80
+    expect(c.total).toBe(1); // demo cap still holds the charge at 1 Star
+  });
+
+  it("clamps a negative/fractional count and stays absent from line items at 0", () => {
+    expect(computeCheckout(450, false, -3).gearStars).toBe(0);
+    expect(computeCheckout(450, false).gearCount).toBe(0);
+
+    const rows = checkoutLineItems("Sunrise Ridge", computeCheckout(450, false, 2));
+    expect(rows[1]).toMatchObject({ labelKey: "checkout.lineGear", stars: 80, vars: { count: 2 } });
+    expect(rows.reduce((sum, i) => sum + i.stars, 0)).toBe(1);
+
+    const noGear = checkoutLineItems("Sunrise Ridge", computeCheckout(450, false));
+    expect(noGear.some((r) => r.labelKey === "checkout.lineGear")).toBe(false);
   });
 });

@@ -3,7 +3,7 @@ import { useLatest } from "./useLatest";
 
 /*
  * Internal drag-gesture plumbing (NOT exported from the package until the
- * API stabilizes — see plans.md M3.1). Powers TKSheet swipe-to-close,
+ * API stabilizes — see M3.1 in the archived plan, `git show 6aa57cb:plans.md`). Powers TKSheet swipe-to-close,
  * TKPullToRefresh, TKSwipeCell and the M6 nav-stack swipe-back.
  */
 
