@@ -15,6 +15,20 @@
   stack) wants the native Back button visible — lets in-DOM back affordances
   avoid rendering a second arrow for the same press.
 
+### Fixed (2026-07-16 device-testing sweep)
+
+- The official bridge defines every method on every client and THROWS at call
+  time — method presence is not feature detection. `useChatRequest` (9.6),
+  `useContactRequest` / `useWriteAccess` (6.9) and
+  `useDataTransport.switchInlineQuery` (6.6) are now version-gated, and every
+  native call is wrapped: a bot without inline mode
+  (`WebAppInlineModeDisabled`) or a re-entered picker resolves `false` instead
+  of an unhandled exception.
+- `useBiometrics` exposes reactive `isAvailable` (`undefined` until `init()`
+  reports, then the device truth). `isSupported` alone is a trap: desktop
+  clients ship a `BiometricManager` with no biometrics behind it — gate
+  biometric UI on `isAvailable === true`.
+
 ## 0.2.1
 
 ### Fixed

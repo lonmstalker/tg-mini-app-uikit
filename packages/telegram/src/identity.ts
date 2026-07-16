@@ -160,21 +160,30 @@ export function useChatRequest(): {
 } & TKTelegramAsyncState<TelegramGenericHookError> {
   const wa = useWebApp();
   const [state, setState] = useState<TKTelegramAsyncState<TelegramGenericHookError>>({ status: "idle" });
-  const isSupported = !!wa?.requestChat;
+  // requestChat is Bot API 9.6+: the official bridge defines the method on
+  // every client and THROWS WebAppMethodUnsupported below that — mere method
+  // presence produced a visible control that silently exploded on tap.
+  const isSupported = !!wa?.requestChat && tkSupports(wa, TK_MIN_VERSION.requestChat);
   return useMemo(
     () => ({
       request: (reqId) => {
         setState({ status: "pending" });
         return new Promise<boolean>((resolve) => {
-          if (!wa?.requestChat) {
+          if (!isSupported || !wa?.requestChat) {
             setState({ status: "error", error: "UNSUPPORTED" });
             resolve(false);
             return;
           }
-          wa.requestChat(reqId, (ok) => {
-            setState(ok ? { status: "success" } : { status: "error", error: "USER_DECLINED" });
-            resolve(!!ok);
-          });
+          try {
+            wa.requestChat(reqId, (ok) => {
+              setState(ok ? { status: "success" } : { status: "error", error: "USER_DECLINED" });
+              resolve(!!ok);
+            });
+          } catch {
+            // WebAppRequestChatOpened — a picker is already open
+            setState({ status: "error", error: "UNSUPPORTED" });
+            resolve(false);
+          }
         });
       },
       status: isSupported ? state.status : "unsupported",

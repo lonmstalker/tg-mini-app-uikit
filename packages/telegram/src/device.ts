@@ -9,7 +9,7 @@ import type {
   TelegramMotionSensorError,
   TKTelegramAsyncState,
 } from "./types";
-import { useWebApp } from "./provider";
+import { useTelegramEvent, useWebApp } from "./provider";
 import { TK_MIN_VERSION, tkSupports } from "./version";
 
 export interface TKKeyboardState {
@@ -299,6 +299,14 @@ export interface TKBiometrics extends TKTelegramAsyncState<TelegramBiometricErro
   updateToken: (token: string) => Promise<boolean>;
   openSettings: () => boolean;
   isSupported: boolean;
+  /**
+   * Whether the DEVICE actually has usable biometrics — `undefined` until the
+   * manager reports it (call `init()` to find out). `isSupported` alone is a
+   * trap: the official bridge creates `BiometricManager` on every platform
+   * (desktop included), so gate biometric UI on `isAvailable === true`, not on
+   * `isSupported`.
+   */
+  isAvailable: boolean | undefined;
 }
 
 export function useBiometrics(): TKBiometrics {
@@ -306,6 +314,17 @@ export function useBiometrics(): TKBiometrics {
   const manager = wa?.BiometricManager;
   const [state, setState] = useState<TKTelegramAsyncState<TelegramBiometricError>>({ status: "idle" });
   const isSupported = !!manager && tkSupports(wa, TK_MIN_VERSION.biometric);
+  // Availability is only known after init(): track it reactively — the manager
+  // mutates in place and fires biometricManagerUpdated instead of re-rendering.
+  const [isAvailable, setIsAvailable] = useState<boolean | undefined>(() =>
+    manager?.isInited ? manager.isBiometricAvailable : undefined,
+  );
+  const readAvailability = useCallback(() => {
+    const m = wa?.BiometricManager;
+    setIsAvailable(m?.isInited ? m.isBiometricAvailable : undefined);
+  }, [wa]);
+  useEffect(() => readAvailability(), [readAvailability]);
+  useTelegramEvent("biometricManagerUpdated", readAvailability);
   return useMemo(
     () => ({
       manager,
@@ -320,6 +339,7 @@ export function useBiometrics(): TKBiometrics {
           try {
             manager.init(() => {
               setState({ status: "success" });
+              readAvailability();
               resolve(true);
             });
           } catch {
@@ -401,8 +421,9 @@ export function useBiometrics(): TKBiometrics {
       status: isSupported ? state.status : "unsupported",
       error: isSupported ? state.error : "UNSUPPORTED",
       isSupported,
+      isAvailable: isSupported ? isAvailable : false,
     }),
-    [isSupported, manager, state.error, state.status],
+    [isSupported, isAvailable, manager, readAvailability, state.error, state.status],
   );
 }
 

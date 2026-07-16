@@ -405,13 +405,25 @@ export function useDataTransport(): TKDataTransport {
     () => ({
       sendData: (data) => {
         if (!wa?.sendData) return false;
-        wa.sendData(data);
-        return true;
+        try {
+          wa.sendData(data);
+          return true;
+        } catch {
+          // the official bridge throws on >4096 bytes and outside keyboard-button launches
+          return false;
+        }
       },
       switchInlineQuery: (query, chatTypes) => {
-        if (!wa?.switchInlineQuery) return false;
-        wa.switchInlineQuery(query, chatTypes);
-        return true;
+        if (!wa?.switchInlineQuery || !tkSupports(wa, TK_MIN_VERSION.switchInlineQuery)) return false;
+        try {
+          wa.switchInlineQuery(query, chatTypes);
+          return true;
+        } catch {
+          // Real clients throw WebAppInlineModeDisabled when the bot has no
+          // inline mode — that is NOT feature-detectable upfront, so the only
+          // honest signal is this false. Callers must surface it to the user.
+          return false;
+        }
       },
       isSupported: !!(wa?.sendData || wa?.switchInlineQuery),
     }),
@@ -425,21 +437,30 @@ export function useContactRequest(): {
 } & TKTelegramAsyncState<TelegramContactStatus | "UNSUPPORTED"> {
   const wa = useWebApp();
   const [state, setState] = useState<TKTelegramAsyncState<TelegramContactStatus | "UNSUPPORTED">>({ status: "idle" });
-  const isSupported = !!wa?.requestContact;
+  // Method presence is not enough: the official bridge defines requestContact
+  // on every client and THROWS below 6.9 — gate by version so old clients see
+  // an honest `unsupported` instead of a dead tap.
+  const isSupported = !!wa?.requestContact && tkSupports(wa, TK_MIN_VERSION.requestContact);
   return useMemo(
     () => ({
       request: () => {
         setState({ status: "pending" });
         return new Promise<boolean>((resolve) => {
-          if (!wa?.requestContact) {
+          if (!isSupported || !wa?.requestContact) {
             setState({ status: "error", error: "UNSUPPORTED" });
             resolve(false);
             return;
           }
-          wa.requestContact((shared) => {
-            setState(shared ? { status: "success" } : { status: "error", error: "cancelled" });
-            resolve(!!shared);
-          });
+          try {
+            wa.requestContact((shared) => {
+              setState(shared ? { status: "success" } : { status: "error", error: "cancelled" });
+              resolve(!!shared);
+            });
+          } catch {
+            // e.g. WebAppContactRequested — a request is already open
+            setState({ status: "error", error: "UNSUPPORTED" });
+            resolve(false);
+          }
         });
       },
       status: isSupported ? state.status : "unsupported",
@@ -456,21 +477,28 @@ export function useWriteAccess(): {
 } & TKTelegramAsyncState<TelegramPermissionStatus | "UNSUPPORTED"> {
   const wa = useWebApp();
   const [state, setState] = useState<TKTelegramAsyncState<TelegramPermissionStatus | "UNSUPPORTED">>({ status: "idle" });
-  const isSupported = !!wa?.requestWriteAccess;
+  // Same trap as requestContact: the bridge defines the method everywhere and
+  // throws below 6.9 — version-gate instead of trusting presence.
+  const isSupported = !!wa?.requestWriteAccess && tkSupports(wa, TK_MIN_VERSION.writeAccess);
   return useMemo(
     () => ({
       request: () => {
         setState({ status: "pending" });
         return new Promise<boolean>((resolve) => {
-          if (!wa?.requestWriteAccess) {
+          if (!isSupported || !wa?.requestWriteAccess) {
             setState({ status: "error", error: "UNSUPPORTED" });
             resolve(false);
             return;
           }
-          wa.requestWriteAccess((allowed) => {
-            setState(allowed ? { status: "success" } : { status: "error", error: "cancelled" });
-            resolve(!!allowed);
-          });
+          try {
+            wa.requestWriteAccess((allowed) => {
+              setState(allowed ? { status: "success" } : { status: "error", error: "cancelled" });
+              resolve(!!allowed);
+            });
+          } catch {
+            setState({ status: "error", error: "UNSUPPORTED" });
+            resolve(false);
+          }
         });
       },
       status: isSupported ? state.status : "unsupported",

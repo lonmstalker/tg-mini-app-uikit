@@ -260,27 +260,30 @@ describe("design token contract", () => {
     }
   });
 
-  /* Acceptance 1.5 — the keyboard-driven page geometry is a CSS contract: the
-     .tk-page-footer block collapses the footer in the SAME single jump as the
-     page shrink. Nothing may reintroduce a layout transition here — animating
-     height/grid-template-rows re-laid the page out every frame of the keyboard
-     slide (2026-07-14 smoothness plan, phase 2). */
-  it("KB-CSS keeps the keyboard page shrink a single jump (no height transition)", () => {
-    expect(tokensCss).not.toMatch(/\.tk-page\s*\{[^}]*transition[^}]*height/);
+  /* Acceptance 1.5, REVISED by the 2026-07-16 device testing
+     (wiki/device-testing.md #9): the single-jump keyboard shift read as a
+     violent snap on real iOS — the OS slide does NOT mask it. The page height
+     and the footer collapse now ride ONE eased movement on the shared motion
+     tokens (var(--tk-t3): bounded ~300ms of layout work during a moment the
+     browser is reflowing anyway, and it collapses to 1ms under
+     prefers-reduced-motion). The contract now pins the transition IN. */
+  it("KB-CSS eases the keyboard page shrink on the shared motion tokens", () => {
+    expect(tokensCss).toMatch(/\.tk-page\s*\{[^}]*transition:\s*height var\(--tk-t3\)/);
   });
 
-  it("KB-CSS collapses the footer via grid-template-rows 1fr→0fr, never display:none, no transition", () => {
+  it("KB-CSS collapses the footer via eased grid-template-rows 1fr→0fr, never display:none", () => {
     const footer = tokensCss.match(/\.tk-page-footer\s*\{[^}]*\}/);
     expect(footer, "missing .tk-page-footer rule").not.toBeNull();
     expect(footer![0]).toMatch(/grid-template-rows:\s*1fr/);
-    expect(footer![0]).not.toContain("transition");
+    expect(footer![0]).toMatch(/transition:\s*grid-template-rows var\(--tk-t3\)/);
     const open = tokensCss.match(/\.tk-page-footer\[data-kb-open\]\s*\{[^}]*\}/);
     expect(open, "missing .tk-page-footer[data-kb-open] rule").not.toBeNull();
     expect(open![0]).toMatch(/grid-template-rows:\s*0fr/);
     expect(open![0]).not.toContain("display");
-    // The footer leaves the a11y tree/paint in the collapse frame — but via
-    // visibility, never display:none (a mid-tap target must not vanish).
+    // The footer leaves the a11y tree/paint AFTER the collapse plays — via
+    // delayed visibility, never display:none (a mid-tap target must not vanish).
     expect(open![0]).toMatch(/visibility:\s*hidden/);
+    expect(open![0]).toMatch(/visibility 0s var\(--tk-t3\)/);
   });
 
   it("B1 underlay literals in app.tsx mirror the --tk-bg theme values", () => {

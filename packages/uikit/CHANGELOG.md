@@ -18,6 +18,23 @@
   `<TKHeader>` without `onBack`/nav stack no longer renders a dead arrow;
   pass `back={true}` to force the old rendering.
 
+### Patch Changes (2026-07-16 device-testing sweep)
+
+- `TKSheet` with snap points no longer reveals blank panel background while
+  dragged between snaps — the content box is pinned to the full height for the
+  duration of the gesture and handed back to the committed snap on release
+  (OVL-013).
+- `TKWriteBar`'s send button prevents the pointerdown default so the tap no
+  longer blurs the composer first — on iOS the closing keyboard moved the bar
+  out from under the finger and the click never landed (CHT-007).
+- The page and its footer now ride the keyboard as one eased movement
+  (`--tk-t3`, collapses under reduced motion) instead of a discrete jump per
+  visualViewport event.
+- `.tk-press` sets `touch-action: manipulation` — no mobile double-tap-zoom
+  wait on kit controls.
+- The booking-card action (`TKBookingCard actionLabel`) is a real ≥44px hit
+  target (TCRD-004).
+
 ## 0.5.0
 
 ### Minor Changes

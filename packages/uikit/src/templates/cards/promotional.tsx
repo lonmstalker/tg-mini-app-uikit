@@ -181,15 +181,21 @@ export const TKBookingCard = /* @__PURE__ */ forwardRef<HTMLDivElement, TKBookin
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
+                  justifyContent: "center",
                   gap: 6,
-                  marginLeft: "auto",
                   color: "var(--tk-accent-ink)",
                   fontWeight: 600,
                   cursor: "pointer",
                   border: "none",
                   background: "none",
                   font: "inherit",
-                  padding: 0,
+                  // A 44px hit target without changing the card's visual
+                  // rhythm: the padding extends the tappable area and the
+                  // negative margins give the space right back (TCRD-004).
+                  minHeight: 44,
+                  minWidth: 44,
+                  padding: "12px 12px",
+                  margin: "-12px -12px -12px auto",
                 }}
               >
                 {actionLabel}

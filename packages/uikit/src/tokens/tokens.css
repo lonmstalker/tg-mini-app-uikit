@@ -250,10 +250,24 @@
   flex-shrink: 0;
   display: grid;
   grid-template-rows: 1fr;
+  /* Ride the keyboard as ONE eased movement (matching the page height below)
+     instead of a discrete jump per visualViewport event — the flip felt
+     violent on iOS. Collapses to 1ms under prefers-reduced-motion. */
+  transition: grid-template-rows var(--tk-t3) var(--tk-ease);
 }
 .tk-page-footer[data-kb-open] {
   grid-template-rows: 0fr;
   visibility: hidden;
+  /* Hide only AFTER the collapse played, so the bar shrinks out instead of
+     vanishing; on reopen visibility flips back instantly (delay 0s). */
+  transition: grid-template-rows var(--tk-t3) var(--tk-ease),
+              visibility 0s var(--tk-t3);
+}
+/* The keyboard shift itself: .tk-page height changes with --tk-kb-height in
+   one eased movement (the inline style only sets the calc; the timing lives
+   here so reduced-motion collapses it with the shared tokens). */
+.tk-page {
+  transition: height var(--tk-t3) var(--tk-ease);
 }
 
 /* ============ shared micro-interaction utilities ============ */
@@ -266,6 +280,10 @@
   cursor: pointer;
   user-select: none;
   -webkit-user-select: none;
+  /* Kill the mobile double-tap-zoom wait so taps commit immediately —
+     perceived latency on real devices, invisible in desktop browsers.
+     Gesture surfaces override this with their own inline touch-action. */
+  touch-action: manipulation;
 }
 .tk-press:active { transform: scale(.96); transition-duration: var(--tk-t1); }
 .tk-press-soft:active { transform: scale(.985); }

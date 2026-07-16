@@ -519,7 +519,9 @@ describe("expanded Telegram capabilities", () => {
     const sendData = vi.fn();
     const switchInlineQuery = vi.fn();
     const { result } = renderHook(() => useDataTransport(), {
-      wrapper: wrapperFor({ sendData, switchInlineQuery }),
+      // switchInlineQuery is version-gated (6.6) — the official bridge always
+      // reports a version, so the realistic client shape includes it.
+      wrapper: wrapperFor({ sendData, switchInlineQuery, isVersionAtLeast: () => true }),
     });
 
     expect(result.current.isSupported).toBe(true);

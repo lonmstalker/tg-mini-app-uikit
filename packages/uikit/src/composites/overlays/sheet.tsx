@@ -106,6 +106,10 @@ export const TKSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSheetProps>(
   const requestClose = useCallback(() => {
     closeRequest.current?.();
   }, []);
+  // The content box (sized to the CURRENT snap at rest) — during a drag it is
+  // expanded to the full pinned height so the area a drag-up reveals shows the
+  // sheet's own content, not blank panel background (OVL-013).
+  const boxRef = useRef<HTMLDivElement>(null);
 
   // Five modal hooks (focus-trap, scroll-lock, swipe-guard, z-stack, Back) in one
   // ordered call; `onClose` is gated by `dismissible` so the a11y Escape and the
@@ -158,6 +162,10 @@ export const TKSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSheetProps>(
       // Kill the transition before the first move — React's `dragging` commit
       // lands a beat later, and the finger must never be eased after.
       if (el) el.style.transitionDuration = "0s";
+      // Paint the content across the whole pinned height for the gesture:
+      // without this a drag past the current snap reveals empty panel
+      // background, and the content "pops in" only on release (OVL-013).
+      if (snapPoints && boxRef.current) boxRef.current.style.height = "100%";
     },
     onMove: (state) => {
       const el = ref.current;
@@ -172,6 +180,8 @@ export const TKSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSheetProps>(
       const g = dragGeom.current;
       dragGeom.current = null;
       setDragging(false);
+      // Hand the content box back to the committed snap's height (OVL-013).
+      if (boxRef.current) boxRef.current.style.height = "";
       // The sheet is settled by this interaction — never replay the entrance.
       setSettled(true);
       const maxH = g?.maxH ?? el?.clientHeight ?? 400;
@@ -272,8 +282,10 @@ export const TKSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSheetProps>(
       >
         {/* The visible box: sized to the CURRENT snap (the sheet itself stays at
             the tallest snap), so the content clips where the user sees the
-            sheet end. Resizes once per snap commit — never during a drag. */}
+            sheet end. Resizes once per snap commit; during a drag it is pinned
+            to the full height imperatively (OVL-013), never per frame. */}
         <div
+          ref={boxRef}
           style={{
             display: "flex",
             flexDirection: "column",
