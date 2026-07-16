@@ -77,14 +77,20 @@ gates + try/catch around every native call are mandatory.
 
 ## 6. On the phone, the pay CTA sits below the visible area, unreachable
 
-- **Root cause (best supported hypothesis)**: the app never called
-  `expand()` and sized itself at `100%` of a layout viewport that exceeds the
-  compact launch height on iOS — the bottom bar landed below the fold of a
-  non-scrollable flex layout.
-- **Demo**: `AppFrame` calls `expand()` on mount; `#root` is capped at
-  `var(--tg-viewport-stable-height, 100%)`.
-- **Not reproducible** in jsdom/mock (the mock viewport matches). Needs a
-  re-test on device; if it persists, next suspect is the host viewport CSS.
+- **Root cause, v2 (confirmed by the retest — "still half a button")**: the
+  launch classifier. `main.tsx` dropped the bridge whenever `initData` was
+  empty — but real clients legitimately launch with an empty `initData`
+  (e.g. the main Mini App opened from the bot profile), while ALWAYS stamping
+  `platform`. Those launches ran the app in the browser-fallback mode INSIDE
+  Telegram: a DOM pay bar instead of the native MainButton, no `expand()`
+  (the bridge was already deleted), an unmanaged viewport — the bar landed
+  half below the visible area with nothing to scroll.
+- **Demo fix**: `isRealTelegramBridge` (telegram/launch.ts) classifies by
+  `platform !== "unknown"` — the outside-Telegram stub's default — and
+  `initData` goes back to being what it is: a server-side auth artifact, not
+  a presence signal. Pinned by `launch.test.ts`. The v1 layer stays too:
+  `expand()` on mount + `#root` capped at
+  `min(100%, var(--tg-viewport-stable-height, 100%))`.
 
 ## 7. "Check in" button is hard to hit
 
@@ -123,7 +129,7 @@ gates + try/catch around every native call are mandatory.
 | 3 | device-findings #3 | kit `isAvailable` + demo gate |
 | 4 | device-findings #4 | kit OVL-013 + demo content-sized sheet |
 | 5 | booking.spec (updated) | demo UX call |
-| 6 | not reproducible off-device | demo expand + stable-height cap |
+| 6 | launch.test.ts (classifier); geometry needs the device | demo: platform-based bridge detection + expand + stable-height cap |
 | 7 | device-findings #7 | kit hit target |
 | 8 | device-findings #8 (CSS contract) | kit touch-action |
 | 9 | device-findings #9 + CSS contract | kit (pointerdown + eased shift) + demo toast |

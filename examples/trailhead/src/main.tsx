@@ -8,6 +8,7 @@ import { createMockTelegram } from "@tg-mini-app/telegram/testing";
 import { AppFrame } from "./AppFrame";
 import { configureMockApi, getMockApiConfig } from "./data/mockApi";
 import { StoreProvider } from "./store";
+import { isRealTelegramBridge } from "./telegram/launch";
 import { MockProvider } from "./telegram/mock-context";
 
 /*
@@ -54,7 +55,13 @@ async function ensureTelegramWebAppScript(): Promise<void> {
 function getTelegramLaunchBridge() {
   const bridge = getTelegramWebApp();
   if (!bridge) return null;
-  if (bridge.initData || bridge.initDataUnsafe?.user) return bridge;
+  // Classify by PLATFORM, not initData: a real client always stamps its
+  // platform, but can legitimately launch with an empty initData (e.g. the
+  // main Mini App opened from the bot profile). The initData check used here
+  // before misread those launches as "browser" and ran the DOM-fallback mode
+  // inside Telegram — no native MainButton, no expand(), a pay bar half below
+  // the visible area (wiki/device-testing.md #6).
+  if (isRealTelegramBridge(bridge)) return bridge;
 
   // telegram-web-app.js creates a browser stub even outside Telegram. Keeping
   // it would hide DOM fallbacks and call unsupported APIs, so treat it as absent.
