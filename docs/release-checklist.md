@@ -1,6 +1,6 @@
 # Release checklist
 
-Use this checklist after the automated gates in `plans.md` pass or when preparing a public package release.
+Use this checklist after the automated gates (lint, typecheck, unit, Playwright) pass or when preparing a public package release.
 
 ## Automated browser policy
 
@@ -41,9 +41,9 @@ Scenarios:
 
 Every release:
 
-- Run the final automated verification loop from `plans.md`.
+- Run the full automated verification loop (lint, typecheck, unit, Playwright, build).
 - Confirm package imports and `tg-mini-app-uikit/style.css` work from build output.
-- Review `plans.md` outcomes for unresolved P0/P1 issues.
+- Review open issues for unresolved P0/P1 items.
 
 Before minor, major, or runtime/platform releases:
 

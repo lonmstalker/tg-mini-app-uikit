@@ -116,7 +116,7 @@ export function useReducedMotion(): boolean {
 
 export type TKThemePreset = "ios" | "material";
 
-/** Preset = a named bundle of knobs (see plans.md Decision Log — no per-platform component forks). */
+/** Preset = a named bundle of knobs (see Decision Log in the archived plan, `git show 6aa57cb:plans.md` — no per-platform component forks). */
 const PRESET_KNOBS: Record<TKThemePreset, TKThemeKnobs> = {
   ios: {},
   material: { roundness: 0.5, motion: "smooth", motionSpeed: 1.15 },

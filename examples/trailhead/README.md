@@ -37,7 +37,8 @@ npm run telegram:preview -w trailhead
 `TELEGRAM_BOT_TOKEN` is optional for tunnel-only verification, but a real Mini
 App pass still needs a configured Telegram bot/client. If the token is present,
 the script calls `setChatMenuButton` with a `web_app` menu button. Press that
-menu button in Telegram, complete the checklist in `../../plans.md`, then stop
+menu button in Telegram, complete the real-client checklist (archived in git
+history: `git show 6aa57cb:plans.md`), then stop
 the script with `Ctrl-C`.
 
 ## The README recording (the ~30s hero)
