@@ -4,6 +4,18 @@
 
 ### Fixed
 
+- Keyboard, host-managed mode (KB-3): Telegram iOS RESIZES the webview for
+  the keyboard, so `innerHeight − vv.height` reads ≈0 with the keyboard open
+  and geometry alone said "closed". The WebKit pan toward the composer then
+  looked like a stuck leftover and the settle `scrollTo(0, 0)` fired UNDER
+  the open keyboard — the client's interactive-dismiss closed it (tap the
+  chat composer → layout slides, slides back, keyboard gone). The focused
+  root shrinking by ~a keyboard since focusin now marks the host-managed
+  mode: the settle scroll is suppressed while it holds (chevron-close
+  restores the root and settles on geometry as before), the mode is
+  remembered (`tk:kbHostAbsorbs`) so the next session's pre-shrink doesn't
+  flash a lift the host is about to make itself, and a geometry-confirmed
+  keyboard clears the memory. Pinned by KB-3 tests.
 - Keyboard: the applied `--tk-kb-height` is now the keyboard's real overlap
   with the lifted `.tk` root, not the raw `innerHeight − vv.height`. The raw
   value double-lifted on real iOS devices in two ways: when the HOST already
