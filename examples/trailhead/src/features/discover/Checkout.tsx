@@ -16,7 +16,6 @@ import {
   useTKToast,
 } from "tg-mini-app-uikit";
 import {
-  getTelegramWebApp,
   useBiometrics,
   useClosingConfirmation,
   useInvoice,
@@ -32,6 +31,18 @@ import { PrimaryAction, SecondaryAction } from "../../components/PrimaryAction";
 import { useMockHandle } from "../../telegram/mock-context";
 import { useBiometricAuth, useBiometricKeyAvailable } from "../../telegram/biometric-auth";
 import { formatDate, starsLabel } from "./format";
+
+/*
+ * The demo's reusable Stars invoice link. Mint once (needs only the bot token,
+ * run by hand — links from createInvoiceLink never expire and are multi-use):
+ *
+ *   curl -s "https://api.telegram.org/bot<TOKEN>/createInvoiceLink" \
+ *     -H 'content-type: application/json' \
+ *     -d '{"title":"Trailhead — demo booking","description":"Demo hike booking; no real service","payload":"trailhead-demo","currency":"XTR","prices":[{"label":"Demo","amount":1}]}'
+ *
+ * Paste the resulting https://t.me/$… link here or set the env var at build.
+ */
+const DEMO_INVOICE_LINK: string = import.meta.env.VITE_TRAILHEAD_INVOICE_LINK ?? "";
 
 type Phase = "idle" | "confirm" | "pin" | "paying" | "error" | "done";
 
@@ -132,24 +143,15 @@ export function Checkout({ active }: { active: boolean }) {
     if (mock) {
       return invoice.open(`https://t.me/$trailhead-${snapshot.experienceId}-${snapshot.checkout.total}`);
     }
-    const response = await fetch("/api/trailhead/invoice", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        ...(getTelegramWebApp()?.initData ? { authorization: `tma ${getTelegramWebApp()?.initData}` } : {}),
-      },
-      body: JSON.stringify({
-        experienceId: snapshot.experienceId,
-        title: snapshot.title,
-        date: snapshot.date,
-        slot: snapshot.slot,
-        totalStars: snapshot.checkout.total,
-      }),
-    });
-    if (!response.ok) return "failed";
-    const data = (await response.json()) as { invoiceUrl?: string };
-    if (!data.invoiceUrl) return "failed";
-    return invoice.open(data.invoiceUrl);
+    // A REAL native Stars sheet with no backend: Bot API createInvoiceLink
+    // links are permanent and reusable, so one link minted once by hand is
+    // baked into the build. Telegram resolves the slug server-side — an
+    // invented URL closes instantly as "failed", which is why a fake one
+    // can't demo the sheet. The sheet shows this fixed 1⭐ demo invoice, not
+    // the cart math; cancelling lands on the retry / "mark paid (demo)" step.
+    if (DEMO_INVOICE_LINK) return invoice.open(DEMO_INVOICE_LINK);
+    // No link baked in: complete as a demo payment instead of failing.
+    return "paid";
   };
 
   const settle = async () => {
