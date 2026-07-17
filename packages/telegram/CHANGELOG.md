@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+### Fixed
+
+- Keyboard: the applied `--tk-kb-height` is now the keyboard's real overlap
+  with the lifted `.tk` root, not the raw `innerHeight − vv.height`. The raw
+  value double-lifted on real iOS devices in two ways: when the HOST already
+  shrank the root (Telegram lowers `--tg-viewport-stable-height` on keyboard
+  and `#root` is capped to it), and when WebKit PANNED the page toward a
+  bottom field (`vv.offsetTop` ≈ keyboard height) — both drew the composer a
+  whole keyboard ABOVE the keyboard and made focus/tap targets jump. Keyboard
+  DETECTION still ignores `offsetTop` (KB-1.1); only the applied height
+  changed. A `ResizeObserver` on the `.tk` roots re-syncs when the host
+  resizes them without any `visualViewport` event. Pinned by KB-2 tests.
+
 ### Minor Changes
 
 - New `@tg-mini-app/telegram/bridge` export: the official

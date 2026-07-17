@@ -18,7 +18,7 @@
     "site:deploy": "node scripts/build-site.mjs",
     "test:e2e": "playwright test",
     "check:e2e-count": "node scripts/check-e2e-count.mjs",
-    "test:unit": "npm run test -w tg-mini-app-uikit",
+    "test:unit": "npm run test -w tg-mini-app-uikit && vitest run --root worker",
     "test:coverage": "npm run test:coverage -w tg-mini-app-uikit",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:update": "playwright test --update-snapshots",

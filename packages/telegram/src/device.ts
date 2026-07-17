@@ -140,8 +140,10 @@ export function useKeyboard(threshold = 80): TKKeyboardState {
         return prev.visible === next.visible && prev.height === next.height ? prev : next;
       });
       // recipe hook: `.tk-kb-open` + `--tk-kb-height` let CSS shrink pages and
-      // lift bottom bars above the keyboard
-      tkApplyKeyboardState(open, height);
+      // lift bottom bars above the keyboard. Geometry owns the applied height
+      // once the real resize confirmed the keyboard; before that (pre-shrink)
+      // the height is predictive.
+      tkApplyKeyboardState(open, height, covered > closeThreshold);
     };
     const syncFocusIn = () => {
       if (!preShrunk && !visible && knownKbHeight > 0 && tkIsEditableActive()) {
@@ -167,6 +169,13 @@ export function useKeyboard(threshold = 80): TKKeyboardState {
       focusOutTimer = window.setTimeout(sync, 100);
     };
     sync();
+    // The host can resize a .tk root WITHOUT any visualViewport event —
+    // Telegram lowers `--tg-viewport-stable-height` through its own event
+    // channel and the capped `#root` shrinks silently. Re-sync so the applied
+    // overlap tracks the root's real box, not the last vv snapshot. (Our own
+    // writes shrink the PAGE inside the root, not the root's box — no loop.)
+    const rootObserver = typeof ResizeObserver !== "undefined" ? new ResizeObserver(() => sync()) : undefined;
+    if (rootObserver) document.querySelectorAll<HTMLElement>(".tk").forEach((el) => rootObserver.observe(el));
     vv.addEventListener("resize", sync);
     vv.addEventListener("scroll", sync);
     document.addEventListener("focusin", syncFocusIn);
@@ -174,6 +183,7 @@ export function useKeyboard(threshold = 80): TKKeyboardState {
     document.addEventListener("visibilitychange", sync);
     window.addEventListener("focus", sync);
     return () => {
+      rootObserver?.disconnect();
       vv.removeEventListener("resize", sync);
       vv.removeEventListener("scroll", sync);
       document.removeEventListener("focusin", syncFocusIn);
@@ -220,10 +230,38 @@ function tkIsDocumentScrollable(): boolean {
   return !!el && el.scrollHeight > el.clientHeight;
 }
 
+/*
+ * How much of the keyboard actually overlaps THIS root's box. The raw
+ * `height` (innerHeight − vv.height) over-lifts in two real device cases:
+ *  - the HOST already shrank the root (Telegram iOS lowers
+ *    `--tg-viewport-stable-height` on keyboard, capping `#root`) — the
+ *    residual overlap is `rootBottom − visibleBottom`, near 0;
+ *  - WebKit PANNED the page toward a bottom field (`vv.offsetTop` ≈ keyboard
+ *    height) — the pan already moved the bar up, so subtracting the full
+ *    height again drew it a whole keyboard ABOVE the keyboard (the "composer
+ *    jumps to the top" report). `offsetTop` stays ignored for DETECTION
+ *    (zeroing `covered` there reported the keyboard closed while open) — it
+ *    participates only in the applied overlap.
+ * Before the confirming resize (pre-shrink) vv is still full-size, so the
+ * overlap must be PREDICTED instead: the stored keyboard height minus
+ * whatever gap the host already keeps below the root. Roots jsdom/SSR cannot
+ * measure (zero-size rect) keep the raw height — the historical behavior.
+ */
+function tkRootOverlap(root: HTMLElement, height: number, geometryOwns: boolean): number {
+  const vv = typeof window !== "undefined" ? window.visualViewport : undefined;
+  const rect = root.getBoundingClientRect();
+  if (!vv || rect.height <= 0) return height;
+  if (!geometryOwns) {
+    return Math.max(0, height - Math.max(0, Math.round(window.innerHeight - rect.bottom)));
+  }
+  const visibleBottom = (vv.offsetTop ?? 0) + vv.height;
+  return Math.min(height, Math.max(0, Math.round(rect.bottom - visibleBottom)));
+}
+
 // Ref-counted so concurrent consumers don't fight and the class is cleared only
 // once they have all unmounted.
 let tkKbConsumers = 0;
-function tkApplyKeyboardState(open: boolean, height: number): void {
+function tkApplyKeyboardState(open: boolean, height: number, geometryOwns = false): void {
   if (typeof document === "undefined") return;
   const roots = document.querySelectorAll<HTMLElement>(".tk");
   // Scope the lift to the root that actually contains the focused editable, so a
@@ -243,7 +281,7 @@ function tkApplyKeyboardState(open: boolean, height: number): void {
     // it via calc() + transition. Written on the .tk root, NOT documentElement
     // (multi-root apps). Sub-4px wobble is ignored so a vv jitter mid-animation
     // doesn't restart the transition — except across the open/close boundary.
-    const next = lifted ? height : 0;
+    const next = lifted ? tkRootOverlap(el, height, geometryOwns) : 0;
     const prev = parseFloat(el.style.getPropertyValue("--tk-kb-height")) || 0;
     const crossing = (prev === 0) !== (next === 0);
     if (crossing || Math.abs(next - prev) >= 4) {

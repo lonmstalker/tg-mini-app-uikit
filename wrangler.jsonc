@@ -1,13 +1,16 @@
-// Cloudflare Workers (static assets) config for the combined showcase site.
-// The Workers Builds flow runs the build command (`SITE_BASE=/ npm run site:deploy`,
-// which assembles landing + /demo + /storybook + /docs into site-dist/) and then
-// `npx wrangler deploy`, which serves that directory as static assets — no worker
-// script needed.
+// Cloudflare Workers config for the combined showcase site. The Workers Builds
+// flow runs the build command (`SITE_BASE=/ npm run site:deploy`, which
+// assembles landing + /demo + /storybook + /docs + /trailhead into site-dist/)
+// and then `npx wrangler deploy`. Static assets are served directly; the small
+// worker script only handles /api/* (Stars invoice creation for the Trailhead
+// checkout — needs the TELEGRAM_BOT_TOKEN secret, see worker/index.ts).
 {
   "name": "tg-mini-app-uikit",
+  "main": "worker/index.ts",
   "compatibility_date": "2026-07-01",
   "assets": {
     "directory": "./site-dist",
+    "binding": "ASSETS",
     "html_handling": "auto-trailing-slash"
   }
 }
