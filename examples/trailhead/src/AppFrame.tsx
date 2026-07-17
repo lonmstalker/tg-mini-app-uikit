@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { TKProvider, TKToastProvider } from "tg-mini-app-uikit";
 import { useTelegramTheme, useWebApp } from "@tg-mini-app/telegram";
 import { App } from "./App";
+import { KeyboardDebug, kbDebugRequested } from "./components/KeyboardDebug";
 import { LangProvider } from "./i18n";
 import { useStore } from "./store";
 import { useMockHandle } from "./telegram/mock-context";
@@ -57,6 +58,7 @@ export function AppFrame() {
       >
         <TKToastProvider>
           <App />
+          {kbDebugRequested() ? <KeyboardDebug /> : null}
         </TKToastProvider>
       </TKProvider>
     </LangProvider>
