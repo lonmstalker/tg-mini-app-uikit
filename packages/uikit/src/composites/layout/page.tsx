@@ -51,13 +51,12 @@ export interface TKPageProps {
  * Keyboard contract: with a `footer`, the page height is
  * `calc(100% - var(--tk-kb-height))` — `--tk-kb-height` is written on the
  * `.tk` root by `useKeyboard`; the change lands in one jump (no layout
- * animation — the OS keyboard slide masks it). The
- * 100% base must be a viewport the HOST has not already shrunk by the
- * keyboard. A `min(var(--tg-viewport-stable-height), 100%)` host cap is fine
- * (stable-height ignores the keyboard on iOS; Android resizes the WebView so
- * `covered≈0` and there is nothing to subtract twice) — keep it, it guards
- * the expand jump. What DOES double-subtract is a host-managed height fed
- * from `visualViewport.height` (an `--app-height` pattern): remove that one.
+ * animation — the OS keyboard slide masks it). The var is the keyboard's
+ * measured overlap with THIS root's box (KB-2), so a host that already keeps
+ * the root above the keyboard — a `min(var(--tg-viewport-stable-height),
+ * 100%)` cap on `#root`, an Android WebView resize, a WebKit pan — is
+ * subtracted automatically instead of double-lifting the footer. Host caps
+ * are safe to keep either way; they guard the expand jump.
  */
 export const TKPage = /* @__PURE__ */ forwardRef<HTMLDivElement, TKPageProps>(function TKPage(
   {

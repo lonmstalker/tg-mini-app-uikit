@@ -109,6 +109,16 @@ gates + try/catch around every native call are mandatory.
   copy when bumping the supported Bot API level
   (`curl -o packages/telegram/bridge/telegram-web-app.cjs
   https://telegram.org/js/telegram-web-app.js`).
+- **Resolution, v4 (the actual cause of the reported symptom)**: with v3
+  deployed the device retest confirmed NATIVE mode (Telegram-chrome Back
+  arrow, working biometrics) — and the half-visible button turned out to be
+  the NATIVE MainButton, clipped identically in EVERY Mini App on that
+  client (@wallet included). That is a Telegram-iOS client rendering bug, not
+  app behavior; nothing web-side draws or can fix that button. v1–v3 remain
+  correct on their own merits (compact-launch layout, honest launch
+  classification, deterministic bridge load), but none of them was the cause
+  of this symptom. Remedy: update the Telegram iOS app; report to Telegram if
+  it persists on stable.
 
 ## 7. "Check in" button is hard to hit
 

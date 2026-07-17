@@ -563,3 +563,89 @@ describe("KB-1.2 leftover WebKit pan settles by keyboard geometry, not focus", (
     expect(window.scrollTo).toHaveBeenCalledWith(0, 0);
   });
 });
+
+/* ---------------- KB-2 · applied var clamps to the root's real overlap ---------------- */
+
+/** jsdom rects are zero-size; give the root a real box like a laid-out app. */
+function measureRoot(root: HTMLElement, bottom: number) {
+  root.getBoundingClientRect = () =>
+    ({ top: 0, left: 0, right: 390, width: 390, bottom, height: bottom, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect;
+}
+
+describe("KB-2 applied --tk-kb-height is the keyboard's overlap with the root, not the raw height", () => {
+  it("(a) a host-shrunk root (Telegram lowered the stable viewport) gets ~0 instead of a second subtraction", () => {
+    const { vv, fire, innerHeight } = installVV();
+    const root = tkRoot();
+    root.append(input);
+    measureRoot(root, innerHeight - 300); // the host already keeps the root above the keyboard
+    const { result } = renderHook(() => useKeyboard(80));
+    input.focus();
+    act(() => {
+      vv.height = innerHeight - 300;
+      fire("resize");
+    });
+    // Detection is untouched — the keyboard is open at its true height…
+    expect(result.current).toEqual({ visible: true, height: 300 });
+    // …but the root is not lifted a second keyboard up.
+    expect(parseFloat(root.style.getPropertyValue("--tk-kb-height")) || 0).toBe(0);
+    root.remove();
+    input = document.createElement("input");
+  });
+
+  it("(b) a WebKit pan reduces the applied height by the panned distance", () => {
+    const { vv, fire, innerHeight } = installVV();
+    const root = tkRoot();
+    root.append(input);
+    measureRoot(root, innerHeight);
+    renderHook(() => useKeyboard(80));
+    input.focus();
+    act(() => {
+      vv.height = innerHeight - 300;
+      fire("resize");
+    });
+    expect(root.style.getPropertyValue("--tk-kb-height")).toBe("300px");
+    // WebKit pans the page toward the bottom field: the content already moved
+    // up by ~the keyboard — subtracting the full height again drew the bar a
+    // whole keyboard ABOVE the keyboard (the "composer at the top" report).
+    act(() => {
+      vv.offsetTop = 290;
+      fire("scroll");
+    });
+    expect(root.style.getPropertyValue("--tk-kb-height")).toBe("10px");
+    root.remove();
+    input = document.createElement("input");
+  });
+
+  it("(c) a full-height root keeps the historical raw height", () => {
+    const { vv, fire, innerHeight } = installVV();
+    const root = tkRoot();
+    root.append(input);
+    measureRoot(root, innerHeight);
+    renderHook(() => useKeyboard(80));
+    input.focus();
+    act(() => {
+      vv.height = innerHeight - 300;
+      fire("resize");
+    });
+    expect(root.style.getPropertyValue("--tk-kb-height")).toBe("300px");
+    root.remove();
+    input = document.createElement("input");
+  });
+
+  it("(d) pre-shrink predicts against the gap the host already keeps below the root", () => {
+    window.localStorage.setItem("tk:kbHeight", "300");
+    const { innerHeight } = installVV();
+    const root = tkRoot();
+    root.append(input);
+    measureRoot(root, innerHeight - 250); // compact-launch: host already ends the root early
+    renderHook(() => useKeyboard(80));
+    act(() => {
+      input.focus();
+      document.dispatchEvent(new FocusEvent("focusin", { bubbles: true }));
+    });
+    // Stored 300, host already absorbs 250 → only the residual 50 pre-shrinks.
+    expect(root.style.getPropertyValue("--tk-kb-height")).toBe("50px");
+    root.remove();
+    input = document.createElement("input");
+  });
+});
