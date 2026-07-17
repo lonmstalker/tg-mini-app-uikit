@@ -24,34 +24,6 @@ configureMockApi({
   delayMs: params.get("fast") === "1" ? 60 : getMockApiConfig().delayMs,
 });
 
-async function ensureTelegramWebAppScript(): Promise<void> {
-  if (forceMock || import.meta.env.DEV || getTelegramWebApp()) return;
-
-  const src = "https://telegram.org/js/telegram-web-app.js";
-  const existing = document.querySelector<HTMLScriptElement>(`script[src="${src}"]`);
-  await new Promise<void>((resolve) => {
-    let done = false;
-    const finish = () => {
-      if (done) return;
-      done = true;
-      resolve();
-    };
-
-    const script = existing ?? document.createElement("script");
-    script.addEventListener("load", finish, { once: true });
-    script.addEventListener("error", finish, { once: true });
-
-    if (!existing) {
-      script.src = src;
-      script.async = false;
-      script.dataset.trailheadTelegramWebApp = "true";
-      document.head.append(script);
-    }
-
-    window.setTimeout(finish, 1500);
-  });
-}
-
 function getTelegramLaunchBridge() {
   const bridge = getTelegramWebApp();
   if (!bridge) return null;
@@ -74,11 +46,27 @@ function getTelegramLaunchBridge() {
 
 async function bootstrap() {
   /*
+   * The official bridge, vendored inside the kit and bundled as an app chunk.
+   * Loaded ONLY when a host hasn't already provided `window.Telegram.WebApp`
+   * (the e2e probe pre-injects one, and the vendored script would clobber it)
+   * — same origin and properly awaited, unlike the old runtime injection from
+   * telegram.org that raced a 1.5s timeout and, on slow mobile routes, lost —
+   * browser-fallback mode inside Telegram, the pay bar half off-screen
+   * (wiki/device-testing.md #6, v3).
+   */
+  if (!getTelegramWebApp()) {
+    try {
+      await import("@tg-mini-app/telegram/bridge");
+    } catch {
+      /* chunk unreachable — stay an honest plain browser */
+    }
+  }
+
+  /*
    * Production must not silently turn into a fake Telegram runtime: real Mini
    * Apps get the official bridge, local/dev previews get the injected mock, and
    * production browser fallback stays honest unless `?mock=1` is explicit.
    */
-  await ensureTelegramWebAppScript();
   const realBridge = getTelegramLaunchBridge();
   const shouldUseMock = !realBridge && !disableMock && (import.meta.env.DEV || forceMock);
   const mock = shouldUseMock ? createMockTelegram({ colorScheme: "light" }) : null;

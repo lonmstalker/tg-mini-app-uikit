@@ -75,6 +75,11 @@ const sourceAliases = [
     find: "@tg-mini-app/telegram/testing",
     replacement: fromHere("../../packages/telegram/src/testing.ts"),
   },
+  // Raw vendored asset — must win over the bare-name alias below.
+  {
+    find: "@tg-mini-app/telegram/bridge",
+    replacement: fromHere("../../packages/telegram/bridge/telegram-web-app.cjs"),
+  },
   {
     find: "@tg-mini-app/telegram",
     replacement: fromHere("../../packages/telegram/src/index.ts"),

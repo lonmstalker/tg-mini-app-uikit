@@ -3,10 +3,18 @@ import { passOnboarding } from "./helpers";
 
 async function openDiscover(page: Page, query = "/?fast=1") {
   await page.goto(query);
+  // The app boots async (the vendored bridge chunk loads before render), so a
+  // bare count() right after goto() races the first render — on a cold CI
+  // server it read 0, skipped onboarding, and the welcome overlay swallowed
+  // every later click. Wait for the app to render first: the feed list mounts
+  // in the same commit as the welcome sheet (and stays Playwright-visible
+  // beneath it), so the count() check below is race-free. The check itself
+  // stays: repeat openDiscover() calls on one page (the viewport loop) land
+  // with onboarding already dismissed.
+  await expect(page.getByTestId("feed-list")).toBeVisible();
   if ((await page.getByTestId("welcome-dismiss").count()) > 0) {
     await passOnboarding(page);
   }
-  await expect(page.getByTestId("feed-list")).toBeVisible();
 }
 
 async function overlapInCard(page: Page, id: string, metaPrefix: string): Promise<boolean> {

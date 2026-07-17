@@ -33,6 +33,13 @@ const sourceAliases = [
     replacement: fromHere("../../packages/uikit/src/tokens/tokens.css"),
   },
   testingAlias,
+  // The vendored bridge is a raw asset, not part of src/ — point the subpath
+  // at the file so it wins over the bare-name alias below. (In dist-parity the
+  // package's `exports["./bridge"]` resolves it.)
+  {
+    find: "@tg-mini-app/telegram/bridge",
+    replacement: fromHere("../../packages/telegram/bridge/telegram-web-app.cjs"),
+  },
   // The kit source (aliased below) imports the platform peer by name; resolve
   // it to telegram's source too. (In dist-parity this is dropped — the kit's
   // dist imports it and the workspace symlink resolves to telegram's dist.)
