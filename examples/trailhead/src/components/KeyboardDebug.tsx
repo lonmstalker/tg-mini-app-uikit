@@ -20,7 +20,9 @@ export function kbDebugRequested(): boolean {
   }
 }
 
-const MAX_LINES = 30;
+// Newest entry is PREPENDED so the visible top of the readout is always the
+// latest event and overflow clipping eats the oldest lines, not the newest.
+const MAX_LINES = 22;
 
 function snapshot(): string {
   const vv = window.visualViewport;
@@ -42,19 +44,19 @@ function snapshot(): string {
 }
 
 export function KeyboardDebug() {
-  const [lines, setLines] = useState<string[]>([]);
+  const [lines, setLines] = useState<string[]>(() => [`     0 start     ${snapshot()}`]);
   useEffect(() => {
     const t0 = performance.now();
     const log = (tag: string) => {
       const line = `${String(Math.round(performance.now() - t0)).padStart(6)} ${tag.padEnd(9)} ${snapshot()}`;
-      setLines((prev) => [...prev.slice(-(MAX_LINES - 1)), line]);
+      setLines((prev) => [line, ...prev.slice(0, MAX_LINES - 1)]);
     };
 
     const vv = window.visualViewport;
     const onVvResize = () => log("vv.resize");
     const onVvScroll = () => log("vv.scroll");
-    vv?.addEventListener("resize", onVvResize);
-    vv?.addEventListener("scroll", onVvScroll);
+    vv?.addEventListener("resize", onVvResize, { passive: true });
+    vv?.addEventListener("scroll", onVvScroll, { passive: true });
 
     const onFocusIn = () => log("focusin");
     const onFocusOut = () => log("focusout");
@@ -78,14 +80,14 @@ export function KeyboardDebug() {
     const ro = new ResizeObserver(() => log("root.size"));
     document.querySelectorAll<HTMLElement>(".tk").forEach((el) => ro.observe(el));
 
-    // The settle scroll (and anything else yanking the page).
+    // The settle scroll (and anything else yanking the page). No "start" log
+    // here — the initial snapshot seeds useState directly.
     const realScrollTo = window.scrollTo.bind(window);
     (window as { scrollTo: typeof window.scrollTo }).scrollTo = ((...args: unknown[]) => {
       log(`scrollTo(${args.map((a) => (typeof a === "object" ? JSON.stringify(a) : String(a))).join(",")})`);
       return (realScrollTo as (...a: unknown[]) => void)(...args);
     }) as typeof window.scrollTo;
 
-    log("start");
     return () => {
       vv?.removeEventListener("resize", onVvResize);
       vv?.removeEventListener("scroll", onVvScroll);
@@ -113,9 +115,11 @@ export function KeyboardDebug() {
         zIndex: 99999,
         pointerEvents: "none",
         fontFamily: "ui-monospace, Menlo, monospace",
-        fontSize: 8,
-        lineHeight: 1.3,
-        whiteSpace: "pre",
+        fontSize: 12,
+        lineHeight: 1.25,
+        whiteSpace: "pre-wrap",
+        wordBreak: "break-all",
+        maxHeight: "55vh",
         overflow: "hidden",
         color: "#8f8",
         background: "rgba(0,0,0,0.74)",
