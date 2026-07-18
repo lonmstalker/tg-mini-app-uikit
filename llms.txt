@@ -13,7 +13,7 @@
 - `import "tg-mini-app-uikit/style.css"` once (tokens + utilities, lives in the `tk` CSS layer).
 - App entry: `await tkResolveTelegramBridge()` before mount — loads the vendored `telegram-web-app.js` (never from telegram.org at runtime) and classifies the launch (`isRealTelegramBridge`); real client → native chrome, `null` → browser fallbacks.
 - Wrap the app: `<TKTelegramProvider haptics><TKProvider theme="dark" telegram accent="#3390ec">…`
-- Shell: `TKAppShell` caps the app column at the stable viewport (no iOS keyboard two-jump); `TKApp` bundles shell + host background, bare-`TKProvider` apps call `useTKHostBackground(theme)` to paint html/body. `TKViewportForensics` = on-device debug overlay behind `?kbdebug=1`.
+- Shell: `TKAppShell` caps the app column at the stable viewport (no iOS keyboard two-jump) — mount it yourself, `TKApp` does NOT include it. `TKApp` bundles the providers + host background; bare-`TKProvider` apps call `useTKHostBackground(theme)` to paint html/body. `TKViewportForensics` = on-device debug overlay behind `?kbdebug=1`.
   - `TKProvider` renders the `.tk` root: anchors overlays/toasts, owns the CSS variables.
   - `telegram` flag inherits the live `--tg-theme-*` palette; `preset="material"` flattens radii.
   - `TKTelegramProvider webApp={mock}` injects a WebApp implementation (tests, browsers).
@@ -27,7 +27,7 @@
 - Lists: TKListGroup, TKCell (polymorphic, toggle/badge/chevron), TKAccordion (lazy), TKInfiniteList, TKVirtualList (fixed row height), TKSwipeCell (leading/trailing actions, full swipe).
 - Navigation: TKNavStack/TKNavPanel/useNav (push/pop/replace/popTo, swipe-back edge|anywhere, state preserved), TKHeader (large, collapsing, back="auto" dedups the native Back button), TKTabbar, TKTabView (keep-mounted bottom-tab shell, tabbar auto-hides under keyboard), TKKeepMountTabs/TKKeepMountTab + useTabActive, TKSegmented, TKCategoryTabs, TKSteps, TKPageDots.
 - Overlays: TKSheet (snapPoints, sheetRef close/snapTo, dismissible, swipe-to-close, modal={false} passive mode), TKDialog (onConfirm on Enter), TKActionSheet, TKPopper (arrow, autoFlip), TKTooltip, TKToastProvider/useTKToast (position top|bottom, action), TKImageViewer (shared-element open, pinch-zoom, swipe-down close), TKNoticeBar (tone strip, marquee), TKFrame. Modal overlays suppress the native Main/Secondary buttons while open (opt out per overlay: nativeButtons="keep").
-- Layout: TKApp (bootstrap: shell + host background), TKAppShell (stable-viewport-capped column), TKPage (scroll context for collapsing headers), TKSafeArea, TKBottomBar, TKViewportForensics (?kbdebug=1 overlay).
+- Layout: TKApp (providers + host background; pair with TKAppShell), TKAppShell (stable-viewport-capped column), TKPage (scroll context for collapsing headers), TKSafeArea, TKBottomBar, TKViewportForensics (?kbdebug=1 overlay).
 - Patterns: TKMessages/TKMessageBubble/TKWriteBar (chat), TKOnboardingTooltip (coach marks + storage adapter), TKConfetti (reduced-motion safe), TKPullToRefresh, TKSlotPicker, TKPaymentSummary, TKXPHeader, TKLeaderboard, TKWalletConnectButton/TKWalletStatusCell, TKEmptyState, TKAsyncState/AsyncBoundary (one of loading/error/empty), skeletons (TKSkeleton, TKSkeletonText, TKSkeletonCard, TKSkeletonList, TKSkeletonTable), TKProgress/TKRing/TKBars/TKTimeline, cards (TKCard, TKCardCell, TKCardChip, TKProductCardA, TKProductCardB, TKBannerCard, TKBookingCard, TKStatTile).
 
 ## Platform hooks (Bot API 9.6, all degrade to no-ops outside Telegram)

@@ -4,7 +4,7 @@ This is the long-form companion to `llms.txt`. It is written for coding agents t
 
 ## Component inventory
 
-Providers and app bootstrap: `TKProvider` (the `.tk` root: CSS variables, overlay/toast anchor), `TKTelegramProvider` (bridge + haptics, `webApp=` mock injection), `TKLocaleProvider`, `TKApp` (bootstrap: shell + host background), `TKAppShell` (stable-viewport-capped app column — no iOS keyboard two-jump), `TKViewportForensics` (on-device debug overlay behind `?kbdebug=1`). App entry: `tkResolveTelegramBridge()` loads the vendored bridge and classifies the launch via `isRealTelegramBridge`.
+Providers and app bootstrap: `TKProvider` (the `.tk` root: CSS variables, overlay/toast anchor), `TKTelegramProvider` (bridge + haptics, `webApp=` mock injection), `TKLocaleProvider`, `TKApp` (providers + host background — it does not mount the shell), `TKAppShell` (stable-viewport-capped app column — no iOS keyboard two-jump; mount it yourself under `TKApp`), `TKViewportForensics` (on-device debug overlay behind `?kbdebug=1`). App entry: `tkResolveTelegramBridge()` loads the vendored bridge and classifies the launch via `isRealTelegramBridge`.
 
 Actions: `TKButton`, `TKIconButton`, `TKMainButton`, `TKInlineButtons`, `TKTappable`, `TKSpinner`.
 
