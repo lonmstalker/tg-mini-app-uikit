@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+### Minor Changes (launch & debug surface)
+
+- `tkResolveTelegramBridge()`: kit-owned app-entry launch resolution — loads
+  the vendored bridge as a bundled chunk only when the host didn't provide
+  `window.Telegram.WebApp` (never clobbers a pre-injected bridge or a test
+  double), classifies by `platform` via the new `isRealTelegramBridge()`
+  (empty `initData` is a legitimate real-client launch shape), and deletes
+  the outside-Telegram stub. Promoted from the Trailhead demo after three
+  real-device iterations (wiki/ios-debugging.md).
+- `TKViewportForensics` + `tkViewportDebugRequested()`: the on-device
+  viewport/keyboard forensics overlay (Safari's inspector cannot attach to
+  Telegram's WKWebView). Logs vv geometry, the bridge's `viewportChanged`,
+  `.tk` root box changes, every `--tk-kb-height` write, focus moves and
+  `window.scrollTo` calls into an on-screen readout — one screenshot
+  reconstructs the timeline. Tree-shaken when unused; displays geometry only.
+
 ### Fixed
 
 - Keyboard, bridge-managed viewport (KB-4, pinned from an on-device

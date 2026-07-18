@@ -15,3 +15,5 @@ export type { TKCloudStorage, TKInitData } from "./storage";
 export * from "./capabilities";
 export * from "./identity";
 export * from "./device";
+export * from "./launch";
+export * from "./debug";

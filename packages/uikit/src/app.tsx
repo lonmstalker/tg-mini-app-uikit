@@ -5,11 +5,11 @@ import {
   TKTelegramProvider,
   getTelegramWebApp,
   useKeyboard,
-  useWebApp,
   type TKTelegramProviderProps,
   type TKTheme,
   useTelegramTheme,
 } from "./foundation/telegram";
+import { useTKHostBackground } from "./foundation/host-background";
 import { TKToastProvider, type TKToastProviderProps } from "./composites/overlays";
 
 export interface TKAppProps extends TKThemeKnobs {
@@ -121,39 +121,9 @@ function TKAppRoot({
   // One keyboard controller per app: maintains --tk-kb-height / .tk-kb-open on
   // the .tk roots (ref-counted, nested useKeyboard consumers share it).
   useKeyboard();
-  const wa = useWebApp();
-  useEffect(() => {
-    if (typeof document === "undefined") return;
-    const html = document.documentElement;
-    const body = document.body;
-    // The WKWebView underlay is black: an iOS pan or a viewport-height jump
-    // exposed it as black flashes — paint it in the theme background. Rubber-
-    // band overscroll on the body feeds Telegram's swipe-to-minimize gesture.
-    // The --tg-theme-* globals exist only when the host telegram-web-app.js
-    // script ran; outside real Telegram the fallback must follow the kit's
-    // RESOLVED theme, or a dark app sits on a light-flashing page.
-    // #0e1621/#eef1f6 mirror --tk-bg in tokens.css (pinned by tokens-contract);
-    // --tk-bg itself is scoped to .tk and cannot be read from html/body.
-    const fallback = resolved === "dark" ? "#0e1621" : "#eef1f6";
-    const bg = `var(--tg-theme-secondary-bg-color, var(--tg-theme-bg-color, ${fallback}))`;
-    const previous = [html.style.background, html.style.overscrollBehavior, body.style.background, body.style.overscrollBehavior] as const;
-    html.style.background = bg;
-    body.style.background = bg;
-    html.style.overscrollBehavior = "none";
-    body.style.overscrollBehavior = "none";
-    try {
-      // Keep the native chrome behind the app in the same color family.
-      wa?.setBackgroundColor?.("secondary_bg_color");
-    } catch {
-      /* older clients throw on unsupported calls */
-    }
-    return () => {
-      html.style.background = previous[0];
-      html.style.overscrollBehavior = previous[1];
-      body.style.background = previous[2];
-      body.style.overscrollBehavior = previous[3];
-    };
-  }, [wa, resolved]);
+  // html/body/native-chrome painting — extracted so bare-TKProvider apps can
+  // call it too (a revealed unpainted page flashes white under the keyboard).
+  useTKHostBackground(resolved);
   return (
     <TKProvider
       theme={resolved}

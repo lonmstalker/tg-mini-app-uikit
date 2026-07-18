@@ -1,5 +1,23 @@
 # tg-mini-app-uikit
 
+## Unreleased
+
+### Minor Changes
+
+- `TKAppShell`: the app's outermost sized element — a flex column capped at
+  the bridge's STABLE viewport (`min(100dvh, var(--tg-viewport-stable-height,
+  100dvh))`, `.tk-app-shell` in tokens.css) and eased with the kit's
+  keyboard-shift tokens. Bare `100dvh` tracks the layout viewport, which
+  Telegram iOS resizes LAST on keyboard open — the page scrolled to the
+  composer and snapped back (the two-jump keyboard jerk,
+  wiki/ios-debugging.md). One per app, under the providers.
+- `useTKHostBackground(resolvedTheme)`: the html/body/native-chrome painting
+  `TKApp` always did, extracted for apps composing bare `TKProvider` —
+  `--tk-*` tokens don't resolve at html/body level, so an unpainted page
+  flashes UA-white wherever the host reveals it (overscroll, WebKit pans, the
+  strip under a shrinking shell during the keyboard animation). `TKApp` now
+  uses the hook internally; no behavior change for `TKApp` consumers.
+
 ## 0.6.0
 
 ### Minor Changes

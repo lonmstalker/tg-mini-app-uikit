@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { TKTabView } from "tg-mini-app-uikit";
+import { TKAppShell, TKTabView } from "tg-mini-app-uikit";
 import { useVerticalSwipes, useViewport } from "@tg-mini-app/telegram";
 import { useT } from "./i18n";
 import { TABS, type TabId } from "./tabs";
@@ -73,29 +73,9 @@ export function App() {
 
   return (
     <TabNavProvider goToTab={goToTab}>
-      <div
-        data-testid="app-shell"
-        // Capped at the bridge's stable viewport, not bare 100dvh: dvh tracks
-        // the LAYOUT viewport, which Telegram iOS resizes LAST when the
-        // keyboard opens — the shell stayed full-height, WebKit scrolled 345px
-        // down to reveal the composer, then the late webview resize snapped
-        // the scroll back (the two-jump "screen jerks" report, KB-4 tail).
-        // The stable var lands ~400ms earlier, so the shell shrinks together
-        // with the keyboard animation and WebKit never needs to pan. The
-        // TRANSITION is the same one .tk-page uses for its keyboard shift:
-        // an instant cap exposed the theme background below for the whole
-        // keyboard animation and teleported the composer; eased over ~t3 the
-        // composer rides the keyboard and the exposed strip collapses to the
-        // few px of animation mismatch (no per-frame keyboard position exists
-        // on iOS WebKit to track it exactly).
-        style={{
-          height: "min(100dvh, var(--tg-viewport-stable-height, 100dvh))",
-          transition: "height var(--tk-t3) var(--tk-ease)",
-          display: "flex",
-          flexDirection: "column",
-          background: "var(--tk-bg)",
-        }}
-      >
+      {/* The stable-viewport cap + keyboard-riding ease live in the kit now
+          (.tk-app-shell — see TKAppShell docs and wiki/ios-debugging.md). */}
+      <TKAppShell testId="app-shell">
         <TKTabView
           testId="tabbar"
           tabs={tabItems}
@@ -110,7 +90,7 @@ export function App() {
         />
         <MockBadge />
         <Onboarding tabbarRef={tabbarRef} contentRef={contentRef} />
-      </div>
+      </TKAppShell>
     </TabNavProvider>
   );
 }

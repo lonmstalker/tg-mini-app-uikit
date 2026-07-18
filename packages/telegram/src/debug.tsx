@@ -1,17 +1,25 @@
 import { useEffect, useState } from "react";
-import { getTelegramWebApp } from "@tg-mini-app/telegram";
+import { getTelegramWebApp } from "./provider";
 
 /*
- * On-device keyboard forensics. Activated by `?kbdebug=1` (append it to the
- * BotFather menu URL) or start_param `kbdebug`; renders nothing otherwise.
- * Logs every signal the keyboard controller acts on — visualViewport
- * geometry, Telegram's viewportChanged, the .tk root box, every
- * `--tk-kb-height` / `tk-kb-open` write, focus moves and window.scrollTo
- * calls — as an always-on-top readout, so ONE screenshot after a failed
- * composer tap reconstructs the whole timeline.
+ * On-device viewport/keyboard forensics (wiki/ios-debugging.md). Safari's
+ * remote inspector cannot attach to Telegram's WKWebView, so when a viewport
+ * bug reproduces only on a real device, mount this overlay and read the
+ * timeline from ONE screenshot. It logs every signal the kit's keyboard
+ * controller acts on: visualViewport resize/scroll with full geometry, the
+ * bridge's viewportChanged, `.tk` root box changes, every `--tk-kb-height` /
+ * `tk-kb-open` write, focus moves, and `window.scrollTo` calls.
+ *
+ * Gate it yourself (it renders whenever mounted):
+ *
+ *   {tkViewportDebugRequested() ? <TKViewportForensics /> : null}
+ *
+ * Tree-shaken out of apps that never import it.
  */
 
-export function kbDebugRequested(): boolean {
+/** True when the launch URL carries `?kbdebug=1` or start_param `kbdebug`. */
+export function tkViewportDebugRequested(): boolean {
+  if (typeof window === "undefined") return false;
   try {
     if (new URLSearchParams(window.location.search).get("kbdebug") === "1") return true;
     return getTelegramWebApp()?.initDataUnsafe?.start_param === "kbdebug";
@@ -25,6 +33,7 @@ export function kbDebugRequested(): boolean {
 const MAX_LINES = 22;
 
 function snapshot(): string {
+  if (typeof window === "undefined") return "ssr";
   const vv = window.visualViewport;
   const root = document.querySelector<HTMLElement>(".tk");
   const rect = root?.getBoundingClientRect();
@@ -43,7 +52,12 @@ function snapshot(): string {
   ].join(" ");
 }
 
-export function KeyboardDebug() {
+/**
+ * Always-on-top viewport/keyboard event log for real-device debugging.
+ * Line format is decoded in wiki/ios-debugging.md. Displays geometry only —
+ * nothing from `initDataUnsafe` beyond the start_param gate.
+ */
+export function TKViewportForensics({ testId }: { testId?: string } = {}) {
   const [lines, setLines] = useState<string[]>(() => [`     0 start     ${snapshot()}`]);
   useEffect(() => {
     const t0 = performance.now();
@@ -77,11 +91,10 @@ export function KeyboardDebug() {
       mo.observe(el, { attributes: true, attributeFilter: ["style", "class"] }),
     );
     // The host resizing the root without any vv event (the KB-3 case).
-    const ro = new ResizeObserver(() => log("root.size"));
-    document.querySelectorAll<HTMLElement>(".tk").forEach((el) => ro.observe(el));
+    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(() => log("root.size")) : undefined;
+    if (ro) document.querySelectorAll<HTMLElement>(".tk").forEach((el) => ro.observe(el));
 
-    // The settle scroll (and anything else yanking the page). No "start" log
-    // here — the initial snapshot seeds useState directly.
+    // The settle scroll (and anything else yanking the page).
     const realScrollTo = window.scrollTo.bind(window);
     (window as { scrollTo: typeof window.scrollTo }).scrollTo = ((...args: unknown[]) => {
       log(`scrollTo(${args.map((a) => (typeof a === "object" ? JSON.stringify(a) : String(a))).join(",")})`);
@@ -99,7 +112,7 @@ export function KeyboardDebug() {
         /* older bridge */
       }
       mo.disconnect();
-      ro.disconnect();
+      ro?.disconnect();
       window.scrollTo = realScrollTo;
     };
   }, []);
@@ -107,6 +120,7 @@ export function KeyboardDebug() {
   return (
     <div
       aria-hidden
+      data-testid={testId}
       style={{
         position: "fixed",
         top: "calc(env(safe-area-inset-top, 0px) + 52px)",
