@@ -11,14 +11,14 @@
 [![React](https://img.shields.io/badge/React-18%20·%2019-61DAFB?logo=react&logoColor=black)](packages/uikit/package.json)
 [![Runtime deps](https://img.shields.io/badge/runtime%20deps-zero-success)](packages/uikit/package.json)
 [![Docs](https://github.com/lonmstalker/tg-mini-app-uikit/actions/workflows/docs.yml/badge.svg)](https://github.com/lonmstalker/tg-mini-app-uikit/actions/workflows/docs.yml)
-[![Site](https://img.shields.io/website?url=https%3A%2F%2Flonmstalker.github.io%2Ftg-mini-app-uikit%2F&label=site)](https://lonmstalker.github.io/tg-mini-app-uikit/)
+[![Site](https://img.shields.io/website?url=https%3A%2F%2Ftg-mini-app-uikit.lonelymoonstalker.workers.dev%2F&label=site)](https://tg-mini-app-uikit.lonelymoonstalker.workers.dev/)
 
 <p>
-  <a href="https://lonmstalker.github.io/tg-mini-app-uikit/">Landing</a> ·
-  <a href="https://lonmstalker.github.io/tg-mini-app-uikit/demo/">Live demo (browser)</a> ·
+  <a href="https://tg-mini-app-uikit.lonelymoonstalker.workers.dev/">Landing</a> ·
+  <a href="https://tg-mini-app-uikit.lonelymoonstalker.workers.dev/demo/">Live demo (browser)</a> ·
   <a href="https://t.me/tg_mini_app_uikit_bot/demo">Telegram demo</a> ·
-  <a href="https://lonmstalker.github.io/tg-mini-app-uikit/storybook/">Storybook</a> ·
-  <a href="https://lonmstalker.github.io/tg-mini-app-uikit/docs/">Docs</a>
+  <a href="https://tg-mini-app-uikit.lonelymoonstalker.workers.dev/storybook/">Storybook</a> ·
+  <a href="https://tg-mini-app-uikit.lonelymoonstalker.workers.dev/docs/">Docs</a>
 </p>
 
 <p><em>The combined site routes go live after the GitHub Pages deploy runs. The Telegram route activates when the bot's <code>demo</code> Mini App is registered.</em></p>
@@ -115,7 +115,7 @@ Package-local Storybook exposes theme, accent, roundness, locale, RTL, density, 
 
 ## Documentation
 
-- The hosted [Docs](https://lonmstalker.github.io/tg-mini-app-uikit/docs/) cover setup, theming, the platform layer, components, API reference and recipes.
+- The hosted [Docs](https://tg-mini-app-uikit.lonelymoonstalker.workers.dev/docs/) cover setup, theming, the platform layer, components, API reference and recipes.
 - Source pages live in [`docs/site/pages`](docs/site/pages); the package reference lives in [`packages/uikit/README.md`](packages/uikit/README.md).
 - AI-oriented usage maps live in [`llms.txt`](llms.txt) and [`docs/llms-full.md`](docs/llms-full.md).
 

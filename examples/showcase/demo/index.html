@@ -10,13 +10,13 @@
     <meta name="theme-color" content="#0e1621" />
     <link
       rel="canonical"
-      href="https://lonmstalker.github.io/tg-mini-app-uikit/demo/"
+      href="https://tg-mini-app-uikit.lonelymoonstalker.workers.dev/demo/"
     />
     <link rel="icon" href="%BASE_URL%favicon.svg" type="image/svg+xml" />
     <title>Live demo — tg-mini-app-uikit</title>
-    <!-- The Telegram bridge is bundled: src/demo/main.tsx imports
-         `@tg-mini-app/telegram/bridge` first (vendored in the kit), so there
-         is no runtime fetch from telegram.org to lose on a slow route. -->
+    <!-- The Telegram bridge is bundled: src/demo/main.tsx resolves it via
+         `tkResolveTelegramBridge()` (vendored in the kit), so there is no
+         runtime fetch from telegram.org to lose on a slow route. -->
   </head>
   <body>
     <div id="root"></div>
