@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.7.0 — 2026-07-18
+
+The keyboard saga, resolved on a real iPhone and promoted into the kit
+(wiki/ios-debugging.md). `useKeyboard` learns two host-managed-keyboard modes:
+KB-3 (the client resizes the webview — the settle scroll no longer dismisses
+the composer's keyboard) and KB-4 (the bridge reports the keyboard-reduced
+stable viewport before any visualViewport event — no transient lift, no false
+height memory). New public surface: `tkResolveTelegramBridge()` /
+`isRealTelegramBridge()` (kit-owned app-entry launch over the vendored
+bridge), `TKAppShell` (stable-viewport-capped app column that rides the OS
+keyboard animation), `useTKHostBackground()` (html/body/native-chrome
+painting for bare-`TKProvider` apps), and `TKViewportForensics` (the
+on-device debug overlay behind `?kbdebug=1`). Ships
+`tg-mini-app-uikit@0.7.0` (`@tg-mini-app/telegram@0.4.0`, peer range bumped
+accordingly); per-package notes in `packages/*/CHANGELOG.md`.
+
 ## 0.6.0 — 2026-07-16
 
 Native-chrome arbitration: modal overlays now suppress the native Telegram
