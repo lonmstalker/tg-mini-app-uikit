@@ -149,7 +149,7 @@ describe("KB-4 bridge-managed viewport (client resizes the webview itself)", () 
   }
 
   it("applies no lift in the window between the vv shrink and the client's webview resize", () => {
-    const { vv, fire, innerHeight } = installVV(824);
+    const { vv, fire } = installVV(824);
     const bridge = installBridge(824);
     const { root, setHeight } = measurableRoot();
     setHeight(824);
