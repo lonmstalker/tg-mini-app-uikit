@@ -19,6 +19,7 @@ overwriting, and never rewrite the append-only logs.
 - [[telegram-runtime]] — the Telegram WebApp layer: provider, injectable mock, back-button arbitration, vertical-swipe guard.
 - [[navstack]] — the `TKNavStack` swipe-back navigation spine, the kit's headline differentiator.
 - [[device-testing]] — 2026-07-16 real-device findings (phone + Telegram Desktop): the method-presence trap, per-issue root causes, fixes and their tests.
+- [[ios-debugging]] — debugging on a real iOS device: the `?kbdebug=1` forensics overlay, the branch-push production loop, and the measured iOS keyboard event order (bridge → visualViewport → WKWebView resize).
 - [[i18n]] — localization: the kit's `TKLocale`/`TKLocaleProvider` and the demo's full Russian + English policy.
 - [[testing-and-review]] — TDD (unit + e2e), visual + contrast verification, and the per-checkpoint reviewer-agent protocol.
 
