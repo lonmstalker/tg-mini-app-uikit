@@ -65,6 +65,7 @@ afterEach(() => {
   input.remove();
   document.querySelectorAll(".tk").forEach((el) => el.remove());
   Reflect.deleteProperty(window, "visualViewport");
+  Reflect.deleteProperty(window, "Telegram");
   window.localStorage.removeItem("tk:kbHeight");
   window.localStorage.removeItem("tk:kbHostAbsorbs");
   vi.useRealTimers();
@@ -129,5 +130,85 @@ describe("KB-3 host-managed keyboard (webview resized by the client)", () => {
       fire("resize");
     });
     expect(window.localStorage.getItem("tk:kbHostAbsorbs")).toBe(null);
+  });
+});
+
+/* KB-4 · bridge-managed viewport, pinned from an on-device timeline: the
+   client reports viewportStableHeight = keyboard-reduced height ~400ms before
+   any visualViewport event, vv then shrinks while innerHeight is still full
+   (a ~20ms window where covered reads a whole keyboard), and only AFTER that
+   the client resizes the WKWebView. The kit's transient 345px lift-and-snap
+   in that window double-moved the composer and the client dropped focus. */
+
+describe("KB-4 bridge-managed viewport (client resizes the webview itself)", () => {
+  function installBridge(stable: number) {
+    (window as unknown as { Telegram?: { WebApp?: { viewportStableHeight: number } } }).Telegram = {
+      WebApp: { viewportStableHeight: stable },
+    };
+    return (window as unknown as { Telegram: { WebApp: { viewportStableHeight: number } } }).Telegram.WebApp;
+  }
+
+  it("applies no lift in the window between the vv shrink and the client's webview resize", () => {
+    const { vv, fire, innerHeight } = installVV(824);
+    const bridge = installBridge(824);
+    const { root, setHeight } = measurableRoot();
+    setHeight(824);
+    root.append(input);
+    const { result } = renderHook(() => useKeyboard(80));
+    focusInput();
+
+    // The bridge reports the keyboard-reduced viewport first (tg.vp).
+    bridge.viewportStableHeight = 479;
+    // vv shrinks while innerHeight is still 824 — the historical formula read
+    // covered=345 here and lifted the page.
+    act(() => {
+      vv.height = 479;
+      fire("resize");
+    });
+    expect(root.style.getPropertyValue("--tk-kb-height")).toBe("");
+    expect(result.current.visible).toBe(false);
+    // The transient is not learned as the device's keyboard height, and the
+    // host-managed mode is remembered.
+    expect(window.localStorage.getItem("tk:kbHeight")).toBe(null);
+    expect(window.localStorage.getItem("tk:kbHostAbsorbs")).toBe("1");
+
+    // The client resizes the webview (the stable-height cap shrinks the root
+    // with it — rt479 in the device log); WebKit leaves a pan. No settle scroll.
+    Object.defineProperty(window, "innerHeight", { value: 479, configurable: true });
+    setHeight(479);
+    Object.defineProperty(window, "scrollY", { value: 68, configurable: true });
+    act(() => {
+      fire("scroll");
+      vi.advanceTimersByTime(400);
+    });
+    expect(window.scrollTo).not.toHaveBeenCalled();
+  });
+
+  it("a keyboard height stored on another device never pre-shrinks under a reduced bridge viewport", () => {
+    window.localStorage.setItem("tk:kbHeight", "300");
+    installBridge(479); // keyboard already open, focus hops to another field
+    const { innerHeight } = installVV(824);
+    const { root, setHeight } = measurableRoot();
+    setHeight(innerHeight);
+    root.append(input);
+    renderHook(() => useKeyboard(80));
+    focusInput();
+    expect(root.style.getPropertyValue("--tk-kb-height")).toBe("");
+  });
+
+  it("a bridge whose stable height matches the layout viewport keeps the classic lift", () => {
+    const { vv, fire, innerHeight } = installVV(824);
+    installBridge(824); // e.g. Android: the webview keeps its size, vv shrinks
+    const { root, setHeight } = measurableRoot();
+    setHeight(innerHeight);
+    root.append(input);
+    const { result } = renderHook(() => useKeyboard(80));
+    focusInput();
+    act(() => {
+      vv.height = innerHeight - 300;
+      fire("resize");
+    });
+    expect(result.current).toEqual({ visible: true, height: 300 });
+    expect(root.style.getPropertyValue("--tk-kb-height")).toBe("300px");
   });
 });

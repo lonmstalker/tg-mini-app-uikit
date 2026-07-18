@@ -4,6 +4,18 @@
 
 ### Fixed
 
+- Keyboard, bridge-managed viewport (KB-4, pinned from an on-device
+  timeline): Telegram iOS reports `viewportStableHeight` = keyboard-reduced
+  height ~400ms before any `visualViewport` event, then resizes the WKWebView
+  ~20ms AFTER vv shrinks. In that window `innerHeight − vv.height` read a
+  full keyboard, so the kit lifted the page a whole keyboard and snapped it
+  back when `innerHeight` followed — a two-jump storm around the focused
+  composer that ended in the client dropping focus. When the bridge's stable
+  viewport is more than the open threshold smaller than the layout viewport,
+  the HOST manages the keyboard: no lift is applied, the transient is not
+  learned as the device keyboard height, the settle scroll stays off, and
+  `sync` also runs on the bridge's own `viewportChanged` (which arrives
+  first). Pinned by KB-4 tests.
 - Keyboard, host-managed mode (KB-3): Telegram iOS RESIZES the webview for
   the keyboard, so `innerHeight − vv.height` reads ≈0 with the keyboard open
   and geometry alone said "closed". The WebKit pan toward the composer then
