@@ -75,7 +75,19 @@ export function App() {
     <TabNavProvider goToTab={goToTab}>
       <div
         data-testid="app-shell"
-        style={{ height: "100dvh", display: "flex", flexDirection: "column", background: "var(--tk-bg)" }}
+        // Capped at the bridge's stable viewport, not bare 100dvh: dvh tracks
+        // the LAYOUT viewport, which Telegram iOS resizes LAST when the
+        // keyboard opens — the shell stayed full-height, WebKit scrolled 345px
+        // down to reveal the composer, then the late webview resize snapped
+        // the scroll back (the two-jump "screen jerks" report, KB-4 tail).
+        // The stable var lands ~400ms earlier, so the shell shrinks together
+        // with the keyboard animation and WebKit never needs to pan.
+        style={{
+          height: "min(100dvh, var(--tg-viewport-stable-height, 100dvh))",
+          display: "flex",
+          flexDirection: "column",
+          background: "var(--tk-bg)",
+        }}
       >
         <TKTabView
           testId="tabbar"
