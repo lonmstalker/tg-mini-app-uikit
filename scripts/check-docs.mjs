@@ -75,6 +75,17 @@ mustContain("docs/site/pages/recipes.md", [
 
 mustContain(".github/workflows/docs.yml", ["npm run docs:check", "npm run docs:build"]);
 
+// Coverage: every public component/hook in the API baseline must be mentioned
+// in llms-full.md, so the AI reference cannot silently fall behind a release.
+{
+  const llmsFull = read("docs/llms-full.md");
+  const baseline = JSON.parse(read("scripts/api-baseline.json"));
+  for (const name of baseline) {
+    if (!/^TK[A-Z]|^use[A-Z]/.test(name)) continue; // lowercase tk* helpers, constants, locales
+    if (!llmsFull.includes(name)) failures.push(`docs/llms-full.md does not mention ${name}`);
+  }
+}
+
 mustContain("CHANGELOG.md", ["0.2.0", "forwardRef", "TKLocaleProvider", "breaking"]);
 // Version coherence, not a hardcoded pin: every package version must have a
 // matching CHANGELOG heading in its own package AND the root release notes.

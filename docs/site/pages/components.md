@@ -3,12 +3,17 @@
 The public surface is grouped by workflow rather than by file.
 
 - Actions: `TKButton`, `TKIconButton`, `TKMainButton`, `TKInlineButtons`, `TKTappable`, `TKSpinner`.
-- Forms: `TKInput`, `TKTextarea`, `TKSelect`, `TKMultiselect`, `TKChipsInput`, `TKCalendar`, `TKDateInput`, `TKTimeInput`, `TKMaskedInput`, `TKPhoneInput`, `TKPinInput`, `TKFileInput`, `TKSlider`, `TKStepper`, `TKRating`, `TKCheckbox`, `TKRadioGroup`, `TKSwitch`.
-- Display: `TKText`, `TKBadge`, `TKCounter`, `TKAvatar`, `TKAvatarStack`, `TKImage`, `TKSpoiler`, `TKEllipsis`, `TKBlockquote`, `TKGallery`, `TKIcon`.
-- Navigation: `TKNavStack`, `TKNavPanel`, `useNav`, `TKHeader`, `TKTabbar`, `TKSegmented`, `TKCategoryTabs`, `TKSteps`, `TKPageDots`.
-- Overlays: `TKSheet`, `TKDialog`, `TKActionSheet`, `TKPopper`, `TKTooltip`, `TKToastProvider`, `useTKToast`, `TKImageViewer`.
+- Forms: `TKInput`, `TKTextarea`, `TKSelect`, `TKMultiselect`, `TKChipsInput`, `TKCalendar`, `TKDateInput`, `TKTimeInput`, `TKMaskedInput`, `TKPhoneInput`, `TKPinInput`, `TKOTP`, `TKFileInput`, `TKSlider`, `TKStepper`, `TKRating`, `TKCheckbox`, `TKRadioGroup`, `TKSwitch`, `TKSearch`, `TKSelectable`, `TKChip`, `TKChipGroup`, `TKFormField` (label/hint/error scaffolding; `TKFormInput` aliases `TKInput`), `TKNativeField`.
+- Display: `TKText`, `TKTitle`, `TKCaption`, `TKBadge`, `TKDot`, `TKCounter`, `TKAvatar`, `TKAvatarStack`, `TKImage`, `TKImg`, `TKSpoiler`, `TKEllipsis`, `TKBlockquote`, `TKGallery`, `TKIcon`.
+- Lists: `TKListGroup`, `TKCell`, `TKAccordion` (lazy), `TKInfiniteList`, `TKVirtualList` (fixed row height).
+- Cards and stats: `TKCard`, `TKCardCell`, `TKCardChip`, `TKProductCardA`, `TKProductCardB`, `TKBannerCard`, `TKBookingCard`, `TKStatTile`, `TKXPHeader`, `TKLeaderboard`.
+- Loading and status: `TKSkeleton`, `TKSkeletonText`, `TKSkeletonCard`, `TKSkeletonList`, `TKSkeletonTable`, `TKProgress`, `TKRing`, `TKBars`, `TKEmptyState`, `TKTimeline`, `TKAsyncState`/`AsyncBoundary` (exactly one of loading/error/empty).
+- Navigation: `TKNavStack`, `TKNavPanel`, `useNav`, `TKHeader`, `TKTabbar`, `TKTabView` (keep-mounted bottom-tab shell), `TKKeepMountTabs`/`TKKeepMountTab` + `useTabActive`, `TKSegmented`, `TKCategoryTabs`, `TKSteps`, `TKPageDots`.
+- Layout: `TKApp`, `TKAppShell`, `TKPage`, `TKSafeArea`, `TKBottomBar`, `TKVisuallyHidden`.
+- Overlays: `TKSheet`, `TKDialog`, `TKActionSheet`, `TKPopper`, `TKTooltip`, `TKToastProvider`, `useTKToast`, `TKImageViewer`, `TKFrame`.
 - Feedback: `TKNoticeBar` — a tone-colored announcement strip (`accent`/`green`/`orange`/`red`). Visibility is the consumer's: render/unrender it; the close button first collapses the height so content below slides up, then calls `onClose`. `marquee` scrolls only genuinely overflowing text and is disabled under reduced motion.
-- Telegram patterns: `TKMessages`, `TKMessageBubble`, `TKWriteBar`, `TKOnboardingTooltip`, `TKConfetti`, `TKPullToRefresh`, `TKSwipeCell`, `TKPaymentSummary`, `TKWalletConnectButton`, `TKWalletStatusCell`.
+- Telegram patterns: `TKMessages`, `TKMessageBubble`, `TKWriteBar`, `TKOnboardingTooltip`, `TKConfetti`, `TKPullToRefresh`, `TKSwipeCell`, `TKSlotPicker`, `TKPaymentSummary`, `TKWalletConnectButton`, `TKWalletStatusCell`.
+- Utility hooks: `useReducedMotion`, `useLongPress`, `useOptionalNav`, `useOptionalHaptics`, `useHasNativeChrome`, `useTKTheme`, `useTKLocale`, `useTKBusyAnnounce`.
 
 Every component accepts `testId?: string` and forwards refs where a meaningful DOM root exists. Stateful controls use controlled/uncontrolled pairs.
 

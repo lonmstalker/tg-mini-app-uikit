@@ -7,6 +7,7 @@ The platform layer wraps `window.Telegram.WebApp` in typed hooks that degrade sa
 - Client APIs: `useInvoice`, `useShare`, `useTelegramLinks`, `useDataTransport`, `useQrScanner`, `useClipboard`, `useDownloadFile`.
 - Permissions and identity: `useContactRequest`, `useWriteAccess`, `useBiometrics`, `useLocation`, `useEmojiStatus`, `useHomeScreen`.
 - Storage: `useCloudStorage`, `useDeviceStorage`, `useSecureStorage`.
+- Environment: `useTelegramEnvironment` (the one "am I really inside Telegram?" primitive — other hooks return confident fallbacks outside), `useVerticalSwipes` (enable/disable swipe-to-minimize), `useHasNativeChrome` (native MainButton/BackButton available vs in-DOM fallbacks).
 
 For tests, inject a WebApp-like client:
 
@@ -40,6 +41,9 @@ const bridge = await tkResolveTelegramBridge();
 // bridge !== null → real Telegram client: native chrome path
 // bridge === null → plain browser: DOM fallbacks or your mock
 ```
+
+The classifier itself is exported as `isRealTelegramBridge(webApp)` for hosts
+that load the bridge some other way.
 
 Do NOT load the bridge from `https://telegram.org/…` at runtime: on a slow
 route the fetch loses the race with the first render and the app silently
