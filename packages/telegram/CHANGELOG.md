@@ -2,8 +2,48 @@
 
 ## Unreleased
 
+### Minor Changes (launch & debug surface)
+
+- `tkResolveTelegramBridge()`: kit-owned app-entry launch resolution — loads
+  the vendored bridge as a bundled chunk only when the host didn't provide
+  `window.Telegram.WebApp` (never clobbers a pre-injected bridge or a test
+  double), classifies by `platform` via the new `isRealTelegramBridge()`
+  (empty `initData` is a legitimate real-client launch shape), and deletes
+  the outside-Telegram stub. Promoted from the Trailhead demo after three
+  real-device iterations (wiki/ios-debugging.md).
+- `TKViewportForensics` + `tkViewportDebugRequested()`: the on-device
+  viewport/keyboard forensics overlay (Safari's inspector cannot attach to
+  Telegram's WKWebView). Logs vv geometry, the bridge's `viewportChanged`,
+  `.tk` root box changes, every `--tk-kb-height` write, focus moves and
+  `window.scrollTo` calls into an on-screen readout — one screenshot
+  reconstructs the timeline. Tree-shaken when unused; displays geometry only.
+
 ### Fixed
 
+- Keyboard, bridge-managed viewport (KB-4, pinned from an on-device
+  timeline): Telegram iOS reports `viewportStableHeight` = keyboard-reduced
+  height ~400ms before any `visualViewport` event, then resizes the WKWebView
+  ~20ms AFTER vv shrinks. In that window `innerHeight − vv.height` read a
+  full keyboard, so the kit lifted the page a whole keyboard and snapped it
+  back when `innerHeight` followed — a two-jump storm around the focused
+  composer that ended in the client dropping focus. When the bridge's stable
+  viewport is more than the open threshold smaller than the layout viewport,
+  the HOST manages the keyboard: no lift is applied, the transient is not
+  learned as the device keyboard height, the settle scroll stays off, and
+  `sync` also runs on the bridge's own `viewportChanged` (which arrives
+  first). Pinned by KB-4 tests.
+- Keyboard, host-managed mode (KB-3): Telegram iOS RESIZES the webview for
+  the keyboard, so `innerHeight − vv.height` reads ≈0 with the keyboard open
+  and geometry alone said "closed". The WebKit pan toward the composer then
+  looked like a stuck leftover and the settle `scrollTo(0, 0)` fired UNDER
+  the open keyboard — the client's interactive-dismiss closed it (tap the
+  chat composer → layout slides, slides back, keyboard gone). The focused
+  root shrinking by ~a keyboard since focusin now marks the host-managed
+  mode: the settle scroll is suppressed while it holds (chevron-close
+  restores the root and settles on geometry as before), the mode is
+  remembered (`tk:kbHostAbsorbs`) so the next session's pre-shrink doesn't
+  flash a lift the host is about to make itself, and a geometry-confirmed
+  keyboard clears the memory. Pinned by KB-3 tests.
 - Keyboard: the applied `--tk-kb-height` is now the keyboard's real overlap
   with the lifted `.tk` root, not the raw `innerHeight − vv.height`. The raw
   value double-lifted on real iOS devices in two ways: when the HOST already

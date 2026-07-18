@@ -64,8 +64,8 @@
     {
       "file": "packages/uikit/src/tokens/tokens.css",
       "property": "height",
-      "count": 1,
-      "reason": "keyboard page shrink, same movement as the footer collapse above (wiki/device-testing.md #9); fires only on keyboard open/close, never per-frame gesture work"
+      "count": 2,
+      "reason": "keyboard page shrink (.tk-page) and the TKAppShell stable-viewport cap (.tk-app-shell) — the same single eased movement riding the OS keyboard (wiki/device-testing.md #9, wiki/ios-debugging.md); both fire only on keyboard open/close or a host viewport change, never per-frame gesture work"
     }
   ]
 }

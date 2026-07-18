@@ -22,6 +22,48 @@ const mock = createWebAppTestDouble();
 
 The package-local Storybook stories and e2e specs exercise mocked runtime states in a normal browser, including native buttons, storage, capability gates and browser fallbacks.
 
+## App Bootstrap: Bridge, Shell, Background
+
+Three duties every production Mini App must handle before rendering — all
+learned the hard way on real devices, all owned by the kit:
+
+**1. Resolve the launch environment.** The official `telegram-web-app.js` is
+vendored inside the package; `tkResolveTelegramBridge()` loads it as a
+bundled same-origin chunk only when the host didn't already provide
+`window.Telegram.WebApp` (never clobbering a pre-injected bridge or a test
+double), classifies the result by `platform` — real clients always stamp it,
+while an empty `initData` is a legitimate launch shape — and deletes the
+outside-Telegram stub so DOM fallbacks stay honest:
+
+```tsx
+const bridge = await tkResolveTelegramBridge();
+// bridge !== null → real Telegram client: native chrome path
+// bridge === null → plain browser: DOM fallbacks or your mock
+```
+
+Do NOT load the bridge from `https://telegram.org/…` at runtime: on a slow
+route the fetch loses the race with the first render and the app silently
+runs in browser-fallback mode inside Telegram.
+
+**2. Size the shell with `TKAppShell`.** Bare `100dvh` tracks the layout
+viewport, which Telegram iOS resizes LAST when the keyboard opens — the
+page scrolls to the composer and snaps back (a visible two-jump jerk).
+`TKAppShell` caps the app at the bridge's stable viewport
+(`min(100dvh, var(--tg-viewport-stable-height, 100dvh))`) and eases the
+change with the kit's keyboard-shift tokens so the shell rides the OS
+keyboard animation. One per app, directly under the providers.
+
+**3. Paint the page behind the app.** `--tk-*` tokens are scoped to the
+`.tk` root and never resolve at `html`/`body`, so overscroll, WebKit pans,
+and the strip under a shrinking shell flash UA-white unless the page is
+painted. `TKApp` does it automatically; apps composing bare `TKProvider`
+call `useTKHostBackground(resolvedTheme)` themselves.
+
+When a viewport bug reproduces only on a real device (Safari's inspector
+cannot attach to Telegram's WKWebView), mount `<TKViewportForensics />`
+behind `tkViewportDebugRequested()` (`?kbdebug=1` or start_param `kbdebug`)
+— one screenshot of its on-screen log reconstructs the whole event timeline.
+
 ## Runtime Policy
 
 The hooks use capability detection first: a method or field is called only when it exists on the active `Telegram.WebApp` object. The kit does not maintain an exhaustive Telegram client version matrix in runtime code. This keeps ordinary browsers, Storybook, SSR, older Telegram clients, and partial mocks on the same path.

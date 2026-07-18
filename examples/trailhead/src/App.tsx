@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { TKTabView } from "tg-mini-app-uikit";
+import { TKAppShell, TKTabView } from "tg-mini-app-uikit";
 import { useVerticalSwipes, useViewport } from "@tg-mini-app/telegram";
 import { useT } from "./i18n";
 import { TABS, type TabId } from "./tabs";
@@ -73,10 +73,9 @@ export function App() {
 
   return (
     <TabNavProvider goToTab={goToTab}>
-      <div
-        data-testid="app-shell"
-        style={{ height: "100dvh", display: "flex", flexDirection: "column", background: "var(--tk-bg)" }}
-      >
+      {/* The stable-viewport cap + keyboard-riding ease live in the kit now
+          (.tk-app-shell — see TKAppShell docs and wiki/ios-debugging.md). */}
+      <TKAppShell testId="app-shell">
         <TKTabView
           testId="tabbar"
           tabs={tabItems}
@@ -91,7 +90,7 @@ export function App() {
         />
         <MockBadge />
         <Onboarding tabbarRef={tabbarRef} contentRef={contentRef} />
-      </div>
+      </TKAppShell>
     </TabNavProvider>
   );
 }

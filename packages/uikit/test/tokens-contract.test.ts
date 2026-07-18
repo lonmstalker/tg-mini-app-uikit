@@ -286,8 +286,8 @@ describe("design token contract", () => {
     expect(open![0]).toMatch(/visibility 0s var\(--tk-t3\)/);
   });
 
-  it("B1 underlay literals in app.tsx mirror the --tk-bg theme values", () => {
-    const app = readFileSync(join(packageRoot, "src/app.tsx"), "utf8");
+  it("B1 underlay literals in useTKHostBackground mirror the --tk-bg theme values", () => {
+    const app = readFileSync(join(packageRoot, "src/foundation/host-background.ts"), "utf8");
     const light = tokensCss.match(/\.tk\[data-theme="light"\]\s*\{[\s\S]*?--tk-bg:\s*(#[0-9a-fA-F]+)/)![1];
     const dark = tokensCss.match(/\.tk\[data-theme="dark"\]\s*\{[\s\S]*?--tk-bg:\s*(#[0-9a-fA-F]+)/)![1];
     expect(app).toContain(`"${dark}"`);

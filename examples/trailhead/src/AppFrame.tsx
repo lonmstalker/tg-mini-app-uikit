@@ -1,6 +1,6 @@
 import { useEffect } from "react";
-import { TKProvider, TKToastProvider } from "tg-mini-app-uikit";
-import { useTelegramTheme, useWebApp } from "@tg-mini-app/telegram";
+import { TKProvider, TKToastProvider, useTKHostBackground } from "tg-mini-app-uikit";
+import { TKViewportForensics, tkViewportDebugRequested, useTelegramTheme, useWebApp } from "@tg-mini-app/telegram";
 import { App } from "./App";
 import { LangProvider } from "./i18n";
 import { useStore } from "./store";
@@ -19,6 +19,13 @@ export function AppFrame() {
   const wa = useWebApp();
   const { themePrefs } = state;
   const activeTheme = mock ? themePrefs.colorScheme : clientTheme;
+
+  // Bare-TKProvider composition, so the app paints html/body itself: an
+  // unpainted page flashes white wherever the host reveals it (overscroll,
+  // the strip under the shell while the keyboard animates). The static CSS
+  // rule in index.css covers the pre-JS first paint; this keeps it in step
+  // with the live theme after mount.
+  useTKHostBackground(activeTheme);
 
   // Full-height product app: expand out of the compact half-screen launch.
   // Without this iOS lays the page out at the stable (full) height while the
@@ -57,6 +64,7 @@ export function AppFrame() {
       >
         <TKToastProvider>
           <App />
+          {tkViewportDebugRequested() ? <TKViewportForensics /> : null}
         </TKToastProvider>
       </TKProvider>
     </LangProvider>

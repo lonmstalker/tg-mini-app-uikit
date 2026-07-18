@@ -270,6 +270,22 @@
   transition: height var(--tk-t3) var(--tk-ease);
 }
 
+/* The app-level shell (TKAppShell). Bare 100dvh tracks the LAYOUT viewport,
+   which Telegram iOS resizes LAST when the keyboard opens — the shell stayed
+   full-height, WebKit scrolled the page to the composer, then the late
+   webview resize snapped the scroll back (the two-jump keyboard jerk,
+   wiki/ios-debugging.md). The bridge's stable viewport lands ~400ms earlier,
+   so the cap follows IT, eased with the same tokens as the page's keyboard
+   shift so the shell rides the keyboard animation. Outside Telegram the var
+   is absent and the fallback keeps plain 100dvh. */
+.tk-app-shell {
+  height: min(100dvh, var(--tg-viewport-stable-height, 100dvh));
+  display: flex;
+  flex-direction: column;
+  background: var(--tk-bg);
+  transition: height var(--tk-t3) var(--tk-ease);
+}
+
 /* ============ shared micro-interaction utilities ============ */
 
 .tk-press {

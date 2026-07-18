@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useMemo, type CSSProperties, type ReactNode } from "react";
 import {
+  TKAppShell,
   TKBottomBar,
   TKButton,
   TKCard,
@@ -79,6 +80,39 @@ export const PageShell = {
           Header clears the notch · bottom bar clears the home indicator
         </div>
       </TKPage>
+    </DeviceFrame>
+  ),
+} satisfies Story;
+
+export const AppShell = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "The app's outermost sized element: a flex column capped at the Telegram bridge's STABLE viewport " +
+          "(`min(100dvh, var(--tg-viewport-stable-height, 100dvh))`) and eased with the kit's keyboard-shift tokens, " +
+          "so on clients that resize the webview late (Telegram iOS) the shell rides the OS keyboard animation instead of " +
+          "jerking and exposing the page behind. Use one per app, directly under the providers.",
+      },
+    },
+  },
+  render: () => (
+    <DeviceFrame height={560}>
+      <TKAppShell>
+        <TKPage
+          header={<div style={{ padding: "12px 16px", fontWeight: 700, fontSize: "var(--tk-fz-title3)" }}>Shell</div>}
+          footer={
+            <TKBottomBar>
+              <TKButton full>Primary action</TKButton>
+            </TKBottomBar>
+          }
+        >
+          <TKCard>
+            <TKCardCell title="Capped height" subtitle="min(100dvh, --tg-viewport-stable-height)" />
+            <TKCardCell title="Keyboard-riding ease" subtitle="height var(--tk-t3) var(--tk-ease)" />
+          </TKCard>
+        </TKPage>
+      </TKAppShell>
     </DeviceFrame>
   ),
 } satisfies Story;

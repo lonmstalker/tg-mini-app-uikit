@@ -9,7 +9,7 @@ import type {
   TelegramMotionSensorError,
   TKTelegramAsyncState,
 } from "./types";
-import { useTelegramEvent, useWebApp } from "./provider";
+import { getTelegramWebApp, useTelegramEvent, useWebApp } from "./provider";
 import { TK_MIN_VERSION, tkSupports } from "./version";
 
 export interface TKKeyboardState {
@@ -54,6 +54,47 @@ export function useKeyboard(threshold = 80): TKKeyboardState {
     // user's own position and must never be yanked back to 0.
     const stuckShift = () =>
       (vv.offsetTop ?? 0) > 0 || (window.scrollY > 0 && !tkIsDocumentScrollable());
+    /*
+     * Host-absorb detector (KB-3): Telegram iOS RESIZES the webview for the
+     * keyboard, so `innerHeight − vv.height` stays ≈0 while the keyboard is
+     * physically open — geometry alone reads "closed". The tell is the focused
+     * root's box: it shrank by roughly a keyboard since focusin (the host caps
+     * `#root` via `--tg-viewport-stable-height`). While that holds, a WebKit
+     * pan is NOT a stuck leftover — firing the settle scroll here yanked the
+     * focused composer and the client's interactive-dismiss closed the
+     * keyboard (the "input closes itself" report). The chevron-close case
+     * stays covered: closing restores the root's height, the detector reads
+     * false again, and the settle proceeds on geometry as before.
+     */
+    /*
+     * Bridge-authoritative host signal (KB-4, from the on-device timeline):
+     * Telegram iOS reports `viewportStableHeight` = keyboard-reduced height
+     * ~400ms BEFORE any visualViewport event, then resizes the WKWebView
+     * itself ~20ms AFTER vv shrinks. In that 20ms window
+     * `innerHeight − vv.height` reads a full keyboard, so the kit lifted the
+     * page 345px and snapped it back when innerHeight followed — a two-jump
+     * storm around the focused composer that ended in the client dropping
+     * focus. When the bridge says its viewport is a keyboard smaller than the
+     * layout viewport, the HOST manages the keyboard: apply no lift, store no
+     * keyboard height, fire no settle — the client's own resize puts the
+     * composer above the keyboard.
+     */
+    const tgHostManaged = () => {
+      const stable = getTelegramWebApp()?.viewportStableHeight;
+      return typeof stable === "number" && stable > 0 && window.innerHeight - stable > threshold;
+    };
+    let focusRootH = 0;
+    const focusedRootHeight = () => {
+      const el = document.activeElement;
+      const root = el instanceof HTMLElement ? el.closest<HTMLElement>(".tk") : null;
+      const h = root ? root.getBoundingClientRect().height : 0;
+      return Number.isFinite(h) ? h : 0;
+    };
+    const hostOwnsKeyboard = () => {
+      if (focusRootH <= 0 || !tkIsEditableActive()) return false;
+      const h = focusedRootHeight();
+      return h > 0 && focusRootH - h > threshold;
+    };
     const scheduleSettle = () => {
       const h0 = vv.height;
       const o0 = vv.offsetTop ?? 0;
@@ -70,7 +111,7 @@ export function useKeyboard(threshold = 80): TKKeyboardState {
       settleTimer = window.setTimeout(() => {
         settlePending = false;
         const stillClosed = Math.max(0, window.innerHeight - vv.height) <= closeThreshold;
-        if (!stuckShift() || !stillClosed) return;
+        if (!stuckShift() || !stillClosed || hostOwnsKeyboard() || tgHostManaged()) return;
         // The snapshot includes scrollY: WebKit walking the scroll back (or the
         // user actively scrolling) restarts the countdown instead of firing.
         if (vv.height !== h0 || (vv.offsetTop ?? 0) !== o0 || window.scrollY !== s0) {
@@ -100,25 +141,41 @@ export function useKeyboard(threshold = 80): TKKeyboardState {
       // keyboard closed while it was physically open.
       const covered = Math.max(0, window.innerHeight - vv.height);
       const editableFocused = tkIsEditableActive();
+      const hostManaged = tgHostManaged();
       // The pre-shrink is speculative: focus gone before the confirming resize
       // (deferred focusout re-check) means no keyboard is coming — drop it now
-      // instead of holding the layout shrunk until the 600ms revert.
-      if (preShrunk && !editableFocused && covered <= closeThreshold) {
+      // instead of holding the layout shrunk until the 600ms revert. A host
+      // that manages the viewport itself drops it the same way.
+      if (preShrunk && ((!editableFocused && covered <= closeThreshold) || hostManaged)) {
         preShrunk = false;
         window.clearTimeout(revertTimer);
       }
       if (covered > threshold) {
-        knownKbHeight = Math.round(covered);
-        tkStoreKbHeight(knownKbHeight);
-        confirmed = true;
-        if (preShrunk) {
-          // The real resize confirmed the pre-shrink; geometry owns the state now.
-          preShrunk = false;
-          window.clearTimeout(revertTimer);
+        if (hostManaged) {
+          // The transient window where vv already shrank but the client hasn't
+          // resized the webview yet (KB-4). This is NOT the device's keyboard
+          // height — learning it re-armed the pre-shrink flash next session.
+          setKbHostAbsorbs(true);
+        } else {
+          knownKbHeight = Math.round(covered);
+          tkStoreKbHeight(knownKbHeight);
+          // Geometry-owned keyboard: the host did NOT absorb it — re-enable the
+          // pre-shrink for the next session (devices/clients change).
+          setKbHostAbsorbs(false);
+          confirmed = true;
+          if (preShrunk) {
+            // The real resize confirmed the pre-shrink; geometry owns the state now.
+            preShrunk = false;
+            window.clearTimeout(revertTimer);
+          }
         }
       }
+      // Under a host-managed viewport the kit's keyboard state stays CLOSED —
+      // the client's own webview resize puts bottom bars above the keyboard,
+      // and any lift of ours just double-moves the composer (KB-4).
       const open =
-        preShrunk || (visible && confirmed ? covered > closeThreshold : editableFocused && covered > threshold);
+        !hostManaged &&
+        (preShrunk || (visible && confirmed ? covered > closeThreshold : editableFocused && covered > threshold));
       if (!open) confirmed = false;
       visible = open;
       // Telegram iOS scrolls the page to keep a focused input in view and not
@@ -126,7 +183,13 @@ export function useKeyboard(threshold = 80): TKKeyboardState {
       // focus events, so the gate is the keyboard's geometry, never focus. The
       // stuck-state signal is the PAN (vv.offsetTop > 0), or a scrollY the user
       // could not have produced; a plain scrolled page must never arm it.
-      if (covered <= closeThreshold && stuckShift()) {
+      if (hostOwnsKeyboard()) {
+        // Remember the mode: the NEXT session's pre-shrink must not lift a
+        // layout the host is about to move itself (the lift flashed a whole
+        // keyboard up, then snapped back when the host shrank the root).
+        setKbHostAbsorbs(true);
+      }
+      if (covered <= closeThreshold && stuckShift() && !hostOwnsKeyboard() && !hostManaged) {
         scheduleSettle();
       }
       const height = open ? (covered > closeThreshold ? Math.round(covered) : knownKbHeight) : 0;
@@ -146,7 +209,11 @@ export function useKeyboard(threshold = 80): TKKeyboardState {
       tkApplyKeyboardState(open, height, covered > closeThreshold);
     };
     const syncFocusIn = () => {
-      if (!preShrunk && !visible && knownKbHeight > 0 && tkIsEditableActive()) {
+      // Snapshot the focused root's height BEFORE the host reacts — the shrink
+      // relative to this is the host-absorb tell. Keep the previous snapshot
+      // when focus hops between fields under an already-absorbed keyboard.
+      if (!hostOwnsKeyboard()) focusRootH = focusedRootHeight();
+      if (!preShrunk && !visible && knownKbHeight > 0 && !kbHostAbsorbs() && !tgHostManaged() && tkIsEditableActive()) {
         preShrunk = true;
         window.clearTimeout(revertTimer);
         // The keyboard never opened (hardware keyboard etc.) — no resize will
@@ -182,6 +249,17 @@ export function useKeyboard(threshold = 80): TKKeyboardState {
     document.addEventListener("focusout", syncFocusOut);
     document.addEventListener("visibilitychange", sync);
     window.addEventListener("focus", sync);
+    // The bridge's own viewport signal arrives ~400ms BEFORE any
+    // visualViewport event on hosts that manage the keyboard themselves
+    // (KB-4) — syncing on it drops a speculative pre-shrink immediately
+    // instead of holding the flash until vv finally moves.
+    const tgWa = getTelegramWebApp();
+    const onTgViewportChanged = () => sync();
+    try {
+      tgWa?.onEvent?.("viewportChanged", onTgViewportChanged);
+    } catch {
+      /* older bridge without this event */
+    }
     return () => {
       rootObserver?.disconnect();
       vv.removeEventListener("resize", sync);
@@ -190,6 +268,11 @@ export function useKeyboard(threshold = 80): TKKeyboardState {
       document.removeEventListener("focusout", syncFocusOut);
       document.removeEventListener("visibilitychange", sync);
       window.removeEventListener("focus", sync);
+      try {
+        tgWa?.offEvent?.("viewportChanged", onTgViewportChanged);
+      } catch {
+        /* older bridge without this event */
+      }
       window.clearTimeout(settleTimer);
       window.clearTimeout(focusOutTimer);
       window.clearTimeout(revertTimer);
@@ -305,6 +388,27 @@ function tkStoreKbHeight(height: number): void {
     window.localStorage.setItem(TK_KB_HEIGHT_KEY, String(height));
   } catch {
     /* private mode etc. — pre-shrink simply starts working from the second focus */
+  }
+}
+
+// Host-absorb memory (KB-3): remembered like the keyboard height so the very
+// next session already skips the pre-shrink on hosts that resize the webview
+// themselves. Read on focusin only — not a hot path.
+const TK_KB_HOST_KEY = "tk:kbHostAbsorbs";
+function kbHostAbsorbs(): boolean {
+  try {
+    return window.localStorage.getItem(TK_KB_HOST_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+function setKbHostAbsorbs(on: boolean): void {
+  if (kbHostAbsorbs() === on) return; // sync() calls this per vv event
+  try {
+    if (on) window.localStorage.setItem(TK_KB_HOST_KEY, "1");
+    else window.localStorage.removeItem(TK_KB_HOST_KEY);
+  } catch {
+    /* private mode — pre-shrink just stays on its default for this session */
   }
 }
 
