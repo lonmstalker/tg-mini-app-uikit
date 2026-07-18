@@ -1,6 +1,9 @@
 # tg-mini-app-uikit
 
-## Unreleased
+## 0.7.0
+
+Requires `@tg-mini-app/telegram@0.4.0` (peer range `^0.4.0`): the kit
+re-exports the new launch/debug surface through its platform shim.
 
 ### Minor Changes
 
