@@ -110,6 +110,7 @@ async function writeStyle() {
 export async function buildDocs() {
   await rm(outDir, { recursive: true, force: true });
   await mkdir(outDir, { recursive: true });
+  await writeStyle();
   for (const [title, file, out] of pages) {
     const md = await readFile(join(pagesDir, file), "utf8");
     await writeFile(join(outDir, out), pageShell(title, markdownToHtml(md)));
