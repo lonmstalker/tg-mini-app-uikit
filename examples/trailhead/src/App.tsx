@@ -81,9 +81,16 @@ export function App() {
         // down to reveal the composer, then the late webview resize snapped
         // the scroll back (the two-jump "screen jerks" report, KB-4 tail).
         // The stable var lands ~400ms earlier, so the shell shrinks together
-        // with the keyboard animation and WebKit never needs to pan.
+        // with the keyboard animation and WebKit never needs to pan. The
+        // TRANSITION is the same one .tk-page uses for its keyboard shift:
+        // an instant cap exposed the theme background below for the whole
+        // keyboard animation and teleported the composer; eased over ~t3 the
+        // composer rides the keyboard and the exposed strip collapses to the
+        // few px of animation mismatch (no per-frame keyboard position exists
+        // on iOS WebKit to track it exactly).
         style={{
           height: "min(100dvh, var(--tg-viewport-stable-height, 100dvh))",
+          transition: "height var(--tk-t3) var(--tk-ease)",
           display: "flex",
           flexDirection: "column",
           background: "var(--tk-bg)",
