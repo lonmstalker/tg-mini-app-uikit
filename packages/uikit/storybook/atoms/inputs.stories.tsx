@@ -86,6 +86,35 @@ export const ChoiceInputs = {
   ),
 } satisfies Story;
 
+export const DropdownEscapesClipping = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Select dropdowns portal to the nearest `.tk` root / `[data-tk-portal-root]` host (REU-010), so an `overflow: hidden` card cannot clip the option list.",
+      },
+    },
+  },
+  render: () => (
+    <Section>
+      <Narrow>
+        {/* the classic clipping trap: a short overflow:hidden card */}
+        <div
+          style={{
+            overflow: "hidden",
+            height: 120,
+            padding: 16,
+            borderRadius: "var(--tk-r-lg)",
+            boxShadow: "inset 0 0 0 1px var(--tk-sep)",
+          }}
+        >
+          <TKSelect label="City (clipped card)" options={["Lisbon", "Berlin", "Belgrade"]} />
+        </div>
+      </Narrow>
+    </Section>
+  ),
+} satisfies Story;
+
 export const FileUpload = {
   render: () => (
     <Section>

@@ -1,6 +1,6 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { renderToString } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import * as kit from "../src/index";
 
 /*
@@ -73,5 +73,94 @@ describe("reuse · modal overlays portal to the shared overlay host (REU-009)", 
   it("emits no overlay markup on the server (the portal mounts client-side)", () => {
     const html = renderToString(<kit.TKSheet open title="Server-title" />);
     expect(html).not.toContain("Server-title");
+  });
+});
+
+describe("reuse · select dropdowns portal to the shared overlay host (REU-010)", () => {
+  it("TKSelect option list escapes a transformed/overflow ancestor into the `.tk` root", () => {
+    render(
+      <kit.TKProvider testId="root">
+        <div data-testid="trap" style={{ overflow: "hidden", transform: "translateZ(0)" }}>
+          <kit.TKSelect options={["Apple", "Pear"]} label="Fruit" />
+        </div>
+      </kit.TKProvider>,
+    );
+    fireEvent.click(screen.getByRole("combobox"));
+    const list = screen.getByRole("listbox");
+    expect(screen.getByTestId("trap").contains(list)).toBe(false);
+    expect(list.closest(".tk")).toBe(screen.getByTestId("root"));
+  });
+
+  it("TKSelect still selects from the portaled list and closes on outside pointerdown", () => {
+    const onChange = vi.fn();
+    render(
+      <kit.TKProvider>
+        <kit.TKSelect options={["Apple", "Pear"]} label="Fruit" onChange={onChange} />
+        <button>outside</button>
+      </kit.TKProvider>,
+    );
+    const trigger = screen.getByRole("combobox");
+    fireEvent.click(trigger);
+    // a pointerdown INSIDE the portaled popup must not count as outside
+    fireEvent.pointerDown(screen.getByRole("option", { name: "Pear" }));
+    fireEvent.click(screen.getByRole("option", { name: "Pear" }));
+    expect(onChange).toHaveBeenCalledWith("Pear");
+    expect(trigger.getAttribute("aria-expanded")).toBe("false");
+    fireEvent.click(trigger);
+    expect(trigger.getAttribute("aria-expanded")).toBe("true");
+    fireEvent.pointerDown(screen.getByText("outside"));
+    expect(trigger.getAttribute("aria-expanded")).toBe("false");
+  });
+
+  it("TKSelect keyboard contract survives the portal (open, navigate, choose, Escape)", () => {
+    const onChange = vi.fn();
+    render(
+      <kit.TKProvider>
+        <kit.TKSelect options={["Apple", "Pear"]} label="Fruit" onChange={onChange} />
+      </kit.TKProvider>,
+    );
+    const trigger = screen.getByRole("combobox");
+    trigger.focus();
+    fireEvent.keyDown(trigger, { key: "ArrowDown" });
+    expect(trigger.getAttribute("aria-expanded")).toBe("true");
+    fireEvent.keyDown(trigger, { key: "ArrowDown" });
+    fireEvent.keyDown(trigger, { key: "Enter" });
+    expect(onChange).toHaveBeenCalledWith("Pear");
+    fireEvent.keyDown(trigger, { key: "ArrowDown" });
+    fireEvent.keyDown(trigger, { key: "Escape" });
+    expect(trigger.getAttribute("aria-expanded")).toBe("false");
+  });
+
+  it("TKMultiselect listbox escapes the trap and keeps toggling through the portal", () => {
+    const onChange = vi.fn();
+    render(
+      <kit.TKProvider testId="root">
+        <div data-testid="trap" style={{ overflow: "hidden" }}>
+          <kit.TKMultiselect options={["One", "Two"]} label="Digits" onChange={onChange} />
+        </div>
+      </kit.TKProvider>,
+    );
+    fireEvent.click(screen.getByRole("combobox"));
+    const list = screen.getByRole("listbox");
+    expect(screen.getByTestId("trap").contains(list)).toBe(false);
+    expect(list.closest(".tk")).toBe(screen.getByTestId("root"));
+    fireEvent.click(screen.getByRole("option", { name: "Two" }));
+    expect(onChange).toHaveBeenCalledWith(["Two"]);
+    // multiselect stays open after a toggle
+    expect(screen.getByRole("combobox").getAttribute("aria-expanded")).toBe("true");
+  });
+
+  it("warns in dev when the portal host is not positioned", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    render(
+      // a bare `.tk` class without TKProvider's inline position:relative
+      <div className="tk">
+        <kit.TKSelect options={["Apple"]} label="Fruit" />
+      </div>,
+    );
+    fireEvent.click(screen.getByRole("combobox"));
+    const hits = warn.mock.calls.filter(([m]) => typeof m === "string" && m.includes("REU-010"));
+    expect(hits).toHaveLength(1);
+    warn.mockRestore();
   });
 });
