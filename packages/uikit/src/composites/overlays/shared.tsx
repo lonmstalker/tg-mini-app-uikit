@@ -19,6 +19,32 @@ import { useBackIntercept, useSuppressNativeButtons } from "../../foundation/tel
  * That keeps them working both full-screen and inside device-frame demos.
  */
 
+/**
+ * Dev guard for the in-place overlays (sheet, dialog, action sheet, viewer):
+ * they anchor to the positioned ancestor and expect it to be viewport-sized.
+ * When that ancestor instead grows with the document (scrolling body), the
+ * overlay lands partly or fully off-screen. Detect the signature — anchor
+ * taller than the viewport AND extending past it — and warn once (REU-006).
+ */
+export function useAnchorGuard(name: string, mounted: boolean, ref: RefObject<HTMLElement | null>) {
+  const warnedRef = useRef(false);
+  useEffect(() => {
+    if (process.env.NODE_ENV === "production" || !mounted || warnedRef.current) return;
+    const anchor = ref.current?.offsetParent;
+    if (!(anchor instanceof HTMLElement) || typeof window === "undefined") return;
+    const rect = anchor.getBoundingClientRect();
+    const vh = window.innerHeight;
+    if (rect.height > vh + 1 && rect.bottom > vh + 1) {
+      warnedRef.current = true;
+      // eslint-disable-next-line no-console
+      console.warn(
+        `${name}: the positioned ancestor is taller than the viewport, so the overlay anchors off-screen. ` +
+          "Give it a viewport-sized positioned container (TKAppShell, TKFrame, or a 100dvh wrapper) (REU-006).",
+      );
+    }
+  }, [mounted]);
+}
+
 /* ---------------- Mini viewport (frame for embedding overlay areas) ---------------- */
 
 export interface TKFrameProps {

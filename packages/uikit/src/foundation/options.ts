@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { TKIconName } from "../atoms/icons";
+import type { TKIconProp } from "../atoms/icons";
 
 /**
  * Option accepted by selection components (`TKSelect`, `TKSegmented`,
@@ -13,7 +13,8 @@ export interface TKOptionItem {
   /** Visible label; defaults to `value`. */
   label?: ReactNode;
   disabled?: boolean;
-  icon?: TKIconName;
+  /** Built-in icon name, or a custom element for glyphs outside the set (REU-004). */
+  icon?: TKIconProp;
 }
 
 /** A labeled group of options (renders as a section header in dropdowns). */

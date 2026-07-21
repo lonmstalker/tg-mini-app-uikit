@@ -10,13 +10,19 @@ export interface TKProgressProps extends HTMLAttributes<HTMLDivElement> {
   label?: string;
   /** Bar thickness (default md). */
   size?: "sm" | "md" | "lg";
+  /**
+   * Fill color (any CSS color/gradient). Defaults to the accent gradient —
+   * without this prop the fill lived on an inner node reachable only by
+   * overriding the private `--tk-accent-grad` variable (REU-003).
+   */
+  color?: string;
   testId?: string;
 }
 
 const PROGRESS_H = { sm: 4, md: 7, lg: 12 } as const;
 
 export const TKProgress = /* @__PURE__ */ forwardRef<HTMLDivElement, TKProgressProps>(function TKProgress(
-  { value, label, size = "md", className, style, testId, ...rest },
+  { value, label, size = "md", color, className, style, testId, ...rest },
   ref,
 ) {
   const locale = useTKLocale();
@@ -44,7 +50,7 @@ export const TKProgress = /* @__PURE__ */ forwardRef<HTMLDivElement, TKProgressP
           height: "100%",
           width: "100%",
           borderRadius: h / 2,
-          background: "var(--tk-accent-grad)",
+          background: color ?? "var(--tk-accent-grad)",
           transform: `translateX(${v - 100}%)`,
           transition: "transform var(--tk-t3) var(--tk-spring)",
         }}
@@ -61,13 +67,15 @@ export interface TKRingProps extends HTMLAttributes<HTMLDivElement> {
   size?: number;
   /** Accessible name of the progress ring. */
   label?: string;
+  /** Stroke color of the value arc (any CSS color). Defaults to the accent (REU-003). */
+  color?: string;
   /** Center content; defaults to the percentage. */
   children?: ReactNode;
   testId?: string;
 }
 
 export const TKRing = /* @__PURE__ */ forwardRef<HTMLDivElement, TKRingProps>(function TKRing(
-  { value, size = 92, label, children, className, style, testId, ...rest },
+  { value, size = 92, label, color, children, className, style, testId, ...rest },
   ref,
 ) {
   const locale = useTKLocale();
@@ -95,7 +103,7 @@ export const TKRing = /* @__PURE__ */ forwardRef<HTMLDivElement, TKRingProps>(fu
           cy={size / 2}
           r={r}
           fill="none"
-          stroke="var(--tk-accent)"
+          stroke={color ?? "var(--tk-accent)"}
           strokeWidth="9"
           strokeLinecap="round"
           strokeDasharray={C}

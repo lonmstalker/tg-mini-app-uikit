@@ -1,13 +1,14 @@
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { TKIcon, type TKIconName } from "../../atoms/icons";
+import { tkRenderIcon, type TKIconProp } from "../../atoms/icons";
 import { tkZ } from "../../internal/dom";
 
 /* ---------------- Toasts ---------------- */
 
 export interface TKToastOptions {
   text: ReactNode;
-  icon?: TKIconName;
+  /** Built-in icon name, or a custom element (spinner, own SVG) for the chip (REU-004). */
+  icon?: TKIconProp;
   /** CSS color of the icon chip. */
   color?: string;
   action?: ReactNode;
@@ -276,7 +277,7 @@ export function TKToastProvider({ children, offset = 14, duration = 2400, max = 
                   flexShrink: 0,
                 }}
               >
-                <TKIcon name={t.icon} size={14} strokeWidth={2.6} />
+                {tkRenderIcon(t.icon, { size: 14, strokeWidth: 2.6 })}
               </span>
             ) : null}
             <span style={{ flex: 1, fontSize: "var(--tk-fz-sub)", fontWeight: 500, color: "var(--tk-text)" }}>

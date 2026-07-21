@@ -17,6 +17,14 @@ The public surface is grouped by workflow rather than by file.
 
 Every component accepts `testId?: string` and forwards refs where a meaningful DOM root exists. Stateful controls use controlled/uncontrolled pairs.
 
+## Reuse contracts (REU audit)
+
+- **Custom glyphs.** Every `icon`-style prop accepts a built-in `TKIconName` *or* a ready element (own SVG, emoji, image). `TKIcon` itself takes `path` — custom SVG content rendered in the standard 24×24 stroke viewBox.
+- **Per-instance colors.** `TKProgress`, `TKRing`, `TKBars`, `TKSlider`, `TKSwitch`, `TKCheckbox`, `TKRating` take a `color` prop; `TKSwipeCell` actions take `color` per action. No private CSS-variable overrides needed.
+- **`style`/`className` reach the root.** Composites and templates merge the consumer `style` last (consumer wins) and append `className`. `TKHeader variant="plain"` drops the glass background/blur/hairline for use outside the `TKPage` slot; its title is a real heading (`headingLevel`, default 1, `0` opts out).
+- **No demo data.** Components never invent plausible-looking content: `TKStatTile` without `bars` renders no sparkline, `TKEmptyState` without `icon`/`media` renders no illustration, product cards have no placeholder title.
+- **Dev warnings for silent coupling.** In-place overlays (`TKSheet`, `TKDialog`, `TKActionSheet`) warn in dev when their positioned ancestor outgrows the viewport (the "sheet opens below the screen" trap); `TKVirtualList` warns when its scroller resolves to 0px height.
+
 `TKCalendar` range mode supports both start/end activation and press-drag selection; touch drag arms after a short hold so ordinary vertical page scrolling remains native.
 
 ## Accessibility contracts

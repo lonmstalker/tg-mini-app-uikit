@@ -1,4 +1,4 @@
-import { memo, type ReactNode } from "react";
+import { memo, type CSSProperties, type ReactNode } from "react";
 import { TKIcon } from "../../atoms/icons";
 
 export type TKMessageStatus = "sent" | "delivered" | "read";
@@ -17,6 +17,9 @@ export interface TKMessage {
 export interface TKMessageBubbleProps extends Omit<TKMessage, "id"> {
   /** Last bubble of a same-side group: gets the tail corner and meta row. */
   tail?: boolean;
+  /** Merged onto the bubble itself (background, width, ...), consumer values win (REU-007). */
+  style?: CSSProperties;
+  className?: string;
   testId?: string;
 }
 
@@ -29,6 +32,8 @@ export const TKMessageBubble = /* @__PURE__ */ memo(function TKMessageBubble({
   status,
   tail = true,
   children,
+  style,
+  className,
   testId,
 }: TKMessageBubbleProps) {
   return (
@@ -39,6 +44,7 @@ export const TKMessageBubble = /* @__PURE__ */ memo(function TKMessageBubble({
       style={{ display: "flex", justifyContent: out ? "flex-end" : "flex-start" }}
     >
       <div
+        className={className}
         style={{
           maxWidth: "78%",
           minWidth: 0,
@@ -57,6 +63,7 @@ export const TKMessageBubble = /* @__PURE__ */ memo(function TKMessageBubble({
           boxShadow: out ? "0 4px 12px -6px var(--tk-accent-35)" : "var(--tk-shadow-sm)",
           fontSize: "var(--tk-fz-sub)",
           lineHeight: 1.35,
+          ...style,
         }}
       >
         {text}

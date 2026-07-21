@@ -1,5 +1,5 @@
 import { forwardRef, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
-import { TKIcon } from "../icons";
+import { TKIcon, tkRenderIcon } from "../icons";
 import { mergeRefs, tkZ } from "../../internal/dom";
 import { TKFocusRing } from "../../internal/FocusRing";
 import { useControllable } from "../../internal/useControllable";
@@ -318,7 +318,7 @@ export const TKSelect = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKSelectPr
               }}
             >
               <span style={{ display: "inline-flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-                {item.icon ? <TKIcon name={item.icon} size={17} /> : null}
+                {tkRenderIcon(item.icon, { size: 17 })}
                 <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.label}</span>
               </span>
               {item.value === val ? (

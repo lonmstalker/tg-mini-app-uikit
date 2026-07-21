@@ -1,5 +1,5 @@
 import { forwardRef, useEffect, useMemo, useRef, type ReactNode } from "react";
-import { TKIcon, type TKIconName } from "../icons";
+import { TKIcon, tkRenderIcon, type TKIconProp } from "../icons";
 import { mergeRefs } from "../../internal/dom";
 import { useControllable } from "../../internal/useControllable";
 
@@ -11,7 +11,8 @@ export interface TKSelectableProps {
   onChange?: (checked: boolean) => void;
   disabled?: boolean;
   type?: "checkbox" | "radio";
-  icon?: TKIconName;
+  /** Built-in icon name, or a custom element for glyphs outside the set (REU-004). */
+  icon?: TKIconProp;
   after?: ReactNode;
   name?: string;
   value?: string;
@@ -93,7 +94,7 @@ export const TKSelectable = /* @__PURE__ */ forwardRef<HTMLInputElement, TKSelec
           transition: "background var(--tk-t2) var(--tk-ease)", // box-shadow flips instantly (no repaint-per-frame animation)
         }}
       >
-        {isChecked ? <TKIcon name="check" size={14} strokeWidth={2.7} /> : icon ? <TKIcon name={icon} size={14} /> : null}
+        {isChecked ? <TKIcon name="check" size={14} strokeWidth={2.7} /> : tkRenderIcon(icon, { size: 14 })}
       </span>
       <span style={{ flex: 1, minWidth: 0 }}>
         <span style={{ display: "block", color: "var(--tk-text)", fontSize: "var(--tk-fz-body)", fontWeight: 600 }}>

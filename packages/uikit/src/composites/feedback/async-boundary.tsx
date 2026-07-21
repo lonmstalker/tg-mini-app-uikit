@@ -1,5 +1,5 @@
 import { useEffect, useRef, type ReactNode } from "react";
-import { type TKIconName } from "../../atoms/icons";
+import { type TKIconProp } from "../../atoms/icons";
 import { TKVisuallyHidden } from "../../atoms/service";
 import { useTKLocale } from "../../foundation/i18n";
 import { TKEmptyState } from "./empty-state";
@@ -27,7 +27,8 @@ export interface TKAsyncStateProps {
   errorTitle?: ReactNode;
   errorText?: ReactNode;
   retryLabel?: ReactNode;
-  emptyIcon?: TKIconName;
+  /** Built-in icon name, or a custom element for the empty illustration (REU-004). */
+  emptyIcon?: TKIconProp;
   emptyTitle?: ReactNode;
   emptyText?: ReactNode;
   emptyCta?: ReactNode;

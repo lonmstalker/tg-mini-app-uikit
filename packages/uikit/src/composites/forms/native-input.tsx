@@ -1,5 +1,5 @@
 import { forwardRef, useId, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { TKIcon, type TKIconName } from "../../atoms/icons";
+import { tkRenderIcon, type TKIconProp } from "../../atoms/icons";
 import { TKFormField } from "../../atoms/inputs";
 import { mergeRefs } from "../../internal/dom";
 
@@ -28,7 +28,8 @@ export interface TKNativeFieldProps {
   label?: ReactNode;
   hint?: ReactNode;
   error?: ReactNode;
-  icon?: TKIconName;
+  /** Built-in icon name, or a custom element for glyphs outside the set (REU-004). */
+  icon?: TKIconProp;
   disabled?: boolean;
   min?: string;
   max?: string;
@@ -73,7 +74,7 @@ export const TKNativeField = /* @__PURE__ */ forwardRef<HTMLInputElement, TKNati
       >
         {icon ? (
           <span style={{ color: focus ? "var(--tk-accent)" : "var(--tk-text-3)", display: "inline-flex" }}>
-            <TKIcon name={icon} size={19} />
+            {tkRenderIcon(icon, { size: 19 })}
           </span>
         ) : null}
         <input

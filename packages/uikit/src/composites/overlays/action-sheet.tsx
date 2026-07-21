@@ -1,13 +1,14 @@
-import { forwardRef, useRef, useState, type ReactNode } from "react";
-import { TKIcon, type TKIconName } from "../../atoms/icons";
+import { forwardRef, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { tkRenderIcon, type TKIconProp } from "../../atoms/icons";
 import { mergeRefs } from "../../internal/dom";
 import { useTKLocale } from "../../foundation/i18n";
-import { Scrim, useModalOverlay, useMountTransition } from "./shared";
+import { Scrim, useAnchorGuard, useModalOverlay, useMountTransition } from "./shared";
 
 /* ---------------- Action sheet ---------------- */
 
 export interface TKActionItem {
-  icon?: TKIconName;
+  /** Built-in icon name, or a custom element for glyphs outside the set (REU-004). */
+  icon?: TKIconProp;
   label: ReactNode;
   danger?: boolean;
   onSelect?: () => void;
@@ -22,11 +23,14 @@ export interface TKActionSheetProps {
   ariaLabel?: string;
   /** Native Telegram Main/Secondary buttons while open: `"suppress"` (default) hides them, `"keep"` leaves them to the app. */
   nativeButtons?: "suppress" | "keep";
+  /** Merged onto the panel wrapper, consumer values win (REU-007). */
+  style?: CSSProperties;
+  className?: string;
   testId?: string;
 }
 
 export const TKActionSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKActionSheetProps>(function TKActionSheet(
-  { open, onClose, items, cancelLabel, ariaLabel, nativeButtons, testId },
+  { open, onClose, items, cancelLabel, ariaLabel, nativeButtons, style, className, testId },
   forwardedRef,
 ) {
   const locale = useTKLocale();
@@ -38,6 +42,8 @@ export const TKActionSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKAction
   // Five modal hooks in one ordered call; panelProps pre-builds role/aria-modal/
   // tabIndex/z so the panel is spread-ready (INT-DX-001).
   const { scrimZ, panelProps } = useModalOverlay({ mounted, active: mounted && !closing, ref, onClose, nativeButtons });
+  // Dev guard: bottom-anchored against the positioned ancestor (REU-006).
+  useAnchorGuard("TKActionSheet", mounted, ref);
   if (!mounted) return null;
   return (
     <>
@@ -45,6 +51,7 @@ export const TKActionSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKAction
       <div
         ref={mergeRefs(ref, forwardedRef)}
         data-testid={testId}
+        className={className}
         {...panelProps}
         aria-label={ariaLabel ?? locale.actions}
         onAnimationEnd={(e) => {
@@ -65,6 +72,7 @@ export const TKActionSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKAction
           gap: 8,
           animation: `${closing ? "tk-sheet-down" : "tk-sheet-up"} var(--tk-t3) ${closing ? "var(--tk-ease)" : "var(--tk-spring)"} both`,
           willChange: entered && !closing ? undefined : "transform",
+          ...style,
         }}
       >
         <div
@@ -108,7 +116,7 @@ export const TKActionSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKAction
               onMouseEnter={(e) => (e.currentTarget.style.background = "var(--tk-surface-2)")}
               onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
             >
-              {item.icon ? <TKIcon name={item.icon} size={19} /> : null}
+              {tkRenderIcon(item.icon, { size: 19 })}
               {item.label}
             </button>
           ))}

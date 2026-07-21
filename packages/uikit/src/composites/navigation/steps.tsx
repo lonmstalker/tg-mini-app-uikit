@@ -1,18 +1,22 @@
-import { useRef, type CSSProperties, type KeyboardEvent } from "react";
+import { useRef, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 import { TKIcon } from "../../atoms/icons";
 import { tkRovingNext, tkTabbableIndex } from "../../internal/roving";
 
 export interface TKStepsProps {
-  steps: string[];
+  /** Step labels — any renderable content, not just strings (REU-004). */
+  steps: ReactNode[];
   current: number;
   /** Makes step circles clickable (e.g. to navigate back). */
   onStepClick?: (index: number) => void;
+  /** Merged onto the root, consumer values win (REU-007). */
+  style?: CSSProperties;
+  className?: string;
   testId?: string;
 }
 
 const CIRCLE = 28;
 
-export function TKSteps({ steps, current, onStepClick, testId }: TKStepsProps) {
+export function TKSteps({ steps, current, onStepClick, style, className, testId }: TKStepsProps) {
   // Roving tabindex over the clickable step circles: one tab stop (the current
   // step), arrows move focus; Enter/Space activates via the native button.
   const btnRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -28,7 +32,7 @@ export function TKSteps({ steps, current, onStepClick, testId }: TKStepsProps) {
     btnRefs.current[next]?.focus();
   };
   return (
-    <div data-testid={testId} style={{ display: "flex", alignItems: "flex-start" }}>
+    <div data-testid={testId} className={className} style={{ display: "flex", alignItems: "flex-start", ...style }}>
       {steps.map((step, index) => {
         const done = index < cur;
         const active = index === cur;
@@ -52,6 +56,7 @@ export function TKSteps({ steps, current, onStepClick, testId }: TKStepsProps) {
               justifyContent: "center",
               width: CIRCLE,
               height: CIRCLE,
+              flexShrink: 0,
               borderRadius: "50%",
               fontSize: "var(--tk-fz-caption)",
               fontWeight: 700,

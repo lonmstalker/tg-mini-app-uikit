@@ -5,12 +5,13 @@ export interface TKMessagesProps {
   messages: TKMessage[];
   testId?: string;
   style?: CSSProperties;
+  className?: string;
 }
 
 /** Chat feed: groups consecutive same-side messages, tail on the last one. */
-export function TKMessages({ messages, testId, style }: TKMessagesProps) {
+export function TKMessages({ messages, testId, style, className }: TKMessagesProps) {
   return (
-    <div data-testid={testId} style={{ display: "flex", flexDirection: "column", gap: 3, ...style }}>
+    <div data-testid={testId} className={className} style={{ display: "flex", flexDirection: "column", gap: 3, ...style }}>
       {messages.map((message, index) => {
         const next = messages[index + 1];
         const tail = !next || !!next.out !== !!message.out;

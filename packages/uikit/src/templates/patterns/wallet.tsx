@@ -1,6 +1,6 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { TKBadge } from "../../atoms/display";
-import { TKIcon } from "../../atoms/icons";
+import { tkRenderIcon, type TKIconProp } from "../../atoms/icons";
 import { useTKLocale } from "../../foundation/i18n";
 
 export interface TKWalletConnectButtonProps {
@@ -10,7 +10,12 @@ export interface TKWalletConnectButtonProps {
   address?: ReactNode;
   walletName?: ReactNode;
   loading?: boolean;
+  /** Leading glyph: built-in icon name or a custom element (brand logo) (REU-004). */
+  icon?: TKIconProp;
   onClick?: () => void;
+  /** Merged onto the root button, consumer values win (REU-007). */
+  style?: CSSProperties;
+  className?: string;
   testId?: string;
 }
 
@@ -21,7 +26,10 @@ export function TKWalletConnectButton({
   address,
   walletName,
   loading,
+  icon = "wallet",
   onClick,
+  style,
+  className,
   testId,
 }: TKWalletConnectButtonProps) {
   const locale = useTKLocale();
@@ -29,7 +37,7 @@ export function TKWalletConnectButton({
     <button
       type="button"
       data-testid={testId}
-      className="tk-press"
+      className={["tk-press", className].filter(Boolean).join(" ")}
       onClick={onClick}
       disabled={loading}
       style={{
@@ -46,6 +54,7 @@ export function TKWalletConnectButton({
         fontFamily: "inherit",
         cursor: loading ? "default" : "pointer",
         opacity: loading ? 0.72 : 1,
+        ...style,
       }}
     >
       <span
@@ -56,12 +65,14 @@ export function TKWalletConnectButton({
           width: 38,
           height: 38,
           borderRadius: "var(--tk-r-sm)",
-          background: connected ? "var(--tk-accent-12)" : "rgba(255,255,255,.18)",
+          // Token-derived, not a white literal: on a light accent the old
+          // rgba(255,255,255,.18) chip simply vanished (REU-003).
+          background: connected ? "var(--tk-accent-12)" : "color-mix(in srgb, var(--tk-on-accent) 18%, transparent)",
           color: connected ? "var(--tk-accent)" : "currentColor",
           flexShrink: 0,
         }}
       >
-        <TKIcon name="wallet" size={20} />
+        {tkRenderIcon(icon, { size: 20 })}
       </span>
       <span style={{ flex: 1, minWidth: 0, textAlign: "left" }}>
         <span style={{ display: "block", fontSize: "var(--tk-fz-body)", fontWeight: 700 }}>
@@ -85,7 +96,7 @@ export function TKWalletConnectButton({
           </span>
         ) : null}
       </span>
-      <TKIcon name={connected ? "chevronRight" : "arrowRight"} size={18} />
+      {tkRenderIcon(connected ? "chevronRight" : "arrowRight", { size: 18 })}
     </button>
   );
 }
@@ -95,7 +106,12 @@ export interface TKWalletStatusCellProps {
   address?: ReactNode;
   status?: ReactNode;
   connected?: boolean;
+  /** Leading glyph: built-in icon name or a custom element (brand logo) (REU-004). */
+  icon?: TKIconProp;
   onClick?: () => void;
+  /** Merged onto the root button, consumer values win (REU-007). */
+  style?: CSSProperties;
+  className?: string;
   testId?: string;
 }
 
@@ -104,7 +120,10 @@ export function TKWalletStatusCell({
   address,
   status,
   connected,
+  icon = "wallet",
   onClick,
+  style,
+  className,
   testId,
 }: TKWalletStatusCellProps) {
   const locale = useTKLocale();
@@ -113,7 +132,7 @@ export function TKWalletStatusCell({
       type="button"
       data-testid={testId}
       onClick={onClick}
-      className="tk-press tk-press-soft"
+      className={["tk-press tk-press-soft", className].filter(Boolean).join(" ")}
       style={{
         width: "100%",
         display: "flex",
@@ -128,6 +147,7 @@ export function TKWalletStatusCell({
         fontFamily: "inherit",
         textAlign: "left",
         cursor: onClick ? "pointer" : "default",
+        ...style,
       }}
     >
       <span
@@ -143,7 +163,7 @@ export function TKWalletStatusCell({
           flexShrink: 0,
         }}
       >
-        <TKIcon name="wallet" size={18} />
+        {tkRenderIcon(icon, { size: 18 })}
       </span>
       <span style={{ flex: 1, minWidth: 0 }}>
         <span style={{ display: "block", fontSize: "var(--tk-fz-body)", fontWeight: 600 }}>{walletName ?? locale.wallet}</span>

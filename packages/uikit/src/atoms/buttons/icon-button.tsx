@@ -5,14 +5,15 @@ import {
   type MouseEvent,
   type MouseEventHandler,
 } from "react";
-import { TKIcon, type TKIconName } from "../icons";
+import { tkRenderIcon, type TKIconProp } from "../icons";
 import { tkDomProps, type TKDomProps } from "../../internal/dom";
 import { ICON_BTN_SIZES, tkButtonVariantStyle, type TKButtonVariant, type TKIconButtonSize } from "./shared";
 
 export type { TKIconButtonSize };
 
 export interface TKIconButtonProps extends TKDomProps<HTMLButtonElement> {
-  icon: TKIconName;
+  /** Built-in icon name, or a custom element for glyphs outside the set (REU-004). */
+  icon: TKIconProp;
   variant?: TKButtonVariant;
   /**
    * Visual size. Prefer the `"sm" | "md" | "lg"` variants;
@@ -99,7 +100,7 @@ export const TKIconButton = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKIcon
         ...style,
       }}
     >
-      <TKIcon name={icon} size={Math.round(px * 0.52)} />
+      {tkRenderIcon(icon, { size: Math.round(px * 0.52) })}
       {/* Clamp to "99+" and hide the bubble for 0/negative counts (BTN-006). */}
       {typeof badge === "number" && badge > 0 ? (
         <span

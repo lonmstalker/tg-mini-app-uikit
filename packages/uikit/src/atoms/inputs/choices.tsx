@@ -1,5 +1,5 @@
 import { forwardRef, useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
-import { TKIcon } from "../icons";
+import { TKIcon, tkRenderIcon } from "../icons";
 import { tkOptionItem, type TKOption } from "../../foundation/options";
 import { useControllable } from "../../internal/useControllable";
 import { tkZ } from "../../internal/dom";
@@ -156,7 +156,7 @@ export const TKMultiselect = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKMul
                     fontWeight: 700,
                   }}
                 >
-                  {item.icon ? <TKIcon name={item.icon} size={13} /> : null}
+                  {tkRenderIcon(item.icon, { size: 13 })}
                   {item.label}
                 </span>
               ))
@@ -283,7 +283,7 @@ export const TKMultiselect = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKMul
                 >
                   {isSelected ? <TKIcon name="check" size={12} strokeWidth={2.7} /> : null}
                 </span>
-                {item.icon ? <TKIcon name={item.icon} size={17} /> : null}
+                {tkRenderIcon(item.icon, { size: 17 })}
                 <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {item.label}
                 </span>

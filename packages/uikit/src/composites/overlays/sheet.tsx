@@ -1,10 +1,10 @@
-import { forwardRef, useCallback, useEffect, useId, useImperativeHandle, useRef, useState, type ReactNode, type Ref } from "react";
+import { forwardRef, useCallback, useEffect, useId, useImperativeHandle, useRef, useState, type CSSProperties, type ReactNode, type Ref } from "react";
 import { TKIconButton } from "../../atoms/buttons";
 import { mergeRefs } from "../../internal/dom";
 import { tkShouldCommit, useDragGesture } from "../../internal/useDragGesture";
 import { useLatest } from "../../internal/useLatest";
 import { useTKLocale } from "../../foundation/i18n";
-import { Scrim, useModalOverlay, useMountTransition } from "./shared";
+import { Scrim, useAnchorGuard, useModalOverlay, useMountTransition } from "./shared";
 
 /* ---------------- Bottom sheet ---------------- */
 
@@ -52,6 +52,9 @@ export interface TKSheetProps {
    * suppress.
    */
   nativeButtons?: "suppress" | "keep";
+  /** Merged onto the sheet panel, consumer values win (REU-007). */
+  style?: CSSProperties;
+  className?: string;
   testId?: string;
 }
 
@@ -69,6 +72,8 @@ export const TKSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSheetProps>(
     modal = true,
     sheetRef,
     nativeButtons = "suppress",
+    style,
+    className,
     testId,
   },
   forwardedRef,
@@ -89,6 +94,9 @@ export const TKSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSheetProps>(
       console.warn(`TKSheet: snapPoints must be ascending fractions within (0,1]; got [${snapPoints.join(", ")}]`);
     }
   }, [snapPoints]);
+  // Dev guard: the sheet is `position: absolute; bottom: 0` and anchors to its
+  // positioned ancestor — the TKAppShell/TKPage viewport contract (REU-006).
+  useAnchorGuard("TKSheet", mounted, ref);
   const [snap, setSnap] = useState(() =>
     snapPoints ? Math.min(Math.max(defaultSnap, 0), snapPoints.length - 1) : 0,
   );
@@ -244,6 +252,7 @@ export const TKSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSheetProps>(
       <div
         ref={mergeRefs(ref, forwardedRef)}
         data-testid={testId}
+        className={className}
         role="dialog"
         aria-modal={modal || undefined}
         aria-labelledby={title ? titleId : undefined}
@@ -278,6 +287,7 @@ export const TKSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSheetProps>(
           // a drag the imperative transform drives the sheet instead, so the
           // finger tracks it and a partial drag returns without re-sliding in.
           animation,
+          ...style,
         }}
       >
         {/* The visible box: sized to the CURRENT snap (the sheet itself stays at

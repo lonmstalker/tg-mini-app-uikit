@@ -1,4 +1,4 @@
-import { useRef, type KeyboardEvent } from "react";
+import { useRef, type CSSProperties, type KeyboardEvent } from "react";
 import { tkFormat, useTKLocale } from "../../foundation/i18n";
 import { useControllable } from "../../internal/useControllable";
 import { tkRovingNext, tkTabbableIndex } from "../../internal/roving";
@@ -8,10 +8,13 @@ export interface TKPageDotsProps {
   page?: number;
   defaultPage?: number;
   onChange?: (page: number) => void;
+  /** Merged onto the root, consumer values win (REU-007). */
+  style?: CSSProperties;
+  className?: string;
   testId?: string;
 }
 
-export function TKPageDots({ count, page, defaultPage = 0, onChange, testId }: TKPageDotsProps) {
+export function TKPageDots({ count, page, defaultPage = 0, onChange, style, className, testId }: TKPageDotsProps) {
   const locale = useTKLocale();
   const [cur, setCur] = useControllable(page, defaultPage, onChange);
   // Roving tabindex: one tab stop, arrows move focus + page (selection follows focus).
@@ -31,7 +34,8 @@ export function TKPageDots({ count, page, defaultPage = 0, onChange, testId }: T
       // Named group with the positional total so AT announces "Slide 3 of 5" (NAV-003).
       role="group"
       aria-label={tkFormat(locale.slidePosition, { page: cur + 1, total: count })}
-      style={{ display: "flex", gap: 7 }}
+      className={className}
+      style={{ display: "flex", gap: 7, ...style }}
     >
       {Array.from({ length: count }).map((_, index) => (
         <button
@@ -48,6 +52,7 @@ export function TKPageDots({ count, page, defaultPage = 0, onChange, testId }: T
           style={{
             width: index === cur ? 24 : 8,
             height: 8,
+            flexShrink: 0,
             borderRadius: 4,
             border: "none",
             padding: 0,

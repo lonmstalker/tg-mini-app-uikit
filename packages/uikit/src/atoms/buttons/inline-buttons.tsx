@@ -1,11 +1,12 @@
 import { useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { TKIcon, type TKIconName } from "../icons";
+import { tkRenderIcon, type TKIconProp } from "../icons";
 import { tkRovingNext, tkTabbableIndex } from "../../internal/roving";
 
 export interface TKInlineButtonItem {
   id: string;
   label: ReactNode;
-  icon?: TKIconName;
+  /** Built-in icon name, or a custom element for glyphs outside the set (REU-004). */
+  icon?: TKIconProp;
   disabled?: boolean;
   danger?: boolean;
   selected?: boolean;
@@ -141,7 +142,7 @@ export function TKInlineButtons({
                 "background var(--tk-t2) var(--tk-ease), color var(--tk-t2) var(--tk-ease)",
             }}
           >
-            {item.icon ? <TKIcon name={item.icon} size={size === "sm" ? 15 : 17} /> : null}
+            {tkRenderIcon(item.icon, { size: size === "sm" ? 15 : 17 })}
             <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {item.label}
             </span>

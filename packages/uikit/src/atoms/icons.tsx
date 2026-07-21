@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from "react";
+import type { CSSProperties, ReactElement, ReactNode } from "react";
 
 // Minimal stroke icon set (24×24, 2px round strokes).
 const paths = {
@@ -87,7 +87,13 @@ export const TK_ICON_PATHS: Record<TKIconName, ReactNode> = paths;
 export const TK_ICON_NAMES = Object.keys(paths) as TKIconName[];
 
 export interface TKIconProps {
-  name: TKIconName;
+  name?: TKIconName;
+  /**
+   * Custom glyph content (`<path>`/`<circle>`/…) rendered inside the standard
+   * 24×24 viewBox with the kit's stroke conventions — the escape hatch for
+   * icons missing from the built-in set. Takes precedence over `name` (REU-004).
+   */
+  path?: ReactNode;
   size?: number;
   strokeWidth?: number;
   style?: CSSProperties;
@@ -108,11 +114,31 @@ export interface TKIconProps {
   testId?: string;
 }
 
-export function TKIcon({ name, size = 22, strokeWidth = 2, style, className, filled, label, testId }: TKIconProps) {
-  const path = TK_ICON_PATHS[name];
+/**
+ * Value accepted by `icon`-style props across the kit: a built-in icon name or
+ * a custom element (own SVG, image, emoji span) — the closed `TKIconName` union
+ * alone forced consumers to redraw whole surfaces for one missing glyph (REU-004).
+ */
+export type TKIconProp = TKIconName | ReactElement;
+
+/** Renders an `icon` prop value: names go through `TKIcon`, elements render as-is. */
+export function tkRenderIcon(
+  icon: TKIconProp | undefined | null,
+  props?: Omit<TKIconProps, "name" | "path">,
+): ReactNode {
+  if (icon == null) return null;
+  return typeof icon === "string" ? <TKIcon name={icon} {...props} /> : icon;
+}
+
+export function TKIcon({ name, path: customPath, size = 22, strokeWidth = 2, style, className, filled, label, testId }: TKIconProps) {
+  const path = customPath ?? (name != null ? TK_ICON_PATHS[name] : null);
   if (process.env.NODE_ENV !== "production" && path == null) {
     // eslint-disable-next-line no-console
-    console.warn(`TKIcon: unknown icon name "${String(name)}" — rendering a placeholder (SVC-007).`);
+    console.warn(
+      name != null
+        ? `TKIcon: unknown icon name "${String(name)}" — rendering a placeholder (SVC-007).`
+        : "TKIcon: pass `name` or `path` — rendering a placeholder (REU-004).",
+    );
   }
   return (
     <svg

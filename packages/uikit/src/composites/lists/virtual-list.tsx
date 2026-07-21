@@ -112,6 +112,22 @@ function TKVirtualListImpl<T>(
     if (windowMode) return;
     const node = scrollRef.current;
     setViewport(typeof height === "number" ? height : (node?.clientHeight ?? 0));
+    // Dev guard: with `height` omitted the scroller is 100% of the parent; a
+    // parent with no resolved height collapses it to 0 and the list silently
+    // renders nothing — say so instead (REU-006).
+    if (
+      process.env.NODE_ENV !== "production" &&
+      height == null &&
+      node &&
+      node.clientHeight === 0 &&
+      items.length > 0
+    ) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        "TKVirtualList: the scroller resolved to 0px height (parent has no resolved height). " +
+          "Pass `height`, give the parent a real height, or use `scrollParent` (REU-006).",
+      );
+    }
     if (!node || typeof ResizeObserver === "undefined") return;
     const ro = new ResizeObserver((entries) => {
       const next = entries[0]?.contentRect.height;

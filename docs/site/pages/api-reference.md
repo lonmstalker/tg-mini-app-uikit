@@ -17,7 +17,8 @@ import {
 Key conventions:
 
 - Props named `testId` render to `data-testid`.
-- Options accept `string` or `{ value, label, icon, disabled }`.
+- Options accept `string` or `{ value, label, icon, disabled }`; `icon` is a `TKIconName` or a custom element (`TKIconProp`), rendered via the exported `tkRenderIcon` helper.
+- Components merge a consumer `style` onto the root last (consumer wins) and append `className`.
 - Locale resolution is component prop, then `TKLocaleProvider`, then English default.
 - Back handling is LIFO through `useBackIntercept`; sheets and dialogs intercept before navigation stacks.
 - Telegram hooks return safe fallbacks outside Telegram and never require a runtime dependency.

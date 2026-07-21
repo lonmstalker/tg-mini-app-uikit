@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { tkOptionItem, type TKOption } from "../../foundation/options";
 import { useOptionalHaptics } from "../../foundation/telegram";
 import { useControllable } from "../../internal/useControllable";
@@ -12,10 +12,13 @@ export interface TKSegmentedProps {
   full?: boolean;
   /** Accessible name for the radiogroup (CC-04 / NAV-002). */
   ariaLabel?: string;
+  /** Merged onto the root, consumer values win (REU-007). */
+  style?: CSSProperties;
+  className?: string;
   testId?: string;
 }
 
-export function TKSegmented({ options, value, defaultValue, onChange, full, ariaLabel, testId }: TKSegmentedProps) {
+export function TKSegmented({ options, value, defaultValue, onChange, full, ariaLabel, style, className, testId }: TKSegmentedProps) {
   const items = options.map(tkOptionItem);
   const firstEnabled = items.find((item) => !item.disabled);
   const [val, setVal] = useControllable(value, defaultValue ?? firstEnabled?.value ?? "", onChange);
@@ -54,6 +57,7 @@ export function TKSegmented({ options, value, defaultValue, onChange, full, aria
       role="radiogroup"
       aria-label={ariaLabel}
       data-testid={testId}
+      className={className}
       style={{
         position: "relative",
         display: full ? "grid" : "inline-grid",
@@ -62,6 +66,7 @@ export function TKSegmented({ options, value, defaultValue, onChange, full, aria
         padding: 3,
         borderRadius: "var(--tk-r-sm)",
         background: "var(--tk-surface-3)",
+        ...style,
       }}
     >
       <div

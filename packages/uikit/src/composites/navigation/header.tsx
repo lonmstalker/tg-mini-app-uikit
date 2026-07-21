@@ -1,4 +1,4 @@
-import { type ReactNode } from "react";
+import { type CSSProperties, type ReactNode } from "react";
 import { TKIcon } from "../../atoms/icons";
 import { useTKLocale } from "../../foundation/i18n";
 import { useBackButtonWanted, useSafeArea } from "../../foundation/telegram";
@@ -23,10 +23,34 @@ export interface TKHeaderProps {
   back?: boolean | "auto";
   onBack?: () => void;
   actions?: ReactNode;
+  /**
+   * `"glass"` (default) is the TKPage slot look: blurred glass background and a
+   * bottom hairline. `"plain"` drops that chrome for use inside custom layouts
+   * where the floating glass plate reads as a stray gray bar (REU-005).
+   */
+  variant?: "glass" | "plain";
+  /** ARIA heading level of the title (default 1). Pass `0` to keep a plain div. */
+  headingLevel?: number;
+  /** Merged onto the bar root, consumer values win (REU-007). */
+  style?: CSSProperties;
+  className?: string;
   testId?: string;
 }
 
-export function TKHeader({ title, subtitle, large, collapsing, back = "auto", onBack, actions, testId }: TKHeaderProps) {
+export function TKHeader({
+  title,
+  subtitle,
+  large,
+  collapsing,
+  back = "auto",
+  onBack,
+  actions,
+  variant = "glass",
+  headingLevel = 1,
+  style,
+  className,
+  testId,
+}: TKHeaderProps) {
   const locale = useTKLocale();
   // The enclosing TKPage publishes ONE hysteresis-guarded boolean (collapse
   // past 36px, expand under 20px) — the header re-renders only on the two
@@ -52,6 +76,11 @@ export function TKHeader({ title, subtitle, large, collapsing, back = "auto", on
   const handleBack = onBack ?? (back === "auto" ? nav?.pop : undefined);
   const collapsible = !!collapsing && large === true;
   const isCollapsed = collapsible && collapsed;
+  // The page title must be a real heading for AT, not an anonymous div. Both
+  // the compact and large nodes carry it — aria-hidden already exposes exactly
+  // one of them at a time (REU-005).
+  const headingProps =
+    headingLevel > 0 ? ({ role: "heading", "aria-level": headingLevel } as const) : undefined;
   // The large title collapses by animating its measured height through WAAPI
   // (no grid-template-rows in a transition list, reduced-motion aware).
   const largeTitle = useCollapse(!isCollapsed);
@@ -60,6 +89,7 @@ export function TKHeader({ title, subtitle, large, collapsing, back = "auto", on
     <div
       data-testid={testId}
       data-collapsed={collapsing ? isCollapsed : undefined}
+      className={className}
       style={{
         display: "flex",
         flexDirection: "column",
@@ -71,10 +101,15 @@ export function TKHeader({ title, subtitle, large, collapsing, back = "auto", on
         height: large ? undefined : 52,
         boxSizing: "border-box",
         justifyContent: "center",
-        background: "var(--tk-glass)",
-        backdropFilter: "var(--tk-bar-blur, blur(14px))",
-        WebkitBackdropFilter: "var(--tk-bar-blur, blur(14px))",
-        borderBottom: "0.5px solid var(--tk-sep)",
+        ...(variant === "glass"
+          ? {
+              background: "var(--tk-glass)",
+              backdropFilter: "var(--tk-bar-blur, blur(14px))",
+              WebkitBackdropFilter: "var(--tk-bar-blur, blur(14px))",
+              borderBottom: "0.5px solid var(--tk-sep)",
+            }
+          : null),
+        ...style,
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -109,7 +144,7 @@ export function TKHeader({ title, subtitle, large, collapsing, back = "auto", on
             transition: "opacity var(--tk-t2) var(--tk-ease)",
           }}
         >
-          <div style={{ fontSize: "var(--tk-fz-body)", fontWeight: 600 }}>{title}</div>
+          <div {...headingProps} style={{ fontSize: "var(--tk-fz-body)", fontWeight: 600 }}>{title}</div>
           {subtitle && !large ? (
             <div style={{ fontSize: "var(--tk-fz-caption)", color: "var(--tk-text-2)" }}>{subtitle}</div>
           ) : null}
@@ -119,7 +154,7 @@ export function TKHeader({ title, subtitle, large, collapsing, back = "auto", on
       {large ? (
         <div ref={largeTitle.ref} aria-hidden={isCollapsed || undefined} style={largeTitle.style}>
           <div style={{ opacity: isCollapsed ? 0 : 1, transition: "opacity var(--tk-t2) var(--tk-ease)" }}>
-            <div style={{ fontSize: "var(--tk-fz-title1)", fontWeight: 700, letterSpacing: 0 }}>{title}</div>
+            <div {...headingProps} style={{ fontSize: "var(--tk-fz-title1)", fontWeight: 700, letterSpacing: 0 }}>{title}</div>
             {subtitle ? (
               <div style={{ fontSize: "var(--tk-fz-sub)", color: "var(--tk-text-2)" }}>{subtitle}</div>
             ) : null}

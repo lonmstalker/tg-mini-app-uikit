@@ -1,11 +1,16 @@
 import { forwardRef, type HTMLAttributes, type ReactNode } from "react";
 import { TKButton } from "../../atoms/buttons";
-import { TKIcon, type TKIconName } from "../../atoms/icons";
+import { tkRenderIcon, type TKIconProp } from "../../atoms/icons";
 
 /* ---------------- Empty / error states ---------------- */
 
 export interface TKEmptyStateProps extends Omit<HTMLAttributes<HTMLDivElement>, "title"> {
-  icon?: TKIconName;
+  /**
+   * Built-in icon name or a custom element for the tinted circle. No default:
+   * a generic empty state must not invent an illustration (the old shopping
+   * cart made every non-commerce empty screen look like a store) (REU-002).
+   */
+  icon?: TKIconProp;
   /** Custom illustration (Lottie, img ...) shown instead of the icon circle. */
   media?: ReactNode;
   title?: ReactNode;
@@ -19,7 +24,7 @@ export interface TKEmptyStateProps extends Omit<HTMLAttributes<HTMLDivElement>, 
 }
 
 export const TKEmptyState = /* @__PURE__ */ forwardRef<HTMLDivElement, TKEmptyStateProps>(function TKEmptyState(
-  { icon = "cart", media, title, text, cta, onCta, tone = "accent", headingLevel = 2, className, style, testId, ...rest },
+  { icon, media, title, text, cta, onCta, tone = "accent", headingLevel = 2, className, style, testId, ...rest },
   ref,
 ) {
   const color = tone === "red" ? "var(--tk-red)" : "var(--tk-accent)";
@@ -40,23 +45,24 @@ export const TKEmptyState = /* @__PURE__ */ forwardRef<HTMLDivElement, TKEmptySt
         ...style,
       }}
     >
-      {media ?? (
-        <div
-          style={{
-            width: 68,
-            height: 68,
-            borderRadius: "50%",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            background: bg,
-            color,
-            marginBottom: 6,
-          }}
-        >
-          <TKIcon name={icon} size={30} />
-        </div>
-      )}
+      {media ??
+        (icon != null ? (
+          <div
+            style={{
+              width: 68,
+              height: 68,
+              borderRadius: "50%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: bg,
+              color,
+              marginBottom: 6,
+            }}
+          >
+            {tkRenderIcon(icon, { size: 30 })}
+          </div>
+        ) : null)}
       {title ? (
         <div
           role="heading"

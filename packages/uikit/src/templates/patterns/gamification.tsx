@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { TKAvatar, TKBadge } from "../../atoms/display";
 import { useTKLocale } from "../../foundation/i18n";
 
@@ -10,16 +10,20 @@ export interface TKXPHeaderProps {
   xp?: number;
   /** Caption under the bar; pass `null` to hide. */
   hint?: ReactNode;
+  /** Merged onto the root, consumer values win (REU-007). */
+  style?: CSSProperties;
+  className?: string;
   testId?: string;
 }
 
-export function TKXPHeader({ name, initials = "", level, xp = 0, hint, testId }: TKXPHeaderProps) {
+export function TKXPHeader({ name, initials = "", level, xp = 0, hint, style, className, testId }: TKXPHeaderProps) {
   const locale = useTKLocale();
   // Single clamped value for the visual fill AND the announced progress (PTN-003).
   const pct = Number.isFinite(xp) ? Math.min(100, Math.max(0, xp)) : 0;
   return (
     <div
       data-testid={testId}
+      className={className}
       style={{
         position: "relative",
         overflow: "hidden",
@@ -31,6 +35,7 @@ export function TKXPHeader({ name, initials = "", level, xp = 0, hint, testId }:
         display: "flex",
         alignItems: "center",
         gap: 14,
+        ...style,
       }}
     >
       <TKAvatar initials={initials} size={54} tone="color-mix(in srgb, var(--tk-on-accent) 22%, transparent)" />
@@ -94,19 +99,24 @@ export interface TKLeaderboardRow {
 export interface TKLeaderboardProps {
   rows: TKLeaderboardRow[];
   youLabel?: ReactNode;
+  /** Merged onto the root, consumer values win (REU-007). */
+  style?: CSSProperties;
+  className?: string;
   testId?: string;
 }
 
-export function TKLeaderboard({ rows, youLabel, testId }: TKLeaderboardProps) {
+export function TKLeaderboard({ rows, youLabel, style, className, testId }: TKLeaderboardProps) {
   const locale = useTKLocale();
   return (
     <div
       data-testid={testId}
+      className={className}
       style={{
         background: "var(--tk-surface)",
         borderRadius: "var(--tk-r-lg)",
         boxShadow: "var(--tk-shadow-sm)",
         overflow: "hidden",
+        ...style,
       }}
     >
       {rows.map((row, index) => (
@@ -123,7 +133,11 @@ export function TKLeaderboard({ rows, youLabel, testId }: TKLeaderboardProps) {
         >
           <span
             style={{
-              width: 24,
+              // min-width, not width: a 3-digit rank or medal emoji must not
+              // overflow into the avatar (REU-008).
+              minWidth: 24,
+              flexShrink: 0,
+              whiteSpace: "nowrap",
               textAlign: "center",
               fontWeight: 800,
               fontSize: "var(--tk-fz-sub)",

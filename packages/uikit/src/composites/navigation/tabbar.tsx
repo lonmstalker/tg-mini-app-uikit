@@ -1,14 +1,15 @@
-import { useRef, type KeyboardEvent } from "react";
+import { useRef, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 import { TKCounter } from "../../atoms/display";
-import { TKIcon, type TKIconName } from "../../atoms/icons";
+import { tkRenderIcon, type TKIconProp } from "../../atoms/icons";
 import { useSafeArea, useOptionalHaptics } from "../../foundation/telegram";
 import { useTKLocale } from "../../foundation/i18n";
 import { useControllable } from "../../internal/useControllable";
 import { tkRovingNext, tkTabbableIndex } from "../../internal/roving";
 
 export interface TKTabItem {
-  icon: TKIconName;
-  label: string;
+  /** Built-in icon name, or a custom element (own SVG) for glyphs outside the set (REU-004). */
+  icon: TKIconProp;
+  label: ReactNode;
   count?: number;
   /** Stable identity for React keys — needed only if tabs are reordered/removed
    *  (CC-11/NAV-007); falls back to index, which already handles duplicate labels. */
@@ -24,10 +25,23 @@ export interface TKTabbarProps {
   safeArea?: boolean;
   /** Accessible name for the navigation landmark (NAV-001); defaults to `locale.tabs`. */
   ariaLabel?: string;
+  /** Merged onto the bar root, consumer values win (REU-007). */
+  style?: CSSProperties;
+  className?: string;
   testId?: string;
 }
 
-export function TKTabbar({ tabs, value, defaultValue = 0, onChange, safeArea, ariaLabel, testId }: TKTabbarProps) {
+export function TKTabbar({
+  tabs,
+  value,
+  defaultValue = 0,
+  onChange,
+  safeArea,
+  ariaLabel,
+  style,
+  className,
+  testId,
+}: TKTabbarProps) {
   const [active, setActive] = useControllable(value, defaultValue, onChange);
   const locale = useTKLocale();
   const haptics = useOptionalHaptics();
@@ -51,9 +65,10 @@ export function TKTabbar({ tabs, value, defaultValue = 0, onChange, safeArea, ar
       data-testid={testId}
       role="navigation"
       aria-label={ariaLabel ?? locale.tabs}
+      className={className}
       style={{
         display: "grid",
-        gridTemplateColumns: `repeat(${tabs.length}, 1fr)`,
+        gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))`,
         background: "var(--tk-glass)",
         backdropFilter: "var(--tk-bar-blur, blur(14px))",
         WebkitBackdropFilter: "var(--tk-bar-blur, blur(14px))",
@@ -61,6 +76,7 @@ export function TKTabbar({ tabs, value, defaultValue = 0, onChange, safeArea, ar
         minHeight: "var(--tk-tabbar-h, auto)",
         padding: "8px 0 10px",
         paddingBottom: safeArea ? `calc(max(var(--tk-safe-bottom), ${safeBottom}px) + 10px)` : 10,
+        ...style,
       }}
     >
       {tabs.map((tab, index) => {
@@ -100,6 +116,7 @@ export function TKTabbar({ tabs, value, defaultValue = 0, onChange, safeArea, ar
                 justifyContent: "center",
                 width: 46,
                 height: 30,
+                flexShrink: 0,
                 borderRadius: "var(--tk-r-pill)",
                 background: on ? "var(--tk-accent-12)" : "transparent",
                 transform: on ? "translateY(-1px)" : "none",
@@ -107,14 +124,28 @@ export function TKTabbar({ tabs, value, defaultValue = 0, onChange, safeArea, ar
                 position: "relative",
               }}
             >
-              <TKIcon name={tab.icon} size={22} strokeWidth={on ? 2.2 : 2} />
+              {tkRenderIcon(tab.icon, { size: 22, strokeWidth: on ? 2.2 : 2 })}
               {tab.count != null ? (
                 <span style={{ position: "absolute", top: -3, right: 2 }}>
                   <TKCounter value={tab.count} />
                 </span>
               ) : null}
             </span>
-            <span style={{ fontSize: "var(--tk-fz-caption2)", fontWeight: on ? 600 : 500 }}>{tab.label}</span>
+            {/* A long localized label must truncate, not wrap into a second line
+                that breaks the fixed bar height (REU-008). */}
+            <span
+              style={{
+                fontSize: "var(--tk-fz-caption2)",
+                fontWeight: on ? 600 : 500,
+                maxWidth: "100%",
+                padding: "0 2px",
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+            >
+              {tab.label}
+            </span>
           </button>
         );
       })}

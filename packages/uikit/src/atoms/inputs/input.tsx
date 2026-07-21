@@ -1,5 +1,5 @@
 import { forwardRef, useId, useMemo, useRef, useState, type ChangeEvent, type FocusEvent, type ReactNode } from "react";
-import { TKIcon, type TKIconName } from "../icons";
+import { TKIcon, tkRenderIcon, type TKIconProp } from "../icons";
 import { mergeRefs } from "../../internal/dom";
 import { TKFocusRing } from "../../internal/FocusRing";
 import { useControllable } from "../../internal/useControllable";
@@ -10,7 +10,8 @@ export interface TKInputProps {
   label?: ReactNode;
   placeholder?: string;
   type?: string;
-  icon?: TKIconName;
+  /** Built-in icon name, or a custom element for glyphs outside the set (REU-004). */
+  icon?: TKIconProp;
   value?: string;
   defaultValue?: string;
   /**
@@ -139,7 +140,7 @@ export const TKInput = /* @__PURE__ */ forwardRef<HTMLInputElement, TKInputProps
               transition: "color var(--tk-t2) var(--tk-ease)",
             }}
           >
-            <TKIcon name={icon} size={19} />
+            {tkRenderIcon(icon, { size: 19 })}
           </span>
         ) : null}
         {prefix}

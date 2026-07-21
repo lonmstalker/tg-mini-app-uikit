@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { TKCaption, TKIcon, TK_ICON_NAMES } from "tg-mini-app-uikit";
+import { TKButton, TKCaption, TKChip, TKIcon, TKIconButton, TK_ICON_NAMES } from "tg-mini-app-uikit";
 import { Grid, Section } from "../story-helpers";
 
 const meta = {
@@ -54,4 +54,28 @@ export const IconGallery = {
       </Grid>
     </Section>
   ),
+} satisfies Story;
+
+/**
+ * REU-004: glyphs outside the built-in set. `TKIcon path` renders custom SVG
+ * content with the kit's stroke conventions; every `icon`-style prop also
+ * accepts a ready element (own SVG, emoji, image).
+ */
+export const CustomGlyphs = {
+  render: () => {
+    const debts = (
+      <path d="M4 7h16v10H4zM4 11h16M8 15h3" />
+    );
+    return (
+      <Section>
+        <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+          <TKIcon path={debts} label="Debts" />
+          <TKIcon path={debts} filled={false} size={30} strokeWidth={1.6} />
+          <TKIconButton icon={<TKIcon path={debts} size={18} />} label="Debts" />
+          <TKButton icon={<TKIcon path={debts} size={16} />}>History</TKButton>
+          <TKChip icon={<TKIcon path={debts} size={15} />}>Debts</TKChip>
+        </div>
+      </Section>
+    );
+  },
 } satisfies Story;
