@@ -210,3 +210,61 @@ describe("reuse · TKPhoneInput derives its default country from the locale (REU
     expect(screen.getByText("+7")).toBeInTheDocument();
   });
 });
+
+describe("reuse · form strings go through TKLocale (REU-012)", () => {
+  it("ships the new keys in both bundled dictionaries", () => {
+    for (const key of ["invalidDate", "invalidTime", "month", "year", "amPm"] as const) {
+      expect(kit.enLocale[key]).toBeTruthy();
+      expect(kit.ruLocale[key]).toBeTruthy();
+      expect(kit.ruLocale[key]).not.toBe(kit.enLocale[key]);
+    }
+  });
+
+  it("TKTimeInput incomplete-entry message is localized (invalidText still wins)", () => {
+    const { unmount } = render(
+      <kit.TKLocaleProvider locale={kit.ruLocale}>
+        <kit.TKTimeInput label="Время" />
+      </kit.TKLocaleProvider>,
+    );
+    const input = screen.getByRole("textbox") as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "12" } });
+    fireEvent.blur(input);
+    expect(screen.getByText("Введите корректное время")).toBeInTheDocument();
+    unmount();
+    render(<kit.TKTimeInput label="Time" invalidText="Own message" />);
+    const en = screen.getByRole("textbox") as HTMLInputElement;
+    fireEvent.change(en, { target: { value: "12" } });
+    fireEvent.blur(en);
+    expect(screen.getByText("Own message")).toBeInTheDocument();
+  });
+
+  it("TKDateInput manual-entry message is localized", () => {
+    render(
+      <kit.TKLocaleProvider locale={kit.ruLocale}>
+        <kit.TKDateInput label="Дата" />
+      </kit.TKLocaleProvider>,
+    );
+    const input = screen.getByRole("textbox") as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "99.99.9999" } });
+    expect(screen.getByText("Введите корректную дату")).toBeInTheDocument();
+  });
+
+  it("TKCalendar part selectors expose localized Month/Year names", () => {
+    render(
+      <kit.TKLocaleProvider locale={kit.ruLocale}>
+        <kit.TKCalendar partSelectors defaultValue={new Date(2026, 5, 15)} />
+      </kit.TKLocaleProvider>,
+    );
+    expect(screen.getByRole("button", { name: "Месяц" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Год" })).toBeInTheDocument();
+  });
+
+  it("TKTimeInput hour12 meridiem group is localized", () => {
+    render(
+      <kit.TKLocaleProvider locale={kit.ruLocale}>
+        <kit.TKTimeInput label="Время" hour12 />
+      </kit.TKLocaleProvider>,
+    );
+    expect(screen.getByRole("group", { name: "AM или PM" })).toBeInTheDocument();
+  });
+});

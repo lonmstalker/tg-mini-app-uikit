@@ -466,7 +466,7 @@ export function TKCalendar({
         {partSelectors ? (
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, minWidth: 0, flex: "1 1 auto" }}>
             <CalendarPartTrigger
-              ariaLabel="Month"
+              ariaLabel={locale.month}
               expanded={picker === "month"}
               capitalize
               grow
@@ -475,7 +475,7 @@ export function TKCalendar({
               {fmtMonthName.format(visibleMonth)}
             </CalendarPartTrigger>
             <CalendarPartTrigger
-              ariaLabel="Year"
+              ariaLabel={locale.year}
               expanded={picker === "year"}
               width={86}
               onClick={() => setPicker((p) => (p === "year" ? "none" : "year"))}
@@ -498,7 +498,7 @@ export function TKCalendar({
       </div>
       {picker === "year" ? (
         <CalendarPartList
-          ariaLabel="Year"
+          ariaLabel={locale.year}
           columns={4}
           autoScroll
           options={years.map((year) => ({ value: year, label: String(year), selected: year === visibleMonth.getFullYear() }))}
@@ -506,7 +506,7 @@ export function TKCalendar({
         />
       ) : picker === "month" ? (
         <CalendarPartList
-          ariaLabel="Month"
+          ariaLabel={locale.month}
           columns={3}
           capitalize
           options={Array.from({ length: 12 }, (_, monthIndex) => ({

@@ -599,9 +599,10 @@ const TKNativeTimeField = /* @__PURE__ */ forwardRef<HTMLInputElement, TKTimeInp
 });
 
 const TKMaskedTimeField = /* @__PURE__ */ forwardRef<HTMLInputElement, TKTimeInputProps>(function TKMaskedTimeField(
-  { value, defaultValue = "", onChange, hour12 = false, invalidText = "Enter a valid time", error, disabled, onBlur, suffix, native: _native, ...rest },
+  { value, defaultValue = "", onChange, hour12 = false, invalidText, error, disabled, onBlur, suffix, native: _native, ...rest },
   ref,
 ) {
+  const locale = useTKLocale();
   const initial = value ?? defaultValue;
   const [digits, setDigits] = useState(() => toDigits(initial, hour12));
   const [meridiem, setMeridiem] = useState<"AM" | "PM">(() => meridiemOf(initial));
@@ -643,7 +644,7 @@ const TKMaskedTimeField = /* @__PURE__ */ forwardRef<HTMLInputElement, TKTimeInp
       disabled={disabled}
       value={tkApplyMask("##:##", digits)}
       onChange={handleText}
-      error={error ?? (incomplete ? invalidText : undefined)}
+      error={error ?? (incomplete ? (invalidText ?? locale.invalidTime) : undefined)}
       onBlur={(e) => {
         setTouched(true);
         onBlur?.(e);
@@ -652,7 +653,7 @@ const TKMaskedTimeField = /* @__PURE__ */ forwardRef<HTMLInputElement, TKTimeInp
         hour12 ? (
           <span
             role="group"
-            aria-label="AM or PM"
+            aria-label={locale.amPm}
             style={{ display: "inline-flex", gap: 2, padding: 2, borderRadius: "var(--tk-r-pill)", background: "var(--tk-surface-2)" }}
           >
             {(["AM", "PM"] as const).map((m) => {
