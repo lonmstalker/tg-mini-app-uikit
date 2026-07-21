@@ -164,3 +164,49 @@ describe("reuse · select dropdowns portal to the shared overlay host (REU-010)"
     warn.mockRestore();
   });
 });
+
+describe("reuse · TKPhoneInput derives its default country from the locale (REU-011)", () => {
+  const phone = () => screen.getByRole("textbox", { name: /phone/i }) as HTMLInputElement;
+
+  it("is a free unmasked international input without a Russian locale", () => {
+    const onChange = vi.fn();
+    render(<kit.TKPhoneInput onChange={onChange} />);
+    fireEvent.change(phone(), { target: { value: "+371 2 123" } });
+    expect(phone().value).toBe("+371 2 123");
+    expect(onChange).toHaveBeenLastCalledWith("+371 2 123", "3712123");
+  });
+
+  it("keeps the +7 default and Russian mask under the ru locale", () => {
+    render(
+      <kit.TKLocaleProvider locale={kit.ruLocale}>
+        <kit.TKPhoneInput />
+      </kit.TKLocaleProvider>,
+    );
+    const input = screen.getByRole("textbox", { name: "Номер телефона" }) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "9261234567" } });
+    expect(input.value).toBe("+7 (926) 123-45-67");
+  });
+
+  it("an explicit defaultCountry still wins regardless of locale", () => {
+    render(<kit.TKPhoneInput defaultCountry="+44" numberMask="#### ######" />);
+    fireEvent.change(phone(), { target: { value: "7911123456" } });
+    expect(phone().value).toBe("+44 7911 123456");
+  });
+
+  it("countrySelect derives the country from the lang region subtag, US fallback", () => {
+    const { unmount } = render(<kit.TKPhoneInput countrySelect lang="de-DE" />);
+    expect(screen.getByText("+49")).toBeInTheDocument();
+    unmount();
+    render(<kit.TKPhoneInput countrySelect />);
+    expect(screen.getByText("+1")).toBeInTheDocument();
+  });
+
+  it("countrySelect under the ru locale starts on +7", () => {
+    render(
+      <kit.TKLocaleProvider locale={kit.ruLocale}>
+        <kit.TKPhoneInput countrySelect />
+      </kit.TKLocaleProvider>,
+    );
+    expect(screen.getByText("+7")).toBeInTheDocument();
+  });
+});

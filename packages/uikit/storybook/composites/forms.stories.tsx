@@ -100,6 +100,10 @@ export const MaskedInputs = {
         {/* Country picker (native <select>) + national number — dial any country. */}
         <TKPhoneInput label="Phone number" countrySelect defaultCountry="RU" defaultValue="+7 900 123-45-67" />
         <TKPhoneInput label="Phone (type the code)" defaultCountry="+44" placeholder="+44…" />
+        {/* No country given: the default derives from the locale (REU-011) — a
+            Russian TKLocale gives +7 with the Russian mask; otherwise this is a
+            free unmasked international input. */}
+        <TKPhoneInput label="Phone (locale default: free input)" placeholder="+371 2 123 4567" />
       </Narrow>
     </AppScreen>
   ),

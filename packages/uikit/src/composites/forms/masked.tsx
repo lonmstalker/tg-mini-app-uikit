@@ -120,6 +120,25 @@ function phoneDocumentLang(): string {
   return "en";
 }
 
+const isRuLang = (lang: string) => /^ru\b/i.test(lang);
+
+/**
+ * Country for the picker when `defaultCountry` is not given (REU-011): the
+ * region subtag of the resolved language (`"en-US"` → `"US"`), bare `"ru"` →
+ * `"RU"` (the kit's historical default, now scoped to Russian locales), and a
+ * documented US fallback otherwise — the picker must render SOME flag.
+ */
+function phoneCountryForLang(lang: string): string {
+  const region = lang
+    .split(/[-_]/)
+    .slice(1)
+    .find((part) => /^[A-Za-z]{2}$/.test(part));
+  if (region) return region.toUpperCase();
+  return isRuLang(lang) ? "RU" : "US";
+}
+
+const RU_NUMBER_MASK = "(###) ###-##-##";
+
 /* ---------------- Masked input ---------------- */
 
 export interface TKMaskedInputProps extends Omit<TKInputProps, "value" | "defaultValue" | "onChange" | "type"> {
@@ -182,7 +201,14 @@ export const TKMaskedInput = /* @__PURE__ */ forwardRef<HTMLInputElement, TKMask
 });
 
 export interface TKPhoneInputProps extends Omit<TKMaskedInputProps, "mask"> {
-  /** Initial country as an ISO code (`"RU"`) or a dial code (`"+7"`, default). */
+  /**
+   * Initial country as an ISO code (`"RU"`) or a dial code (`"+7"`). Default is
+   * derived from the active locale (REU-011): a Russian `TKLocale`/`lang` gives
+   * `+7` with the Russian grouping mask; any other (or no) locale makes the
+   * simple field a free unmasked international input, while `countrySelect`
+   * picks the country from the `lang` region subtag (`"en-US"` → US) and falls
+   * back to US.
+   */
   defaultCountry?: string;
   /** National number mask after the dial code (overrides the country preset). */
   numberMask?: string;
@@ -212,26 +238,44 @@ export const TKPhoneInput = /* @__PURE__ */ forwardRef<HTMLInputElement, TKPhone
   );
 });
 
-/** Single-field phone variant: one masked `<input>` with a `+dial ` prefix. */
+/**
+ * Single-field phone variant. With a country (explicit `defaultCountry`, or the
+ * Russian-locale default) it is a masked `<input>` with a `+dial ` prefix; with
+ * no country it is a free international input — no invented regional default
+ * (REU-011). A `numberMask` without a country still masks the digits, just
+ * without a dial prefix.
+ */
 const TKPhoneSimpleField = /* @__PURE__ */ forwardRef<HTMLInputElement, TKPhoneInputProps>(function TKPhoneSimpleField(
   {
-    defaultCountry = "+7",
+    defaultCountry,
     numberMask,
     value,
     defaultValue = "",
     onChange,
     countrySelect: _countrySelect,
     countries: _countries,
-    lang: _lang,
+    lang,
     ...rest
   },
   ref,
 ) {
-  const defaultDial = normalizeDialCode(defaultCountry);
-  const mask = numberMask ?? "(###) ###-##-##";
-  const initial = formatPhoneValue(defaultValue, defaultDial, mask).formatted;
-  const [internal, setInternal] = useState(initial);
-  const display = value === undefined ? internal : formatPhoneValue(value, defaultDial, mask).formatted;
+  const locale = useTKLocale();
+  const ru = isRuLang(lang ?? locale.lang ?? "en");
+  // The historical `+7` + Russian mask default now applies only under a Russian
+  // locale; `null` dial = free input (REU-011).
+  const defaultDial = defaultCountry != null || ru ? normalizeDialCode(defaultCountry ?? "+7") : null;
+  const mask = numberMask ?? RU_NUMBER_MASK;
+  const format = (text: string): { formatted: string; raw: string } => {
+    if (defaultDial != null) return formatPhoneValue(text, defaultDial, mask);
+    if (numberMask) {
+      const raw = text.replace(/\D/g, "").slice(0, maskCapacity(numberMask));
+      return { formatted: tkApplyMask(numberMask, raw), raw };
+    }
+    // Free international input: the text passes through untouched.
+    return { formatted: text, raw: text.replace(/\D/g, "") };
+  };
+  const [internal, setInternal] = useState(() => format(defaultValue).formatted);
+  const display = value === undefined ? internal : format(value).formatted;
   const { ref: inputRef, planCaret } = useCaretMask(ref);
 
   // Re-anchor the caret by raw-digit count across the literal re-format, so
@@ -239,18 +283,17 @@ const TKPhoneSimpleField = /* @__PURE__ */ forwardRef<HTMLInputElement, TKPhoneI
   // the end. Only do it for a genuine mid-string edit: an end-append keeps its
   // caret already, and re-anchoring there would fight the live `+dial ` prefix
   // detection (typing "+1 …" would otherwise collapse back to the default dial).
+  // Free mode reformats nothing, so the caret needs no re-anchoring at all.
   const commit = (nextValue: string, event?: ChangeEvent<HTMLInputElement>) => {
-    const next = formatPhoneValue(nextValue, defaultDial, mask);
+    const next = format(nextValue);
     const el = event?.target;
     const caret = el?.selectionStart ?? null;
-    if (el && caret != null && caret < el.value.length) {
+    if ((defaultDial != null || numberMask) && el && caret != null && caret < el.value.length) {
       planCaret(display, next.raw, event, false);
     }
     if (value === undefined) setInternal(next.formatted);
     onChange?.(next.formatted, next.raw);
   };
-
-  const locale = useTKLocale();
   // Fallback name when no visible label (FRM-002); before the spread so a
   // consumer-supplied aria-label/label still wins.
   return (
@@ -267,7 +310,7 @@ const TKPhoneSimpleField = /* @__PURE__ */ forwardRef<HTMLInputElement, TKPhoneI
 
 /** Country-picker variant: native `<select>` for the dial code + national field. */
 const TKPhoneCountryField = /* @__PURE__ */ forwardRef<HTMLInputElement, TKPhoneInputProps>(function TKPhoneCountryField(
-  { defaultCountry = "+7", numberMask, countries, lang, value, defaultValue = "", onChange, label, hint, error, disabled, placeholder, testId },
+  { defaultCountry, numberMask, countries, lang, value, defaultValue = "", onChange, label, hint, error, disabled, placeholder, testId },
   ref,
 ) {
   const locale = useTKLocale();
@@ -277,6 +320,9 @@ const TKPhoneCountryField = /* @__PURE__ */ forwardRef<HTMLInputElement, TKPhone
     () => (countries && countries.length ? countries : tkBuildCountries(lang ?? phoneDocumentLang())),
     [countries, lang],
   );
+  // No explicit country → derive it from the locale instead of an invisible
+  // `+7` default (REU-011).
+  const resolvedDefaultCountry = defaultCountry ?? phoneCountryForLang(lang ?? locale.lang ?? "en");
 
   /**
    * Resolve the country + national digits from a raw phone string. `preferred`
@@ -286,7 +332,7 @@ const TKPhoneCountryField = /* @__PURE__ */ forwardRef<HTMLInputElement, TKPhone
    */
   const parse = (text: string, preferred?: TKPhoneCountry): { country: TKPhoneCountry; digits: string } => {
     const raw = (text ?? "").replace(/\D/g, "");
-    let country = preferred ?? tkResolveCountry(defaultCountry, list);
+    let country = preferred ?? tkResolveCountry(resolvedDefaultCountry, list);
     const hasPlus = (text ?? "").trim().startsWith("+");
     // Only re-detect from the dial code when the user typed an explicit `+…`
     // prefix and the preferred country no longer matches it.

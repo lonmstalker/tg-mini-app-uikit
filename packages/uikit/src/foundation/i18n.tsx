@@ -7,6 +7,13 @@ import { createContext, useContext, useMemo, type ReactNode } from "react";
  * provider. Templates use `{placeholders}` (see `tkFormat`).
  */
 export interface TKLocale {
+  /**
+   * BCP-47 language tag of this dictionary (`"en"`, `"ru"`). Drives
+   * locale-dependent behavior defaults — e.g. `TKPhoneInput` picks its default
+   * country from it (REU-011). Optional so existing custom dictionaries stay
+   * valid; without it components fall back to the neutral English behavior.
+   */
+  lang?: string;
   /** TKMainButton success label. */
   done: string;
   /** TKHeader back button aria label. */
@@ -125,6 +132,7 @@ export interface TKLocale {
 }
 
 export const enLocale: TKLocale = {
+  lang: "en",
   done: "Done",
   back: "Back",
   cancel: "Cancel",
@@ -200,6 +208,7 @@ export const enLocale: TKLocale = {
 
 /** Ready-made Russian preset. */
 export const ruLocale: TKLocale = {
+  lang: "ru",
   done: "Готово",
   back: "Назад",
   cancel: "Отмена",
