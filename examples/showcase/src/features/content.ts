@@ -135,7 +135,7 @@ const en: Record<FeatureSlug, FeatureContent> = {
       },
       {
         heading: "Localized strings built in",
-        body: "Every built-in string the kit speaks — counters, keypads, close buttons, announcements — ships in English and Russian and switches live via TKLocaleProvider.",
+        body: "Every built-in string the kit speaks — counters, keypads, close buttons, announcements, validation messages — ships in English and Russian and switches live via TKLocaleProvider. Behavior defaults follow the locale too: the phone field masks +7 under Russian and stays free international input elsewhere.",
         code: "<TKLocaleProvider locale={ruLocale}>",
         links: [{ label: "Switch it live", href: "demo/#i18n" }],
       },
@@ -306,7 +306,7 @@ const ru: Record<FeatureSlug, FeatureContent> = {
       },
       {
         heading: "Локализованные строки",
-        body: "Все встроенные строки кита — счётчики, клавиатуры, кнопки закрытия, объявления — идут на английском и русском и переключаются вживую через TKLocaleProvider.",
+        body: "Все встроенные строки кита — счётчики, клавиатуры, кнопки закрытия, объявления, сообщения валидации — идут на английском и русском и переключаются вживую через TKLocaleProvider. Поведенческие дефолты тоже следуют локали: поле телефона даёт маску +7 под русской локалью и свободный международный ввод в остальных.",
         code: "<TKLocaleProvider locale={ruLocale}>",
         links: [{ label: "Переключить вживую", href: "demo/#i18n" }],
       },
