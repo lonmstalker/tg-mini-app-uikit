@@ -118,8 +118,10 @@ describe("TKImageViewer", () => {
 
   it("is SSR-safe (renderToString, open and closed)", () => {
     expect(() => renderToString(<TKImageViewer open={false} images={IMAGES} />)).not.toThrow();
+    // Portaled into the overlay host client-side only (REU-009): server markup
+    // carries just the hidden marker, no viewer content.
     const html = renderToString(<TKImageViewer open images={IMAGES} />);
-    expect(html).toContain("First photo");
+    expect(html).not.toContain("First photo");
   });
 });
 

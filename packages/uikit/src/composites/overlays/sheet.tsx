@@ -4,7 +4,7 @@ import { mergeRefs } from "../../internal/dom";
 import { tkShouldCommit, useDragGesture } from "../../internal/useDragGesture";
 import { useLatest } from "../../internal/useLatest";
 import { useTKLocale } from "../../foundation/i18n";
-import { Scrim, useAnchorGuard, useModalOverlay, useMountTransition } from "./shared";
+import { Scrim, useAnchorGuard, useModalOverlay, useMountTransition, useOverlayPortal } from "./shared";
 
 /* ---------------- Bottom sheet ---------------- */
 
@@ -94,9 +94,12 @@ export const TKSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSheetProps>(
       console.warn(`TKSheet: snapPoints must be ascending fractions within (0,1]; got [${snapPoints.join(", ")}]`);
     }
   }, [snapPoints]);
-  // Dev guard: the sheet is `position: absolute; bottom: 0` and anchors to its
-  // positioned ancestor — the TKAppShell/TKPage viewport contract (REU-006).
-  useAnchorGuard("TKSheet", mounted, ref);
+  // Portal into the shared overlay host (`.tk` / [data-tk-portal-root], body
+  // fallback) so a positioned/transformed ancestor can't trap the sheet (REU-009).
+  const portal = useOverlayPortal();
+  // Dev guard: the sheet is bottom-anchored against the portal host and expects
+  // it to be viewport-sized (REU-006).
+  useAnchorGuard("TKSheet", mounted, ref, portal.host);
   const [snap, setSnap] = useState(() =>
     snapPoints ? Math.min(Math.max(defaultSnap, 0), snapPoints.length - 1) : 0,
   );
@@ -124,7 +127,9 @@ export const TKSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSheetProps>(
   // Back button both no-op when the sheet is non-dismissible (INT-DX-001).
   const { scrimZ, panelZ } = useModalOverlay({
     mounted,
-    active: modal && mounted && !closing,
+    // Gated on the resolved host: the focus-trap must engage only once the
+    // portaled panel node exists (the effect would otherwise miss it).
+    active: modal && mounted && !closing && !!portal.host,
     ref,
     onClose: dismissible ? requestClose : undefined,
     scrollLock: modal,
@@ -227,7 +232,7 @@ export const TKSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSheetProps>(
     },
   });
 
-  if (!mounted) return null;
+  if (!mounted) return portal.marker;
   // ----- resting geometry -----
   // The height is pinned to the TALLEST snap point; the current snap is a
   // translateY offset and the visible box (header + content) is clipped by an
@@ -246,9 +251,9 @@ export const TKSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSheetProps>(
     : settled || dragging
       ? "none"
       : "tk-sheet-up var(--tk-t3) var(--tk-spring) both";
-  return (
+  return portal.render(
     <>
-      {modal ? <Scrim closing={closing} onClick={dismissible ? requestClose : undefined} z={scrimZ} /> : null}
+      {modal ? <Scrim closing={closing} onClick={dismissible ? requestClose : undefined} z={scrimZ} fixed={portal.fixed} /> : null}
       <div
         ref={mergeRefs(ref, forwardedRef)}
         data-testid={testId}
@@ -262,7 +267,7 @@ export const TKSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSheetProps>(
         }}
         style={{
           outline: "none",
-          position: "absolute",
+          position: portal.fixed ? "fixed" : "absolute",
           left: 0,
           right: 0,
           bottom: 0,

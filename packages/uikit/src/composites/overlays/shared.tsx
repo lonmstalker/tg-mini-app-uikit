@@ -3,9 +3,11 @@ import {
   useRef,
   useState,
   type CSSProperties,
+  type ReactElement,
   type ReactNode,
   type RefObject,
 } from "react";
+import { createPortal } from "react-dom";
 import { tkZ } from "../../internal/dom";
 import { useScrollLock } from "../../internal/useScrollLock";
 import { useOverlayLayer } from "../../internal/useOverlayLayer";
@@ -14,19 +16,31 @@ import { useLatest } from "../../internal/useLatest";
 import { useBackIntercept, useSuppressNativeButtons } from "../../foundation/telegram";
 
 /*
- * Overlays position themselves against the nearest positioned ancestor —
- * normally the `TKProvider` root (it is `position: relative` by default).
- * That keeps them working both full-screen and inside device-frame demos.
+ * Overlays portal into the nearest `.tk` root or `[data-tk-portal-root]` host
+ * (the toast contract, OVL-010) and stay `position: absolute` against it — the
+ * `TKProvider` root is `position: relative` by default, so a transformed or
+ * positioned ancestor between the consumer and the root can no longer trap or
+ * clip them (REU-009). Only when no host exists (bare render, host = body) do
+ * they fall back to `position: fixed`, like TKPopper: inside the Telegram iOS
+ * webview `fixed` is unreliable while the keyboard or viewport animates, so
+ * within a `.tk` host `absolute` stays the contract.
  */
 
 /**
- * Dev guard for the in-place overlays (sheet, dialog, action sheet, viewer):
- * they anchor to the positioned ancestor and expect it to be viewport-sized.
- * When that ancestor instead grows with the document (scrolling body), the
- * overlay lands partly or fully off-screen. Detect the signature — anchor
- * taller than the viewport AND extending past it — and warn once (REU-006).
+ * Dev guard for the portaled modal overlays (sheet, dialog, action sheet,
+ * viewer): they anchor to the portal host and expect it to be viewport-sized.
+ * When that host instead grows with the document (a `.tk` root on a scrolling
+ * page), the overlay lands partly or fully off-screen. Detect the signature —
+ * anchor taller than the viewport AND extending past it — and warn once
+ * (REU-006). The `fixed` body fallback has no positioned anchor, so it is
+ * naturally exempt.
  */
-export function useAnchorGuard(name: string, mounted: boolean, ref: RefObject<HTMLElement | null>) {
+export function useAnchorGuard(
+  name: string,
+  mounted: boolean,
+  ref: RefObject<HTMLElement | null>,
+  host?: HTMLElement | null,
+) {
   const warnedRef = useRef(false);
   useEffect(() => {
     if (process.env.NODE_ENV === "production" || !mounted || warnedRef.current) return;
@@ -38,11 +52,52 @@ export function useAnchorGuard(name: string, mounted: boolean, ref: RefObject<HT
       warnedRef.current = true;
       // eslint-disable-next-line no-console
       console.warn(
-        `${name}: the positioned ancestor is taller than the viewport, so the overlay anchors off-screen. ` +
-          "Give it a viewport-sized positioned container (TKAppShell, TKFrame, or a 100dvh wrapper) (REU-006).",
+        `${name}: the overlay portal host is taller than the viewport, so the overlay anchors off-screen. ` +
+          "Keep the `.tk` root (or [data-tk-portal-root] host) viewport-sized (TKAppShell, TKFrame, or a 100dvh wrapper) (REU-006).",
       );
     }
-  }, [mounted]);
+  }, [mounted, host]);
+}
+
+export interface TKOverlayPortal {
+  /** Resolved portal host, or null before mount (SSR renders no overlay). */
+  host: HTMLElement | null;
+  /** True when the host is `document.body` — position overlay layers `fixed` there. */
+  fixed: boolean;
+  /** Hidden marker; render it at the overlay's tree position so the host resolves. */
+  marker: ReactElement;
+  /** Portals `node` into the host (marker included); nothing until the host resolves. */
+  render: (node: ReactNode) => ReactElement;
+}
+
+/**
+ * Resolves the shared overlay portal host — the nearest `.tk` token scope or an
+ * explicit `[data-tk-portal-root]` (e.g. TKFrame in demos), falling back to
+ * `document.body` (the toast contract, OVL-010). Resolution happens in an
+ * effect, so SSR markup contains only the hidden marker and the portal mounts
+ * client-side.
+ */
+export function useOverlayPortal(): TKOverlayPortal {
+  const markerRef = useRef<HTMLSpanElement>(null);
+  const [host, setHost] = useState<HTMLElement | null>(null);
+  useEffect(() => {
+    setHost(
+      markerRef.current?.closest<HTMLElement>(".tk, [data-tk-portal-root]") ??
+        (typeof document !== "undefined" ? document.body : null),
+    );
+  }, []);
+  const marker = <span ref={markerRef} aria-hidden style={{ display: "none" }} />;
+  return {
+    host,
+    fixed: typeof document !== "undefined" && host === document.body,
+    marker,
+    render: (node: ReactNode) => (
+      <>
+        {marker}
+        {host ? createPortal(node, host) : null}
+      </>
+    ),
+  };
 }
 
 /* ---------------- Mini viewport (frame for embedding overlay areas) ---------------- */
@@ -406,7 +461,7 @@ export function useModalOverlay({
   };
 }
 
-export function Scrim({ closing, onClick, z }: { closing: boolean; onClick?: () => void; z?: number }) {
+export function Scrim({ closing, onClick, z, fixed }: { closing: boolean; onClick?: () => void; z?: number; fixed?: boolean }) {
   return (
     // Decorative backdrop click-catcher: tap-to-dismiss is a redundant pointer
     // affordance — keyboard users close the overlay with Escape (handled by
@@ -417,7 +472,7 @@ export function Scrim({ closing, onClick, z }: { closing: boolean; onClick?: () 
       onClick={onClick}
       data-tk-scrim
       style={{
-        position: "absolute",
+        position: fixed ? "fixed" : "absolute",
         inset: 0,
         background: "var(--tk-scrim)",
         zIndex: z ?? tkZ.overlay,

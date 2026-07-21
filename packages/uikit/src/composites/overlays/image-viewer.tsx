@@ -15,7 +15,7 @@ import { tkDragVelocity, tkShouldCommit, type TKDragSample } from "../../interna
 import { useControllable } from "../../internal/useControllable";
 import { useIsomorphicLayoutEffect } from "../../internal/useIsomorphicLayoutEffect";
 import { useLatest } from "../../internal/useLatest";
-import { useModalOverlay, useMountTransition } from "./shared";
+import { useAnchorGuard, useModalOverlay, useMountTransition, useOverlayPortal } from "./shared";
 
 export interface TKImageViewerImage {
   src: string;
@@ -106,12 +106,18 @@ export const TKImageViewer = /* @__PURE__ */ forwardRef<HTMLDivElement, TKImageV
   const [exitViaSwipe, setExitViaSwipe] = useState(false);
   const closeRef = useLatest(onClose);
 
+  // Portal into the shared overlay host (`.tk` / [data-tk-portal-root], body
+  // fallback) so a positioned/transformed ancestor can't trap the stage (REU-009).
+  const portal = useOverlayPortal();
   const { scrimZ, panelZ, panelProps, scrimProps } = useModalOverlay({
     mounted,
-    active: mounted && !closing,
+    // Gated on the resolved host so the focus-trap engages once the node exists.
+    active: mounted && !closing && !!portal.host,
     ref: stageRef,
     onClose,
   });
+  // Dev guard: inset-0 against the portal host, which must be viewport-sized (REU-006).
+  useAnchorGuard("TKImageViewer", mounted, stageRef, portal.host);
 
   /* ---------------- gesture state (refs only — no per-frame commits) ---------------- */
   const gs = useRef({
@@ -521,20 +527,20 @@ export const TKImageViewer = /* @__PURE__ */ forwardRef<HTMLDivElement, TKImageV
     }
   };
 
-  if (!mounted || images.length === 0) return null;
+  if (!mounted || images.length === 0) return portal.marker;
 
   const current = images[index];
   const slots = ([-1, 0, 1] as const)
     .map((offset) => ({ offset, i: index + offset }))
     .filter(({ i }) => i >= 0 && i < images.length);
 
-  return (
+  return portal.render(
     <>
       <div
         ref={scrimRef}
         {...scrimProps}
         style={{
-          position: "absolute",
+          position: portal.fixed ? "fixed" : "absolute",
           inset: 0,
           background: "var(--tk-scrim)",
           zIndex: scrimZ,
@@ -552,7 +558,7 @@ export const TKImageViewer = /* @__PURE__ */ forwardRef<HTMLDivElement, TKImageV
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerCancel}
         style={{
-          position: "absolute",
+          position: portal.fixed ? "fixed" : "absolute",
           inset: 0,
           zIndex: panelZ,
           // Deliberate: the stage is tabIndex={-1} (never Tab-reachable) and only

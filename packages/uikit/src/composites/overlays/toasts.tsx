@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { createPortal } from "react-dom";
 import { tkRenderIcon, type TKIconProp } from "../../atoms/icons";
 import { tkZ } from "../../internal/dom";
+import { useOverlayPortal } from "./shared";
 
 /* ---------------- Toasts ---------------- */
 
@@ -163,18 +163,8 @@ export function TKToastProvider({ children, offset = 14, duration = 2400, max = 
 
   // Portal the stack to the nearest `.tk` root (or body) so a transformed /
   // positioned ancestor between the provider and the root can't re-anchor the
-  // toasts mid-screen or clip them (OVL-010). A hidden marker locates the host.
-  const [host, setHost] = useState<HTMLElement | null>(null);
-  const markerRef = useRef<HTMLSpanElement>(null);
-  useEffect(() => {
-    // Nearest token scope OR an explicit portal root (e.g. TKFrame in demos), so
-    // framed showcases keep their toasts inside the frame instead of escaping to
-    // the page root (OVL-010).
-    setHost(
-      markerRef.current?.closest<HTMLElement>(".tk, [data-tk-portal-root]") ??
-        (typeof document !== "undefined" ? document.body : null),
-    );
-  }, []);
+  // toasts mid-screen or clip them (OVL-010). Shared with the modal overlays.
+  const portal = useOverlayPortal();
 
   // FLIP the surviving toasts when the stack reflows (a toast above them left):
   // the position jump becomes a transform glide. WAAPI composes ABOVE the CSS
@@ -320,9 +310,7 @@ export function TKToastProvider({ children, offset = 14, duration = 2400, max = 
   return (
     <TKToastContext.Provider value={api}>
       {children}
-      {/* hidden marker locates the nearest `.tk` host for the portal (OVL-010) */}
-      <span ref={markerRef} aria-hidden style={{ display: "none" }} />
-      {host ? createPortal(stack, host) : null}
+      {portal.render(stack)}
     </TKToastContext.Provider>
   );
 }

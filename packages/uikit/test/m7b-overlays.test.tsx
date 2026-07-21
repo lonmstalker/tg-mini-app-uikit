@@ -182,11 +182,15 @@ describe("OVL-006 modal overlays inert/aria-hide the background", () => {
         <kit.TKDialog open title="Hi" testId="dlg" />
       </div>,
     );
-    expect(screen.getByTestId("bg").getAttribute("aria-hidden")).toBe("true");
-    // also carries our inert marker (jsdom doesn't implement HTMLElement.inert,
-    // so assert the attribute contract directly)
-    expect(screen.getByTestId("bg").hasAttribute("data-tk-inert")).toBe(true);
+    // The dialog portals to the overlay host (REU-009), so the inert/aria-hidden
+    // marker lands on the topmost background subtree containing `bg`, not on the
+    // sibling itself — assert via the closest inerted ancestor. jsdom doesn't
+    // implement HTMLElement.inert, so assert the attribute contract directly.
+    const inerted = screen.getByTestId("bg").closest("[data-tk-inert]") as HTMLElement;
+    expect(inerted).not.toBeNull();
+    expect(inerted.getAttribute("aria-hidden")).toBe("true");
     expect(screen.getByTestId("dlg").getAttribute("aria-hidden")).not.toBe("true");
+    expect(screen.getByTestId("dlg").closest("[data-tk-inert]")).toBeNull();
 
     // closing releases the background
     rerender(
@@ -197,8 +201,8 @@ describe("OVL-006 modal overlays inert/aria-hide the background", () => {
         <kit.TKDialog open={false} title="Hi" testId="dlg" />
       </div>,
     );
-    expect(screen.getByTestId("bg").getAttribute("aria-hidden")).toBeNull();
-    expect(screen.getByTestId("bg").hasAttribute("data-tk-inert")).toBe(false);
+    expect(screen.getByTestId("bg").closest("[data-tk-inert]")).toBeNull();
+    expect(screen.getByTestId("bg").closest('[aria-hidden="true"]')).toBeNull();
   });
 
   it("[D-A11Y] does NOT inert the toast stack (live region stays above the modal)", () => {

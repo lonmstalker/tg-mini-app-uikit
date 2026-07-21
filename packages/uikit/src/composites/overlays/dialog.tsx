@@ -1,7 +1,7 @@
 import { Children, forwardRef, useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { tkRenderIcon, type TKIconProp } from "../../atoms/icons";
 import { mergeRefs } from "../../internal/dom";
-import { Scrim, useAnchorGuard, useModalOverlay, useMountTransition } from "./shared";
+import { Scrim, useAnchorGuard, useModalOverlay, useMountTransition, useOverlayPortal } from "./shared";
 
 /**
  * Keeps the dialog centered in the *visual* viewport so the on-screen keyboard
@@ -98,20 +98,24 @@ export const TKDialog = /* @__PURE__ */ forwardRef<HTMLDivElement, TKDialogProps
   const [entered, setEntered] = useState(false);
   const titleId = useId();
   const textId = useId();
+  // Portal into the shared overlay host (`.tk` / [data-tk-portal-root], body
+  // fallback) so a positioned/transformed ancestor can't trap the card (REU-009).
+  const portal = useOverlayPortal();
   // One ordered call for the five modal hooks: focus-trap + Escape, scroll-lock,
-  // swipe-guard, z-stacking and the Telegram Back button (INT-DX-001).
-  const { scrimZ, panelZ } = useModalOverlay({ mounted, active: mounted && !closing, ref, onClose, onConfirm, nativeButtons });
+  // swipe-guard, z-stacking and the Telegram Back button (INT-DX-001). Active is
+  // gated on the resolved host so the focus-trap engages once the node exists.
+  const { scrimZ, panelZ } = useModalOverlay({ mounted, active: mounted && !closing && !!portal.host, ref, onClose, onConfirm, nativeButtons });
   const keyboardCenter = useViewportCenter(mounted && !closing);
-  // Dev guard: absolute-centered against the positioned ancestor (REU-006).
-  useAnchorGuard("TKDialog", mounted, ref);
-  if (!mounted) return null;
+  // Dev guard: absolute-centered against the portal host (REU-006).
+  useAnchorGuard("TKDialog", mounted, ref, portal.host);
+  if (!mounted) return portal.marker;
   const [color, bg] = DIALOG_TONES[tone] ?? DIALOG_TONES.accent;
-  return (
+  return portal.render(
     <>
-      <Scrim closing={closing} onClick={onClose} z={scrimZ} />
+      <Scrim closing={closing} onClick={onClose} z={scrimZ} fixed={portal.fixed} />
       <div
         style={{
-          position: "absolute",
+          position: portal.fixed ? "fixed" : "absolute",
           left: 24,
           right: 24,
           top: keyboardCenter != null ? keyboardCenter : "50%",

@@ -2,7 +2,7 @@ import { forwardRef, useRef, useState, type CSSProperties, type ReactNode } from
 import { tkRenderIcon, type TKIconProp } from "../../atoms/icons";
 import { mergeRefs } from "../../internal/dom";
 import { useTKLocale } from "../../foundation/i18n";
-import { Scrim, useAnchorGuard, useModalOverlay, useMountTransition } from "./shared";
+import { Scrim, useAnchorGuard, useModalOverlay, useMountTransition, useOverlayPortal } from "./shared";
 
 /* ---------------- Action sheet ---------------- */
 
@@ -39,15 +39,19 @@ export const TKActionSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKAction
   // Compositor promotion only while the entrance/exit keyframes play — a
   // permanent will-change would leak a layer per mounted action sheet.
   const [entered, setEntered] = useState(false);
+  // Portal into the shared overlay host (`.tk` / [data-tk-portal-root], body
+  // fallback) so a positioned/transformed ancestor can't trap the sheet (REU-009).
+  const portal = useOverlayPortal();
   // Five modal hooks in one ordered call; panelProps pre-builds role/aria-modal/
-  // tabIndex/z so the panel is spread-ready (INT-DX-001).
-  const { scrimZ, panelProps } = useModalOverlay({ mounted, active: mounted && !closing, ref, onClose, nativeButtons });
-  // Dev guard: bottom-anchored against the positioned ancestor (REU-006).
-  useAnchorGuard("TKActionSheet", mounted, ref);
-  if (!mounted) return null;
-  return (
+  // tabIndex/z so the panel is spread-ready (INT-DX-001). Active is gated on the
+  // resolved host so the focus-trap engages once the portaled node exists.
+  const { scrimZ, panelProps } = useModalOverlay({ mounted, active: mounted && !closing && !!portal.host, ref, onClose, nativeButtons });
+  // Dev guard: bottom-anchored against the portal host (REU-006).
+  useAnchorGuard("TKActionSheet", mounted, ref, portal.host);
+  if (!mounted) return portal.marker;
+  return portal.render(
     <>
-      <Scrim closing={closing} onClick={onClose} z={scrimZ} />
+      <Scrim closing={closing} onClick={onClose} z={scrimZ} fixed={portal.fixed} />
       <div
         ref={mergeRefs(ref, forwardedRef)}
         data-testid={testId}
@@ -63,7 +67,7 @@ export const TKActionSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKAction
           // takes programmatic focus as a trap fallback; real keyboard focus lands
           // on the sheet's buttons, which keep the `.tk :focus-visible` outline.
           outline: "none",
-          position: "absolute",
+          position: portal.fixed ? "fixed" : "absolute",
           left: 10,
           right: 10,
           bottom: "calc(10px + var(--tk-safe-bottom))",
