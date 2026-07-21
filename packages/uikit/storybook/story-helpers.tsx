@@ -84,7 +84,13 @@ export function PhoneFrame({ children }: { children: ReactNode }) {
               <BatteryIcon />
             </span>
           </div>
-          <div className="tk-phone-content">{children}</div>
+          {/* Portal root: the portaled overlays (REU-009/REU-010) must keep
+              anchoring to the Mini App viewport between the status bar and the
+              home indicator — exactly where the in-place overlays used to land —
+              not escape to the page-level `.tk` root. */}
+          <div className="tk-phone-content" data-tk-portal-root>
+            {children}
+          </div>
           <div className="tk-phone-home" />
         </div>
       </div>

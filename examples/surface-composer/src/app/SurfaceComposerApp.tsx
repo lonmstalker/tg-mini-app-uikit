@@ -38,6 +38,11 @@ export function SurfaceComposerApp() {
         <main
           ref={setSurfaceEl}
           className="sc-surface"
+          // Portal root: the kit's portaled overlays (REU-009) must keep
+          // anchoring to the product surface below the simulated Telegram
+          // chrome — where the in-place TKSheet used to land — not escape to
+          // the frame-wide `.tk` root and dim the header.
+          data-tk-portal-root
           data-testid="surface"
           data-scene={state.scene}
           data-motion-state={state.motionState}

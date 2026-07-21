@@ -42,6 +42,16 @@ test.describe("composite Storybook stories", () => {
     });
   }
 
+  test("sheet from a clipped, transformed card portals to the phone viewport (REU-009)", async ({ page }) => {
+    await page.goto("/iframe.html?id=composites-overlays--portaled-from-scrolling-content&viewMode=story");
+    await page.getByRole("button", { name: "Open sheet from a clipped, transformed card" }).click();
+    const sheet = page.getByRole("dialog", { name: "Escaped the trap" });
+    await expect(sheet).toBeVisible();
+    // Portaled into the phone frame's [data-tk-portal-root] viewport — not
+    // trapped inside the transformed/overflow:hidden card it was opened from.
+    await expect(sheet.locator("..")).toHaveAttribute("data-tk-portal-root", /.*/);
+  });
+
   test("non-modal sheet opens without stealing document focus", async ({ page }) => {
     await page.goto("/iframe.html?id=composites-overlays--non-modal-sheet&viewMode=story");
     const trigger = page.getByTestId("non-modal-sheet-trigger");
