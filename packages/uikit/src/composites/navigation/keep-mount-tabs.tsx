@@ -1,4 +1,5 @@
 import { Children, createContext, isValidElement, useContext, useDeferredValue, useEffect, useRef, type ReactNode } from "react";
+import { useLazyRef } from "../../internal/useLazyRef";
 
 /**
  * Keep-mount tab host: visited tabs stay MOUNTED (`display: contents` when
@@ -55,7 +56,7 @@ export function TKKeepMountTabs({ active, scrollToTop = true, testId, children }
   // The set is committed in an effect (never mutated during render) so a
   // discarded concurrent render can't leave a phantom "visited" tab behind;
   // the render below treats the CURRENT shown id as visited for first paint.
-  const visitedRef = useRef(new Set<string>());
+  const visitedRef = useLazyRef(() => new Set<string>());
   useEffect(() => {
     visitedRef.current.add(shown);
   }, [shown]);

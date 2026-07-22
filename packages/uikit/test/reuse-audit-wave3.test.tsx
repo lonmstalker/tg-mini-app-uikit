@@ -150,6 +150,22 @@ describe("reuse · select dropdowns portal to the shared overlay host (REU-010)"
     expect(screen.getByRole("combobox").getAttribute("aria-expanded")).toBe("true");
   });
 
+  it("offsets the dropdown by the host's own scroll (absolute = content space)", () => {
+    render(
+      <kit.TKProvider testId="root">
+        <kit.TKSelect options={["Apple"]} label="Fruit" />
+      </kit.TKProvider>,
+    );
+    const host = screen.getByTestId("root");
+    host.scrollTop = 120;
+    host.scrollLeft = 40;
+    fireEvent.click(screen.getByRole("combobox"));
+    const popup = screen.getByRole("listbox").parentElement as HTMLElement;
+    // jsdom rects are all zero, so the position is exactly scroll + the 6px gap
+    expect(popup.style.top).toBe("126px");
+    expect(popup.style.left).toBe("40px");
+  });
+
   it("warns in dev when the portal host is not positioned", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     render(

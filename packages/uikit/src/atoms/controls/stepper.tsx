@@ -106,7 +106,6 @@ export function TKStepper({
           type="number"
           inputMode="numeric"
           enterKeyHint="done"
-          role="spinbutton"
           aria-label={locale.quantity}
           value={draft ?? String(v)}
           min={min}

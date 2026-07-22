@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties, type ReactElement, type ReactNode, type RefObject } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactElement, type ReactNode, type RefObject } from "react";
 import { tkZ } from "../../internal/dom";
 import { useIsomorphicLayoutEffect } from "../../internal/useIsomorphicLayoutEffect";
 import { useOverlayPortal } from "../../composites/overlays/shared";
@@ -30,8 +30,7 @@ export function useDropdownPortal(name: string, open: boolean, anchorRef: RefObj
   const warnedRef = useRef(false);
   const { host, fixed } = portal;
 
-  const measureRef = useRef<() => void>(() => {});
-  measureRef.current = () => {
+  const measure = useCallback(() => {
     const anchor = anchorRef.current;
     if (!anchor || !host) return;
     const anchorRect = anchor.getBoundingClientRect();
@@ -56,18 +55,21 @@ export function useDropdownPortal(name: string, open: boolean, anchorRef: RefObj
     // Scale correction for transformed hosts (device-frame demos scale `.tk`).
     const scaleX = hostRect.width / (host.offsetWidth || hostRect.width) || 1;
     const scaleY = hostRect.height / (host.offsetHeight || hostRect.height) || 1;
+    // + scrollLeft/scrollTop: absolute children live in the host's CONTENT
+    // coordinate space, so a host that scrolls itself would otherwise display
+    // the dropdown displaced by exactly the scrolled amount.
     setPos({
-      left: (anchorRect.left - hostRect.left) / scaleX,
-      top: (anchorRect.bottom - hostRect.top) / scaleY,
+      left: (anchorRect.left - hostRect.left) / scaleX + host.scrollLeft,
+      top: (anchorRect.bottom - hostRect.top) / scaleY + host.scrollTop,
       width: anchorRect.width / scaleX,
     });
-  };
+  }, [anchorRef, host, fixed, name]);
 
   // Measure before paint on host-resolve and on every open flip, so the first
   // open frame is already placed and the enter transition plays in position.
   useIsomorphicLayoutEffect(() => {
-    measureRef.current();
-  }, [open, host]);
+    measure();
+  }, [open, measure]);
 
   // Follow the anchor while open: scroll (capture, any ancestor) + resize.
   useEffect(() => {
@@ -79,11 +81,11 @@ export function useDropdownPortal(name: string, open: boolean, anchorRef: RefObj
       if (typeof requestAnimationFrame === "function") {
         requestAnimationFrame(() => {
           pending = false;
-          measureRef.current();
+          measure();
         });
       } else {
         pending = false;
-        measureRef.current();
+        measure();
       }
     };
     window.addEventListener("resize", onReflow, { passive: true });
@@ -92,7 +94,7 @@ export function useDropdownPortal(name: string, open: boolean, anchorRef: RefObj
       window.removeEventListener("resize", onReflow);
       window.removeEventListener("scroll", onReflow, true);
     };
-  }, [open, host]);
+  }, [open, host, measure]);
 
   return {
     /** Attach to the popup root so outside-close checks can see the portaled node. */

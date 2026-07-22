@@ -158,6 +158,8 @@ function CodeSnippets() {
 
       <pre
         className="snippet-code"
+        // Named, focusable scrollable region (axe: scrollable-region-focusable).
+        role="region"
         aria-label={formatSiteString(copy.snippetAria, { label: activeSnippet.label })}
         data-testid="snippet-code"
         tabIndex={0}

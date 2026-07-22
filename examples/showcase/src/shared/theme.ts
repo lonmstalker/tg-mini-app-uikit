@@ -1,9 +1,9 @@
 import { useState } from "react";
 import type { TKTheme } from "tg-mini-app-uikit";
 
-export const SITE_THEME_STORAGE_KEY = "showcase-theme";
+const SITE_THEME_STORAGE_KEY = "showcase-theme";
 
-export function getInitialTheme(): TKTheme {
+function getInitialTheme(): TKTheme {
   if (typeof window === "undefined") return "dark";
 
   try {

@@ -15,6 +15,7 @@ import { tkDragVelocity, tkShouldCommit, type TKDragSample } from "../../interna
 import { useControllable } from "../../internal/useControllable";
 import { useIsomorphicLayoutEffect } from "../../internal/useIsomorphicLayoutEffect";
 import { useLatest } from "../../internal/useLatest";
+import { useLazyRef } from "../../internal/useLazyRef";
 import { useAnchorGuard, useModalOverlay, useMountTransition, useOverlayPortal } from "./shared";
 
 export interface TKImageViewerImage {
@@ -96,7 +97,7 @@ export const TKImageViewer = /* @__PURE__ */ forwardRef<HTMLDivElement, TKImageV
   const scrimRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   // Zoomable content node per rendered slot, keyed by ABSOLUTE image index.
-  const contentRefs = useRef(new Map<number, HTMLDivElement>());
+  const contentRefs = useLazyRef(() => new Map<number, HTMLDivElement>());
   const { mounted, closing } = useMountTransition(open, 260, stageRef);
   const [indexRaw, setIndex] = useControllable(indexProp, defaultIndex ?? 0, onIndexChange);
   const index = Math.min(Math.max(indexRaw, 0), Math.max(images.length - 1, 0));
@@ -530,9 +531,11 @@ export const TKImageViewer = /* @__PURE__ */ forwardRef<HTMLDivElement, TKImageV
   if (!mounted || images.length === 0) return portal.marker;
 
   const current = images[index];
-  const slots = ([-1, 0, 1] as const)
-    .map((offset) => ({ offset, i: index + offset }))
-    .filter(({ i }) => i >= 0 && i < images.length);
+  const slots: Array<{ offset: -1 | 0 | 1; i: number }> = [];
+  for (const offset of [-1, 0, 1] as const) {
+    const i = index + offset;
+    if (i >= 0 && i < images.length) slots.push({ offset, i });
+  }
 
   return portal.render(
     <>

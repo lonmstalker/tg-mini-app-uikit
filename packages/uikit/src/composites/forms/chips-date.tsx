@@ -133,8 +133,11 @@ export interface TKChipsInputProps {
   testId?: string;
 }
 
+// Stable empty default: a fresh `[]` per render breaks memo/deps downstream.
+const NO_TAGS: string[] = [];
+
 /** Tag editor: Enter or comma commits a tag, Backspace removes the last one. */
-export function TKChipsInput({ value, defaultValue = [], onChange, placeholder, label, hint, error, disabled, testId }: TKChipsInputProps) {
+export function TKChipsInput({ value, defaultValue = NO_TAGS, onChange, placeholder, label, hint, error, disabled, testId }: TKChipsInputProps) {
   const [tags, setTags] = useControllable(value, defaultValue, onChange);
   const [draft, setDraft] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);

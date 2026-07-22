@@ -334,7 +334,8 @@ function CodeSection() {
               testId="landing-code-copy"
             />
           </div>
-          <pre aria-label={copy.quickstartAria} tabIndex={0}>
+          {/* Named, focusable scrollable region (axe: scrollable-region-focusable). */}
+          <pre role="region" aria-label={copy.quickstartAria} tabIndex={0}>
             <code>{quickstartSource.trimEnd()}</code>
           </pre>
         </div>

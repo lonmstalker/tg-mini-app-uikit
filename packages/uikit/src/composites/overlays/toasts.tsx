@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { tkRenderIcon, type TKIconProp } from "../../atoms/icons";
 import { tkZ } from "../../internal/dom";
+import { useLazyRef } from "../../internal/useLazyRef";
 import { useOverlayPortal } from "./shared";
 
 /* ---------------- Toasts ---------------- */
@@ -64,9 +65,9 @@ export function TKToastProvider({ children, offset = 14, duration = 2400, max = 
   const idRef = useRef(0);
   // Per-toast auto-dismiss timers, keyed by id, so dismiss() can cancel the
   // pending one instead of leaking a second removal (OVL-009).
-  const autoTimers = useRef(new Map<number, number>());
+  const autoTimers = useLazyRef(() => new Map<number, number>());
   const removalTimers = useRef<number[]>([]);
-  const dismissingRef = useRef(new Set<number>());
+  const dismissingRef = useLazyRef(() => new Set<number>());
   // A late-settling `promise()` (or any deferred caller) must not setState or queue
   // a timer after the provider unmounts (OVL-DX-002).
   const mountedRef = useRef(true);
@@ -170,7 +171,7 @@ export function TKToastProvider({ children, offset = 14, duration = 2400, max = 
   // the position jump becomes a transform glide. WAAPI composes ABOVE the CSS
   // enter/exit keyframes, and both are transform/opacity-only.
   const stackRef = useRef<HTMLDivElement>(null);
-  const toastTopsRef = useRef(new Map<string, number>());
+  const toastTopsRef = useLazyRef(() => new Map<string, number>());
   useLayoutEffect(() => {
     const el = stackRef.current;
     const prev = toastTopsRef.current;

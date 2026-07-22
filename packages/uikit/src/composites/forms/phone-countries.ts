@@ -113,7 +113,9 @@ export function tkResolveCountry(input: string | undefined, list: readonly TKPho
   if (byIso) return byIso;
   const digits = input.replace(/\D/g, "");
   if (!digits) return fallback;
-  const byDial = list.filter((c) => c.dial === digits).sort((a, b) => b.dial.length - a.dial.length)[0];
+  // Every match shares the SAME dial string, so the first one is the answer —
+  // the old filter+sort-by-length pass sorted equal-length entries for nothing.
+  const byDial = list.find((c) => c.dial === digits);
   if (byDial) return byDial;
   // Unknown dial code: synthesize an entry so callers still get the generic mask.
   return { iso: "", name: `+${digits}`, dial: digits, mask: GENERIC_MASK };

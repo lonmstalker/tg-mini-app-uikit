@@ -63,7 +63,10 @@ const OPEN_EVENT = "tk-swipecell-open";
  * trailing actions. Opening one row closes its siblings; a full swipe fires
  * the first action. The buttons stay keyboard-reachable without gestures.
  */
-export function TKSwipeCell({ children, leading = [], trailing = [], fullSwipe = false, radius, testId, style }: TKSwipeCellProps) {
+// Stable empty default: a fresh `[]` per render breaks memo/deps downstream.
+const NO_ACTIONS: TKSwipeAction[] = [];
+
+export function TKSwipeCell({ children, leading = NO_ACTIONS, trailing = NO_ACTIONS, fullSwipe = false, radius, testId, style }: TKSwipeCellProps) {
   const haptics = useOptionalHaptics();
   const locale = useTKLocale();
   const [offset, setOffset] = useState(0);

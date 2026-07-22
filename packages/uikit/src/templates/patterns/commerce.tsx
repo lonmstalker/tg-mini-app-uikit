@@ -44,10 +44,13 @@ export interface TKSlotPickerProps {
   testId?: string;
 }
 
+// Stable empty default: a fresh `[]` per render breaks memo/deps downstream.
+const NO_BUSY_SLOTS: string[] = [];
+
 export function TKSlotPicker({
   days,
   slots,
-  busy = [],
+  busy = NO_BUSY_SLOTS,
   day,
   defaultDay = 0,
   onDayChange,

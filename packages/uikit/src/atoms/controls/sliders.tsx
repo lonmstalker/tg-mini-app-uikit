@@ -138,6 +138,18 @@ function TKSingleSliderImpl({ min = 0, max = 100, step: stepProp = 1, value, def
     }
   };
 
+  // Shared by pointer-up AND pointer-cancel: an interrupted capture (scroll
+  // takeover, app switch) must run the same commit/cleanup as a clean release.
+  const endDrag = () => {
+    const s = session.current;
+    session.current = null;
+    if (s?.raf) cancelAnimationFrame(s.raf);
+    setDrag(false);
+    // One state commit per gesture (uncontrolled). setVal re-fires
+    // onChange with the already-reported final value — harmless.
+    if (s && !isControlled && s.val !== val) setVal(s.val);
+  };
+
   return (
     <div data-testid={testId} className={className} style={{ padding: "6px 0", opacity: disabled ? 0.45 : 1, ...style }}>
       <div
@@ -178,15 +190,11 @@ function TKSingleSliderImpl({ min = 0, max = 100, step: stepProp = 1, value, def
             s.pendingX = e.clientX;
           }
         }}
-        onPointerUp={() => {
-          const s = session.current;
-          session.current = null;
-          if (s?.raf) cancelAnimationFrame(s.raf);
-          setDrag(false);
-          // One state commit per gesture (uncontrolled). setVal re-fires
-          // onChange with the already-reported final value — harmless.
-          if (s && !isControlled && s.val !== val) setVal(s.val);
-        }}
+        onPointerUp={endDrag}
+        // Interrupted drags (scroll takeover, app switch, orientation change)
+        // fire pointercancel, not pointerup — same commit/cleanup path, so a
+        // torn gesture can't leave the slider stuck in drag state.
+        onPointerCancel={endDrag}
         style={{
           position: "relative",
           height: 28,
@@ -398,6 +406,16 @@ function TKRangeSliderImpl({
     </div>
   );
 
+  // Shared by pointer-up AND pointer-cancel: an interrupted capture must run
+  // the same commit/cleanup as a clean release.
+  const endRangeDrag = () => {
+    const s = session.current;
+    session.current = null;
+    if (s?.raf) cancelAnimationFrame(s.raf);
+    setDrag(-1);
+    if (s && !isControlled && (s.vals[0] !== val[0] || s.vals[1] !== val[1])) setVal(s.vals);
+  };
+
   return (
     <div data-testid={testId} className={className} style={{ padding: "6px 0", opacity: disabled ? 0.45 : 1, ...style }}>
       <div
@@ -432,13 +450,10 @@ function TKRangeSliderImpl({
             s.pendingX = e.clientX;
           }
         }}
-        onPointerUp={() => {
-          const s = session.current;
-          session.current = null;
-          if (s?.raf) cancelAnimationFrame(s.raf);
-          setDrag(-1);
-          if (s && !isControlled && (s.vals[0] !== val[0] || s.vals[1] !== val[1])) setVal(s.vals);
-        }}
+        onPointerUp={endRangeDrag}
+        // Interrupted drags fire pointercancel, not pointerup — same
+        // commit/cleanup path (see the single slider above).
+        onPointerCancel={endRangeDrag}
         style={{ position: "relative", height: 28, cursor: disabled ? "default" : "pointer", touchAction: "pan-y", pointerEvents: disabled ? "none" : undefined }}
       >
         <div style={{ position: "absolute", top: 12, left: 0, right: 0, height: 4, borderRadius: 2, background: "var(--tk-surface-3)" }} />

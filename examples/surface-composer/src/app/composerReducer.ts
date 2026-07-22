@@ -15,7 +15,7 @@ export type SceneId =
   | "buildProof"
   | "receipt";
 
-export const SCENE_ORDER: readonly SceneId[] = [
+const SCENE_ORDER: readonly SceneId[] = [
   "firstLaunch",
   "rangeRemix",
   "interactionTrust",

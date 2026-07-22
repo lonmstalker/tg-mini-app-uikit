@@ -65,6 +65,9 @@ export const TKTextarea = /* @__PURE__ */ forwardRef<HTMLTextAreaElement, TKText
           id={inputId}
           name={name}
           value={val}
+          // Fallback name when no visible label (FRM-002): the placeholder
+          // leaves the accname computation as soon as the field has a value.
+          aria-label={label ? undefined : placeholder}
           placeholder={placeholder}
           disabled={disabled}
           rows={rows}

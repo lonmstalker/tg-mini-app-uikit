@@ -92,6 +92,9 @@ export const TKSearch = /* @__PURE__ */ forwardRef<HTMLInputElement, TKSearchPro
           className="tk-search-input"
           ref={ref}
           value={val}
+          // Explicit name: the placeholder was the only accname source, and it
+          // vanishes from the computation the moment the field has a value.
+          aria-label={placeholder ?? locale.search}
           placeholder={placeholder ?? locale.search}
           onChange={(e) => setVal(e.target.value)}
           onFocus={() => {
@@ -118,8 +121,10 @@ export const TKSearch = /* @__PURE__ */ forwardRef<HTMLInputElement, TKSearchPro
       {showCancelAction ? (
         <button
           type="button"
-          aria-hidden={showCancel ? undefined : true}
-          tabIndex={showCancel ? undefined : -1}
+          // `inert` removes the hidden cancel from focus AND the a11y tree in
+          // one attribute — aria-hidden on a focusable element left AT users
+          // able to land on a silent button.
+          inert={showCancel ? undefined : true}
           onClick={() => {
             setVal("");
             setFocus(false);

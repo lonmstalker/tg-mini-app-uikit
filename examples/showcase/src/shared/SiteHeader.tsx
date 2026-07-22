@@ -50,9 +50,14 @@ function useActiveSection(navigation: readonly SiteLink[]) {
 
     const observer = new IntersectionObserver(
       (entries) => {
-        const current = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+        // Topmost intersecting entry — one pass, no sort-to-take-first.
+        const current = entries.reduce<IntersectionObserverEntry | null>(
+          (top, entry) =>
+            entry.isIntersecting && (top === null || entry.boundingClientRect.top < top.boundingClientRect.top)
+              ? entry
+              : top,
+          null,
+        );
 
         if (current) {
           setActiveHref(`#${current.target.id}`);

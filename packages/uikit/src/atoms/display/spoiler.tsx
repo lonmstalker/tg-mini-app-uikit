@@ -48,7 +48,9 @@ export const TKSpoiler = /* @__PURE__ */ forwardRef<HTMLSpanElement, TKSpoilerPr
       aria-label={interactive ? (restLabel ?? locale.revealSpoiler) : restLabel}
       aria-pressed={toggle ? open : undefined}
       tabIndex={interactive ? 0 : undefined}
-      onClick={() => interactive && flip()}
+      // Handlers only while the span carries role="button" — a revealed
+      // non-toggle spoiler is plain content with no silent click surface.
+      onClick={interactive ? flip : undefined}
       onKeyDown={(e) => {
         if (interactive && (e.key === "Enter" || e.key === " ")) {
           e.preventDefault();

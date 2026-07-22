@@ -192,14 +192,15 @@ describe("coverage-backed component behaviours", () => {
     const user = userEvent.setup();
     render(<kit.TKSearch placeholder="Find" cancelLabel="Close" />);
 
+    // `inert` (not aria-hidden + tabindex=-1) removes the hidden cancel from
+    // focus AND the a11y tree in one attribute — aria-hidden on a focusable
+    // element was itself an a11y violation.
     const hiddenCancel = screen.getByText("Close").closest("button")!;
-    expect(hiddenCancel).toHaveAttribute("aria-hidden", "true");
-    expect(hiddenCancel).toHaveAttribute("tabindex", "-1");
+    expect(hiddenCancel).toHaveAttribute("inert");
 
     await user.click(screen.getByPlaceholderText("Find"));
     const visibleCancel = screen.getByRole("button", { name: "Close" });
-    expect(visibleCancel).not.toHaveAttribute("aria-hidden");
-    expect(visibleCancel).not.toHaveAttribute("tabindex", "-1");
+    expect(visibleCancel).not.toHaveAttribute("inert");
   });
 
   it("TKSearch can hide its cancel action and report focus state", async () => {

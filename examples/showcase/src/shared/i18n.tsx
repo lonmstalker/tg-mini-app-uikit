@@ -1,6 +1,6 @@
 import {
   createContext,
-  useContext,
+  use,
   useLayoutEffect,
   useMemo,
   useState,
@@ -57,7 +57,7 @@ export function SiteLocaleProvider({ children }: { children: ReactNode }) {
 }
 
 export function useSiteLocale(): SiteLocaleContextValue {
-  const value = useContext(SiteLocaleContext);
+  const value = use(SiteLocaleContext);
   if (!value) throw new Error("useSiteLocale must be used inside SiteLocaleProvider");
   return value;
 }
