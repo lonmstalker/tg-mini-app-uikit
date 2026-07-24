@@ -1,5 +1,15 @@
 # @tg-mini-app/telegram
 
+## 0.4.1
+
+### Patch Changes
+
+- `useKeyboard`: the visualViewport `scroll` listener is registered passive —
+  `sync()` only reads geometry and never calls `preventDefault`.
+- `TKTelegramProvider`: the native Back button visibility now reads the same
+  store as the public `useBackButtonWanted()` via `useSyncExternalStore`
+  instead of keeping a duplicated state/effect copy.
+
 ## 0.4.0
 
 ### Minor Changes (launch & debug surface)

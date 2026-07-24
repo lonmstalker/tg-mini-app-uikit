@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.8.0 — 2026-07-24
+
+Reuse-audit waves 2–3: components stop fighting their consumers. Modal
+overlays and select dropdowns portal into the nearest `.tk` root /
+`[data-tk-portal-root]` host, so transformed, positioned, or
+`overflow: hidden` ancestors can no longer clip or displace them (Telegram
+iOS-safe `position: absolute` inside a host). `TKPhoneInput` drops the
+invisible `+7`/Russian-mask default in favor of the active locale (breaking
+on 0.x — pass `defaultCountry="+7"` or provide `ruLocale` to keep it). The
+last hardcoded strings resolve through `TKLocale` (`invalidDate`,
+`invalidTime`, `month`, `year`, `amPm`), and the wave-2 reuse contracts land
+across the kit: custom `icon` elements, per-instance `color`, root-reaching
+`style`/`className`, no invented demo content, dev warnings for silent
+coupling. Ships `tg-mini-app-uikit@0.8.0` (`@tg-mini-app/telegram@0.4.1`,
+peer range `^0.4.0` unchanged); per-package notes in
+`packages/*/CHANGELOG.md`.
+
 ## 0.7.0 — 2026-07-18
 
 The keyboard saga, resolved on a real iPhone and promoted into the kit
