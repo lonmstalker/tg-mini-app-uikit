@@ -4,7 +4,7 @@ import {
   useEffect,
   useMemo,
   useRef,
-  useState,
+  useSyncExternalStore,
   type CSSProperties,
   type ReactNode,
 } from "react";
@@ -99,19 +99,21 @@ function applyTelegramThemeVars(target: HTMLElement | null, params: TelegramThem
  * gated to the `.tk` scope — CC-09). Returns `false` when `matchMedia` is
  * unavailable (SSR / old WebView).
  */
+const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
+const getReducedMotion = () =>
+  typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia(REDUCED_MOTION_QUERY).matches;
+const getReducedMotionServer = () => false;
+function subscribeReducedMotion(onChange: () => void): () => void {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") return () => {};
+  const mql = window.matchMedia(REDUCED_MOTION_QUERY);
+  mql.addEventListener?.("change", onChange);
+  return () => mql.removeEventListener?.("change", onChange);
+}
+
 export function useReducedMotion(): boolean {
-  const query = "(prefers-reduced-motion: reduce)";
-  const get = () => typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia(query).matches;
-  const [reduced, setReduced] = useState(get);
-  useEffect(() => {
-    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
-    const mql = window.matchMedia(query);
-    const onChange = () => setReduced(mql.matches);
-    onChange();
-    mql.addEventListener?.("change", onChange);
-    return () => mql.removeEventListener?.("change", onChange);
-  }, []);
-  return reduced;
+  // External mutable OS setting → useSyncExternalStore: correct first paint
+  // (no mount-effect re-render) and concurrent-safe reads.
+  return useSyncExternalStore(subscribeReducedMotion, getReducedMotion, getReducedMotionServer);
 }
 
 export type TKThemePreset = "ios" | "material";

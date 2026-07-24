@@ -5,7 +5,7 @@ import { useT } from "../i18n";
 
 export type BiometricAuthStatus = "ok" | "unavailable" | "denied" | "failed";
 
-export async function authenticateWithBiometrics(biometrics: TKBiometrics, reason: string): Promise<BiometricAuthStatus> {
+async function authenticateWithBiometrics(biometrics: TKBiometrics, reason: string): Promise<BiometricAuthStatus> {
   const manager = biometrics.manager;
   if (!biometrics.isSupported || !manager) return "unavailable";
 

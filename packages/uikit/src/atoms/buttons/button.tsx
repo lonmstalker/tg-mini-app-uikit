@@ -8,7 +8,7 @@ import {
   type ReactElement,
   type ReactNode,
 } from "react";
-import { TKIcon, type TKIconName } from "../icons";
+import { tkRenderIcon, type TKIconProp } from "../icons";
 import type { TKPolymorphicProps, TKPolymorphicRef } from "../../internal/polymorphic";
 import { useTKLocale } from "../../foundation/i18n";
 import { TKSpinner } from "./spinner";
@@ -23,7 +23,8 @@ export interface TKButtonOwnProps {
   size?: TKButtonSize;
   pill?: boolean;
   full?: boolean;
-  icon?: TKIconName;
+  /** Built-in icon name, or a custom element for glyphs outside the set (REU-004). */
+  icon?: TKIconProp;
   disabled?: boolean;
   /** Shows a spinner, sets `aria-busy` and blocks clicks; the width stays stable. */
   loading?: boolean;
@@ -119,7 +120,7 @@ function TKButtonImpl(
               visibility: "hidden",
             }}
           >
-            {icon ? <TKIcon name={icon} size={Math.round(s.h * 0.42)} /> : null}
+            {tkRenderIcon(icon, { size: Math.round(s.h * 0.42) })}
             {children}
           </span>
           <span
@@ -136,7 +137,7 @@ function TKButtonImpl(
         </>
       ) : (
         <>
-          {icon ? <TKIcon name={icon} size={Math.round(s.h * 0.42)} /> : null}
+          {tkRenderIcon(icon, { size: Math.round(s.h * 0.42) })}
           {children}
         </>
       )}

@@ -10,7 +10,7 @@ import {
 } from "react";
 import { TKSwitch } from "../../atoms/controls";
 import { TKBadge } from "../../atoms/display";
-import { TKIcon, type TKIconName } from "../../atoms/icons";
+import { TKIcon, tkRenderIcon, type TKIconProp } from "../../atoms/icons";
 import type { TKPolymorphicProps } from "../../internal/polymorphic";
 
 /* ---------------- Cell ---------------- */
@@ -41,7 +41,8 @@ function useCellStyle() {
 }
 
 export interface TKCellOwnProps {
-  icon?: TKIconName;
+  /** Built-in icon name, or a custom element (avatar, own SVG) for the leading slot (REU-004). */
+  icon?: TKIconProp;
   iconBg?: string;
   title: ReactNode;
   subtitle?: ReactNode;
@@ -86,8 +87,9 @@ function TKCellImpl(
     lines,
     testId,
     className,
+    style,
     ...rest
-  }: TKCellOwnProps & { as?: ElementType; className?: string } & Record<string, unknown>,
+  }: TKCellOwnProps & { as?: ElementType; className?: string; style?: CSSProperties } & Record<string, unknown>,
   ref: ForwardedRef<HTMLElement>,
 ) {
   useCellStyle();
@@ -130,6 +132,9 @@ function TKCellImpl(
         color: "inherit",
         textDecoration: "none",
         background: "transparent",
+        // Consumer style merges LAST — it used to ride in through {...rest} and
+        // be silently clobbered by this literal (REU-007).
+        ...style,
       }}
     >
       {icon ? (
@@ -146,7 +151,7 @@ function TKCellImpl(
             flexShrink: 0,
           }}
         >
-          <TKIcon name={icon} size={17} strokeWidth={2.1} />
+          {tkRenderIcon(icon, { size: 17, strokeWidth: 2.1 })}
         </span>
       ) : null}
       <div style={{ flex: 1, minWidth: 0 }}>

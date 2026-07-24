@@ -38,4 +38,14 @@ test.describe("atom Storybook stories", () => {
       }
     });
   }
+
+  test("select dropdown escapes an overflow:hidden card (REU-010)", async ({ page }) => {
+    await page.goto("/iframe.html?id=atoms-inputs--dropdown-escapes-clipping&viewMode=story");
+    await page.getByRole("combobox", { name: "City (clipped card)" }).click();
+    // The card is 120px tall with overflow:hidden; the portaled list renders
+    // below it, so the option is actually clickable — a clipped inline list
+    // would fail the actionability check here.
+    await page.getByRole("option", { name: "Belgrade" }).click();
+    await expect(page.getByRole("combobox", { name: "City (clipped card)" })).toContainText("Belgrade");
+  });
 });

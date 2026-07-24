@@ -7,7 +7,7 @@ import {
   type MouseEvent,
   type ReactNode,
 } from "react";
-import { TKIcon, type TKIconName } from "../icons";
+import { TKIcon, tkRenderIcon, type TKIconProp } from "../icons";
 import { tkOptionItem, type TKOption } from "../../foundation/options";
 import { useControllable } from "../../internal/useControllable";
 import { tkDomProps, type TKDomProps } from "../../internal/dom";
@@ -21,7 +21,8 @@ export interface TKChipProps extends TKDomProps<HTMLButtonElement> {
   onClick?: (e: MouseEvent<HTMLButtonElement>) => void;
   onKeyDown?: (e: KeyboardEvent<HTMLButtonElement>) => void;
   tabIndex?: number;
-  icon?: TKIconName;
+  /** Built-in icon name, or a custom element for glyphs outside the set (REU-004). */
+  icon?: TKIconProp;
   removable?: boolean;
   onRemove?: () => void;
   disabled?: boolean;
@@ -46,9 +47,9 @@ export const TKChip = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKChipProps>
         <span className="tk-pop" style={{ display: "inline-flex" }}>
           <TKIcon name="check" size={15} strokeWidth={2.6} />
         </span>
-      ) : icon ? (
-        <TKIcon name={icon} size={15} />
-      ) : null}
+      ) : (
+        tkRenderIcon(icon, { size: 15 })
+      )}
       {children}
     </>
   );
@@ -59,6 +60,11 @@ export const TKChip = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKChipProps>
     alignItems: "center",
     gap: 6,
     height: 34,
+    // A pill of fixed height must never be squeezed or wrap its label — in a
+    // non-wrapping flex row (filter scroller) long labels used to compress and
+    // break onto a second line inside the 34px pill (REU-001).
+    flexShrink: 0,
+    whiteSpace: "nowrap",
     padding: "0 14px",
     border: "none",
     borderRadius: "var(--tk-r-pill)",

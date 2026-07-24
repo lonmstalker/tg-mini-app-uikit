@@ -162,3 +162,33 @@ export const KeepMountTabs = {
   // tab reads useTabActive()=false and pauses its polling.
   render: () => <KeepMountDemo />,
 } satisfies Story;
+
+/**
+ * REU-004/005/007: the header outside the TKPage slot (`variant="plain"`,
+ * real heading semantics) and a tabbar with a custom SVG glyph, a ReactNode
+ * label and consumer style overrides.
+ */
+export const OutsideThePageSlot = {
+  parameters: { fullBleed: true },
+  render: () => {
+    const debtsIcon = (
+      <svg viewBox="0 0 24 24" width={22} height={22} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
+        <path d="M4 7h16v10H4zM4 11h16M8 15h3" />
+      </svg>
+    );
+    return (
+      <Screen>
+        <TKHeader title="История" variant="plain" headingLevel={1} />
+        <div style={{ flex: 1 }} />
+        <TKTabbar
+          style={{ background: "var(--tk-surface)" }}
+          tabs={[
+            { icon: "home", label: "Главная" },
+            { icon: debtsIcon, label: "Долги" },
+            { icon: "clock", label: <em>История</em> },
+          ]}
+        />
+      </Screen>
+    );
+  },
+} satisfies Story;

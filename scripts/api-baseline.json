@@ -131,6 +131,7 @@
   "tkIsTelegramDeepLink",
   "tkOnAccentInk",
   "tkOptionItem",
+  "tkRenderIcon",
   "tkResolveTelegramBridge",
   "tkThemeVars",
   "tkViewportDebugRequested",

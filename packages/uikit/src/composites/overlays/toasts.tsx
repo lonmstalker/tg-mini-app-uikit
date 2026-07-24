@@ -1,13 +1,15 @@
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { createPortal } from "react-dom";
-import { TKIcon, type TKIconName } from "../../atoms/icons";
+import { tkRenderIcon, type TKIconProp } from "../../atoms/icons";
 import { tkZ } from "../../internal/dom";
+import { useLazyRef } from "../../internal/useLazyRef";
+import { useOverlayPortal } from "./shared";
 
 /* ---------------- Toasts ---------------- */
 
 export interface TKToastOptions {
   text: ReactNode;
-  icon?: TKIconName;
+  /** Built-in icon name, or a custom element (spinner, own SVG) for the chip (REU-004). */
+  icon?: TKIconProp;
   /** CSS color of the icon chip. */
   color?: string;
   action?: ReactNode;
@@ -63,9 +65,9 @@ export function TKToastProvider({ children, offset = 14, duration = 2400, max = 
   const idRef = useRef(0);
   // Per-toast auto-dismiss timers, keyed by id, so dismiss() can cancel the
   // pending one instead of leaking a second removal (OVL-009).
-  const autoTimers = useRef(new Map<number, number>());
+  const autoTimers = useLazyRef(() => new Map<number, number>());
   const removalTimers = useRef<number[]>([]);
-  const dismissingRef = useRef(new Set<number>());
+  const dismissingRef = useLazyRef(() => new Set<number>());
   // A late-settling `promise()` (or any deferred caller) must not setState or queue
   // a timer after the provider unmounts (OVL-DX-002).
   const mountedRef = useRef(true);
@@ -162,24 +164,14 @@ export function TKToastProvider({ children, offset = 14, duration = 2400, max = 
 
   // Portal the stack to the nearest `.tk` root (or body) so a transformed /
   // positioned ancestor between the provider and the root can't re-anchor the
-  // toasts mid-screen or clip them (OVL-010). A hidden marker locates the host.
-  const [host, setHost] = useState<HTMLElement | null>(null);
-  const markerRef = useRef<HTMLSpanElement>(null);
-  useEffect(() => {
-    // Nearest token scope OR an explicit portal root (e.g. TKFrame in demos), so
-    // framed showcases keep their toasts inside the frame instead of escaping to
-    // the page root (OVL-010).
-    setHost(
-      markerRef.current?.closest<HTMLElement>(".tk, [data-tk-portal-root]") ??
-        (typeof document !== "undefined" ? document.body : null),
-    );
-  }, []);
+  // toasts mid-screen or clip them (OVL-010). Shared with the modal overlays.
+  const portal = useOverlayPortal();
 
   // FLIP the surviving toasts when the stack reflows (a toast above them left):
   // the position jump becomes a transform glide. WAAPI composes ABOVE the CSS
   // enter/exit keyframes, and both are transform/opacity-only.
   const stackRef = useRef<HTMLDivElement>(null);
-  const toastTopsRef = useRef(new Map<string, number>());
+  const toastTopsRef = useLazyRef(() => new Map<string, number>());
   useLayoutEffect(() => {
     const el = stackRef.current;
     const prev = toastTopsRef.current;
@@ -276,7 +268,7 @@ export function TKToastProvider({ children, offset = 14, duration = 2400, max = 
                   flexShrink: 0,
                 }}
               >
-                <TKIcon name={t.icon} size={14} strokeWidth={2.6} />
+                {tkRenderIcon(t.icon, { size: 14, strokeWidth: 2.6 })}
               </span>
             ) : null}
             <span style={{ flex: 1, fontSize: "var(--tk-fz-sub)", fontWeight: 500, color: "var(--tk-text)" }}>
@@ -319,9 +311,7 @@ export function TKToastProvider({ children, offset = 14, duration = 2400, max = 
   return (
     <TKToastContext.Provider value={api}>
       {children}
-      {/* hidden marker locates the nearest `.tk` host for the portal (OVL-010) */}
-      <span ref={markerRef} aria-hidden style={{ display: "none" }} />
-      {host ? createPortal(stack, host) : null}
+      {portal.render(stack)}
     </TKToastContext.Provider>
   );
 }

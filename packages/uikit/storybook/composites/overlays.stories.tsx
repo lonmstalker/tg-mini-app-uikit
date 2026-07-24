@@ -230,6 +230,59 @@ export const ImageViewer = {
   render: () => <ImageViewerPreview />,
 } satisfies Story;
 
+function PortaledFromScrollPreview() {
+  const [open, setOpen] = useState(false);
+  return (
+    <div style={{ height: "100%", overflowY: "auto" }}>
+      <Section style={{ padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+        {Array.from({ length: 10 }, (_, i) => (
+          <div
+            key={i}
+            style={{ padding: 14, borderRadius: "var(--tk-r-md)", background: "var(--tk-surface)" }}
+          >
+            Scrolling row {i + 1}
+          </div>
+        ))}
+        {/* transform + overflow:hidden — the classic overlay trap */}
+        <div style={{ transform: "translateZ(0)", overflow: "hidden", borderRadius: "var(--tk-r-md)" }}>
+          <TKButton variant="surface" onClick={() => setOpen(true)}>
+            Open sheet from a clipped, transformed card
+          </TKButton>
+        </div>
+        {Array.from({ length: 6 }, (_, i) => (
+          <div
+            key={i}
+            style={{ padding: 14, borderRadius: "var(--tk-r-md)", background: "var(--tk-surface)" }}
+          >
+            More content {i + 1}
+          </div>
+        ))}
+      </Section>
+      <TKSheet open={open} onClose={() => setOpen(false)} title="Escaped the trap">
+        <Narrow>
+          <p style={{ margin: 0 }}>
+            The sheet portals to the `.tk` root, so the transformed/overflow ancestor and the
+            scroll position cannot clip or displace it.
+          </p>
+        </Narrow>
+      </TKSheet>
+    </div>
+  );
+}
+
+export const PortaledFromScrollingContent = {
+  parameters: {
+    fullBleed: true,
+    docs: {
+      description: {
+        story:
+          "Overlays portal to the nearest `.tk` root or `[data-tk-portal-root]` host (REU-009), so opening one from inside a scrolling, transformed, or `overflow: hidden` ancestor still covers the whole shell.",
+      },
+    },
+  },
+  render: () => <PortaledFromScrollPreview />,
+} satisfies Story;
+
 function NonModalSheetPreview() {
   const [open, setOpen] = useState(false);
   return (

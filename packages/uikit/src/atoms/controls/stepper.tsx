@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { TKIcon, type TKIconName } from "../icons";
 import { useControllable } from "../../internal/useControllable";
 import { useLatest } from "../../internal/useLatest";
@@ -12,10 +12,23 @@ export interface TKStepperProps {
   onChange?: (value: number) => void;
   /** Allows typing the value directly. */
   editable?: boolean;
+  /** Merged onto the root, consumer values win (REU-007). */
+  style?: CSSProperties;
+  className?: string;
   testId?: string;
 }
 
-export function TKStepper({ value, defaultValue = 1, min = 0, max = 99, onChange, editable, testId }: TKStepperProps) {
+export function TKStepper({
+  value,
+  defaultValue = 1,
+  min = 0,
+  max = 99,
+  onChange,
+  editable,
+  style,
+  className,
+  testId,
+}: TKStepperProps) {
   const locale = useTKLocale();
   const [v, setV] = useControllable(value, defaultValue, onChange);
   const [draft, setDraft] = useState<string | null>(null);
@@ -72,13 +85,19 @@ export function TKStepper({ value, defaultValue = 1, min = 0, max = 99, onChange
   return (
     <div
       data-testid={testId}
+      className={className}
       style={{
         display: "inline-flex",
         alignItems: "center",
         gap: 4,
         padding: 4,
+        // Fixed-width buttons/input inside: the whole stepper must be squeezed
+        // never — in a "label left / stepper right" flex row it used to shrink
+        // and clip its own buttons (REU-008).
+        flexShrink: 0,
         borderRadius: "var(--tk-r-md)",
         background: "var(--tk-surface-2)",
+        ...style,
       }}
     >
       {btn("minus", locale.decrease, -1, v <= min)}
@@ -87,7 +106,6 @@ export function TKStepper({ value, defaultValue = 1, min = 0, max = 99, onChange
           type="number"
           inputMode="numeric"
           enterKeyHint="done"
-          role="spinbutton"
           aria-label={locale.quantity}
           value={draft ?? String(v)}
           min={min}

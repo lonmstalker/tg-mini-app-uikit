@@ -133,8 +133,11 @@ export interface TKChipsInputProps {
   testId?: string;
 }
 
+// Stable empty default: a fresh `[]` per render breaks memo/deps downstream.
+const NO_TAGS: string[] = [];
+
 /** Tag editor: Enter or comma commits a tag, Backspace removes the last one. */
-export function TKChipsInput({ value, defaultValue = [], onChange, placeholder, label, hint, error, disabled, testId }: TKChipsInputProps) {
+export function TKChipsInput({ value, defaultValue = NO_TAGS, onChange, placeholder, label, hint, error, disabled, testId }: TKChipsInputProps) {
   const [tags, setTags] = useControllable(value, defaultValue, onChange);
   const [draft, setDraft] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -376,7 +379,7 @@ function SheetDateInput({
   disabled,
   hint,
   error,
-  invalidText = "Enter a valid date",
+  invalidText,
   testId,
 }: TKDateInputProps) {
   const locale = useTKLocale();
@@ -429,7 +432,7 @@ function SheetDateInput({
     const parsed = parseDateInput(next, resolvedLang);
     if (!parsed || !isAllowedDate(parsed, min, max, disabledDates)) {
       if (shouldValidateDateInput(next)) {
-        setManualError(invalidText);
+        setManualError(invalidText ?? locale.invalidDate);
         manualChangeRef.current = true;
         setDate(null);
       }
@@ -493,7 +496,7 @@ function SheetDateInput({
             `<select>`, whose OS popup balloons to full-screen on long lists. */}
         <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
           <DatePartTrigger
-            ariaLabel="Month"
+            ariaLabel={locale.month}
             expanded={picker === "month"}
             capitalize
             grow
@@ -502,7 +505,7 @@ function SheetDateInput({
             {monthFmt.format(visibleMonth)}
           </DatePartTrigger>
           <DatePartTrigger
-            ariaLabel="Year"
+            ariaLabel={locale.year}
             expanded={picker === "year"}
             width={104}
             onClick={() => setPicker((p) => (p === "year" ? "none" : "year"))}
@@ -512,7 +515,7 @@ function SheetDateInput({
         </div>
         {picker === "year" ? (
           <DatePartList
-            ariaLabel="Year"
+            ariaLabel={locale.year}
             columns={4}
             autoScroll
             options={years.map((year) => ({ value: year, label: String(year), selected: year === visibleMonth.getFullYear() }))}
@@ -523,7 +526,7 @@ function SheetDateInput({
           />
         ) : picker === "month" ? (
           <DatePartList
-            ariaLabel="Month"
+            ariaLabel={locale.month}
             columns={3}
             capitalize
             options={Array.from({ length: 12 }, (_, month) => ({

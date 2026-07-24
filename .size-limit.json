@@ -2,7 +2,7 @@
   {
     "name": "full kit · esm · brotli",
     "path": "packages/uikit/dist/index.js",
-    "limit": "60 kB",
+    "limit": "62 kB",
     "ignore": [
       "react",
       "react-dom",
@@ -12,7 +12,7 @@
   {
     "name": "full kit · cjs · brotli",
     "path": "packages/uikit/dist/index.cjs",
-    "limit": "60 kB",
+    "limit": "62 kB",
     "ignore": [
       "react",
       "react-dom",

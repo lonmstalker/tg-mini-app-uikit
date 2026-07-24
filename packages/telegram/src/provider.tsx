@@ -6,7 +6,6 @@ import {
   useInsertionEffect,
   useMemo,
   useRef,
-  useState,
   useSyncExternalStore,
   type ReactNode,
 } from "react";
@@ -178,12 +177,8 @@ export function TKTelegramProvider({ webApp, signalReady = true, haptics = false
   // Drive the native Back button's visibility from the queue: show it whenever
   // an interceptor (overlay or nav stack) is listening, hide it otherwise, so
   // the Back press/edge-swipe reaches the queue rather than closing the app.
-  const [backVisible, setBackVisible] = useState(backButtonWanted);
-  useEffect(() => {
-    const sync = () => setBackVisible(backButtonWanted());
-    sync();
-    return subscribeBackButton(sync);
-  }, []);
+  // Same store the public useBackButtonWanted() reads — no state/effect copy.
+  const backVisible = useSyncExternalStore(subscribeBackButton, backButtonWanted, backButtonWantedServer);
   useEffect(() => {
     const btn = wa?.BackButton;
     if (!btn) return;

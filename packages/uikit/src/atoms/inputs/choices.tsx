@@ -1,10 +1,10 @@
 import { forwardRef, useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
-import { TKIcon } from "../icons";
+import { TKIcon, tkRenderIcon } from "../icons";
 import { tkOptionItem, type TKOption } from "../../foundation/options";
 import { useControllable } from "../../internal/useControllable";
-import { tkZ } from "../../internal/dom";
 import { useTKLocale } from "../../foundation/i18n";
 import { TKFormField } from "./form-field";
+import { useDropdownPortal } from "./dropdown-portal";
 
 /* ---------------- Multiselect ---------------- */
 
@@ -66,10 +66,16 @@ export const TKMultiselect = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKMul
     setActive(i);
   };
 
+  // The listbox portals to the shared overlay host so an `overflow` or
+  // `transform` ancestor can't clip or displace it (REU-010).
+  const dropdown = useDropdownPortal("TKMultiselect", open, ref);
+
   useEffect(() => {
     if (!open) return;
     const close = (e: globalThis.PointerEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpenRaw(false);
+      const target = e.target as Node;
+      // The popup lives in the portal, outside the wrapper — check both.
+      if (ref.current && !ref.current.contains(target) && !dropdown.contains(target)) setOpenRaw(false);
     };
     document.addEventListener("pointerdown", close);
     return () => document.removeEventListener("pointerdown", close);
@@ -156,7 +162,7 @@ export const TKMultiselect = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKMul
                     fontWeight: 700,
                   }}
                 >
-                  {item.icon ? <TKIcon name={item.icon} size={13} /> : null}
+                  {tkRenderIcon(item.icon, { size: 13 })}
                   {item.label}
                 </span>
               ))
@@ -181,17 +187,16 @@ export const TKMultiselect = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKMul
             <TKIcon name="chevronDown" size={17} />
           </span>
         </button>
+        {/* Portaled to the shared overlay host and glued to the trigger (REU-010). */}
+        {dropdown.render(
         <div
+          ref={dropdown.popupRef}
           id={listId}
           role="listbox"
           aria-multiselectable="true"
           aria-hidden={!open}
           style={{
-            position: "absolute",
-            left: 0,
-            right: 0,
-            top: "calc(100% + 6px)",
-            zIndex: tkZ.dropdown,
+            ...dropdown.style,
             background: "var(--tk-surface)",
             borderRadius: "var(--tk-r-md)",
             boxShadow: "var(--tk-shadow-md)",
@@ -283,14 +288,15 @@ export const TKMultiselect = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKMul
                 >
                   {isSelected ? <TKIcon name="check" size={12} strokeWidth={2.7} /> : null}
                 </span>
-                {item.icon ? <TKIcon name={item.icon} size={17} /> : null}
+                {tkRenderIcon(item.icon, { size: 17 })}
                 <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {item.label}
                 </span>
               </button>
             );
           })}
-        </div>
+        </div>,
+        )}
       </div>
     </TKFormField>
   );

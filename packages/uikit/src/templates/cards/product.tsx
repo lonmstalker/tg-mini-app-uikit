@@ -20,10 +20,13 @@ export interface TKProductCardAProps extends Omit<HTMLAttributes<HTMLDivElement>
 }
 
 export const TKProductCardA = /* @__PURE__ */ forwardRef<HTMLDivElement, TKProductCardAProps>(function TKProductCardA(
-  { title = "Product", price, img = "product photo", src, onAdd, onClick, className, style, testId, ...rest },
+  // No "Product" demo default: a card with no title data renders nothing there,
+  // never a plausible-looking placeholder word (REU-002).
+  { title, price, img, src, onAdd, onClick, className, style, testId, ...rest },
   ref,
 ) {
   const locale = useTKLocale();
+  const imgLabel = img ?? locale.image;
   const titleName = typeof title === "string" ? title : undefined;
   return (
     <div
@@ -63,9 +66,9 @@ export const TKProductCardA = /* @__PURE__ */ forwardRef<HTMLDivElement, TKProdu
         />
       ) : null}
       {src ? (
-        <TKImage src={src} alt={typeof title === "string" ? title : ""} radius="var(--tk-r-md)" fallbackLabel={img} />
+        <TKImage src={src} alt={typeof title === "string" ? title : ""} radius="var(--tk-r-md)" fallbackLabel={imgLabel} />
       ) : (
-        <TKImg label={img} radius="var(--tk-r-md)" />
+        <TKImg label={imgLabel} radius="var(--tk-r-md)" />
       )}
       <div
         style={{
@@ -92,7 +95,7 @@ export const TKProductCardA = /* @__PURE__ */ forwardRef<HTMLDivElement, TKProdu
         </div>
         {onAdd ? (
           // Above the overlay (zIndex 2) so it's an independent control, not nested.
-          <span style={{ position: "relative", zIndex: 2 }}>
+          <span style={{ position: "relative", zIndex: 2, flexShrink: 0 }}>
             <TKIconButton
               icon="plus"
               size={34}
@@ -132,13 +135,14 @@ export interface TKProductCardBProps extends Omit<HTMLAttributes<HTMLDivElement>
 }
 
 export const TKProductCardB = /* @__PURE__ */ forwardRef<HTMLDivElement, TKProductCardBProps>(function TKProductCardB(
+  // No "Product" demo default (REU-002) — see TKProductCardA.
   {
-    title = "Product",
+    title,
     price,
     oldPrice,
     rating,
     reviews,
-    img = "product photo",
+    img,
     src,
     discount,
     fav,
@@ -154,6 +158,7 @@ export const TKProductCardB = /* @__PURE__ */ forwardRef<HTMLDivElement, TKProdu
   ref,
 ) {
   const locale = useTKLocale();
+  const imgLabel = img ?? locale.image;
   const [isFav, setFav] = useControllable(fav, defaultFav, onFavChange);
   return (
     <div
@@ -174,9 +179,9 @@ export const TKProductCardB = /* @__PURE__ */ forwardRef<HTMLDivElement, TKProdu
     >
       <div style={{ position: "relative" }}>
         {src ? (
-          <TKImage src={src} alt={typeof title === "string" ? title : ""} radius="var(--tk-r-md)" fallbackLabel={img} />
+          <TKImage src={src} alt={typeof title === "string" ? title : ""} radius="var(--tk-r-md)" fallbackLabel={imgLabel} />
         ) : (
-          <TKImg label={img} radius="var(--tk-r-md)" />
+          <TKImg label={imgLabel} radius="var(--tk-r-md)" />
         )}
         {discount ? (
           <span style={{ position: "absolute", top: 8, left: 8 }}>

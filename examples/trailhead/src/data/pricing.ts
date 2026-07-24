@@ -5,7 +5,7 @@
  */
 
 export const TRAIL_PASS_RATE = 0.15;
-export const DEMO_MAX_CHARGE_STARS = 1;
+const DEMO_MAX_CHARGE_STARS = 1;
 /** Gear rental add-on (trekking poles), Stars per item. */
 export const GEAR_RENTAL_STARS = 40;
 

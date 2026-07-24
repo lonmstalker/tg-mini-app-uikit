@@ -2,8 +2,10 @@ import { useRef, useState } from "react";
 import {
   TKIconButton,
   TKOTP,
+  TKPhoneInput,
   TKSearch,
   TKSegmented,
+  TKTimeInput,
   useTKToast,
 } from "tg-mini-app-uikit";
 import installSnippetSource from "../snippets/install.snippet.txt?raw";
@@ -76,6 +78,19 @@ function LocaleDemo() {
 
       <div className="i18n-demo-cluster" data-testid="locale-demo-cluster">
         <TKSearch showCancelAction={false} testId="locale-search" />
+        {/* Locale-driven behavior defaults (REU-011): under ru this field masks
+            +7 (###) ###-##-##, under any other locale it is free international
+            input. Keyed by locale so the uncontrolled value re-derives from the
+            new default instead of keeping the previous format. */}
+        <TKPhoneInput
+          key={`phone-${locale}`}
+          label={copy.phoneLabel}
+          hint={copy.phoneHint}
+          testId="locale-phone"
+        />
+        {/* Localized validation strings (REU-012): an incomplete time shows the
+            locale's invalidTime message live. */}
+        <TKTimeInput label={copy.timeLabel} hint={copy.timeHint} testId="locale-time" />
         <TKOTP
           length={4}
           value={otp}
@@ -143,6 +158,8 @@ function CodeSnippets() {
 
       <pre
         className="snippet-code"
+        // Named, focusable scrollable region (axe: scrollable-region-focusable).
+        role="region"
         aria-label={formatSiteString(copy.snippetAria, { label: activeSnippet.label })}
         data-testid="snippet-code"
         tabIndex={0}

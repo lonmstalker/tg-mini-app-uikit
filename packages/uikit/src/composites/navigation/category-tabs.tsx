@@ -76,6 +76,7 @@ export function TKCategoryTabs({ tabs, value, defaultValue = 0, onChange, ariaLa
               padding: "8px 10px 6px",
               border: "none",
               background: "transparent",
+              flexShrink: 0,
               fontSize: "var(--tk-fz-sub)",
               fontWeight: on ? 700 : 500,
               fontFamily: "inherit",

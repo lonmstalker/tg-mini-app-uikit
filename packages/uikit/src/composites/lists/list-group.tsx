@@ -1,4 +1,4 @@
-import { Children, isValidElement, type ReactNode } from "react";
+import { Children, isValidElement, type CSSProperties, type ReactNode } from "react";
 
 /* ---------------- List group ---------------- */
 
@@ -12,12 +12,24 @@ export interface TKListGroupProps {
    * text of icon rows); pass `0` for full-bleed separators on icon-less lists.
    */
   separatorInset?: number;
+  /** Merged onto the root, consumer values win (REU-007). */
+  style?: CSSProperties;
+  className?: string;
   testId?: string;
 }
 
-export function TKListGroup({ children, title, footer, inset = true, separatorInset = 54, testId }: TKListGroupProps) {
+export function TKListGroup({
+  children,
+  title,
+  footer,
+  inset = true,
+  separatorInset = 54,
+  style,
+  className,
+  testId,
+}: TKListGroupProps) {
   return (
-    <div data-testid={testId}>
+    <div data-testid={testId} className={className} style={style}>
       {title ? (
         <div
           style={{

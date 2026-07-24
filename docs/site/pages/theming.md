@@ -7,7 +7,7 @@
 - `accent`, `roundness`, `fontSize`, `motion` and `motionSpeed` are runtime knobs exposed by the package-local Storybook controls.
 - `preset="ios" | "material"` changes the feel without forking components.
 
-Use `TKLocaleProvider` for app strings. The bundled default is English, `ruLocale` is shipped, and apps can pass any `Partial<TKLocale>`.
+Use `TKLocaleProvider` for app strings. The bundled default is English, `ruLocale` is shipped, and apps can pass any `Partial<TKLocale>`. The optional `TKLocale.lang` tag (set on the bundled presets) also drives locale-dependent behavior defaults — e.g. `TKPhoneInput` derives its default country from it (REU-011).
 
 ```tsx
 <TKLocaleProvider locale={{ search: "Search products" }}>

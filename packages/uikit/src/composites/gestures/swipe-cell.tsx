@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { TKIcon, type TKIconName } from "../../atoms/icons";
+import { tkRenderIcon, type TKIconProp } from "../../atoms/icons";
 import { useOptionalHaptics } from "../../foundation/telegram";
 import { useTKLocale } from "../../foundation/i18n";
 import { tkShouldCommit, useDragGesture } from "../../internal/useDragGesture";
@@ -8,8 +8,11 @@ import { tkShouldCommit, useDragGesture } from "../../internal/useDragGesture";
 
 export interface TKSwipeAction {
   label: string;
-  icon?: TKIconName;
+  /** Built-in icon name, or a custom element for glyphs outside the set (REU-004). */
+  icon?: TKIconProp;
   tone?: "accent" | "red" | "green" | "orange" | "gray";
+  /** Button background (any CSS color) — overrides `tone` (REU-003). */
+  color?: string;
   /**
    * Marks the action as destructive (delete, etc.). A destructive first action
    * never auto-fires on `fullSwipe` over-swipe — it opens the row for a tap
@@ -60,7 +63,10 @@ const OPEN_EVENT = "tk-swipecell-open";
  * trailing actions. Opening one row closes its siblings; a full swipe fires
  * the first action. The buttons stay keyboard-reachable without gestures.
  */
-export function TKSwipeCell({ children, leading = [], trailing = [], fullSwipe = false, radius, testId, style }: TKSwipeCellProps) {
+// Stable empty default: a fresh `[]` per render breaks memo/deps downstream.
+const NO_ACTIONS: TKSwipeAction[] = [];
+
+export function TKSwipeCell({ children, leading = NO_ACTIONS, trailing = NO_ACTIONS, fullSwipe = false, radius, testId, style }: TKSwipeCellProps) {
   const haptics = useOptionalHaptics();
   const locale = useTKLocale();
   const [offset, setOffset] = useState(0);
@@ -189,15 +195,19 @@ export function TKSwipeCell({ children, leading = [], trailing = [], fullSwipe =
               alignItems: "center",
               justifyContent: "center",
               gap: 4,
-              background: SWIPE_TONES[action.tone ?? "accent"],
+              background: action.color ?? SWIPE_TONES[action.tone ?? "accent"],
               color: "var(--tk-on-accent, #fff)",
               fontFamily: "inherit",
               fontSize: "var(--tk-fz-caption)",
               fontWeight: 600,
               cursor: "pointer",
+              // The button is a fixed-width column — a long label must clip,
+              // not wrap and overflow the rail (REU-008).
+              whiteSpace: "nowrap",
+              overflow: "hidden",
             }}
           >
-            {action.icon ? <TKIcon name={action.icon} size={18} /> : null}
+            {tkRenderIcon(action.icon, { size: 18 })}
             {action.label}
           </button>
         ))}

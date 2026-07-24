@@ -13,11 +13,16 @@ export interface TKBarsProps extends HTMLAttributes<HTMLDivElement> {
    * not a toggle) (FBK-004).
    */
   selectedIndex?: number;
+  /**
+   * Fill color of the bars (any CSS color). Defaults to the accent; the resting
+   * (non-hovered) state is derived at 20% opacity via color-mix (REU-003).
+   */
+  color?: string;
   testId?: string;
 }
 
 export const TKBars = /* @__PURE__ */ forwardRef<HTMLDivElement, TKBarsProps>(function TKBars(
-  { data, labels, height = 110, onBarClick, selectedIndex, className, style, testId, ...rest },
+  { data, labels, height = 110, onBarClick, selectedIndex, color, className, style, testId, ...rest },
   ref,
 ) {
   const [hover, setHover] = useState(-1);
@@ -66,7 +71,12 @@ export const TKBars = /* @__PURE__ */ forwardRef<HTMLDivElement, TKBarsProps>(fu
               position: "absolute",
               inset: 0,
               borderRadius: "var(--tk-r-xs)",
-              background: hover === i ? "var(--tk-accent)" : "var(--tk-accent-20)",
+              background:
+                hover === i
+                  ? (color ?? "var(--tk-accent)")
+                  : color
+                    ? `color-mix(in srgb, ${color} 20%, transparent)`
+                    : "var(--tk-accent-20)",
               transform: `translateY(${100 - (Number.isFinite(b) && b > 0 ? Math.min(b / max, 1) : 0) * 100}%)`,
               transition: "transform var(--tk-t3) var(--tk-spring), background var(--tk-t1) var(--tk-ease)",
             }}
@@ -117,8 +127,14 @@ export const TKBars = /* @__PURE__ */ forwardRef<HTMLDivElement, TKBarsProps>(fu
               <span
                 style={{
                   fontSize: "var(--tk-fz-caption2)",
-                  color: hover === i ? "var(--tk-accent)" : "var(--tk-text-3)",
+                  color: hover === i ? (color ?? "var(--tk-accent)") : "var(--tk-text-3)",
                   fontWeight: 600,
+                  // A long label must truncate inside its narrow flex column,
+                  // not wrap and stretch the chart row (REU-008).
+                  maxWidth: "100%",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
                 }}
               >
                 {labels[i]}

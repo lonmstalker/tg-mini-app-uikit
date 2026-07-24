@@ -1,10 +1,11 @@
 import { forwardRef, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
-import { TKIcon } from "../icons";
-import { mergeRefs, tkZ } from "../../internal/dom";
+import { TKIcon, tkRenderIcon } from "../icons";
+import { mergeRefs } from "../../internal/dom";
 import { TKFocusRing } from "../../internal/FocusRing";
 import { useControllable } from "../../internal/useControllable";
 import { useTKLocale } from "../../foundation/i18n";
 import { tkFlattenOptions, type TKOption, type TKOptionGroup } from "../../foundation/options";
+import { useDropdownPortal } from "./dropdown-portal";
 
 export interface TKSelectProps {
   label?: ReactNode;
@@ -54,10 +55,16 @@ export const TKSelect = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKSelectPr
     setActive(next ? (selectedIndex >= 0 ? selectedIndex : items.findIndex((item) => !item.disabled)) : -1);
   };
 
+  // The option list portals to the shared overlay host so an `overflow` or
+  // `transform` ancestor can't clip or displace it (REU-010).
+  const dropdown = useDropdownPortal("TKSelect", open, ref);
+
   useEffect(() => {
     if (!open) return;
     const close = (e: globalThis.PointerEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpenRaw(false);
+      const target = e.target as Node;
+      // The popup lives in the portal, outside the wrapper — check both.
+      if (ref.current && !ref.current.contains(target) && !dropdown.contains(target)) setOpenRaw(false);
     };
     document.addEventListener("pointerdown", close);
     return () => document.removeEventListener("pointerdown", close);
@@ -181,18 +188,17 @@ export const TKSelect = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKSelectPr
         </span>
       </button>
       {/* Popup shell: the filter combobox lives here, OUTSIDE role=listbox, so the
-          listbox holds only option/group children (valid combobox/listbox — INP-004). */}
+          listbox holds only option/group children (valid combobox/listbox — INP-004).
+          Portaled to the shared overlay host and glued to the trigger (REU-010). */}
+      {dropdown.render(
       <div
+        ref={dropdown.popupRef}
         // inert (not aria-hidden) when closed: removes the focusable tabIndex=-1
         // option buttons from focus + the a11y tree without the aria-hidden-on-
         // focusable violation that aria-hidden would trigger here.
         inert={!open || undefined}
         style={{
-          position: "absolute",
-          left: 0,
-          right: 0,
-          top: "calc(100% + 6px)",
-          zIndex: tkZ.dropdown,
+          ...dropdown.style,
           background: "var(--tk-surface)",
           borderRadius: "var(--tk-r-md)",
           boxShadow: "var(--tk-shadow-md)",
@@ -318,7 +324,7 @@ export const TKSelect = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKSelectPr
               }}
             >
               <span style={{ display: "inline-flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-                {item.icon ? <TKIcon name={item.icon} size={17} /> : null}
+                {tkRenderIcon(item.icon, { size: 17 })}
                 <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.label}</span>
               </span>
               {item.value === val ? (
@@ -331,7 +337,8 @@ export const TKSelect = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKSelectPr
             ))}
           </div>
         )}
-      </div>
+      </div>,
+      )}
     </div>
   );
 });

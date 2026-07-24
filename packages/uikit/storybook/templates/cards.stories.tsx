@@ -52,7 +52,9 @@ export const PromotionalCards = {
         time="18:30"
         actionLabel="Details"
       />
-      <TKStatTile label="Revenue" value="$12.4k" delta="+8%" />
+      {/* REU-002: bars are explicit consumer data — omitted bars render no sparkline. */}
+      <TKStatTile label="Revenue" value="$12.4k" delta="+8%" bars={[5, 8, 6, 10, 9, 13, 12]} />
+      <TKStatTile label="No sparkline" value="$1.2k" delta="-2%" up={false} />
     </AppScreen>
   ),
 } satisfies Story;

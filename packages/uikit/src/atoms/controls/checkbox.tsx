@@ -1,4 +1,4 @@
-import { forwardRef, type ReactNode } from "react";
+import { forwardRef, type CSSProperties, type ReactNode } from "react";
 import { TKIcon } from "../icons";
 import { useControllable } from "../../internal/useControllable";
 import { tkDomProps, type TKDomProps } from "../../internal/dom";
@@ -12,10 +12,15 @@ export interface TKCheckboxProps extends TKDomProps<HTMLButtonElement> {
   /** Mixed state (e.g. a parent of partially checked children). */
   indeterminate?: boolean;
   disabled?: boolean;
+  /** Checked-box fill (any CSS color). Defaults to the accent (REU-003). */
+  color?: string;
+  /** Merged onto the root, consumer values win (REU-007). */
+  style?: CSSProperties;
+  className?: string;
 }
 
 export const TKCheckbox = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKCheckboxProps>(function TKCheckbox(
-  { label, checked, defaultChecked, onChange, indeterminate, disabled, ...dom },
+  { label, checked, defaultChecked, onChange, indeterminate, disabled, color, style, className, ...dom },
   ref,
 ) {
   const [on, setOn] = useControllable(checked, !!defaultChecked, onChange);
@@ -33,6 +38,7 @@ export const TKCheckbox = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKCheckb
         setOn(!on);
       }}
       {...tkDomProps(dom)}
+      className={className}
       style={{
         display: "inline-flex",
         alignItems: "center",
@@ -46,6 +52,7 @@ export const TKCheckbox = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKCheckb
         cursor: "pointer",
         opacity: disabled ? 0.45 : 1,
         pointerEvents: disabled ? "none" : undefined,
+        ...style,
       }}
     >
       <span
@@ -56,9 +63,16 @@ export const TKCheckbox = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKCheckb
           justifyContent: "center",
           width: 24,
           height: 24,
+          // The box must never be squeezed into an oval by a long wrapping
+          // label — every sibling control guards this (REU-008).
+          flexShrink: 0,
           borderRadius: "var(--tk-r-xs)",
-          background: boxOn ? "var(--tk-accent)" : "transparent",
-          boxShadow: boxOn ? "0 3px 8px -2px var(--tk-accent-35)" : "inset 0 0 0 2px var(--tk-text-3)",
+          background: boxOn ? (color ?? "var(--tk-accent)") : "transparent",
+          boxShadow: boxOn
+            ? color
+              ? "none"
+              : "0 3px 8px -2px var(--tk-accent-35)"
+            : "inset 0 0 0 2px var(--tk-text-3)",
           color: "var(--tk-on-accent)",
           transition: "background var(--tk-t2) var(--tk-ease), box-shadow var(--tk-t2) var(--tk-ease)",
         }}

@@ -1,4 +1,4 @@
-import { useRef, useState, type KeyboardEvent, type MutableRefObject } from "react";
+import { useRef, useState, type CSSProperties, type KeyboardEvent, type MutableRefObject } from "react";
 import { useControllable } from "../../internal/useControllable";
 import { useOptionalHaptics } from "../../foundation/telegram";
 import { useTKLocale, tkFormat } from "../../foundation/i18n";
@@ -31,6 +31,11 @@ export interface TKSliderProps {
   onRangeChange?: (range: [number, number]) => void;
   /** Tick marks rendered on the track. */
   marks?: number[];
+  /** Fill color (any CSS color). Defaults to the accent (REU-003). */
+  color?: string;
+  /** Merged onto the root, consumer values win (REU-007). */
+  style?: CSSProperties;
+  className?: string;
   testId?: string;
 }
 
@@ -58,7 +63,7 @@ function tkSetText(el: HTMLElement | null, text: string) {
   if (node && node.nodeType === Node.TEXT_NODE) node.nodeValue = text;
 }
 
-function TKSingleSliderImpl({ min = 0, max = 100, step: stepProp = 1, value, defaultValue, onChange, suffix = "", disabled, label, marks, testId }: TKSliderProps) {
+function TKSingleSliderImpl({ min = 0, max = 100, step: stepProp = 1, value, defaultValue, onChange, suffix = "", disabled, label, marks, color, style, className, testId }: TKSliderProps) {
   tkWarnSliderName(label);
   // Guard non-positive step against divide-by-zero/NaN in the snap math (CTL-009).
   const step = stepProp > 0 ? stepProp : 1;
@@ -133,8 +138,20 @@ function TKSingleSliderImpl({ min = 0, max = 100, step: stepProp = 1, value, def
     }
   };
 
+  // Shared by pointer-up AND pointer-cancel: an interrupted capture (scroll
+  // takeover, app switch) must run the same commit/cleanup as a clean release.
+  const endDrag = () => {
+    const s = session.current;
+    session.current = null;
+    if (s?.raf) cancelAnimationFrame(s.raf);
+    setDrag(false);
+    // One state commit per gesture (uncontrolled). setVal re-fires
+    // onChange with the already-reported final value — harmless.
+    if (s && !isControlled && s.val !== val) setVal(s.val);
+  };
+
   return (
-    <div data-testid={testId} style={{ padding: "6px 0", opacity: disabled ? 0.45 : 1 }}>
+    <div data-testid={testId} className={className} style={{ padding: "6px 0", opacity: disabled ? 0.45 : 1, ...style }}>
       <div
         ref={ref}
         role="slider"
@@ -173,15 +190,11 @@ function TKSingleSliderImpl({ min = 0, max = 100, step: stepProp = 1, value, def
             s.pendingX = e.clientX;
           }
         }}
-        onPointerUp={() => {
-          const s = session.current;
-          session.current = null;
-          if (s?.raf) cancelAnimationFrame(s.raf);
-          setDrag(false);
-          // One state commit per gesture (uncontrolled). setVal re-fires
-          // onChange with the already-reported final value — harmless.
-          if (s && !isControlled && s.val !== val) setVal(s.val);
-        }}
+        onPointerUp={endDrag}
+        // Interrupted drags (scroll takeover, app switch, orientation change)
+        // fire pointercancel, not pointerup — same commit/cleanup path, so a
+        // torn gesture can't leave the slider stuck in drag state.
+        onPointerCancel={endDrag}
         style={{
           position: "relative",
           height: 28,
@@ -197,7 +210,7 @@ function TKSingleSliderImpl({ min = 0, max = 100, step: stepProp = 1, value, def
         <div style={{ position: "absolute", top: 12, left: 0, right: 0, height: 4, borderRadius: 2, overflow: "hidden" }}>
           <div
             ref={fillRef}
-            style={{ position: "absolute", inset: 0, background: "var(--tk-accent)", transform: `translateX(${pct - 100}%)` }}
+            style={{ position: "absolute", inset: 0, background: color ?? "var(--tk-accent)", transform: `translateX(${pct - 100}%)` }}
           />
         </div>
         {marks?.map((m) => {
@@ -277,6 +290,9 @@ function TKRangeSliderImpl({
   disabled,
   label,
   marks,
+  color,
+  style,
+  className,
   testId,
 }: TKSliderProps) {
   const locale = useTKLocale();
@@ -390,8 +406,18 @@ function TKRangeSliderImpl({
     </div>
   );
 
+  // Shared by pointer-up AND pointer-cancel: an interrupted capture must run
+  // the same commit/cleanup as a clean release.
+  const endRangeDrag = () => {
+    const s = session.current;
+    session.current = null;
+    if (s?.raf) cancelAnimationFrame(s.raf);
+    setDrag(-1);
+    if (s && !isControlled && (s.vals[0] !== val[0] || s.vals[1] !== val[1])) setVal(s.vals);
+  };
+
   return (
-    <div data-testid={testId} style={{ padding: "6px 0", opacity: disabled ? 0.45 : 1 }}>
+    <div data-testid={testId} className={className} style={{ padding: "6px 0", opacity: disabled ? 0.45 : 1, ...style }}>
       <div
         ref={ref}
         onPointerDown={(e) => {
@@ -424,13 +450,10 @@ function TKRangeSliderImpl({
             s.pendingX = e.clientX;
           }
         }}
-        onPointerUp={() => {
-          const s = session.current;
-          session.current = null;
-          if (s?.raf) cancelAnimationFrame(s.raf);
-          setDrag(-1);
-          if (s && !isControlled && (s.vals[0] !== val[0] || s.vals[1] !== val[1])) setVal(s.vals);
-        }}
+        onPointerUp={endRangeDrag}
+        // Interrupted drags fire pointercancel, not pointerup — same
+        // commit/cleanup path (see the single slider above).
+        onPointerCancel={endRangeDrag}
         style={{ position: "relative", height: 28, cursor: disabled ? "default" : "pointer", touchAction: "pan-y", pointerEvents: disabled ? "none" : undefined }}
       >
         <div style={{ position: "absolute", top: 12, left: 0, right: 0, height: 4, borderRadius: 2, background: "var(--tk-surface-3)" }} />
@@ -440,7 +463,7 @@ function TKRangeSliderImpl({
             style={{
               position: "absolute",
               inset: 0,
-              background: "var(--tk-accent)",
+              background: color ?? "var(--tk-accent)",
               transform: `translateX(${pctOf(val[0])}%) scaleX(${(pctOf(val[1]) - pctOf(val[0])) / 100})`,
               transformOrigin: "0 50%",
             }}

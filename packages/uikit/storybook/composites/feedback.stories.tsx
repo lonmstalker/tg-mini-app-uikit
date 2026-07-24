@@ -121,11 +121,33 @@ export const ProgressAndBars = {
   render: () => <ProgressPreview />,
 } satisfies Story;
 
+/** REU-003: `color` recolors the fill per instance — no dist-diving for private CSS vars. */
+export const ProgressColors = {
+  parameters: { fullBleed: true },
+  render: () => (
+    <AppScreen>
+      <Narrow>
+        <TKProgress value={72} label="Food" color="var(--tk-green)" />
+        <TKProgress value={45} label="Transport" color="var(--tk-orange)" />
+        <TKProgress value={20} label="Fun" color="linear-gradient(90deg, #7c4dff, #448aff)" />
+      </Narrow>
+      <Grid>
+        <TKRing value={0.62} label="Savings" color="var(--tk-green)">
+          62%
+        </TKRing>
+        <TKBars data={[4, 9, 6, 12, 7]} labels={["Mon", "Tue", "Wed", "Thu", "Fri"]} color="var(--tk-orange)" />
+      </Grid>
+    </AppScreen>
+  ),
+} satisfies Story;
+
 export const EmptyAndTimeline = {
   parameters: { fullBleed: true },
   render: () => (
     <AppScreen>
-      <TKEmptyState title="No orders" text="Try another filter or create a new order." cta="Reset" />
+      {/* REU-002: the illustration is explicit — no icon/media means no circle. */}
+      <TKEmptyState icon="cart" title="No orders" text="Try another filter or create a new order." cta="Reset" />
+      <TKEmptyState title="Text-only empty state" text="No invented illustration when icon/media are omitted." />
       <Narrow>
         <TKTimeline
           steps={[

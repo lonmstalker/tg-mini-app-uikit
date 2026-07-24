@@ -1,5 +1,5 @@
 import { useLayoutEffect, useMemo, useRef, type CSSProperties, type ReactNode, type Ref } from "react";
-import { TKIcon, type TKIconName } from "../../atoms/icons";
+import { tkRenderIcon, type TKIconProp } from "../../atoms/icons";
 import { useTKLocale } from "../../foundation/i18n";
 import { useSafeArea } from "../../foundation/telegram";
 import { mergeRefs } from "../../internal/dom";
@@ -23,13 +23,14 @@ export interface TKWriteBarProps {
   placeholder?: string;
   /** Leading slot (attach button, custom action, etc.). */
   before?: ReactNode;
-  /** Custom send icon (paper plane by default). */
-  sendIcon?: TKIconName;
+  /** Custom send icon: built-in name or a custom element (paper plane by default) (REU-004). */
+  sendIcon?: TKIconProp;
   disabled?: boolean;
   /** Pad below the home indicator (default true). */
   safeArea?: boolean;
   testId?: string;
   style?: CSSProperties;
+  className?: string;
 }
 
 /** Message input bar: auto-growing textarea, Enter sends, Shift+Enter breaks. */
@@ -46,6 +47,7 @@ export function TKWriteBar({
   safeArea = true,
   testId,
   style,
+  className,
 }: TKWriteBarProps) {
   const locale = useTKLocale();
   const [text, setText] = useControllable(value, defaultValue ?? "", onChange);
@@ -74,6 +76,7 @@ export function TKWriteBar({
   return (
     <div
       data-testid={testId}
+      className={className}
       style={{
         display: "flex",
         alignItems: "flex-end",
@@ -87,7 +90,8 @@ export function TKWriteBar({
         ...style,
       }}
     >
-      {before}
+      {/* Fixed-size leading controls must not be squeezed as the textarea grows (REU-008). */}
+      {before != null ? <span style={{ display: "inline-flex", flexShrink: 0 }}>{before}</span> : null}
       <textarea
         ref={setAreaRef}
         rows={1}
@@ -147,7 +151,7 @@ export function TKWriteBar({
           cursor: text.trim() ? "pointer" : "default",
         }}
       >
-        <TKIcon name={sendIcon} size={19} />
+        {tkRenderIcon(sendIcon, { size: 19 })}
       </button>
     </div>
   );

@@ -244,7 +244,8 @@ export function useKeyboard(threshold = 80): TKKeyboardState {
     const rootObserver = typeof ResizeObserver !== "undefined" ? new ResizeObserver(() => sync()) : undefined;
     if (rootObserver) document.querySelectorAll<HTMLElement>(".tk").forEach((el) => rootObserver.observe(el));
     vv.addEventListener("resize", sync);
-    vv.addEventListener("scroll", sync);
+    // Passive: sync() only reads geometry, never preventDefault.
+    vv.addEventListener("scroll", sync, { passive: true });
     document.addEventListener("focusin", syncFocusIn);
     document.addEventListener("focusout", syncFocusOut);
     document.addEventListener("visibilitychange", sync);

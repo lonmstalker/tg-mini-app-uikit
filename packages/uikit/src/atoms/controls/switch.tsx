@@ -1,4 +1,4 @@
-import { forwardRef, type ReactNode } from "react";
+import { forwardRef, type CSSProperties, type ReactNode } from "react";
 import { tkDomProps, type TKDomProps } from "../../internal/dom";
 import { useControllable } from "../../internal/useControllable";
 import { useOptionalHaptics } from "../../foundation/telegram";
@@ -12,10 +12,15 @@ export interface TKSwitchProps extends TKDomProps<HTMLButtonElement> {
   onChange?: (checked: boolean) => void;
   small?: boolean;
   disabled?: boolean;
+  /** ON-track color (any CSS color). Defaults to the green token (REU-003). */
+  color?: string;
+  /** Merged onto the root, consumer values win (REU-007). */
+  style?: CSSProperties;
+  className?: string;
 }
 
 export const TKSwitch = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKSwitchProps>(function TKSwitch(
-  { label, ariaLabel, checked, defaultChecked, onChange, small, disabled, ...dom },
+  { label, ariaLabel, checked, defaultChecked, onChange, small, disabled, color, style, className, ...dom },
   ref,
 ) {
   const [on, setOn] = useControllable(checked, !!defaultChecked, onChange);
@@ -36,7 +41,7 @@ export const TKSwitch = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKSwitchPr
         height: H,
         padding: 2,
         borderRadius: "var(--tk-r-pill)",
-        background: on ? "var(--tk-green)" : "var(--tk-surface-3)",
+        background: on ? (color ?? "var(--tk-green)") : "var(--tk-surface-3)",
         transition: "background var(--tk-t2) var(--tk-ease)",
         cursor: "pointer",
         flexShrink: 0,
@@ -67,6 +72,7 @@ export const TKSwitch = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKSwitchPr
         onClick={toggle}
         {...tkDomProps(dom)}
         aria-label={dom["aria-label"] ?? ariaLabel}
+        className={className}
         style={{
           display: "inline-flex",
           alignItems: "center",
@@ -77,6 +83,7 @@ export const TKSwitch = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKSwitchPr
           border: "none",
           background: "transparent",
           cursor: disabled ? "default" : "pointer",
+          ...style,
         }}
       >
         {node}
@@ -91,6 +98,7 @@ export const TKSwitch = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKSwitchPr
       disabled={disabled}
       onClick={toggle}
       {...tkDomProps(dom)}
+      className={className}
       style={{
         display: "flex",
         alignItems: "center",
@@ -106,6 +114,7 @@ export const TKSwitch = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKSwitchPr
         cursor: "pointer",
         opacity: disabled ? 0.45 : 1,
         pointerEvents: disabled ? "none" : undefined,
+        ...style,
       }}
     >
       {label}

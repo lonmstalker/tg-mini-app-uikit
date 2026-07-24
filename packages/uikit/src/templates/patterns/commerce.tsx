@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from "react";
+import { useEffect, type CSSProperties, type ReactNode } from "react";
 import { useControllable } from "../../internal/useControllable";
 import { useTKLocale } from "../../foundation/i18n";
 
@@ -38,13 +38,19 @@ export interface TKSlotPickerProps {
    */
   onSlotChange?: (slot: string) => void;
   columns?: number;
+  /** Merged onto the root, consumer values win (REU-007). */
+  style?: CSSProperties;
+  className?: string;
   testId?: string;
 }
+
+// Stable empty default: a fresh `[]` per render breaks memo/deps downstream.
+const NO_BUSY_SLOTS: string[] = [];
 
 export function TKSlotPicker({
   days,
   slots,
-  busy = [],
+  busy = NO_BUSY_SLOTS,
   day,
   defaultDay = 0,
   onDayChange,
@@ -52,6 +58,8 @@ export function TKSlotPicker({
   defaultSlot,
   onSlotChange,
   columns = 3,
+  style,
+  className,
   testId,
 }: TKSlotPickerProps) {
   const locale = useTKLocale();
@@ -75,7 +83,7 @@ export function TKSlotPicker({
   // rescans the whole list per cell.
   const busySet = new Set(busy);
   return (
-    <div data-testid={testId} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+    <div data-testid={testId} className={className} style={{ display: "flex", flexDirection: "column", gap: 14, ...style }}>
       <div style={{ display: "flex", gap: 7 }}>
         {days.map((dayItem, index) => {
           const on = index === activeDay;
@@ -178,13 +186,17 @@ export interface TKSummaryRow {
 export interface TKPaymentSummaryProps {
   rows: TKSummaryRow[];
   children?: ReactNode;
+  /** Merged onto the root, consumer values win (REU-007). */
+  style?: CSSProperties;
+  className?: string;
   testId?: string;
 }
 
-export function TKPaymentSummary({ rows, children, testId }: TKPaymentSummaryProps) {
+export function TKPaymentSummary({ rows, children, style, className, testId }: TKPaymentSummaryProps) {
   return (
     <div
       data-testid={testId}
+      className={className}
       style={{
         background: "var(--tk-surface)",
         borderRadius: "var(--tk-r-lg)",
@@ -193,6 +205,7 @@ export function TKPaymentSummary({ rows, children, testId }: TKPaymentSummaryPro
         display: "flex",
         flexDirection: "column",
         gap: 10,
+        ...style,
       }}
     >
       {rows.map((row, index) => (

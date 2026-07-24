@@ -14,7 +14,11 @@ import { TKFormField } from "./form-field";
  * this for UX only and validate uploads server-side.
  */
 function tkFileMatchesAccept(file: File, accept?: string): boolean {
-  const tokens = (accept ?? "").split(",").map((t) => t.trim().toLowerCase()).filter(Boolean);
+  const tokens: string[] = [];
+  for (const part of (accept ?? "").split(",")) {
+    const t = part.trim().toLowerCase();
+    if (t) tokens.push(t);
+  }
   if (!tokens.length) return true;
   const name = file.name.toLowerCase();
   const type = file.type.toLowerCase();
@@ -151,6 +155,9 @@ export const TKFileInput = /* @__PURE__ */ forwardRef<HTMLInputElement, TKFileIn
         <input
           ref={mergedRef}
           type="file"
+          // Explicit name: the field's only text lives in surrounding spans,
+          // which never enter the input's accessible-name computation.
+          aria-label={typeof buttonLabel === "string" ? buttonLabel : locale.chooseFile}
           accept={accept}
           multiple={multiple}
           disabled={disabled}

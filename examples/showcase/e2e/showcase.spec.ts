@@ -54,6 +54,16 @@ test("demo locale switch updates site and kit-owned strings together", async ({ 
   await page.getByTestId("locale-demo-cluster").scrollIntoViewIfNeeded();
   await expect(page.getByTestId("locale-demo-cluster")).toContainText("Не пришёл код?");
   await expect(page.getByTestId("locale-demo-cluster")).toContainText("Отправить ещё раз");
+
+  // Locale-driven behavior default (REU-011): under ru the phone field masks
+  // +7; back under en it is free international input.
+  const phone = page.getByTestId("locale-phone").getByRole("textbox");
+  await phone.fill("9261234567");
+  await expect(phone).toHaveValue("+7 (926) 123-45-67");
+  await page.getByTestId("site-locale-en").click();
+  const phoneEn = page.getByTestId("locale-phone").getByRole("textbox");
+  await phoneEn.fill("+371 2 123");
+  await expect(phoneEn).toHaveValue("+371 2 123");
 });
 
 test("demo bento ImageViewer opens and closes", async ({ page }) => {

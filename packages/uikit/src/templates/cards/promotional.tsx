@@ -60,7 +60,8 @@ export const TKBannerCard = /* @__PURE__ */ forwardRef<HTMLDivElement, TKBannerC
           background: "color-mix(in srgb, var(--tk-on-accent) 8%, transparent)",
         }}
       />
-      <div style={{ fontSize: "var(--tk-fz-title2)", fontWeight: 700, letterSpacing: "-.01em" }}>{title}</div>
+      {/* A real heading for AT, not an anonymous div (REU-005). */}
+      <div role="heading" aria-level={2} style={{ fontSize: "var(--tk-fz-title2)", fontWeight: 700, letterSpacing: "-.01em" }}>{title}</div>
       <div style={{ fontSize: "var(--tk-fz-sub)", opacity: 0.86, maxWidth: "85%" }}>{text}</div>
       {cta ? (
         <div style={{ marginTop: 8 }}>
@@ -215,19 +216,26 @@ export interface TKStatTileProps extends HTMLAttributes<HTMLDivElement> {
   value?: ReactNode;
   delta?: ReactNode;
   up?: boolean;
+  /** Sparkline values. Omitted/empty → no sparkline block is rendered (REU-002). */
   bars?: number[];
   testId?: string;
 }
 
 export const TKStatTile = /* @__PURE__ */ forwardRef<HTMLDivElement, TKStatTileProps>(function TKStatTile(
-  { label, value, delta, up = true, bars = [5, 8, 6, 10, 9, 13, 12], className, style, testId, ...rest },
+  { label, value, delta, up = true, bars, className, style, testId, ...rest },
   ref,
 ) {
   const locale = useTKLocale();
+  // No demo default: a data component must never invent plausible-looking
+  // numbers when the consumer omits `bars` — omit the sparkline (and its
+  // reserved 34px) entirely instead (REU-002).
+  const hasBars = !!bars && bars.length > 0;
   // Use the real peak (preserving fractional series like [0.2,0.5]) but floor the
   // divisor at 1 only when the peak is non-positive, so all-zero/empty bars give
   // 0% instead of NaN%/-Infinity% (TCRD-002).
-  const peak = bars.reduce((m, b) => (Number.isFinite(b) && b > m ? b : m), Number.NEGATIVE_INFINITY);
+  const peak = hasBars
+    ? bars.reduce((m, b) => (Number.isFinite(b) && b > m ? b : m), Number.NEGATIVE_INFINITY)
+    : 0;
   const max = peak > 0 ? peak : 1;
   return (
     <div
@@ -271,20 +279,22 @@ export const TKStatTile = /* @__PURE__ */ forwardRef<HTMLDivElement, TKStatTileP
           </span>
         ) : null}
       </div>
-      <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: 34 }}>
-        {bars.map((b, i) => (
-          <div
-            key={i}
-            style={{
-              flex: 1,
-              borderRadius: 3,
-              height: `${(b / max) * 100}%`,
-              background: i === bars.length - 1 ? "var(--tk-accent)" : "var(--tk-accent-20)",
-              transition: "height var(--tk-t3) var(--tk-spring)",
-            }}
-          />
-        ))}
-      </div>
+      {hasBars ? (
+        <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: 34 }}>
+          {bars.map((b, i) => (
+            <div
+              key={i}
+              style={{
+                flex: 1,
+                borderRadius: 3,
+                height: `${(b / max) * 100}%`,
+                background: i === bars.length - 1 ? "var(--tk-accent)" : "var(--tk-accent-20)",
+                transition: "height var(--tk-t3) var(--tk-spring)",
+              }}
+            />
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 });

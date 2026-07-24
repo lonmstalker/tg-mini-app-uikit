@@ -1,4 +1,4 @@
-import { useRef, useState, type KeyboardEvent } from "react";
+import { useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
 import { TKIcon } from "../icons";
 import { useControllable } from "../../internal/useControllable";
 import { tkFormat, useTKLocale } from "../../foundation/i18n";
@@ -12,10 +12,26 @@ export interface TKRatingProps {
   readonly?: boolean;
   /** Render and accept half-star values (e.g. 3.5). */
   allowHalf?: boolean;
+  /** Filled-star color (any CSS color). Defaults to the orange token (REU-003). */
+  color?: string;
+  /** Merged onto the root, consumer values win (REU-007). */
+  style?: CSSProperties;
+  className?: string;
   testId?: string;
 }
 
-export function TKRating({ max = 5, value, defaultValue = 0, onChange, readonly, allowHalf, testId }: TKRatingProps) {
+export function TKRating({
+  max = 5,
+  value,
+  defaultValue = 0,
+  onChange,
+  readonly,
+  allowHalf,
+  color,
+  style,
+  className,
+  testId,
+}: TKRatingProps) {
   const locale = useTKLocale();
   const [v, setV] = useControllable(value, defaultValue, onChange);
   const [hov, setHov] = useState(0);
@@ -40,7 +56,13 @@ export function TKRating({ max = 5, value, defaultValue = 0, onChange, readonly,
     focusStar(nv);
   };
   return (
-    <div role="radiogroup" aria-label={locale.rating} data-testid={testId} style={{ display: "flex", gap: 4 }}>
+    <div
+      role="radiogroup"
+      aria-label={locale.rating}
+      data-testid={testId}
+      className={className}
+      style={{ display: "flex", gap: 4, ...style }}
+    >
       {Array.from({ length: max }).map((_, i) => {
         const fill = Math.min(Math.max(shown - i, 0), 1); // 0 | 0.5 | 1 per star
         const on = fill > 0;
@@ -78,7 +100,7 @@ export function TKRating({ max = 5, value, defaultValue = 0, onChange, readonly,
               // so an inline rating in a list row keeps its compact height (CTL-004);
               // a readonly rating is a display-only indicator and needs no target.
               ...(readonly ? null : { minWidth: 44, minHeight: 44, marginTop: -7, marginBottom: -7 }),
-              color: on ? "var(--tk-orange)" : "var(--tk-text-3)",
+              color: on ? (color ?? "var(--tk-orange)") : "var(--tk-text-3)",
               transition: "color var(--tk-t1) var(--tk-ease)",
               display: "inline-flex",
               alignItems: "center",

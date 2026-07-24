@@ -7,6 +7,13 @@ import { createContext, useContext, useMemo, type ReactNode } from "react";
  * provider. Templates use `{placeholders}` (see `tkFormat`).
  */
 export interface TKLocale {
+  /**
+   * BCP-47 language tag of this dictionary (`"en"`, `"ru"`). Drives
+   * locale-dependent behavior defaults — e.g. `TKPhoneInput` picks its default
+   * country from it (REU-011). Optional so existing custom dictionaries stay
+   * valid; without it components fall back to the neutral English behavior.
+   */
+  lang?: string;
   /** TKMainButton success label. */
   done: string;
   /** TKHeader back button aria label. */
@@ -86,6 +93,15 @@ export interface TKLocale {
   progress: string;
   /** TKInput built-in `type="email"` validation message. */
   invalidEmail: string;
+  /** TKDateInput manual-entry validation message (REU-012). */
+  invalidDate: string;
+  /** TKTimeInput incomplete-entry validation message (REU-012). */
+  invalidTime: string;
+  /** TKCalendar / TKDateInput month and year part-selector aria labels (REU-012). */
+  month: string;
+  year: string;
+  /** TKTimeInput 12-hour meridiem toggle group aria label (REU-012). */
+  amPm: string;
   /** TKPhoneInput country-code selector aria label. */
   countryCode: string;
   /** TKDateInput calendar trigger button aria label. */
@@ -125,6 +141,7 @@ export interface TKLocale {
 }
 
 export const enLocale: TKLocale = {
+  lang: "en",
   done: "Done",
   back: "Back",
   cancel: "Cancel",
@@ -169,6 +186,11 @@ export const enLocale: TKLocale = {
   skip: "Skip",
   progress: "Progress",
   invalidEmail: "Enter a valid email address",
+  invalidDate: "Enter a valid date",
+  invalidTime: "Enter a valid time",
+  month: "Month",
+  year: "Year",
+  amPm: "AM or PM",
   countryCode: "Country code",
   openCalendar: "Open calendar",
   loading: "Loading…",
@@ -200,6 +222,7 @@ export const enLocale: TKLocale = {
 
 /** Ready-made Russian preset. */
 export const ruLocale: TKLocale = {
+  lang: "ru",
   done: "Готово",
   back: "Назад",
   cancel: "Отмена",
@@ -244,6 +267,11 @@ export const ruLocale: TKLocale = {
   skip: "Пропустить",
   progress: "Прогресс",
   invalidEmail: "Введите корректный email",
+  invalidDate: "Введите корректную дату",
+  invalidTime: "Введите корректное время",
+  month: "Месяц",
+  year: "Год",
+  amPm: "AM или PM",
   countryCode: "Код страны",
   openCalendar: "Открыть календарь",
   loading: "Загрузка…",
