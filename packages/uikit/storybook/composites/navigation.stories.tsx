@@ -79,6 +79,31 @@ export const HeaderAndTabbar = {
   ),
 } satisfies Story;
 
+// A7: an unbroken header title must ellipsize next to its actions, and long
+// category labels stay usable because the tab row is a deliberate horizontal
+// scroller (the reflow sweep allows overflow-x scrollers by design).
+const UNBROKEN_TITLE = "Grundstücksverkehrsgenehmigungszuständigkeitsübertragungsverordnung";
+
+export const StressHeader = {
+  parameters: { fullBleed: true },
+  render: () => (
+    <Screen>
+      <TKHeader
+        title={UNBROKEN_TITLE}
+        subtitle={`Расширенный подзаголовок: ${UNBROKEN_TITLE}`}
+        actions={<TKIconButton icon="settings" label="Настройки заказа" />}
+      />
+      <div style={{ padding: "10px 0" }}>
+        <TKCategoryTabs
+          tabs={["Все категории сразу", "Электротранспорт и аксессуары", UNBROKEN_TITLE, "Скидки"]}
+          defaultValue={0}
+        />
+      </div>
+      <div style={{ flex: 1 }} />
+    </Screen>
+  ),
+} satisfies Story;
+
 export const SegmentedAndTabs = {
   parameters: { fullBleed: true },
   render: () => (

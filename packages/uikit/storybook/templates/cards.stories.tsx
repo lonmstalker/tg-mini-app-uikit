@@ -58,3 +58,24 @@ export const PromotionalCards = {
     </AppScreen>
   ),
 } satisfies Story;
+
+// A7: real content is hostile — an unbroken German compound, expanded i18n
+// labels, missing fields. Every card must clip or wrap inside its own box;
+// the reflow/RTL sweeps assert nothing escapes even at 320px.
+const UNBROKEN = "Grundstücksverkehrsgenehmigungszuständigkeitsübertragungsverordnung";
+
+export const StressContent = {
+  parameters: { fullBleed: true },
+  render: () => (
+    <AppScreen>
+      <Grid>
+        <TKProductCardB title={UNBROKEN} price="1 234 567,89 ₽" oldPrice="2 345 678,90 ₽" discount="-99%" img="tripod" />
+        <TKProductCardA title="Camera" price="$199" img="camera" onAdd={() => undefined} />
+      </Grid>
+      <TKBannerCard title={UNBROKEN} text={`Расширенный маркетинговый текст: ${UNBROKEN}`} cta="Aktivieren Sie das Wochenendbonusprogramm" />
+      {/* Missing fields: no status, no date, no time, no action. */}
+      <TKBookingCard initials="ГК" name={UNBROKEN} subtitle="Без статуса, даты и времени" />
+      <TKStatTile label={UNBROKEN} value="1 234 567 890,00 ₽" delta="+400%" />
+    </AppScreen>
+  ),
+} satisfies Story;

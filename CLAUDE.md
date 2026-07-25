@@ -1,3 +1,11 @@
+# Component design rules
+
+Before designing or changing ANY component API, read
+[docs/component-rules.md](docs/component-rules.md) — the contract every
+component satisfies (shadcn-grade flexibility outside, TMA traps absorbed
+inside). Never remove code commented with an incident ID (REU-*, KB-*,
+OVL-*, INT-*, device-testing #N) without reading its story.
+
 # Working with files
 
 IMPORTANT — keep files small, split large ones:

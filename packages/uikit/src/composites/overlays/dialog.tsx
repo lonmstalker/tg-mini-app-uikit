@@ -1,5 +1,6 @@
 import { Children, forwardRef, useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { tkRenderIcon, type TKIconProp } from "../../atoms/icons";
+import { useKeyboard } from "../../foundation/telegram";
 import { mergeRefs } from "../../internal/dom";
 import { Scrim, useAnchorGuard, useModalOverlay, useMountTransition, useOverlayPortal } from "./shared";
 
@@ -8,21 +9,25 @@ import { Scrim, useAnchorGuard, useModalOverlay, useMountTransition, useOverlayP
  * never hides it (a dialog with an input inside would otherwise sit behind the
  * keyboard, centered on the full layout viewport). Returns a px center to use
  * as `top` while a keyboard is open, or null to fall back to `top: 50%`.
+ *
+ * WHETHER a keyboard is open comes from the kit's controller, never from raw
+ * `innerHeight − vv.height`: that difference reads a full keyboard in the KB-4
+ * transient window (vv shrank, webview not yet resized — the dialog jumped)
+ * and ≈0 under a host-managed viewport (KB-3), where the client resizes the
+ * webview itself and plain CSS centering is already correct. `visualViewport`
+ * is read only for the center COORDINATE while the controller says open.
  */
 function useViewportCenter(active: boolean): number | null {
+  const keyboard = useKeyboard();
+  const engaged = active && keyboard.visible;
   const [center, setCenter] = useState<number | null>(null);
   useEffect(() => {
-    if (!active || typeof window === "undefined" || !window.visualViewport) {
+    if (!engaged || typeof window === "undefined" || !window.visualViewport) {
       setCenter(null);
       return;
     }
     const vv = window.visualViewport;
-    const update = () => {
-      // Only override the CSS centering once something (the keyboard) actually
-      // shrinks the viewport, so framed/non-keyboard cases keep `top: 50%`.
-      const shrunk = window.innerHeight - vv.height > 120;
-      setCenter(shrunk ? vv.offsetTop + vv.height / 2 : null);
-    };
+    const update = () => setCenter((vv.offsetTop ?? 0) + vv.height / 2);
     update();
     vv.addEventListener("resize", update, { passive: true });
     vv.addEventListener("scroll", update, { passive: true });
@@ -30,8 +35,8 @@ function useViewportCenter(active: boolean): number | null {
       vv.removeEventListener("resize", update);
       vv.removeEventListener("scroll", update);
     };
-  }, [active]);
-  return center;
+  }, [engaged]);
+  return engaged ? center : null;
 }
 
 /* ---------------- Dialog ---------------- */

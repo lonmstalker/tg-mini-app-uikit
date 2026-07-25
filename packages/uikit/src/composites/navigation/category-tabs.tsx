@@ -11,6 +11,8 @@ export interface TKCategoryTabsProps {
   onChange?: (index: number) => void;
   /** Accessible name for the category group (NAV-003); defaults to `locale.tabs`. */
   ariaLabel?: string;
+  className?: string;
+  /** Merged onto the root LAST — consumer values win (REU-007). */
   style?: CSSProperties;
   testId?: string;
 }
@@ -19,7 +21,7 @@ function prefersReducedMotion(): boolean {
   return typeof window !== "undefined" && !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 }
 
-export function TKCategoryTabs({ tabs, value, defaultValue = 0, onChange, ariaLabel, style, testId }: TKCategoryTabsProps) {
+export function TKCategoryTabs({ tabs, value, defaultValue = 0, onChange, ariaLabel, className, style, testId }: TKCategoryTabsProps) {
   const locale = useTKLocale();
   const [active, setActive] = useControllable(value, defaultValue, onChange);
   const items = tabs.map(tkOptionItem);
@@ -43,6 +45,7 @@ export function TKCategoryTabs({ tabs, value, defaultValue = 0, onChange, ariaLa
       // Named group so AT announces what the category buttons belong to (NAV-003).
       role="group"
       aria-label={ariaLabel ?? locale.categories}
+      className={className}
       style={{ display: "flex", gap: 4, overflowX: "auto", scrollbarWidth: "none", padding: "0 12px", ...style }}
     >
       {items.map((item, index) => {

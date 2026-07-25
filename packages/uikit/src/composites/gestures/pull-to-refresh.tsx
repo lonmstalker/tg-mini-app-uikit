@@ -18,6 +18,8 @@ export interface TKPullToRefreshProps {
   /** SR announcement while refreshing (default `locale.refreshing`). */
   refreshingLabel?: ReactNode;
   testId?: string;
+  className?: string;
+  /** Merged onto the root LAST — consumer values win (REU-007). */
   style?: CSSProperties;
 }
 
@@ -46,7 +48,7 @@ function tkIsVisible(el: HTMLElement): boolean {
  * Wraps a scroll area with the pull-to-refresh gesture: a resisted pull from
  * the very top, a spinner while `onRefresh` runs, auto-hide afterwards.
  */
-export function TKPullToRefresh({ children, onRefresh, threshold = 72, disabled, refreshingLabel, testId, style }: TKPullToRefreshProps) {
+export function TKPullToRefresh({ children, onRefresh, threshold = 72, disabled, refreshingLabel, testId, className, style }: TKPullToRefreshProps) {
   const locale = useTKLocale();
   const [guarding, setGuarding] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -270,6 +272,7 @@ export function TKPullToRefresh({ children, onRefresh, threshold = 72, disabled,
       ref={rootRef}
       data-tk-ptr=""
       data-testid={testId}
+      className={className}
       aria-busy={refreshing || undefined}
       {...drag.bind()}
       // axis:"y" defaults to pan-x, but PTR deliberately keeps pan-y: its own

@@ -19,6 +19,9 @@ export interface TKTextareaProps {
   autoFocus?: boolean;
   resize?: CSSProperties["resize"];
   testId?: string;
+  className?: string;
+  /** Merged onto the root LAST — consumer values win (REU-007). */
+  style?: CSSProperties;
 }
 
 export const TKTextarea = /* @__PURE__ */ forwardRef<HTMLTextAreaElement, TKTextareaProps>(function TKTextarea(
@@ -38,6 +41,8 @@ export const TKTextarea = /* @__PURE__ */ forwardRef<HTMLTextAreaElement, TKText
     autoFocus,
     resize = "vertical",
     testId,
+    className,
+    style,
   },
   ref,
 ) {
@@ -48,7 +53,7 @@ export const TKTextarea = /* @__PURE__ */ forwardRef<HTMLTextAreaElement, TKText
   const describedBy = hint || error ? `${inputId}-description` : undefined;
   const borderColor = error ? "var(--tk-red)" : focus ? "var(--tk-accent)" : "transparent";
   return (
-    <TKFormField label={label} hint={hint} error={error} htmlFor={inputId} describedBy={describedBy} disabled={disabled} testId={testId}>
+    <TKFormField label={label} hint={hint} error={error} htmlFor={inputId} describedBy={describedBy} disabled={disabled} testId={testId} className={className} style={style}>
       <div
         style={{
           position: "relative",

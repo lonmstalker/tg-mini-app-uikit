@@ -1,9 +1,10 @@
 import { forwardRef, type BlockquoteHTMLAttributes, type ReactNode } from "react";
+import { tkRenderIcon, type TKIconProp } from "../icons";
 
 export interface TKBlockquoteProps extends BlockquoteHTMLAttributes<HTMLQuoteElement> {
   author?: ReactNode;
-  /** Optional leading icon name shown next to the author line. */
-  icon?: ReactNode;
+  /** Built-in icon name, or a custom element for glyphs outside the set (REU-004). */
+  icon?: TKIconProp;
   testId?: string;
 }
 
@@ -32,7 +33,7 @@ export const TKBlockquote = /* @__PURE__ */ forwardRef<HTMLQuoteElement, TKBlock
     >
       {author ? (
         <span style={{ display: "inline-flex", alignItems: "center", gap: 6, color: "var(--tk-accent-ink)", fontWeight: 700, fontSize: "var(--tk-fz-sub)" }}>
-          {icon}
+          {tkRenderIcon(icon, { size: 15 })}
           {author}
         </span>
       ) : null}

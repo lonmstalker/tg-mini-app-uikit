@@ -29,6 +29,8 @@ export interface TKInfiniteListProps {
   /** Root margin of the IntersectionObserver (default `240px`). */
   margin?: string;
   testId?: string;
+  className?: string;
+  /** Merged onto the root LAST — consumer values win (REU-007). */
   style?: CSSProperties;
 }
 
@@ -42,6 +44,7 @@ export function TKInfiniteList({
   loadingLabel,
   margin = "240px",
   testId,
+  className,
   style,
 }: TKInfiniteListProps) {
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -141,7 +144,7 @@ export function TKInfiniteList({
 
   const locale = useTKLocale();
   return (
-    <div ref={listRef} data-testid={testId} aria-busy={loading || undefined} style={style}>
+    <div ref={listRef} data-testid={testId} className={className} aria-busy={loading || undefined} style={style}>
       {children}
       {hasMore ? (
         <div

@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { forwardRef, useEffect, useId, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 import { TKIcon, tkRenderIcon } from "../icons";
 import { mergeRefs } from "../../internal/dom";
 import { TKFocusRing } from "../../internal/FocusRing";
@@ -19,10 +19,13 @@ export interface TKSelectProps {
   searchable?: boolean;
   disabled?: boolean;
   testId?: string;
+  className?: string;
+  /** Merged onto the root LAST — consumer values win (REU-007). */
+  style?: CSSProperties;
 }
 
 export const TKSelect = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKSelectProps>(function TKSelect(
-  { label, options, value, defaultValue, onChange, placeholder, searchable, disabled, testId },
+  { label, options, value, defaultValue, onChange, placeholder, searchable, disabled, testId, className, style },
   forwardedRef,
 ) {
   const locale = useTKLocale();
@@ -121,7 +124,7 @@ export const TKSelect = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKSelectPr
   };
 
   return (
-    <div ref={ref} data-testid={testId} style={{ position: "relative", opacity: disabled ? 0.55 : 1 }}>
+    <div ref={ref} data-testid={testId} className={className} style={{ position: "relative", opacity: disabled ? 0.55 : 1, ...style }}>
       {label ? (
         <div
           id={labelId}

@@ -43,6 +43,8 @@ export interface TKPopperProps {
   /** Accessible name for the surface — useful with `role="dialog"`/`"menu"`. */
   ariaLabel?: string;
   testId?: string;
+  className?: string;
+  /** Merged onto the root LAST — consumer values win (REU-007). */
   style?: CSSProperties;
 }
 
@@ -64,7 +66,7 @@ interface PopperLayout {
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), Math.max(min, max));
 
-export function TKPopper({ open, anchorRef, children, placement: preferred = "bottom", offset = 8, onClose, arrow, autoFlip = true, role = "tooltip", id, ariaLabel, testId, style }: TKPopperProps) {
+export function TKPopper({ open, anchorRef, children, placement: preferred = "bottom", offset = 8, onClose, arrow, autoFlip = true, role = "tooltip", id, ariaLabel, testId, className, style }: TKPopperProps) {
   const [layout, setLayout] = useState<PopperLayout | null>(null);
   const [popperSize, setPopperSize] = useState({ width: 220, height: 80 });
   const ref = useRef<HTMLDivElement>(null);
@@ -79,7 +81,11 @@ export function TKPopper({ open, anchorRef, children, placement: preferred = "bo
         setLayout(null);
         return;
       }
-      const root = anchor.closest<HTMLElement>(".tk") ?? document.body;
+      // Same host contract as every other overlay (useOverlayPortal): the nearest
+      // `.tk` scope OR an explicit [data-tk-portal-root] (TKFrame). Matching only
+      // `.tk` let a popper inside a frame escape to the page root — the very
+      // thing OVL-010 put the attribute there to prevent.
+      const root = anchor.closest<HTMLElement>(".tk, [data-tk-portal-root]") ?? document.body;
       const anchorRect = anchor.getBoundingClientRect();
       const useFixed = root === document.body;
       const rootRect = useFixed
@@ -199,6 +205,7 @@ export function TKPopper({ open, anchorRef, children, placement: preferred = "bo
       ref={ref}
       id={id}
       data-testid={testId}
+      className={className}
       role={role}
       aria-label={ariaLabel}
       aria-modal={role === "dialog" ? true : undefined}
@@ -252,10 +259,12 @@ export interface TKTooltipProps {
   placement?: "top" | "bottom";
   disabled?: boolean;
   testId?: string;
+  className?: string;
+  /** Merged onto the root LAST — consumer values win (REU-007). */
   style?: CSSProperties;
 }
 
-export function TKTooltip({ children, content, placement = "top", disabled, testId, style }: TKTooltipProps) {
+export function TKTooltip({ children, content, placement = "top", disabled, testId, className, style }: TKTooltipProps) {
   const [open, setOpen] = useState(false);
   const id = useId();
   const wrapRef = useRef<HTMLSpanElement>(null);
@@ -287,6 +296,7 @@ export function TKTooltip({ children, content, placement = "top", disabled, test
     <span
       ref={wrapRef}
       data-testid={testId}
+      className={className}
       onMouseEnter={() => !disabled && setOpen(true)}
       onMouseLeave={() => setOpen(false)}
       onFocus={() => !disabled && setOpen(true)}

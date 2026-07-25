@@ -4,16 +4,17 @@ Use this checklist after the automated gates (lint, typecheck, unit, Playwright)
 
 ## Automated browser policy
 
-Required automation:
+Running today (`playwright.config.ts`):
 
-- Chromium for functional Playwright flows, accessibility, ARIA snapshots, keyboard behavior, motion, platform mock behavior, and Storybook smoke tests.
+- Chromium (402×874, DPR 1) over the package Storybook: render smoke + role/name per story, axe sweep (`e2e/a11y.storybook.spec.ts`), gesture perf asserts, 320 px WCAG reflow (`e2e/reflow.storybook.spec.ts`, viewport pinned in-spec) and RTL sweep (`e2e/rtl.storybook.spec.ts`).
+- Demo-app suites (`trailhead`, `surface-composer`, `showcase`) with their own axe, width-matrix, and RTL checks.
+
+Deferred — NOT in the gate today; add deliberately, not by assuming they exist:
+
+- Visual snapshot projects (Chromium and WebKit — iOS Telegram WKWebView-sensitive rendering: font rasterization, shadows, glass, backdrop filters).
 - Reduced-motion Chromium project for `prefers-reduced-motion`.
-- Visual Chromium for core visual snapshots.
-- Visual WebKit for iOS Telegram WKWebView-sensitive rendering such as font rasterization, shadows, glass, and backdrop filters.
-- Narrow 320 project for WCAG reflow and small Android Telegram viewport checks.
 - DPR 2 and DPR 3 projects for density-sensitive snapshots.
-
-Firefox is not required in the release gate right now. Add a non-visual Firefox smoke project only if maintainers decide desktop Firefox support must be explicitly guaranteed or a Firefox-specific regression is reported.
+- Firefox: only if maintainers decide desktop Firefox support must be explicitly guaranteed or a Firefox-specific regression is reported.
 
 ## Manual Telegram client smoke
 

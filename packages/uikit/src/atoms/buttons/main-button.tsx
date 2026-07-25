@@ -16,12 +16,14 @@ export interface TKMainButtonProps {
   successDuration?: number;
   disabled?: boolean;
   testId?: string;
+  className?: string;
+  /** Merged onto the root LAST — consumer values win (REU-007). */
   style?: CSSProperties;
 }
 
 /** Telegram-style bottom action button with a built-in state machine. */
 export const TKMainButton = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKMainButtonProps>(function TKMainButton(
-  { label, successLabel, status, onClick, successDuration = 1600, disabled, testId, style },
+  { label, successLabel, status, onClick, successDuration = 1600, disabled, testId, className, style },
   ref,
 ) {
   const locale = useTKLocale();
@@ -63,7 +65,7 @@ export const TKMainButton = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKMain
     <button
       type="button"
       ref={ref}
-      className="tk-press-soft tk-press"
+      className={["tk-press-soft tk-press", className].filter(Boolean).join(" ")}
       onClick={run}
       disabled={disabled}
       data-testid={testId}

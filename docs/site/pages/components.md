@@ -7,7 +7,7 @@ The public surface is grouped by workflow rather than by file.
 - Display: `TKText`, `TKTitle`, `TKCaption`, `TKBadge`, `TKDot`, `TKCounter`, `TKAvatar`, `TKAvatarStack`, `TKImage`, `TKImg`, `TKSpoiler`, `TKEllipsis`, `TKBlockquote`, `TKGallery`, `TKIcon`.
 - Lists: `TKListGroup`, `TKCell`, `TKAccordion` (lazy), `TKInfiniteList`, `TKVirtualList` (fixed row height).
 - Cards and stats: `TKCard`, `TKCardCell`, `TKCardChip`, `TKProductCardA`, `TKProductCardB`, `TKBannerCard`, `TKBookingCard`, `TKStatTile`, `TKXPHeader`, `TKLeaderboard`.
-- Loading and status: `TKSkeleton`, `TKSkeletonText`, `TKSkeletonCard`, `TKSkeletonList`, `TKSkeletonTable`, `TKProgress`, `TKRing`, `TKBars`, `TKEmptyState`, `TKTimeline`, `TKAsyncState`/`AsyncBoundary` (exactly one of loading/error/empty).
+- Loading and status: `TKSkeleton`, `TKSkeletonText`, `TKSkeletonCard`, `TKSkeletonList`, `TKSkeletonTable`, `TKProgress`, `TKRing`, `TKBars`, `TKEmptyState`, `TKTimeline`, `TKAsyncState`/`TKAsyncBoundary` (exactly one of loading/error/empty; `AsyncBoundary` remains as a deprecated alias).
 - Navigation: `TKNavStack`, `TKNavPanel`, `useNav`, `TKHeader`, `TKTabbar`, `TKTabView` (keep-mounted bottom-tab shell), `TKKeepMountTabs`/`TKKeepMountTab` + `useTabActive`, `TKSegmented`, `TKCategoryTabs`, `TKSteps`, `TKPageDots`.
 - Layout: `TKApp`, `TKAppShell`, `TKPage`, `TKSafeArea`, `TKBottomBar`, `TKVisuallyHidden`.
 - Overlays: `TKSheet`, `TKDialog`, `TKActionSheet`, `TKPopper`, `TKTooltip`, `TKToastProvider`, `useTKToast`, `TKImageViewer`, `TKFrame`.

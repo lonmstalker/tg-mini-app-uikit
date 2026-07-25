@@ -20,6 +20,8 @@ export interface TKPinInputProps {
   onBiometricRequest?: () => void;
   title?: ReactNode;
   testId?: string;
+  className?: string;
+  /** Merged onto the root LAST — consumer values win (REU-007). */
   style?: CSSProperties;
 }
 
@@ -33,6 +35,7 @@ export function TKPinInput({
   onBiometricRequest,
   title,
   testId,
+  className,
   style,
 }: TKPinInputProps) {
   const locale = useTKLocale();
@@ -101,7 +104,7 @@ export function TKPinInput({
   };
 
   return (
-    <div data-testid={testId} style={{ display: "flex", flexDirection: "column", gap: 18, ...style }}>
+    <div data-testid={testId} className={className} style={{ display: "flex", flexDirection: "column", gap: 18, ...style }}>
       {title}
       {/* Real, visually-hidden input over the dots: enables SMS one-time-code
           autofill, password managers, and hardware keyboards while the on-screen

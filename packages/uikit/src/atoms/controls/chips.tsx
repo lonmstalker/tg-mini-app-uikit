@@ -26,11 +26,13 @@ export interface TKChipProps extends TKDomProps<HTMLButtonElement> {
   removable?: boolean;
   onRemove?: () => void;
   disabled?: boolean;
+  className?: string;
+  /** Merged onto the root LAST — consumer values win (REU-007). */
   style?: CSSProperties;
 }
 
 export const TKChip = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKChipProps>(function TKChip(
-  { children, selected, onClick, onKeyDown, tabIndex, icon, removable, onRemove, disabled, style, ...dom },
+  { children, selected, onClick, onKeyDown, tabIndex, icon, removable, onRemove, disabled, className, style, ...dom },
   ref,
 ) {
   const domProps = tkDomProps(dom);
@@ -82,6 +84,7 @@ export const TKChip = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKChipProps>
   if (removable) {
     return (
       <span
+        className={className}
         style={{
           ...rootStyle,
           padding: "0 8px 0 14px",
@@ -171,10 +174,13 @@ export interface TKChipGroupProps {
   "aria-label"?: string;
   "aria-labelledby"?: string;
   testId?: string;
+  className?: string;
+  /** Merged onto the root LAST — consumer values win (REU-007). */
+  style?: CSSProperties;
 }
 
 export const TKChipGroup = /* @__PURE__ */ forwardRef<HTMLDivElement, TKChipGroupProps>(function TKChipGroup(
-  { items, multi, value, defaultValue, onChange, "aria-label": ariaLabel, "aria-labelledby": ariaLabelledby, testId },
+  { items, multi, value, defaultValue, onChange, "aria-label": ariaLabel, "aria-labelledby": ariaLabelledby, testId, className, style },
   ref,
 ) {
   const [sel, setSel] = useControllable<string | string[]>(
@@ -204,7 +210,8 @@ export const TKChipGroup = /* @__PURE__ */ forwardRef<HTMLDivElement, TKChipGrou
       aria-label={ariaLabel}
       aria-labelledby={ariaLabelledby}
       data-testid={testId}
-      style={{ display: "flex", flexWrap: "wrap", gap: 8 }}
+      className={className}
+      style={{ display: "flex", flexWrap: "wrap", gap: 8, ...style }}
     >
       {normalized.map((item, i) => (
         <TKChip

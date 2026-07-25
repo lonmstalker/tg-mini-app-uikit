@@ -21,6 +21,9 @@ export interface TKSearchProps {
   /** Expanded width used while `expandOnFocus` is enabled and the field is focused or filled. */
   expandedWidth?: number | string;
   testId?: string;
+  className?: string;
+  /** Merged onto the root LAST — consumer values win (REU-007). */
+  style?: CSSProperties;
 }
 
 export const TKSearch = /* @__PURE__ */ forwardRef<HTMLInputElement, TKSearchProps>(function TKSearch(
@@ -37,6 +40,8 @@ export const TKSearch = /* @__PURE__ */ forwardRef<HTMLInputElement, TKSearchPro
     collapsedWidth = 260,
     expandedWidth = "100%",
     testId,
+    className,
+    style,
   },
   ref,
 ) {
@@ -55,6 +60,7 @@ export const TKSearch = /* @__PURE__ */ forwardRef<HTMLInputElement, TKSearchPro
       data-testid={testId}
       data-tk-search-expand={expandOnFocus || undefined}
       data-tk-search-filled={!!val || undefined}
+      className={className}
       style={{
         display: "flex",
         alignItems: "center",
@@ -65,6 +71,7 @@ export const TKSearch = /* @__PURE__ */ forwardRef<HTMLInputElement, TKSearchPro
         // animation used to run exactly while the keyboard lifts — the single
         // worst moment to relayout every frame.
         ...expandStyle,
+        ...style,
       }}
     >
       <div

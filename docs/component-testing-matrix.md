@@ -1,6 +1,18 @@
 # Component Testing Matrix
 
-This matrix captures the required test surface for the Telegram Mini Apps UI kit. It is scoped to the current package exports and the existing unit/e2e layout.
+This matrix captures the required test surface for the Telegram Mini Apps UI kit. It is scoped to the current package exports and the existing unit/e2e layout. "Required cases" are targets; what actually runs today is listed below — do not read a required case as an existing test.
+
+## Current e2e layout
+
+The kit's e2e suite lives in `e2e/` and runs against the package Storybook (`playwright.config.ts`, `chromium` project, 402×874):
+
+- `e2e/{atoms,composites,foundation,templates,tokens}.storybook.spec.ts` — render smoke per story plus a role + accessible-name assert for each entry in the story tables.
+- `e2e/perf.storybook.spec.ts` — gesture specs asserting no per-frame layout/commits.
+- `e2e/a11y.storybook.spec.ts` — axe (`@axe-core/playwright`) sweep over the story tables, failing on serious/critical.
+- `e2e/reflow.storybook.spec.ts` — 320 px viewport (pinned via `test.use`), no-horizontal-overflow walk over the story tables (WCAG 1.4.10).
+- `e2e/rtl.storybook.spec.ts` — the same stories under `dir="rtl"` (Storybook `rtl` global), no-overflow assert.
+
+Not automated today (deferred, see `docs/release-checklist.md`): visual snapshots, DPR 2/3 projects, a reduced-motion project, WebKit. Demo apps keep their own suites under `examples/*/e2e/`.
 
 ## Forms And Inputs
 
@@ -12,7 +24,7 @@ Required cases:
 - A11y: combobox/listbox names and keyboard flow, calendar grid keyboard, file row as button, OTP/PIN accessible labels, hidden actions outside tab order.
 - Visual/e2e: focus/error/disabled/progress/preview, RTL, narrow viewport, long labels, high text scale.
 
-Best files to extend: `packages/uikit/test/m4-forms.test.tsx`, `packages/uikit/test/otp.test.tsx`, `packages/uikit/test/coverage-components.test.tsx`, `e2e/forms.spec.ts`, `e2e/a11y-keyboard.spec.ts`.
+Best files to extend: `packages/uikit/test/m4-forms.test.tsx`, `packages/uikit/test/otp.test.tsx`, `packages/uikit/test/coverage-components.test.tsx`, `e2e/composites.storybook.spec.ts`, `e2e/a11y.storybook.spec.ts`.
 
 ## Controls
 
@@ -24,7 +36,7 @@ Required cases:
 - A11y: `aria-checked`, mixed checkbox, roving tabindex, slider `aria-valuetext`, standalone switch names.
 - Visual/e2e: hover/pressed/focus/forced-colors/DPR states.
 
-Best files to extend: `packages/uikit/test/controls.test.tsx`, `packages/uikit/test/m2-roving.test.tsx`, `packages/uikit/test/m4-forms.test.tsx`, `e2e/a11y-keyboard.spec.ts`, `e2e/states.spec.ts`.
+Best files to extend: `packages/uikit/test/controls.test.tsx`, `packages/uikit/test/m2-roving.test.tsx`, `packages/uikit/test/m4-forms.test.tsx`, `e2e/atoms.storybook.spec.ts`, `e2e/a11y.storybook.spec.ts`.
 
 ## Overlays
 
@@ -36,7 +48,7 @@ Required cases:
 - A11y: `aria-modal`, `aria-labelledby`, alertdialog name, tooltip focus, toast live region.
 - Visual/e2e: open/closing animation, scrim, dark/light, reduced motion, swipe close, outside click.
 
-Best files to extend: `packages/uikit/test/m3-gestures.test.tsx`, `packages/uikit/test/toasts.test.tsx`, `e2e/gestures.spec.ts`, `e2e/a11y-keyboard.spec.ts`, `e2e/motion.spec.ts`, `e2e/states.spec.ts`.
+Best files to extend: `packages/uikit/test/m3-gestures.test.tsx`, `packages/uikit/test/toasts.test.tsx`, `e2e/composites.storybook.spec.ts`, `e2e/perf.storybook.spec.ts`, `e2e/a11y.storybook.spec.ts`.
 
 ## Navigation
 
@@ -48,7 +60,7 @@ Required cases:
 - A11y: roving controls, current tab/page semantics, passive steps not focusable, hidden panels not announced.
 - Visual/e2e: collapsing header, tabbar safe area, 320px overflow, RTL.
 
-Best files to extend: `packages/uikit/test/m6-nav.test.tsx`, `packages/uikit/test/m2-roving.test.tsx`, `packages/uikit/test/m5-display.test.tsx`, `e2e/nav.spec.ts`, `e2e/flows.spec.ts`, `e2e/aria.spec.ts`.
+Best files to extend: `packages/uikit/test/m6-nav.test.tsx`, `packages/uikit/test/m2-roving.test.tsx`, `packages/uikit/test/m5-display.test.tsx`, `e2e/composites.storybook.spec.ts`, `e2e/reflow.storybook.spec.ts`, `e2e/rtl.storybook.spec.ts`.
 
 ## Display, Media, Lists
 
@@ -60,7 +72,7 @@ Required cases:
 - A11y: spoiler hidden/revealed state, image alt, progress/ring/chart semantics, accordion expanded state, actionable list rows.
 - Visual/e2e: DPR, reduced motion, skeletons, image error/blur-up, long text.
 
-Best files to extend: `packages/uikit/test/m5-display.test.tsx`, `packages/uikit/test/coverage-components.test.tsx`, `e2e/display.spec.ts`, `e2e/states.spec.ts`, `e2e/reduced-motion.spec.ts`, `e2e/density.spec.ts`.
+Best files to extend: `packages/uikit/test/m5-display.test.tsx`, `packages/uikit/test/coverage-components.test.tsx`, `e2e/atoms.storybook.spec.ts`, `e2e/reflow.storybook.spec.ts`.
 
 ## Telegram Platform Primitives
 
@@ -72,7 +84,7 @@ Required cases:
 - A11y: fallback DOM buttons, popup/log controls.
 - Visual/e2e: Telegram theme variables, safe-area layout, header/bottom bar colors, dark/light.
 
-Best files to extend: `packages/uikit/test/telegram-capabilities.test.tsx`, `packages/uikit/test/telegram-buttons-events.test.tsx`, `packages/uikit/test/main-button.test.tsx`, `e2e/platform.spec.ts`, `e2e/tokens.spec.ts`, `e2e/m9-apps.spec.ts`.
+Best files to extend: `packages/uikit/test/telegram-capabilities.test.tsx`, `packages/uikit/test/telegram-buttons-events.test.tsx`, `packages/uikit/test/main-button.test.tsx`, `e2e/foundation.storybook.spec.ts`, `e2e/tokens.storybook.spec.ts`.
 
 ## Patterns
 
@@ -84,7 +96,7 @@ Required cases:
 - A11y: wallet/chat controls, slot selected state, leaderboard readability, coach-mark focus.
 - Visual/e2e: app screens, long labels, RTL/narrow, success and failure paths.
 
-Best files to extend: `packages/uikit/test/m7-patterns.test.tsx`, `packages/uikit/test/coverage-components.test.tsx`, `e2e/wow.spec.ts`, `e2e/flows.spec.ts`, `e2e/m9-apps.spec.ts`, `e2e/design.spec.ts`.
+Best files to extend: `packages/uikit/test/m7-patterns.test.tsx`, `packages/uikit/test/coverage-components.test.tsx`, `e2e/templates.storybook.spec.ts`, `e2e/reflow.storybook.spec.ts`, `e2e/rtl.storybook.spec.ts`.
 
 ## Current Additions
 

@@ -2,6 +2,7 @@ import { forwardRef, useCallback, useEffect, useId, useImperativeHandle, useRef,
 import { TKIconButton } from "../../atoms/buttons";
 import { mergeRefs } from "../../internal/dom";
 import { tkShouldCommit, useDragGesture } from "../../internal/useDragGesture";
+import { useControllable } from "../../internal/useControllable";
 import { useLatest } from "../../internal/useLatest";
 import { useTKLocale } from "../../foundation/i18n";
 import { Scrim, useAnchorGuard, useModalOverlay, useMountTransition, useOverlayPortal } from "./shared";
@@ -31,8 +32,12 @@ export interface TKSheetProps {
    * e.g. `[0.4, 0.9]`. Without them the sheet sizes to its content.
    */
   snapPoints?: number[];
+  /** Controlled snap point index; omit it to let the sheet own the index. */
+  snap?: number;
   /** Initial snap point index (default 0). */
   defaultSnap?: number;
+  /** Fired whenever the sheet settles on another snap point. */
+  onSnapChange?: (index: number) => void;
   /** Set to false to disable closing via scrim, Escape and swipe. */
   dismissible?: boolean;
   /**
@@ -67,7 +72,9 @@ export const TKSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSheetProps>(
     children,
     noGrabber,
     snapPoints,
+    snap: snapProp,
     defaultSnap = 0,
+    onSnapChange,
     dismissible = true,
     modal = true,
     sheetRef,
@@ -100,9 +107,14 @@ export const TKSheet = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSheetProps>(
   // Dev guard: the sheet is bottom-anchored against the portal host and expects
   // it to be viewport-sized (REU-006).
   useAnchorGuard("TKSheet", mounted, ref, portal.host);
-  const [snap, setSnap] = useState(() =>
-    snapPoints ? Math.min(Math.max(defaultSnap, 0), snapPoints.length - 1) : 0,
-  );
+  // Controlled/uncontrolled through the shared helper: a mid-life authority
+  // switch dev-warns instead of silently dropping the index (A6 / INT-004).
+  const [snap, setSnap] = useControllable({
+    value: snapProp,
+    defaultValue: snapPoints ? Math.min(Math.max(defaultSnap, 0), snapPoints.length - 1) : 0,
+    onChange: onSnapChange,
+    name: "TKSheet.snap",
+  });
   const snapRef = useLatest(snap);
   const [dragging, setDragging] = useState(false);
   // Per-gesture geometry, measured once at drag start: the finger then moves

@@ -1,18 +1,24 @@
+import type { CSSProperties } from "react";
+
 export interface TKSpinnerProps {
   color?: string;
   size?: number;
   /** Accessible busy label. Omitted → the spinner is decorative `aria-hidden` (BTN-009). */
   label?: string;
+  className?: string;
+  /** Merged onto the root LAST — consumer values win (REU-007). */
+  style?: CSSProperties;
   testId?: string;
 }
 
-export function TKSpinner({ color = "var(--tk-accent)", size = 20, label, testId }: TKSpinnerProps) {
+export function TKSpinner({ color = "var(--tk-accent)", size = 20, label, className, style, testId }: TKSpinnerProps) {
   return (
     <span
       data-testid={testId}
       role={label ? "status" : undefined}
       aria-label={label}
       aria-hidden={label ? undefined : true}
+      className={className}
       style={{
         width: size,
         height: size,
@@ -21,6 +27,7 @@ export function TKSpinner({ color = "var(--tk-accent)", size = 20, label, testId
         borderTopColor: color,
         display: "inline-block",
         animation: "tk-spin calc(700ms / var(--tk-ms)) linear infinite",
+        ...style,
       }}
     />
   );

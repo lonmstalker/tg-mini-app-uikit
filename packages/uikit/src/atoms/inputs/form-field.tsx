@@ -12,10 +12,12 @@ export interface TKFormFieldProps {
   disabled?: boolean;
   children?: ReactNode;
   testId?: string;
+  className?: string;
+  /** Merged onto the root LAST — consumer values win (REU-007). */
   style?: CSSProperties;
 }
 
-export function TKFormField({ label, hint, error, htmlFor, labelId, describedBy, required, disabled, children, testId, style }: TKFormFieldProps) {
+export function TKFormField({ label, hint, error, htmlFor, labelId, describedBy, required, disabled, children, testId, className, style }: TKFormFieldProps) {
   // Native-feeling validation feedback: a NEW error rises in (tk-rise — an
   // animation, because a transition on a freshly-mounted node never runs); an
   // error REPLACING one already showing shakes instead. Errors compare by a
@@ -30,7 +32,7 @@ export function TKFormField({ label, hint, error, htmlFor, labelId, describedBy,
     if (errKey) setAnim((a) => ({ kind: prevKey ? "shake" : "rise", n: a.n + 1 }));
   }
   return (
-    <div data-testid={testId} style={{ display: "flex", flexDirection: "column", gap: 6, opacity: disabled ? 0.55 : 1, ...style }}>
+    <div data-testid={testId} className={className} style={{ display: "flex", flexDirection: "column", gap: 6, opacity: disabled ? 0.55 : 1, ...style }}>
       {label ? (
         <label
           id={labelId}

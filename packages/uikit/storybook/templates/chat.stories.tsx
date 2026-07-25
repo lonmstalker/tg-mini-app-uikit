@@ -52,3 +52,19 @@ export const BubbleStates = {
     </AppScreen>
   ),
 } satisfies Story;
+
+// A7: an unbroken payload (a pasted link / file name) must wrap inside the
+// bubble, not stretch the thread sideways — chats get exactly this content.
+export const StressBubble = {
+  parameters: { fullBleed: true },
+  render: () => (
+    <AppScreen>
+      <TKMessageBubble
+        text={`Накладная: https://example.com/invoices/final_revision_countersigned_${"x".repeat(48)}.pdf`}
+        time="12:20"
+        testId="chat-bubble-stress"
+      />
+      <TKMessageBubble text="Ок" out status="read" time="12:21" tail />
+    </AppScreen>
+  ),
+} satisfies Story;

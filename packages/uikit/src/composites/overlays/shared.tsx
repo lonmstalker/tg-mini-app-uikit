@@ -113,14 +113,17 @@ export interface TKFrameProps {
    */
   pad?: number | boolean;
   testId?: string;
+  className?: string;
+  /** Merged onto the root LAST — consumer values win (REU-007). */
   style?: CSSProperties;
 }
 
-export function TKFrame({ children, height = 520, pad, testId, style }: TKFrameProps) {
+export function TKFrame({ children, height = 520, pad, testId, className, style }: TKFrameProps) {
   const padding = pad === true ? 16 : pad || undefined;
   return (
     <div
       data-testid={testId}
+      className={className}
       // A portal root so overlays/toasts mounted inside a demo frame anchor to it
       // instead of escaping to the page `.tk` root (OVL-010).
       data-tk-portal-root

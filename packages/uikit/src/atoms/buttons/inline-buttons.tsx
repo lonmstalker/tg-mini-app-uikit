@@ -1,6 +1,7 @@
 import { useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { tkRenderIcon, type TKIconProp } from "../icons";
 import { tkRovingNext, tkTabbableIndex } from "../../internal/roving";
+import { useControllable } from "../../internal/useControllable";
 
 export interface TKInlineButtonItem {
   id: string;
@@ -30,6 +31,8 @@ export interface TKInlineButtonsProps {
    */
   multiple?: boolean;
   testId?: string;
+  className?: string;
+  /** Merged onto the root LAST — consumer values win (REU-007). */
   style?: CSSProperties;
 }
 
@@ -43,10 +46,10 @@ export function TKInlineButtons({
   ariaLabel,
   multiple = false,
   testId,
+  className,
   style,
 }: TKInlineButtonsProps) {
-  const [inner, setInner] = useState(defaultValue);
-  const active = value ?? inner;
+  const [active, setActive] = useControllable({ value, defaultValue, onChange, name: "TKInlineButtons" });
   const height = size === "sm" ? 34 : 40;
   const fontSize = size === "sm" ? "var(--tk-fz-caption)" : "var(--tk-fz-sub)";
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -66,16 +69,14 @@ export function TKInlineButtons({
     // eslint-disable-next-line no-console
     console.warn("TKInlineButtons: pass `ariaLabel` so the radiogroup has an accessible name (CC-04).");
   }
-  const select = (id: string) => {
-    if (value === undefined) setInner(id);
-    onChange?.(id);
-  };
+  const select = (id: string) => setActive(id);
 
   return (
     <div
       role={multiple ? "group" : "radiogroup"}
       aria-label={ariaLabel}
       data-testid={testId}
+      className={className}
       style={{
         display: "flex",
         gap: 6,

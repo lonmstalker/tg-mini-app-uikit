@@ -3,7 +3,7 @@ import { useTKLocale } from "../../foundation/i18n";
 import { mergeRefs } from "../../internal/dom";
 import { useLatest } from "../../internal/useLatest";
 import { tkAnimateHeight } from "../../internal/useCollapse";
-import { TKIcon } from "../../atoms/icons";
+import { TKIcon, tkRenderIcon, type TKIconProp } from "../../atoms/icons";
 
 export type TKNoticeBarTone = "accent" | "green" | "orange" | "red";
 
@@ -18,8 +18,9 @@ const COPY_STYLE = { whiteSpace: "nowrap", paddingRight: "var(--tk-sp-7)" } as c
 
 export interface TKNoticeBarProps extends HTMLAttributes<HTMLDivElement> {
   tone?: TKNoticeBarTone;
-  /** Leading icon, rendered decorative (hidden from AT). */
-  icon?: ReactNode;
+  /** Built-in icon name, or a custom element for glyphs outside the set (REU-004);
+   *  rendered decorative (hidden from AT). */
+  icon?: TKIconProp;
   /** Trailing action (link/button); receives its own hit area, never marquees. */
   action?: ReactNode;
   /** Show a close button. Visibility stays with the consumer: the bar collapses
@@ -112,7 +113,7 @@ export const TKNoticeBar = /* @__PURE__ */ forwardRef<HTMLDivElement, TKNoticeBa
     >
       {icon ? (
         <span aria-hidden="true" style={{ display: "inline-flex", flexShrink: 0, color: solid }}>
-          {icon}
+          {tkRenderIcon(icon, { size: 17 })}
         </span>
       ) : null}
       <div ref={clipRef} style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>

@@ -22,6 +22,8 @@ export interface TKIconButtonProps extends TKDomProps<HTMLButtonElement> {
    */
   size?: TKIconButtonSize | number;
   onClick?: (e: MouseEvent<HTMLButtonElement>) => void;
+  className?: string;
+  /** Merged onto the root LAST — consumer values win (REU-007). */
   style?: CSSProperties;
   active?: boolean;
   disabled?: boolean;
@@ -46,6 +48,7 @@ export const TKIconButton = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKIcon
     variant = "tonal",
     size = "md",
     onClick,
+    className,
     style,
     active,
     disabled,
@@ -70,7 +73,7 @@ export const TKIconButton = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKIcon
     <button
       type={type}
       ref={ref}
-      className="tk-press"
+      className={["tk-press", className].filter(Boolean).join(" ")}
       onClick={onClick}
       onKeyDown={onKeyDown}
       onMouseEnter={onMouseEnter}

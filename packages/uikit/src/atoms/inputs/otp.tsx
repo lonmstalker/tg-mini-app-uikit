@@ -20,6 +20,8 @@ export interface TKOTPProps {
   /** Name for form submission of the assembled code. */
   name?: string;
   testId?: string;
+  className?: string;
+  /** Merged onto the root LAST — consumer values win (REU-007). */
   style?: CSSProperties;
 }
 
@@ -36,6 +38,7 @@ export const TKOTP = /* @__PURE__ */ forwardRef<HTMLInputElement, TKOTPProps>(fu
     resendLabel,
     name,
     testId,
+    className,
     style,
   },
   forwardedRef,
@@ -58,7 +61,7 @@ export const TKOTP = /* @__PURE__ */ forwardRef<HTMLInputElement, TKOTPProps>(fu
     // Mouse-only convenience: the real control is the full-cover hidden <input>
     // below (focusable, aria-labelled); this click just re-focuses it from the
     // caption area, so the wrapper stays presentational.
-    <div role="presentation" data-testid={testId} onClick={() => ref.current?.focus()} style={{ cursor: "text", position: "relative", ...style }}>
+    <div role="presentation" data-testid={testId} className={className} onClick={() => ref.current?.focus()} style={{ cursor: "text", position: "relative", ...style }}>
       <input
         ref={mergedRef}
         value={v}

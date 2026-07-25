@@ -138,6 +138,8 @@ export interface TKNavStackProps {
   /** Show the native Telegram Back button while depth > 1 (default true). */
   backButton?: boolean;
   testId?: string;
+  className?: string;
+  /** Merged onto the root LAST — consumer values win (REU-007). */
   style?: CSSProperties;
 }
 
@@ -164,6 +166,7 @@ export function TKNavStack({
   swipeBack = "edge",
   backButton = true,
   testId,
+  className,
   style,
 }: TKNavStackProps) {
   const keyRef = useRef(1);
@@ -554,7 +557,7 @@ export function TKNavStack({
         ref={rootRef}
         // Self-apply the `.tk` token scope so the stack's tokens resolve even when
         // it's mounted outside a TKProvider subtree (NAV2-003).
-        className="tk"
+        className={["tk", className].filter(Boolean).join(" ")}
         data-testid={testId}
         {...handlers}
         style={{

@@ -1,9 +1,5 @@
 import { expect, test } from "@playwright/test";
-
-const tokenStories = [
-  { id: "tokens-typography--type-scale", role: "heading", name: "Checkout summary" },
-  { id: "tokens-semantic-tokens--semantic-swatches", text: "Semantic tokens" },
-] as const;
+import { tokenStories } from "./story-index";
 
 test.describe("token Storybook stories", () => {
   for (const story of tokenStories) {

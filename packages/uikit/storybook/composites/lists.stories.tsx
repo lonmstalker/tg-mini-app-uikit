@@ -19,7 +19,15 @@ export default meta;
 type Story = StoryObj;
 
 const scrollArea = (children: ReactNode) => (
-  <div style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: 16, display: "flex", flexDirection: "column", gap: 14 }}>
+  // Once the stress content makes this actually scroll, it must be keyboard-
+  // reachable and named (axe: scrollable-region-focusable) — same contract a
+  // real app scroller carries.
+  <div
+    tabIndex={0}
+    role="region"
+    aria-label="List scroll area"
+    style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: 16, display: "flex", flexDirection: "column", gap: 14 }}
+  >
     {children}
   </div>
 );
@@ -73,6 +81,25 @@ export const LoadingAndVirtualization = {
             renderItem={(item) => <TKCell title={item} />}
           />
         </>,
+      )}
+    </Screen>
+  ),
+} satisfies Story;
+
+// A7: unbroken titles and missing fields — the cell grid must shrink
+// (minmax(0,1fr), REU-001/008) and ellipsize, never push the screen sideways.
+const UNBROKEN = "Grundstücksverkehrsgenehmigungszuständigkeitsübertragungsverordnung";
+
+export const StressContent = {
+  parameters: { fullBleed: true },
+  render: () => (
+    <Screen>
+      {scrollArea(
+        <TKListGroup title={UNBROKEN} footer="Строки выше — с неразрывным заголовком, без иконки, без значения.">
+          <TKCell icon="user" title={UNBROKEN} subtitle={`${UNBROKEN} ${UNBROKEN}`} chevron />
+          <TKCell title="Без иконки и значения" />
+          <TKCell icon="bell" title="Уведомления" value={UNBROKEN} />
+        </TKListGroup>,
       )}
     </Screen>
   ),
