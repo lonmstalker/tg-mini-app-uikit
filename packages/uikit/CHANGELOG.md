@@ -1,5 +1,37 @@
 # tg-mini-app-uikit
 
+## 0.8.1
+
+### Patch Changes
+
+- 714b0d7: Component-rules manual audit: keyboard, a11y and real-content fixes.
+
+  - `TKDialog` decides "is the keyboard open" through the kit's keyboard
+    controller instead of raw `innerHeight − visualViewport.height` — no more
+    jump in the KB-4 transient window; under a host-managed viewport (Telegram
+    iOS) plain CSS centering is kept.
+  - `TKOnboardingTooltip` no longer center-scrolls the page while a text field
+    owns focus (the KB-3 settle-scroll class), and a storage-backed tour keeps
+    the `.tk` portal host — it used to fall back to `document.body`/`fixed`.
+  - `TKCalendar`/`TKDateInput` month/year lists scroll their own listbox only,
+    never `scrollIntoView` (which also walks page-level scrollable ancestors);
+    the native `TKDateInput` variant forwards consumer `className`/`style`.
+  - `TKHeader` survives an unbroken title: the title column shrinks and
+    ellipsizes instead of pushing the actions off a 320px viewport; large
+    titles break long words.
+  - `TKChip` applies the consumer `className` on the default (non-removable)
+    root too; `TKEllipsis` with controlled `expanded={true}` renders unclamped
+    from the first paint and in SSR markup.
+  - A11y: skeletons are `aria-hidden` decorative placeholders (overridable via
+    props); the product-card favorite toggle exposes `aria-pressed`.
+  - `@tg-mini-app/telegram`: `TKViewportForensics` portals into the nearest
+    `.tk` / `[data-tk-portal-root]` host and stays `absolute` there (`fixed`
+    only for the bare-body fallback), so the debug overlay itself survives the
+    keyboard animation it exists to observe.
+
+- Updated dependencies [714b0d7]
+  - @tg-mini-app/telegram@0.4.2
+
 ## 0.8.0
 
 Reuse-audit waves 2–3 (REU-001…REU-012). **Breaking (0.x minor):**
@@ -41,7 +73,7 @@ re-exports the new launch/debug surface through its platform shim.
 
 - `TKAppShell`: the app's outermost sized element — a flex column capped at
   the bridge's STABLE viewport (`min(100dvh, var(--tg-viewport-stable-height,
-  100dvh))`, `.tk-app-shell` in tokens.css) and eased with the kit's
+100dvh))`, `.tk-app-shell` in tokens.css) and eased with the kit's
   keyboard-shift tokens. Bare `100dvh` tracks the layout viewport, which
   Telegram iOS resizes LAST on keyboard open — the page scrolled to the
   composer and snapped back (the two-jump keyboard jerk,
