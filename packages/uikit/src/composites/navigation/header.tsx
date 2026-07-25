@@ -138,25 +138,38 @@ export function TKHeader({
           aria-hidden={large && !isCollapsed ? true : undefined}
           style={{
             flex: 1,
+            // REU-001: without minWidth:0 a flex item floors at min-content, so
+            // an unbroken title forced the row wider than the viewport and
+            // pushed the actions off-screen (caught by the 320px reflow sweep).
+            minWidth: 0,
             textAlign: "center",
             marginRight: showBack ? 18 : 0,
             opacity: !large || isCollapsed ? 1 : 0,
             transition: "opacity var(--tk-t2) var(--tk-ease)",
           }}
         >
-          <div {...headingProps} style={{ fontSize: "var(--tk-fz-body)", fontWeight: 600 }}>{title}</div>
+          <div
+            {...headingProps}
+            style={{ fontSize: "var(--tk-fz-body)", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+          >
+            {title}
+          </div>
           {subtitle && !large ? (
-            <div style={{ fontSize: "var(--tk-fz-caption)", color: "var(--tk-text-2)" }}>{subtitle}</div>
+            <div style={{ fontSize: "var(--tk-fz-caption)", color: "var(--tk-text-2)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {subtitle}
+            </div>
           ) : null}
         </div>
-        {actions ? <div style={{ display: "flex", gap: 6 }}>{actions}</div> : null}
+        {actions ? <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>{actions}</div> : null}
       </div>
       {large ? (
         <div ref={largeTitle.ref} aria-hidden={isCollapsed || undefined} style={largeTitle.style}>
           <div style={{ opacity: isCollapsed ? 0 : 1, transition: "opacity var(--tk-t2) var(--tk-ease)" }}>
-            <div {...headingProps} style={{ fontSize: "var(--tk-fz-title1)", fontWeight: 700, letterSpacing: 0 }}>{title}</div>
+            {/* Large titles wrap; `anywhere` also breaks unbroken words instead
+                of letting them escape the 320px viewport (REU-001). */}
+            <div {...headingProps} style={{ fontSize: "var(--tk-fz-title1)", fontWeight: 700, letterSpacing: 0, overflowWrap: "anywhere" }}>{title}</div>
             {subtitle ? (
-              <div style={{ fontSize: "var(--tk-fz-sub)", color: "var(--tk-text-2)" }}>{subtitle}</div>
+              <div style={{ fontSize: "var(--tk-fz-sub)", color: "var(--tk-text-2)", overflowWrap: "anywhere" }}>{subtitle}</div>
             ) : null}
           </div>
         </div>

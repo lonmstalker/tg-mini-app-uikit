@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
 import {
-  AsyncBoundary,
+  TKAsyncBoundary,
   TKAsyncState,
   TKBars,
   TKButton,
@@ -165,15 +165,15 @@ export const AsyncStates = {
   // The one place a screen branches loading → skeleton, error → retry, empty.
   render: () => (
     <Grid>
-      <AsyncBoundary loading>
+      <TKAsyncBoundary loading>
         <div>ready</div>
-      </AsyncBoundary>
-      <AsyncBoundary error onRetry={() => {}} errorTitle="Couldn't load" errorText="Check your connection and try again." retryLabel="Retry">
+      </TKAsyncBoundary>
+      <TKAsyncBoundary error onRetry={() => {}} errorTitle="Couldn't load" errorText="Check your connection and try again." retryLabel="Retry">
         <div>ready</div>
-      </AsyncBoundary>
-      <AsyncBoundary empty emptyIcon="search" emptyTitle="No results" emptyText="Try another search.">
+      </TKAsyncBoundary>
+      <TKAsyncBoundary empty emptyIcon="search" emptyTitle="No results" emptyText="Try another search.">
         <div>ready</div>
-      </AsyncBoundary>
+      </TKAsyncBoundary>
       <TKAsyncState status="empty" emptyIcon="ticket" emptyTitle="Nothing here yet" emptyText="It will show up here." />
     </Grid>
   ),

@@ -44,6 +44,8 @@ export interface TKSwipeCellProps {
    */
   radius?: string | number;
   testId?: string;
+  className?: string;
+  /** Merged onto the root LAST — consumer values win (REU-007). */
   style?: CSSProperties;
 }
 
@@ -66,7 +68,7 @@ const OPEN_EVENT = "tk-swipecell-open";
 // Stable empty default: a fresh `[]` per render breaks memo/deps downstream.
 const NO_ACTIONS: TKSwipeAction[] = [];
 
-export function TKSwipeCell({ children, leading = NO_ACTIONS, trailing = NO_ACTIONS, fullSwipe = false, radius, testId, style }: TKSwipeCellProps) {
+export function TKSwipeCell({ children, leading = NO_ACTIONS, trailing = NO_ACTIONS, fullSwipe = false, radius, testId, className, style }: TKSwipeCellProps) {
   const haptics = useOptionalHaptics();
   const locale = useTKLocale();
   const [offset, setOffset] = useState(0);
@@ -218,6 +220,7 @@ export function TKSwipeCell({ children, leading = NO_ACTIONS, trailing = NO_ACTI
     <div
       ref={rootRef}
       data-testid={testId}
+      className={className}
       {...drag.bind()}
       style={{
         position: "relative",

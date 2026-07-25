@@ -62,6 +62,21 @@ for (const locale of LOCALES) {
   });
 }
 
+test("profile: rename dialog carries a labelled text field and updates the greeting", async ({ page }) => {
+  // Demo surface for the KB-4 dialog fix: on a real device this dialog must
+  // stay centered in the visible viewport while the keyboard is open.
+  await page.goto("/?fast=1");
+  await dismissWelcome(page);
+  await page.getByTestId("tabbar").getByRole("button", { name: "Profile" }).click();
+  await page.getByTestId("profile-rename").click();
+  const dialog = page.getByRole("alertdialog", { name: "Display name" });
+  await expect(dialog).toBeVisible();
+  await dialog.getByLabel("Name", { exact: true }).fill("Marta");
+  await dialog.getByTestId("rename-save").click();
+  await expect(dialog).not.toBeVisible();
+  await expect(page.getByText("Hi, Marta")).toBeVisible();
+});
+
 test("platform lab: radius slider and dark toggle re-skin the app live", async ({ page }) => {
   await page.goto("/?fast=1");
   await dismissWelcome(page);

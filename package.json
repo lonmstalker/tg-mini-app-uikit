@@ -28,6 +28,7 @@
     "check:api": "node scripts/check-api-surface.mjs",
     "check:api:update": "node scripts/check-api-surface.mjs --update",
     "typecheck": "npm run typecheck -w @tg-mini-app/telegram && npm run typecheck -w tg-mini-app-uikit",
+    "check:rules": "node scripts/component-rules/index.mjs",
     "check:stories": "node scripts/check-stories-coverage.mjs",
     "check:animatable": "node scripts/check-animatable-props.mjs",
     "changeset": "changeset",

@@ -17,6 +17,10 @@ export const TKSkeleton = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSkeletonP
     <div
       ref={ref}
       className={["tk-skel", className ?? ""].filter(Boolean).join(" ")}
+      // Decorative placeholder: hidden from the accessibility tree so a screen
+      // reader never lands on an empty box — the "loading" announcement is the
+      // async boundary's job, not the skeleton's. Overridable via `...rest`.
+      aria-hidden
       data-testid={testId}
       {...rest}
       style={{ width, height, borderRadius: radius, ...style }}
@@ -36,6 +40,7 @@ export const TKSkeletonCard = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSkele
     <div
       ref={ref}
       className={["tk-skel-group", className ?? ""].filter(Boolean).join(" ")}
+      aria-hidden
       data-testid={testId}
       {...rest}
       style={{
@@ -69,6 +74,7 @@ export const TKSkeletonList = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSkele
     <div
       ref={ref}
       className={["tk-skel-group", className ?? ""].filter(Boolean).join(" ")}
+      aria-hidden
       data-testid={testId}
       {...rest}
       style={{
@@ -125,6 +131,7 @@ export const TKSkeletonTable = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSkel
     <div
       ref={ref}
       className={["tk-skel-group", className ?? ""].filter(Boolean).join(" ")}
+      aria-hidden
       data-testid={testId}
       {...rest}
       style={{
@@ -177,6 +184,7 @@ export const TKSkeletonText = /* @__PURE__ */ forwardRef<HTMLDivElement, TKSkele
     <div
       ref={ref}
       className={className}
+      aria-hidden
       data-testid={testId}
       {...rest}
       style={{ display: "flex", flexDirection: "column", gap: 8, ...style }}

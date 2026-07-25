@@ -192,6 +192,8 @@ export const TKProductCardB = /* @__PURE__ */ forwardRef<HTMLDivElement, TKProdu
           type="button"
           className="tk-press"
           aria-label={locale.toggleFavorite}
+          // C3: the toggle state must not live in the heart's color alone.
+          aria-pressed={isFav}
           onClick={() => setFav(!isFav)}
           style={{
             position: "absolute",

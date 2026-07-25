@@ -1,7 +1,16 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import { TKSlider, TKStepper } from "../src/atoms/controls";
+import { TKChip, TKSlider, TKStepper } from "../src/atoms/controls";
+
+describe("TKChip", () => {
+  it("appends the consumer className on the default (non-removable) root too (REU-007)", () => {
+    render(<TKChip className="custom">Tag</TKChip>);
+    const chip = screen.getByRole("button", { name: "Tag" });
+    expect(chip.className).toContain("tk-press");
+    expect(chip.className).toContain("custom");
+  });
+});
 
 describe("TKSlider", () => {
   const getSlider = (name = "Volume") => screen.getByRole("slider", { name });

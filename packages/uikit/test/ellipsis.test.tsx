@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { TKEllipsis, TKLocaleProvider, ruLocale } from "../src/index";
 import { tkAnimateHeight } from "../src/internal/useCollapse";
@@ -21,6 +22,18 @@ describe("TKEllipsis", () => {
   it("shows no toggle button when the text does not overflow the clamp", () => {
     render(<TKEllipsis testId="e">{LONG}</TKEllipsis>);
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
+  });
+
+  it("controlled expanded={true} emits unclamped markup on the first render / SSR", () => {
+    // SSR discriminates: effects never run there, so the clamp state must seed
+    // from the CONTROLLED prop, not only defaultExpanded — otherwise the
+    // server (and first client paint) clamps while aria-expanded reports true.
+    const html = renderToString(
+      <TKEllipsis expanded collapsible>
+        {LONG}
+      </TKEllipsis>,
+    );
+    expect(html).not.toContain("line-clamp");
   });
 
   it("clamps visually but keeps the full text readable in the DOM", () => {

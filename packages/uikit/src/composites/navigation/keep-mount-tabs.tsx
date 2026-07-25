@@ -1,4 +1,4 @@
-import { Children, createContext, isValidElement, useContext, useDeferredValue, useEffect, useRef, type ReactNode } from "react";
+import { Children, createContext, isValidElement, useContext, useDeferredValue, useEffect, useRef, type CSSProperties, type ReactNode } from "react";
 import { useLazyRef } from "../../internal/useLazyRef";
 
 /**
@@ -23,6 +23,10 @@ export interface TKKeepMountTabsProps {
   scrollToTop?: boolean;
   /** Rendered on the ACTIVE tab's wrapper (the only visible one). */
   testId?: string;
+  /** Applied to the ACTIVE tab's wrapper — the only element this renders. */
+  className?: string;
+  /** Merged onto the active wrapper LAST — consumer values win (REU-007). */
+  style?: CSSProperties;
   children?: ReactNode;
 }
 
@@ -48,7 +52,7 @@ export function useTabActive(): boolean {
   return useContext(TKTabActiveContext);
 }
 
-export function TKKeepMountTabs({ active, scrollToTop = true, testId, children }: TKKeepMountTabsProps) {
+export function TKKeepMountTabs({ active, scrollToTop = true, testId, className, style, children }: TKKeepMountTabsProps) {
   // A heavy first mount rides a deferred (interruptible) render: whatever
   // updated `active` (the tabbar pill) commits and paints first.
   const shown = useDeferredValue(active);
@@ -86,10 +90,11 @@ export function TKKeepMountTabs({ active, scrollToTop = true, testId, children }
             ref={id === shown ? activeWrapperRef : undefined}
             data-tk-keep-tab={id}
             data-testid={id === shown ? testId : undefined}
+            className={id === shown ? className : undefined}
             {...(id === shown ? null : { inert: true })}
             style={
               id === shown
-                ? { display: "contents" }
+                ? { display: "contents", ...style }
                 : {
                     // Out of flow but NOT display:none — the browser keeps the
                     // hidden tab's inner scroll positions. content-visibility

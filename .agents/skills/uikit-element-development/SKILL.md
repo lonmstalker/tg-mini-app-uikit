@@ -105,5 +105,6 @@ Do not use this skill for one-off demo-only content unless it becomes reusable, 
 
 # Reference loading
 
+- Read `docs/component-rules.md` (repo root) before defining any component contract — the incident-backed rules for API shape and TMA trap absorption.
 - Read `references/quality-checklists.md` before implementing a non-trivial element.
 - Read `references/element-patterns.md` when the user asks for a new kind of element, when the element type is unclear, or when adding a Telegram runtime surface.

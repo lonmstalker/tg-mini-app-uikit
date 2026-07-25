@@ -175,10 +175,14 @@ export const ru: Dict = {
   "common.cancel": "Отмена",
   "common.confirm": "Подтвердить",
   "common.done": "Готово",
+  "common.save": "Сохранить",
 
   // Profile
   "profile.title": "Профиль",
   "profile.greeting": "Привет, {name}",
+  "profile.rename": "Отображаемое имя",
+  "profile.renameSub": "Диалог с текстовым полем — проверка клавиатуры",
+  "profile.renameLabel": "Имя",
   "profile.walletSection": "TON-кошелёк",
   "wallet.connect": "Подключить кошелёк",
   "wallet.name": "Tonkeeper",

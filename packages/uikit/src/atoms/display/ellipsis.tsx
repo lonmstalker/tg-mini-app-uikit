@@ -10,6 +10,7 @@ import {
 import { useTKLocale } from "../../foundation/i18n";
 import { tkAnimateHeight } from "../../internal/useCollapse";
 import { useIsomorphicLayoutEffect } from "../../internal/useIsomorphicLayoutEffect";
+import { useControllable } from "../../internal/useControllable";
 
 export interface TKEllipsisProps extends Omit<HTMLAttributes<HTMLDivElement>, "onToggle"> {
   /** Visible line count while collapsed. */
@@ -18,6 +19,8 @@ export interface TKEllipsisProps extends Omit<HTMLAttributes<HTMLDivElement>, "o
   expandLabel?: ReactNode;
   /** Collapse action label (default: locale `showLess`). */
   collapseLabel?: ReactNode;
+  /** Controlled expanded state; omit it to let the component own the flag. */
+  expanded?: boolean;
   defaultExpanded?: boolean;
   onToggle?: (expanded: boolean) => void;
   /** Allow collapsing back after expanding. Default one-way, like Telegram's "more". */
@@ -38,6 +41,7 @@ export const TKEllipsis = /* @__PURE__ */ forwardRef<HTMLDivElement, TKEllipsisP
     children,
     expandLabel,
     collapseLabel,
+    expanded: expandedProp,
     defaultExpanded = false,
     onToggle,
     collapsible,
@@ -50,10 +54,19 @@ export const TKEllipsis = /* @__PURE__ */ forwardRef<HTMLDivElement, TKEllipsisP
 ) {
   const locale = useTKLocale();
   const textRef = useRef<HTMLDivElement>(null);
-  const [expanded, setExpanded] = useState(defaultExpanded);
+  // Controlled/uncontrolled through the shared helper so a mid-life authority
+  // switch dev-warns instead of silently dropping the flag (A6 / INT-004).
+  const [expanded, setExpanded] = useControllable({
+    value: expandedProp,
+    defaultValue: defaultExpanded,
+    onChange: onToggle,
+    name: "TKEllipsis.expanded",
+  });
   // Rendered clamp lags `expanded` on collapse: the clamp re-applies only after
   // the shrink animation, so the text folds up instead of snapping to "…" first.
-  const [clamped, setClamped] = useState(!defaultExpanded);
+  // Seeded from the CONTROLLED prop too: `expanded={true}` on the first render
+  // must paint (and SSR) unclamped, not clamp until an effect catches up.
+  const [clamped, setClamped] = useState(!(expandedProp ?? defaultExpanded));
   const [overflowing, setOverflowing] = useState(false);
   const pendingFrom = useRef<number | null>(null);
   const animRef = useRef<Animation | null>(null);
@@ -146,8 +159,15 @@ export const TKEllipsis = /* @__PURE__ */ forwardRef<HTMLDivElement, TKEllipsisP
       }
       if (!anim) setClamped(true);
     }
-    onToggle?.(next);
   };
+
+  // Controlled mode: the parent can flip `expanded` without going through the
+  // button, so keep the rendered clamp in step with it (the animated collapse
+  // path above owns the transition when the flip starts here).
+  useEffect(() => {
+    if (expandedProp === undefined) return;
+    setClamped(!expandedProp);
+  }, [expandedProp]);
 
   const clampStyle: CSSProperties = clamped
     ? {

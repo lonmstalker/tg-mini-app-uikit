@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useMemo, useRef, type ReactNode } from "react";
+import { forwardRef, useEffect, useMemo, useRef, type CSSProperties, type ReactNode } from "react";
 import { TKIcon, tkRenderIcon, type TKIconProp } from "../icons";
 import { mergeRefs } from "../../internal/dom";
 import { useControllable } from "../../internal/useControllable";
@@ -17,6 +17,9 @@ export interface TKSelectableProps {
   name?: string;
   value?: string;
   testId?: string;
+  className?: string;
+  /** Merged onto the root LAST — consumer values win (REU-007). */
+  style?: CSSProperties;
 }
 
 export const TKSelectable = /* @__PURE__ */ forwardRef<HTMLInputElement, TKSelectableProps>(function TKSelectable(
@@ -33,6 +36,8 @@ export const TKSelectable = /* @__PURE__ */ forwardRef<HTMLInputElement, TKSelec
     name,
     value,
     testId,
+    className,
+    style,
   },
   ref,
 ) {
@@ -56,7 +61,7 @@ export const TKSelectable = /* @__PURE__ */ forwardRef<HTMLInputElement, TKSelec
   return (
     <label
       data-testid={testId}
-      className="tk-press tk-press-soft"
+      className={["tk-press tk-press-soft", className].filter(Boolean).join(" ")}
       style={{
         display: "flex",
         alignItems: "center",
@@ -66,6 +71,7 @@ export const TKSelectable = /* @__PURE__ */ forwardRef<HTMLInputElement, TKSelec
         background: isChecked ? "var(--tk-accent-06)" : "transparent",
         opacity: disabled ? 0.55 : 1,
         cursor: disabled ? "default" : "pointer",
+        ...style,
       }}
     >
       <input

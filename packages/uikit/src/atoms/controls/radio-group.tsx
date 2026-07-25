@@ -1,4 +1,4 @@
-import { forwardRef, useId, useRef } from "react";
+import { forwardRef, useId, useRef, type CSSProperties } from "react";
 import { tkRovingNext, tkTabbableIndex } from "../../internal/roving";
 import { useControllable } from "../../internal/useControllable";
 import { tkOptionItem, type TKOption } from "../../foundation/options";
@@ -11,6 +11,9 @@ export interface TKRadioGroupProps extends TKFieldProps<string> {
   /** Name the group directly when there's no visible field `label` (CTL-010). */
   "aria-label"?: string;
   "aria-labelledby"?: string;
+  className?: string;
+  /** Merged onto the root LAST — consumer values win (REU-007). */
+  style?: CSSProperties;
 }
 
 export const TKRadioGroup = /* @__PURE__ */ forwardRef<HTMLDivElement, TKRadioGroupProps>(function TKRadioGroup(
@@ -29,6 +32,8 @@ export const TKRadioGroup = /* @__PURE__ */ forwardRef<HTMLDivElement, TKRadioGr
     testId,
     "aria-label": ariaLabel,
     "aria-labelledby": ariaLabelledby,
+    className,
+    style,
   },
   ref,
 ) {
@@ -45,6 +50,9 @@ export const TKRadioGroup = /* @__PURE__ */ forwardRef<HTMLDivElement, TKRadioGr
   const reactId = useId();
   const labelId = label != null ? `${reactId}-label` : undefined;
   const descId = hint != null || error != null ? `${reactId}-desc` : undefined;
+  // The rendered root differs by shape: with field chrome TKFormField is the
+  // root, without it the radiogroup itself is (REU-007).
+  const wrapped = label != null || hint != null || error != null;
   const group = (
     <div
       ref={ref}
@@ -58,7 +66,8 @@ export const TKRadioGroup = /* @__PURE__ */ forwardRef<HTMLDivElement, TKRadioGr
       aria-required={required || undefined}
       aria-invalid={error != null ? true : undefined}
       data-testid={testId}
-      style={{ display: "flex", flexDirection: "column", gap: 12 }}
+      className={wrapped ? undefined : className}
+      style={{ display: "flex", flexDirection: "column", gap: 12, ...(wrapped ? null : style) }}
     >
       {items.map((item, i) => {
         const on = item.value === val;
@@ -133,9 +142,9 @@ export const TKRadioGroup = /* @__PURE__ */ forwardRef<HTMLDivElement, TKRadioGr
       {name != null ? <input type="hidden" name={name} value={val} /> : null}
     </div>
   );
-  if (label != null || hint != null || error != null) {
+  if (wrapped) {
     return (
-      <TKFormField label={label} hint={hint} error={error} required={required} disabled={disabled} labelId={labelId} describedBy={descId}>
+      <TKFormField label={label} hint={hint} error={error} required={required} disabled={disabled} labelId={labelId} describedBy={descId} className={className} style={style}>
         {group}
       </TKFormField>
     );

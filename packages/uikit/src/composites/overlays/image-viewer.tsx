@@ -37,6 +37,9 @@ export interface TKImageViewerProps {
   /** Source element of the tapped preview — the image grows out of its rect (FLIP). */
   originRef?: RefObject<HTMLElement | null>;
   testId?: string;
+  className?: string;
+  /** Merged onto the root LAST — consumer values win (REU-007). */
+  style?: CSSProperties;
 }
 
 const MIN_SCALE = 1;
@@ -89,7 +92,7 @@ const imgStyle: CSSProperties = {
  * decoration); entrances/exits collapse via the motion tokens.
  */
 export const TKImageViewer = /* @__PURE__ */ forwardRef<HTMLDivElement, TKImageViewerProps>(function TKImageViewer(
-  { open, onClose, images, index: indexProp, defaultIndex, onIndexChange, originRef, testId },
+  { open, onClose, images, index: indexProp, defaultIndex, onIndexChange, originRef, testId, className, style },
   forwardedRef,
 ) {
   const locale = useTKLocale();
@@ -554,6 +557,7 @@ export const TKImageViewer = /* @__PURE__ */ forwardRef<HTMLDivElement, TKImageV
         ref={mergeRefs(stageRef, forwardedRef)}
         {...panelProps}
         data-testid={testId}
+        className={className}
         aria-label={current.alt}
         onKeyDown={onKeyDown}
         onPointerDown={onPointerDown}
@@ -579,6 +583,7 @@ export const TKImageViewer = /* @__PURE__ */ forwardRef<HTMLDivElement, TKImageV
           animation: closing
             ? `tk-viewer-fade ${exitViaSwipe ? "var(--tk-t3)" : "var(--tk-t2)"} var(--tk-ease) both`
             : undefined,
+          ...style,
         }}
       >
         <div ref={trackRef} style={{ position: "absolute", inset: 0 }}>

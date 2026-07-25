@@ -5,6 +5,7 @@ import {
   TKChipsInput,
   TKDateInput,
   TKMaskedInput,
+  TKNativeField,
   TKPhoneInput,
   TKPinInput,
   TKTimeInput,
@@ -75,6 +76,21 @@ export const CalendarRangeDrag = {
   render: () => <RangeCalendarDemo />,
 } satisfies Story;
 
+/** TKNativeField is fully controlled — the story owns the value. */
+function NativeMonthField() {
+  const [month, setMonth] = useState("2026-07");
+  return (
+    <TKNativeField
+      type="month"
+      icon="calendar"
+      label="Billing month"
+      value={month}
+      onChange={setMonth}
+      hint="TKNativeField wraps any native input type"
+    />
+  );
+}
+
 export const NativePickers = {
   parameters: { fullBleed: true },
   render: () => (
@@ -83,6 +99,9 @@ export const NativePickers = {
         {/* native renders the OS date/time picker + on-screen keyboard. */}
         <TKDateInput native label="Birthday" defaultValue={new Date(2000, 0, 1)} hint="Opens the OS date picker" />
         <TKTimeInput native label="Reminder" defaultValue="09:30" hint="Opens the OS time picker" />
+        {/* The shared field chrome under both: any `<input type>` the OS owns,
+            wearing the kit's label/hint/error wiring. */}
+        <NativeMonthField />
       </Narrow>
     </AppScreen>
   ),

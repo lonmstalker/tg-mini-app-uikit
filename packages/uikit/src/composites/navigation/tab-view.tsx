@@ -20,6 +20,9 @@ export interface TKTabViewProps {
   ariaLabel?: string;
   /** testId for the tabbar. */
   testId?: string;
+  className?: string;
+  /** Merged onto the root LAST — consumer values win (REU-007). */
+  style?: CSSProperties;
   /** Derive a testId for each keep-mounted panel wrapper. */
   panelTestId?: (index: number) => string;
   /** Forwarded to the content / tabbar wrappers (e.g. for coach-mark anchoring). */
@@ -44,6 +47,8 @@ export function TKTabView({
   safeArea,
   ariaLabel,
   testId,
+  className,
+  style,
   panelTestId,
   contentRef,
   tabbarRef,
@@ -57,7 +62,7 @@ export function TKTabView({
   const shownPanel = useDeferredValue(active);
   const tabbarVisible = !hideTabbar && !keyboard.visible;
   return (
-    <div style={{ height: "100%", display: "flex", flexDirection: "column", minHeight: 0 }}>
+    <div className={className} style={{ height: "100%", display: "flex", flexDirection: "column", minHeight: 0, ...style }}>
       <div ref={contentRef} style={{ position: "relative", flex: 1, minHeight: 0 }}>
         {panels.map((panel, index) => (
           <div

@@ -7,6 +7,7 @@ exports[`public API surface > keeps the set of named exports stable 1`] = `
   "TKActionSheet",
   "TKApp",
   "TKAppShell",
+  "TKAsyncBoundary",
   "TKAsyncState",
   "TKAvatar",
   "TKAvatarStack",

@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { forwardRef, useEffect, useMemo, useRef, useState, type ReactNode, type CSSProperties } from "react";
 import { TKIcon } from "../icons";
 import { mergeRefs } from "../../internal/dom";
 import { useTKLocale } from "../../foundation/i18n";
@@ -50,6 +50,9 @@ export interface TKFileInputProps {
   /** Image preview of the first selected image file (default true). */
   preview?: boolean;
   testId?: string;
+  className?: string;
+  /** Merged onto the root LAST — consumer values win (REU-007). */
+  style?: CSSProperties;
 }
 
 export const TKFileInput = /* @__PURE__ */ forwardRef<HTMLInputElement, TKFileInputProps>(function TKFileInput(
@@ -67,6 +70,8 @@ export const TKFileInput = /* @__PURE__ */ forwardRef<HTMLInputElement, TKFileIn
     progress,
     preview = true,
     testId,
+    className,
+    style,
   },
   forwardedRef,
 ) {
@@ -95,7 +100,7 @@ export const TKFileInput = /* @__PURE__ */ forwardRef<HTMLInputElement, TKFileIn
     setPreviewUrl(nextPreviewUrl);
   };
   return (
-    <TKFormField label={label} hint={hint} error={error} disabled={disabled} testId={testId}>
+    <TKFormField label={label} hint={hint} error={error} disabled={disabled} testId={testId} className={className} style={style}>
       <div
         role="button"
         tabIndex={disabled ? -1 : 0}

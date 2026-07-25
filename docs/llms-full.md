@@ -22,7 +22,7 @@ Layout: `TKPage`, `TKSafeArea`, `TKBottomBar`.
 
 Overlays and feedback: `TKSheet` (`modal={false}` passive mode), `TKDialog`, `TKActionSheet`, `TKPopper`, `TKTooltip`, `TKToastProvider`, `useTKToast`, `TKImageViewer` (shared-element open, pinch-zoom, swipe-down close), `TKNoticeBar` (tone strip, marquee), `TKFrame`. Modal overlays suppress the native Main/Secondary buttons while open; opt out per overlay with `nativeButtons="keep"`.
 
-Loading and status: `TKSkeleton`, `TKSkeletonText`, `TKSkeletonCard`, `TKSkeletonList`, `TKSkeletonTable`, `TKProgress`, `TKRing`, `TKBars`, `TKEmptyState`, `TKTimeline`, `TKAsyncState`/`AsyncBoundary` (exactly one of loading/error/empty).
+Loading and status: `TKSkeleton`, `TKSkeletonText`, `TKSkeletonCard`, `TKSkeletonList`, `TKSkeletonTable`, `TKProgress`, `TKRing`, `TKBars`, `TKEmptyState`, `TKTimeline`, `TKAsyncState`/`TKAsyncBoundary` (exactly one of loading/error/empty; `AsyncBoundary` is a deprecated alias).
 
 Patterns: `TKMessages`, `TKMessageBubble`, `TKWriteBar`, `TKOnboardingTooltip`, `TKConfetti`, `TKPullToRefresh`, `TKSlotPicker`, `TKPaymentSummary`, `TKWalletConnectButton`, `TKWalletStatusCell`.
 

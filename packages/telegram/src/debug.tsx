@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { createPortal } from "react-dom";
 import { getTelegramWebApp } from "./provider";
 
 /*
@@ -57,7 +58,14 @@ function snapshot(): string {
  * Line format is decoded in wiki/ios-debugging.md. Displays geometry only —
  * nothing from `initDataUnsafe` beyond the start_param gate.
  */
-export function TKViewportForensics({ testId }: { testId?: string } = {}) {
+export interface TKViewportForensicsProps {
+  testId?: string;
+  className?: string;
+  /** Merged onto the log panel LAST — consumer values win (REU-007). */
+  style?: CSSProperties;
+}
+
+export function TKViewportForensics({ testId, className, style }: TKViewportForensicsProps = {}) {
   const [lines, setLines] = useState<string[]>(() => [`     0 start     ${snapshot()}`]);
   useEffect(() => {
     const t0 = performance.now();
@@ -117,12 +125,29 @@ export function TKViewportForensics({ testId }: { testId?: string } = {}) {
     };
   }, []);
 
-  return (
+  // Resolved in an effect so SSR emits the marker only, never a portal.
+  const markerRef = useRef<HTMLSpanElement>(null);
+  const [host, setHost] = useState<HTMLElement | null>(null);
+  useEffect(() => {
+    setHost(
+      markerRef.current?.closest<HTMLElement>(".tk, [data-tk-portal-root]") ??
+        (typeof document !== "undefined" ? document.body : null),
+    );
+  }, []);
+
+  // Same host contract as the kit's overlays (REU-009/010, OVL-010): portal into
+  // the nearest `.tk` / [data-tk-portal-root] scope and stay `absolute` there —
+  // `fixed` is unreliable in the Telegram iOS webview exactly while the keyboard
+  // and viewport animate, which is the moment this panel exists to observe. The
+  // bare-body fallback is the only `fixed` path. This package cannot import the
+  // uikit hook (the dependency runs the other way), so the resolution is inlined.
+  const panel = (
     <div
       aria-hidden
       data-testid={testId}
+      className={className}
       style={{
-        position: "fixed",
+        position: host && host !== document.body ? "absolute" : "fixed",
         top: "calc(env(safe-area-inset-top, 0px) + 52px)",
         left: 4,
         right: 4,
@@ -139,9 +164,17 @@ export function TKViewportForensics({ testId }: { testId?: string } = {}) {
         background: "rgba(0,0,0,0.74)",
         borderRadius: 8,
         padding: "4px 6px",
+        ...style,
       }}
     >
       {lines.join("\n")}
     </div>
+  );
+
+  return (
+    <>
+      <span ref={markerRef} aria-hidden style={{ display: "none" }} />
+      {host ? createPortal(panel, host) : null}
+    </>
   );
 }

@@ -121,7 +121,7 @@ const currentTokenExports = [
 const currentCompositeExports = [
   "TKActionSheet",
   "TKAccordion",
-  "AsyncBoundary",
+  "TKAsyncBoundary",
   "TKAsyncState",
   "TKTabView",
   "TKBannerCard",

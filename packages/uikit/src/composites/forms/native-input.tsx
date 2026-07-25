@@ -37,11 +37,13 @@ export interface TKNativeFieldProps {
   name?: string;
   id?: string;
   testId?: string;
+  className?: string;
+  /** Merged onto the root LAST — consumer values win (REU-007). */
   style?: CSSProperties;
 }
 
 export const TKNativeField = /* @__PURE__ */ forwardRef<HTMLInputElement, TKNativeFieldProps>(function TKNativeField(
-  { type, value, onChange, label, hint, error, icon, disabled, min, max, step, name, id, testId, style },
+  { type, value, onChange, label, hint, error, icon, disabled, min, max, step, name, id, testId, className, style },
   ref,
 ) {
   const autoId = useId();
@@ -51,7 +53,7 @@ export const TKNativeField = /* @__PURE__ */ forwardRef<HTMLInputElement, TKNati
   const describedBy = hint || error ? `${inputId}-description` : undefined;
   const borderColor = error ? "var(--tk-red)" : focus ? "var(--tk-accent)" : "transparent";
   return (
-    <TKFormField label={label} hint={hint} error={error} htmlFor={inputId} describedBy={describedBy} disabled={disabled} testId={testId} style={style}>
+    <TKFormField label={label} hint={hint} error={error} htmlFor={inputId} describedBy={describedBy} disabled={disabled} testId={testId} className={className} style={style}>
       {/* Clicking anywhere in the field opens the OS picker (not just the tiny
           indicator) — a mouse-only hit-area extender. The real control is the
           native <input> inside: keyboard users focus it via Tab/label and open

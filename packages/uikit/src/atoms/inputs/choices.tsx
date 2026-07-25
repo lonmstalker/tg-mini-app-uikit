@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { forwardRef, useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode, type CSSProperties } from "react";
 import { TKIcon, tkRenderIcon } from "../icons";
 import { tkOptionItem, type TKOption } from "../../foundation/options";
 import { useControllable } from "../../internal/useControllable";
@@ -23,6 +23,9 @@ export interface TKMultiselectProps {
   hint?: ReactNode;
   error?: ReactNode;
   testId?: string;
+  className?: string;
+  /** Merged onto the root LAST — consumer values win (REU-007). */
+  style?: CSSProperties;
 }
 
 export const TKMultiselect = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKMultiselectProps>(function TKMultiselect(
@@ -39,6 +42,8 @@ export const TKMultiselect = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKMul
     hint,
     error,
     testId,
+    className,
+    style,
   },
   forwardedRef,
 ) {
@@ -109,7 +114,7 @@ export const TKMultiselect = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKMul
   };
 
   return (
-    <TKFormField label={label} hint={hint} error={error} disabled={disabled} testId={testId}>
+    <TKFormField label={label} hint={hint} error={error} disabled={disabled} testId={testId} className={className} style={style}>
       <div ref={ref} style={{ position: "relative" }}>
         <button
           ref={forwardedRef}

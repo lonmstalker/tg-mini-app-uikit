@@ -14,6 +14,7 @@ import { TKIcon } from "../../atoms/icons";
 import { useTKLocale } from "../../foundation/i18n";
 import { useOptionalHaptics } from "../../foundation/telegram";
 import { useControllable } from "../../internal/useControllable";
+import { useVerticalSwipeGuard } from "../../internal/useVerticalSwipeGuard";
 
 /* ---------------- Calendar ---------------- */
 
@@ -71,6 +72,8 @@ export interface TKCalendarProps {
   /** Clickable month/year selectors in the calendar header. */
   partSelectors?: boolean;
   testId?: string;
+  className?: string;
+  /** Merged onto the root LAST — consumer values win (REU-007). */
   style?: CSSProperties;
 }
 
@@ -132,6 +135,7 @@ export function TKCalendar({
   lang,
   partSelectors = true,
   testId,
+  className,
   style,
 }: TKCalendarProps) {
   const locale = useTKLocale();
@@ -149,6 +153,11 @@ export function TKCalendar({
   const [focusDate, setFocusDate] = useState<Date | null>(null);
   const [picker, setPicker] = useState<"none" | "month" | "year">("none");
   const [dragPreview, setDragPreview] = useState<TKDateRange | null>(null);
+  // A range drag moves in BOTH axes across the grid, and a downward one is
+  // Telegram's swipe-to-minimize gesture: `touch-action`/preventDefault only
+  // stop the page from scrolling, not the client from collapsing the Mini App.
+  // Mute the host gesture for the length of the drag (B8, INT-005).
+  useVerticalSwipeGuard(dragPreview !== null);
   const gridRef = useRef<HTMLDivElement>(null);
   const dragSessionRef = useRef<CalendarDragSession | null>(null);
   const suppressDragClickRef = useRef(false);
@@ -454,7 +463,7 @@ export function TKCalendar({
     weeks[0][0];
 
   return (
-    <div data-testid={testId} style={{ background: "var(--tk-surface)", borderRadius: "var(--tk-r-lg)", boxShadow: "var(--tk-shadow-sm)", padding: 12, ...style }}>
+    <div data-testid={testId} className={className} style={{ background: "var(--tk-surface)", borderRadius: "var(--tk-r-lg)", boxShadow: "var(--tk-shadow-sm)", padding: 12, ...style }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
         <TKIconButton
           icon="chevronLeft"
@@ -725,8 +734,15 @@ function CalendarPartList({
   const listRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!autoScroll) return;
-    const selected = listRef.current?.querySelector<HTMLElement>('[aria-selected="true"]');
-    selected?.scrollIntoView?.({ block: "center" });
+    const list = listRef.current;
+    const selected = list?.querySelector<HTMLElement>('[aria-selected="true"]');
+    if (!list || !selected) return;
+    // Scroll THIS listbox only — never `scrollIntoView`, which also walks every
+    // scrollable ancestor and can move the page itself, the settle-scroll bug
+    // class that closes the keyboard under a host-managed viewport (KB-3). The
+    // rect delta works regardless of offsetParent; in jsdom it is 0 (no-op).
+    const delta = selected.getBoundingClientRect().top - list.getBoundingClientRect().top;
+    list.scrollTop += delta - (list.clientHeight - selected.clientHeight) / 2;
   }, [autoScroll]);
   return (
     <div

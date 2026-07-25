@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { TKInput } from "../../atoms/inputs";
 import { TKSheet } from "../overlays";
 import { TKIcon } from "../../atoms/icons";
@@ -131,13 +131,16 @@ export interface TKChipsInputProps {
   error?: ReactNode;
   disabled?: boolean;
   testId?: string;
+  className?: string;
+  /** Merged onto the root LAST — consumer values win (REU-007). */
+  style?: CSSProperties;
 }
 
 // Stable empty default: a fresh `[]` per render breaks memo/deps downstream.
 const NO_TAGS: string[] = [];
 
 /** Tag editor: Enter or comma commits a tag, Backspace removes the last one. */
-export function TKChipsInput({ value, defaultValue = NO_TAGS, onChange, placeholder, label, hint, error, disabled, testId }: TKChipsInputProps) {
+export function TKChipsInput({ value, defaultValue = NO_TAGS, onChange, placeholder, label, hint, error, disabled, testId, className, style }: TKChipsInputProps) {
   const [tags, setTags] = useControllable(value, defaultValue, onChange);
   const [draft, setDraft] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -175,7 +178,7 @@ export function TKChipsInput({ value, defaultValue = NO_TAGS, onChange, placehol
 
   const borderColor = error ? "var(--tk-red)" : focus ? "var(--tk-accent)" : "transparent";
   return (
-    <div data-testid={testId} style={{ opacity: disabled ? 0.55 : 1 }}>
+    <div data-testid={testId} className={className} style={{ opacity: disabled ? 0.55 : 1, ...style }}>
       {label ? (
         <div
           style={{
@@ -337,6 +340,9 @@ export interface TKDateInputProps {
   /** Use the OS-native `<input type="date">` picker instead of the sheet calendar. */
   native?: boolean;
   testId?: string;
+  className?: string;
+  /** Merged onto the root LAST — consumer values win (REU-007). */
+  style?: CSSProperties;
 }
 
 /** Date field: native `<input type="date">` or the in-sheet `TKCalendar`. */
@@ -344,7 +350,7 @@ export function TKDateInput(props: TKDateInputProps) {
   return props.native ? <NativeDateInput {...props} /> : <SheetDateInput {...props} />;
 }
 
-function NativeDateInput({ value, defaultValue = null, onChange, label, min, max, disabled, hint, error, testId }: TKDateInputProps) {
+function NativeDateInput({ value, defaultValue = null, onChange, label, min, max, disabled, hint, error, testId, className, style }: TKDateInputProps) {
   const [date, setDate] = useControllable<Date | null>(value, defaultValue, onChange);
   return (
     <TKNativeField
@@ -359,6 +365,10 @@ function NativeDateInput({ value, defaultValue = null, onChange, label, min, max
       error={error}
       disabled={disabled}
       testId={testId}
+      // A1/REU-007: the native variant must not silently drop consumer
+      // className/style (CI's stricter tsc caught them unused here).
+      className={className}
+      style={style}
     />
   );
 }
@@ -381,6 +391,8 @@ function SheetDateInput({
   error,
   invalidText,
   testId,
+  className,
+  style,
 }: TKDateInputProps) {
   const locale = useTKLocale();
   const [date, setDate] = useControllable<Date | null>(value, defaultValue, onChange);
@@ -447,7 +459,7 @@ function SheetDateInput({
   const fieldError = error ?? manualError;
 
   return (
-    <div data-testid={testId}>
+    <div data-testid={testId} className={className} style={style}>
       {/* The field stays directly editable for manual entry; the calendar
           opens from its own trigger button — opening the sheet on any field
           click made manual entry unreachable on touch (a tap is the only way to
@@ -648,9 +660,15 @@ function DatePartList({
   const listRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!autoScroll) return;
-    const selected = listRef.current?.querySelector<HTMLElement>('[aria-selected="true"]');
-    // `scrollIntoView` is absent in jsdom — guard so unit tests don't throw.
-    selected?.scrollIntoView?.({ block: "center" });
+    const list = listRef.current;
+    const selected = list?.querySelector<HTMLElement>('[aria-selected="true"]');
+    if (!list || !selected) return;
+    // Scroll THIS listbox only — never `scrollIntoView`, which also walks every
+    // scrollable ancestor and can move the page itself, the settle-scroll bug
+    // class that closes the keyboard under a host-managed viewport (KB-3). The
+    // rect delta works regardless of offsetParent; in jsdom it is 0 (no-op).
+    const delta = selected.getBoundingClientRect().top - list.getBoundingClientRect().top;
+    list.scrollTop += delta - (list.clientHeight - selected.clientHeight) / 2;
   }, [autoScroll]);
   return (
     <div

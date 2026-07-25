@@ -11,6 +11,8 @@ export interface TKConfettiProps {
   colors?: string[];
   onDone?: () => void;
   testId?: string;
+  className?: string;
+  /** Merged onto the root LAST — consumer values win (REU-007). */
   style?: CSSProperties;
 }
 
@@ -25,7 +27,7 @@ function prefersReducedMotion(): boolean {
  * One-shot canvas confetti for micro-rewards. It uses one canvas, removes
  * itself when the burst ends, and renders nothing under prefers-reduced-motion.
  */
-export function TKConfetti({ count = 150, duration = 1800, colors, onDone, testId, style }: TKConfettiProps) {
+export function TKConfetti({ count = 150, duration = 1800, colors, onDone, testId, className, style }: TKConfettiProps) {
   // Clamp count: negatives/NaN → 0, fractional floored, capped so a bad number
   // can't RangeError or freeze the device (ONB-010).
   const n = Math.max(0, Math.min(Math.floor(count) || 0, 600));
@@ -112,6 +114,7 @@ export function TKConfetti({ count = 150, duration = 1800, colors, onDone, testI
   return (
     <div
       data-testid={testId}
+      className={className}
       aria-hidden="true"
       style={{ position: "absolute", inset: 0, zIndex: tkZ.toast, pointerEvents: "none", ...style }}
     >

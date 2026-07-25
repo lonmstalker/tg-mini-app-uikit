@@ -223,3 +223,57 @@ describe("ONB-003 onboarding survives a shrinking / empty step set", () => {
     expect(screen.getByText("Two")).toBeInTheDocument();
   });
 });
+
+describe("ONB-005 a storage-backed tour keeps the portal host", () => {
+  it("[D-TG] the tour opened after the storage check still portals into .tk (REU-009)", async () => {
+    // While storage is checked the component must render the portal MARKER,
+    // not null — the host resolves from it in a mount-only effect, and a
+    // missing marker silently fell back to document.body/fixed.
+    const storage = { get: () => Promise.resolve(null), set: () => Promise.resolve() };
+    render(<Tour storage={storage} storageKey="tour-once" />);
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog.closest(".tk")).not.toBeNull();
+  });
+});
+
+describe("ONB-004 (KB-3) step scroll yields to a focused text field", () => {
+  it("[D-TG] scrollIntoView skips while an input owns focus, resumes after blur", () => {
+    const spy = vi.fn();
+    const proto = HTMLElement.prototype as { scrollIntoView?: () => void };
+    const orig = proto.scrollIntoView;
+    proto.scrollIntoView = spy;
+    try {
+      function Harness() {
+        const a = useRef<HTMLButtonElement>(null);
+        return (
+          <kit.TKProvider>
+            <button ref={a}>anchor</button>
+            <input data-testid="field" aria-label="Name" />
+            <kit.TKOnboardingTooltip
+              trapFocus={false}
+              steps={[
+                { target: a, title: "One" },
+                { target: a, title: "Two" },
+                { target: a, title: "Three" },
+              ]}
+              testId="tour"
+            />
+          </kit.TKProvider>
+        );
+      }
+      render(<Harness />);
+      expect(spy).toHaveBeenCalledTimes(1); // step 0: no field focused — scroll fires
+      act(() => screen.getByTestId("field").focus());
+      act(() => fireEvent.click(screen.getByRole("button", { name: "Next" })));
+      // The on-screen keyboard would be up — a competing center-scroll is the
+      // settle-scroll bug class (KB-3): it must not fire.
+      expect(spy).toHaveBeenCalledTimes(1);
+      act(() => (document.activeElement as HTMLElement).blur());
+      act(() => fireEvent.click(screen.getByRole("button", { name: "Next" })));
+      expect(spy).toHaveBeenCalledTimes(2); // focus released — scroll resumes
+    } finally {
+      if (orig) proto.scrollIntoView = orig;
+      else delete proto.scrollIntoView;
+    }
+  });
+});

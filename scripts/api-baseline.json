@@ -4,6 +4,7 @@
   "TKActionSheet",
   "TKApp",
   "TKAppShell",
+  "TKAsyncBoundary",
   "TKAsyncState",
   "TKAvatar",
   "TKAvatarStack",

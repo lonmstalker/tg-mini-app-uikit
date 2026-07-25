@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
 import { type TKIconProp } from "../../atoms/icons";
 import { TKVisuallyHidden } from "../../atoms/service";
 import { useTKLocale } from "../../foundation/i18n";
@@ -34,6 +34,9 @@ export interface TKAsyncStateProps {
   emptyCta?: ReactNode;
   onEmptyCta?: () => void;
   testId?: string;
+  className?: string;
+  /** Merged onto the rendered state root LAST — consumer values win (REU-007). */
+  style?: CSSProperties;
 }
 
 /** Renders exactly one of the loading / error / empty states. */
@@ -51,6 +54,8 @@ export function TKAsyncState({
   emptyCta,
   onEmptyCta,
   testId,
+  className,
+  style,
 }: TKAsyncStateProps) {
   const locale = useTKLocale();
   // Default copy follows the app locale (FBK-005) — props still override per call.
@@ -61,7 +66,7 @@ export function TKAsyncState({
   if (status === "loading") {
     // Announce loading to AT and hide the decorative skeleton (FBK-001 / CC-05).
     return (
-      <div role="status" aria-live="polite" aria-busy="true" data-testid={testId}>
+      <div role="status" aria-live="polite" aria-busy="true" data-testid={testId} className={className} style={style}>
         <TKVisuallyHidden>{loadingLabel ?? locale.loading}</TKVisuallyHidden>
         <div aria-hidden="true">{loader ?? <TKSkeletonList rows={4} />}</div>
       </div>
@@ -69,7 +74,7 @@ export function TKAsyncState({
   }
   if (status === "error") {
     return (
-      <div role="alert" data-testid={testId}>
+      <div role="alert" data-testid={testId} className={className} style={style}>
         <TKEmptyState
           icon="warning"
           tone="red"
@@ -82,11 +87,11 @@ export function TKAsyncState({
     );
   }
   return (
-    <TKEmptyState testId={testId} icon={emptyIcon} title={resolvedEmptyTitle} text={emptyText} cta={emptyCta} onCta={onEmptyCta} />
+    <TKEmptyState testId={testId} className={className} style={style} icon={emptyIcon} title={resolvedEmptyTitle} text={emptyText} cta={emptyCta} onCta={onEmptyCta} />
   );
 }
 
-export interface AsyncBoundaryProps extends Omit<TKAsyncStateProps, "status"> {
+export interface TKAsyncBoundaryProps extends Omit<TKAsyncStateProps, "status"> {
   loading?: boolean;
   error?: boolean;
   /** Render the empty state instead of children (e.g. a loaded-but-empty list). */
@@ -104,7 +109,7 @@ export interface AsyncBoundaryProps extends Omit<TKAsyncStateProps, "status"> {
  * wrapper is `display: contents`, so children stay direct flex items of the
  * host column (gap intact) — the fade runs on each child element.
  */
-export function AsyncBoundary({ loading, error, empty, children, ...state }: AsyncBoundaryProps) {
+export function TKAsyncBoundary({ loading, error, empty, children, className, style, ...state }: TKAsyncBoundaryProps) {
   const ready = !loading && !error && !empty;
   const readyRef = useRef<HTMLDivElement>(null);
   const wasBlockedRef = useRef(false);
@@ -125,12 +130,21 @@ export function AsyncBoundary({ loading, error, empty, children, ...state }: Asy
       }
     }
   }, [ready]);
-  if (loading) return <TKAsyncState status="loading" {...state} />;
-  if (error) return <TKAsyncState status="error" {...state} />;
-  if (empty) return <TKAsyncState status="empty" {...state} />;
+  if (loading) return <TKAsyncState status="loading" className={className} style={style} {...state} />;
+  if (error) return <TKAsyncState status="error" className={className} style={style} {...state} />;
+  if (empty) return <TKAsyncState status="empty" className={className} style={style} {...state} />;
   return (
-    <div ref={readyRef} style={{ display: "contents" }}>
+    <div ref={readyRef} data-testid={state.testId} className={className} style={{ display: "contents", ...style }}>
       {children}
     </div>
   );
 }
+
+/**
+ * @deprecated Use {@link TKAsyncBoundary}. The un-prefixed name was the one
+ * export that broke the `TK*` convention (A8); it stays as an alias so existing
+ * imports keep working and will be dropped in the next major.
+ */
+export const AsyncBoundary = TKAsyncBoundary;
+/** @deprecated Use {@link TKAsyncBoundaryProps}. */
+export type AsyncBoundaryProps = TKAsyncBoundaryProps;

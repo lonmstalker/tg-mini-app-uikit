@@ -1,4 +1,4 @@
-import { forwardRef, useId, useMemo, useRef, useState, type ChangeEvent, type FocusEvent, type ReactNode } from "react";
+import { forwardRef, useId, useMemo, useRef, useState, type ChangeEvent, type CSSProperties, type FocusEvent, type ReactNode } from "react";
 import { TKIcon, tkRenderIcon, type TKIconProp } from "../icons";
 import { mergeRefs } from "../../internal/dom";
 import { TKFocusRing } from "../../internal/FocusRing";
@@ -46,6 +46,10 @@ export interface TKInputProps {
   /** Fallback accessible name for the `<input>` when there's no visible `label`. */
   "aria-label"?: string;
   testId?: string;
+  /** Applied to the field wrapper (the TKFormField root). */
+  className?: string;
+  /** Merged onto the field wrapper LAST — consumer values win (REU-007). */
+  style?: CSSProperties;
 }
 
 // Pragmatic UI-level email shape: a local part, an @, and a dotted domain.
@@ -76,6 +80,8 @@ export const TKInput = /* @__PURE__ */ forwardRef<HTMLInputElement, TKInputProps
     validate,
     "aria-label": ariaLabel,
     testId,
+    className,
+    style,
   },
   ref,
 ) {
@@ -103,7 +109,7 @@ export const TKInput = /* @__PURE__ */ forwardRef<HTMLInputElement, TKInputProps
   const clearLabel = typeof label === "string" ? `${locale.clear} ${label}` : locale.clear;
   const borderColor = shownError ? "var(--tk-red)" : focus ? "var(--tk-accent)" : "transparent";
   return (
-    <TKFormField label={label} hint={hint} error={shownError} htmlFor={inputId} describedBy={describedBy} disabled={disabled} testId={testId}>
+    <TKFormField label={label} hint={hint} error={shownError} htmlFor={inputId} describedBy={describedBy} disabled={disabled} testId={testId} className={className} style={style}>
       {/* Mouse-only convenience: a press on the field chrome forwards focus to the
           real <input> (excluded targets keep their own behavior). Keyboard users
           reach the input directly via Tab + the TKFormField label, so this div is

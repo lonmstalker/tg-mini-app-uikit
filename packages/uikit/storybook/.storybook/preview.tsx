@@ -230,6 +230,11 @@ function StoryRoot({ density, inPhone, children }: { density: "compact" | "comfo
   return (
     <div
       className="tk-story-root"
+      // The phone frame scrolls tall stories; a scrollable region must be
+      // keyboard-reachable and named (axe: scrollable-region-focusable).
+      tabIndex={inPhone ? 0 : undefined}
+      role={inPhone ? "region" : undefined}
+      aria-label={inPhone ? "Story content" : undefined}
       data-density={density}
       style={
         {

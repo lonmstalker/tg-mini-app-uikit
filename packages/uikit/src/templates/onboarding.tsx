@@ -1,6 +1,7 @@
-import { useEffect, useReducer, useState, type ReactNode, type RefObject } from "react";
+import { useEffect, useReducer, useState, type CSSProperties, type ReactNode, type RefObject } from "react";
 import { TKButton } from "../atoms/buttons";
 import { TKPopper } from "../composites/overlays";
+import { useOverlayPortal } from "../composites/overlays/shared";
 import { useTKLocale } from "../foundation/i18n";
 import { tkZ } from "../internal/dom";
 
@@ -9,6 +10,17 @@ export interface TKOnboardingStep {
   title?: ReactNode;
   text?: ReactNode;
   placement?: "top" | "bottom";
+}
+
+// Focusing these raises no on-screen keyboard (mirrors the keyboard
+// controller's own gate in @tg-mini-app/telegram device.ts).
+const NON_TEXT_INPUT = /^(?:button|checkbox|radio|range|color|file|submit|reset|image|hidden)$/;
+function tkEditableFocused(): boolean {
+  if (typeof document === "undefined") return false;
+  const el = document.activeElement;
+  if (el instanceof HTMLInputElement) return !NON_TEXT_INPUT.test(el.type);
+  if (el instanceof HTMLTextAreaElement) return true;
+  return el instanceof HTMLElement && el.isContentEditable;
 }
 
 /** Persistence adapter: plug `useCloudStorage()` here for cross-device "seen". */
@@ -38,6 +50,10 @@ export interface TKOnboardingTooltipProps {
   doneLabel?: ReactNode;
   skipLabel?: ReactNode;
   testId?: string;
+  /** Applied to the coach-mark bubble (the surface the consumer sees). */
+  className?: string;
+  /** Merged onto the bubble LAST — consumer values win (REU-007). */
+  style?: CSSProperties;
 }
 
 /**
@@ -57,8 +73,15 @@ export function TKOnboardingTooltip({
   doneLabel,
   skipLabel,
   testId,
+  className,
+  style,
 }: TKOnboardingTooltipProps) {
   const locale = useTKLocale();
+  // Spotlight + fallback card portal into the shared `.tk` / [data-tk-portal-root]
+  // host and stay `absolute` against it; `fixed` is the bare-body fallback only.
+  // Inline `position: fixed` used to break under any transformed ancestor and is
+  // unreliable while the Telegram iOS keyboard/viewport animates (REU-009/010, OVL-010).
+  const portal = useOverlayPortal();
   const [index, setIndex] = useState(0);
   const [status, setStatus] = useState<"checking" | "open" | "done">(storage && storageKey ? "checking" : "open");
 
@@ -82,7 +105,12 @@ export function TKOnboardingTooltip({
   // to center, fighting the user's own scroll.
   useEffect(() => {
     if (status !== "open") return;
-    steps[index]?.target.current?.scrollIntoView?.({ block: "center", behavior: "instant" as ScrollBehavior });
+    // KB-3: never center-scroll the page while a text-editable element owns
+    // focus — the on-screen keyboard is up (or coming), the WebView is already
+    // keeping the field in view, and a competing vertical scroll is the
+    // settle-scroll bug class that closes the keyboard under a host-managed
+    // viewport. The popper still anchors to the target's current rect.
+    if (!tkEditableFocused()) steps[index]?.target.current?.scrollIntoView?.({ block: "center", behavior: "instant" as ScrollBehavior });
     // Refs are null during the first render; bump once after commit so the
     // anchored popper path is chosen over the no-target fallback when the target
     // actually resolves (and the fallback only shows for a genuinely null target).
@@ -143,7 +171,12 @@ export function TKOnboardingTooltip({
 
   const safeIndex = steps.length ? Math.min(index, steps.length - 1) : 0;
   const step = steps[safeIndex];
-  if (status !== "open" || !step) return null;
+  // The hidden marker must render even while storage is being checked (and
+  // after "done"): useOverlayPortal resolves its host from the marker in a
+  // mount-only effect, so returning null here made a storage-backed tour fall
+  // back to document.body/fixed and escape the `.tk` host when it later opened
+  // (REU-009/010 — the TKDialog `return portal.marker` pattern).
+  if (status !== "open" || !step) return portal.marker;
 
   const rect = step.target.current?.getBoundingClientRect();
   const last = safeIndex === steps.length - 1;
@@ -176,65 +209,71 @@ export function TKOnboardingTooltip({
     </div>
   );
 
-  return (
-    <div>
-      {rect ? (
-        <>
-          {/* Spotlight cutout only when the target is actually measured. */}
-          <div
-            style={{
-              position: "fixed",
-              zIndex: tkZ.popper,
-              pointerEvents: "auto",
-              boxShadow: "0 0 0 100vmax var(--tk-scrim)",
-              left: rect.left - 6,
-              top: rect.top - 6,
-              width: rect.width + 12,
-              height: rect.height + 12,
-              borderRadius: "var(--tk-r-md)",
-            }}
-          />
-          {/* trapFocus → role="dialog" (focus moves in, Tab trapped, focus restored
-              on close). Otherwise role="tooltip": no focus steal so the highlighted
-              target stays reachable; Escape/outside-tap still dismiss via onClose,
-              and the bubble still announces via its live region (ONB-001/002). */}
-          <TKPopper
-            open
-            anchorRef={step.target}
-            placement={step.placement ?? "bottom"}
-            arrow
-            autoFlip
-            role={trapFocus ? "dialog" : "tooltip"}
-            ariaLabel={ariaLabel}
-            onClose={dismissable ? skip : undefined}
-            testId={testId}
-          >
-            {bubble}
-          </TKPopper>
-        </>
-      ) : (
-        // No measurable target: TKPopper needs an anchor, so it would render NOTHING
-        // and strand the user with no Skip/Next. Fall back to a centered dialog card
-        // over a transparent interceptor — no opaque blackout (ONB-004); a tap outside
-        // the card dismisses it when dismissable (ONB-001). The interceptor is a
-        // presentational scrim-like click-catcher: keyboard users dismiss via the
-        // Skip/Done buttons inside the dialog, which run the same action.
+  // Host-relative geometry: the spotlight is measured in viewport coordinates,
+  // so subtract the portal host's own rect when the layer is `absolute` in it.
+  const hostRect = portal.host && !portal.fixed ? portal.host.getBoundingClientRect() : null;
+  const layerPosition = portal.fixed ? ("fixed" as const) : ("absolute" as const);
+
+  return portal.render(
+    rect ? (
+      <>
+        {/* Spotlight cutout only when the target is actually measured. */}
         <div
-          role="presentation"
-          data-testid={testId}
-          onClick={dismissable ? skip : undefined}
-          style={{ position: "fixed", inset: 0, zIndex: tkZ.popper, display: "flex", alignItems: "center", justifyContent: "center", padding: 24, pointerEvents: "auto" }}
+          style={{
+            position: layerPosition,
+            zIndex: tkZ.popper,
+            pointerEvents: "auto",
+            boxShadow: "0 0 0 100vmax var(--tk-scrim)",
+            left: rect.left - (hostRect?.left ?? 0) - 6,
+            top: rect.top - (hostRect?.top ?? 0) - 6,
+            width: rect.width + 12,
+            height: rect.height + 12,
+            borderRadius: "var(--tk-r-md)",
+          }}
+        />
+        {/* trapFocus → role="dialog" (focus moves in, Tab trapped, focus restored
+            on close). Otherwise role="tooltip": no focus steal so the highlighted
+            target stays reachable; Escape/outside-tap still dismiss via onClose,
+            and the bubble still announces via its live region (ONB-001/002). */}
+        <TKPopper
+          open
+          anchorRef={step.target}
+          placement={step.placement ?? "bottom"}
+          arrow
+          autoFlip
+          role={trapFocus ? "dialog" : "tooltip"}
+          ariaLabel={ariaLabel}
+          onClose={dismissable ? skip : undefined}
+          testId={testId}
+          className={className}
+          style={style}
         >
-          <div
-            role="dialog"
-            aria-label={ariaLabel}
-            onClick={(e) => e.stopPropagation()}
-            style={{ background: "var(--tk-surface)", color: "var(--tk-text)", borderRadius: "var(--tk-r-lg)", boxShadow: "var(--tk-shadow-lg)", padding: 16, maxWidth: 320 }}
-          >
-            {bubble}
-          </div>
+          {bubble}
+        </TKPopper>
+      </>
+    ) : (
+      // No measurable target: TKPopper needs an anchor, so it would render NOTHING
+      // and strand the user with no Skip/Next. Fall back to a centered dialog card
+      // over a transparent interceptor — no opaque blackout (ONB-004); a tap outside
+      // the card dismisses it when dismissable (ONB-001). The interceptor is a
+      // presentational scrim-like click-catcher: keyboard users dismiss via the
+      // Skip/Done buttons inside the dialog, which run the same action.
+      <div
+        role="presentation"
+        data-testid={testId}
+        onClick={dismissable ? skip : undefined}
+        style={{ position: layerPosition, inset: 0, zIndex: tkZ.popper, display: "flex", alignItems: "center", justifyContent: "center", padding: 24, pointerEvents: "auto" }}
+      >
+        <div
+          role="dialog"
+          aria-label={ariaLabel}
+          onClick={(e) => e.stopPropagation()}
+          className={className}
+          style={{ background: "var(--tk-surface)", color: "var(--tk-text)", borderRadius: "var(--tk-r-lg)", boxShadow: "var(--tk-shadow-lg)", padding: 16, maxWidth: 320, ...style }}
+        >
+          {bubble}
         </div>
-      )}
-    </div>
+      </div>
+    ),
   );
 }

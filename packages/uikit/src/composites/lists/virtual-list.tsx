@@ -48,6 +48,8 @@ export interface TKVirtualListProps<T> {
    */
   "aria-label"?: string;
   testId?: string;
+  className?: string;
+  /** Merged onto the root LAST — consumer values win (REU-007). */
   style?: CSSProperties;
 }
 
@@ -57,7 +59,7 @@ export interface TKVirtualListProps<T> {
  * the variable-height candidate).
  */
 function TKVirtualListImpl<T>(
-  { items, itemHeight, height, renderItem, getKey, overscan = 6, scrollParent, "aria-label": ariaLabel, testId, style }: TKVirtualListProps<T>,
+  { items, itemHeight, height, renderItem, getKey, overscan = 6, scrollParent, "aria-label": ariaLabel, testId, className, style }: TKVirtualListProps<T>,
   ref: Ref<TKVirtualListHandle>,
 ) {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -243,13 +245,14 @@ function TKVirtualListImpl<T>(
 
   // Window mode: flow inline (no own scroller); fixed mode: own the scroller.
   return windowMode ? (
-    <div ref={scrollRef} data-testid={testId} style={{ position: "relative", ...style }}>
+    <div ref={scrollRef} data-testid={testId} className={className} style={{ position: "relative", ...style }}>
       {spacer}
     </div>
   ) : (
     <div
       ref={scrollRef}
       data-testid={testId}
+      className={className}
       // Scrollable-region keyboard access (axe: scrollable-region-focusable):
       // the scroller must be Tab-reachable so keyboard users can arrow/page it.
       // role="region" + aria-label name it; an unnamed region maps to generic,
