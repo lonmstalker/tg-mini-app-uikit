@@ -4,6 +4,7 @@ import {
   TKButton,
   TKCell,
   TKDialog,
+  TKInput,
   TKListGroup,
   TKPage,
   TKSwitch,
@@ -37,6 +38,12 @@ export function Profile() {
   const [connecting, setConnecting] = useState(false);
   const [disconnectOpen, setDisconnectOpen] = useState(false);
   const [closing, setClosing] = useState(false);
+  // Device check for the KB-4 dialog fix: a dialog with a text field must stay
+  // centered in the VISIBLE viewport while the on-screen keyboard is open —
+  // and must not jump under a host-managed viewport (Telegram iOS).
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [displayName, setDisplayName] = useState<string | null>(null);
+  const [draftName, setDraftName] = useState("");
 
   // The setting is a mock/demo control; in a real Mini App it is invisible and
   // should not arm a close prompt unexpectedly.
@@ -103,8 +110,8 @@ export function Profile() {
   return (
     <TKPage testId="panel-profile-home">
       <TKTitle level={1}>{t("profile.title")}</TKTitle>
-      {user ? (
-        <TKText tone="secondary">{t("profile.greeting", { name: user.first_name ?? "" })}</TKText>
+      {user || displayName ? (
+        <TKText tone="secondary">{t("profile.greeting", { name: displayName ?? user?.first_name ?? "" })}</TKText>
       ) : null}
 
       <TKListGroup title={t("profile.walletSection")}>
@@ -166,6 +173,17 @@ export function Profile() {
       ) : null}
       <TKListGroup title={t("settings.demoSection")}>
         <TKCell
+          testId="profile-rename"
+          icon="user"
+          title={t("profile.rename")}
+          subtitle={t("profile.renameSub")}
+          chevron
+          onClick={() => {
+            setDraftName(displayName ?? user?.first_name ?? "");
+            setRenameOpen(true);
+          }}
+        />
+        <TKCell
           testId="open-lab"
           icon="tune"
           title={t("settings.lab")}
@@ -176,6 +194,35 @@ export function Profile() {
       </TKListGroup>
 
       <PinGate open={gateOpen} onClose={() => setGateOpen(false)} onSuccess={onGateSuccess} />
+
+      <TKDialog
+        open={renameOpen}
+        onClose={() => setRenameOpen(false)}
+        title={t("profile.rename")}
+        onConfirm={() => {
+          setDisplayName(draftName.trim() || null);
+          setRenameOpen(false);
+        }}
+        testId="rename-dialog"
+        actions={
+          <>
+            <TKButton variant="plain" onClick={() => setRenameOpen(false)}>
+              {t("common.cancel")}
+            </TKButton>
+            <TKButton
+              testId="rename-save"
+              onClick={() => {
+                setDisplayName(draftName.trim() || null);
+                setRenameOpen(false);
+              }}
+            >
+              {t("common.save")}
+            </TKButton>
+          </>
+        }
+      >
+        <TKInput label={t("profile.renameLabel")} value={draftName} onChange={setDraftName} testId="rename-input" />
+      </TKDialog>
 
       <TKDialog
         open={disconnectOpen}

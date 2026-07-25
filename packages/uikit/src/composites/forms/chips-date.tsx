@@ -365,6 +365,10 @@ function NativeDateInput({ value, defaultValue = null, onChange, label, min, max
       error={error}
       disabled={disabled}
       testId={testId}
+      // A1/REU-007: the native variant must not silently drop consumer
+      // className/style (CI's stricter tsc caught them unused here).
+      className={className}
+      style={style}
     />
   );
 }

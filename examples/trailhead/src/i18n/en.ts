@@ -177,10 +177,14 @@ export const en = {
   "common.cancel": "Cancel",
   "common.confirm": "Confirm",
   "common.done": "Done",
+  "common.save": "Save",
 
   // Profile
   "profile.title": "Profile",
   "profile.greeting": "Hi, {name}",
+  "profile.rename": "Display name",
+  "profile.renameSub": "Dialog with a text field — keyboard check",
+  "profile.renameLabel": "Name",
   "profile.walletSection": "TON Wallet",
   "wallet.connect": "Connect wallet",
   "wallet.name": "Tonkeeper",
