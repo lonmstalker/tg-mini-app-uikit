@@ -64,7 +64,9 @@ export const TKEllipsis = /* @__PURE__ */ forwardRef<HTMLDivElement, TKEllipsisP
   });
   // Rendered clamp lags `expanded` on collapse: the clamp re-applies only after
   // the shrink animation, so the text folds up instead of snapping to "…" first.
-  const [clamped, setClamped] = useState(!defaultExpanded);
+  // Seeded from the CONTROLLED prop too: `expanded={true}` on the first render
+  // must paint (and SSR) unclamped, not clamp until an effect catches up.
+  const [clamped, setClamped] = useState(!(expandedProp ?? defaultExpanded));
   const [overflowing, setOverflowing] = useState(false);
   const pendingFrom = useRef<number | null>(null);
   const animRef = useRef<Animation | null>(null);

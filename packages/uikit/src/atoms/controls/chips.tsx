@@ -149,7 +149,9 @@ export const TKChip = /* @__PURE__ */ forwardRef<HTMLButtonElement, TKChipProps>
     <button
       type="button"
       ref={ref}
-      className="tk-press"
+      // The consumer class must land on BOTH shapes: the removable branch puts
+      // it on the wrapper span, the default branch appends it here.
+      className={["tk-press", className].filter(Boolean).join(" ")}
       onClick={onClick}
       onKeyDown={onKeyDown}
       tabIndex={tabIndex}

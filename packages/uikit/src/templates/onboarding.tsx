@@ -171,7 +171,12 @@ export function TKOnboardingTooltip({
 
   const safeIndex = steps.length ? Math.min(index, steps.length - 1) : 0;
   const step = steps[safeIndex];
-  if (status !== "open" || !step) return null;
+  // The hidden marker must render even while storage is being checked (and
+  // after "done"): useOverlayPortal resolves its host from the marker in a
+  // mount-only effect, so returning null here made a storage-backed tour fall
+  // back to document.body/fixed and escape the `.tk` host when it later opened
+  // (REU-009/010 — the TKDialog `return portal.marker` pattern).
+  if (status !== "open" || !step) return portal.marker;
 
   const rect = step.target.current?.getBoundingClientRect();
   const last = safeIndex === steps.length - 1;

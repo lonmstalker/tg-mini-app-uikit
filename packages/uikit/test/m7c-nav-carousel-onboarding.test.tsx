@@ -224,6 +224,18 @@ describe("ONB-003 onboarding survives a shrinking / empty step set", () => {
   });
 });
 
+describe("ONB-005 a storage-backed tour keeps the portal host", () => {
+  it("[D-TG] the tour opened after the storage check still portals into .tk (REU-009)", async () => {
+    // While storage is checked the component must render the portal MARKER,
+    // not null — the host resolves from it in a mount-only effect, and a
+    // missing marker silently fell back to document.body/fixed.
+    const storage = { get: () => Promise.resolve(null), set: () => Promise.resolve() };
+    render(<Tour storage={storage} storageKey="tour-once" />);
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog.closest(".tk")).not.toBeNull();
+  });
+});
+
 describe("ONB-004 (KB-3) step scroll yields to a focused text field", () => {
   it("[D-TG] scrollIntoView skips while an input owns focus, resumes after blur", () => {
     const spy = vi.fn();
