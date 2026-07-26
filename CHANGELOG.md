@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.8.1 — 2026-07-26
+
+Manual-audit patch: the on-screen keyboard and real content. `TKDialog`
+re-centers through the kit's keyboard controller instead of raw
+`innerHeight − visualViewport.height` — no jump in the KB-4 transient
+window, and plain CSS centering is kept under a host-managed viewport.
+`TKOnboardingTooltip` skips its center-scroll while a text field owns focus
+(the KB-3 settle-scroll class) and keeps the `.tk` portal host when gated by
+a storage adapter. `TKCalendar`/`TKDateInput` month/year lists scroll their
+own listbox only, and the native `TKDateInput` variant forwards consumer
+`className`/`style`. `TKHeader` ellipsizes unbroken titles instead of
+pushing its actions off a 320px viewport (REU-001). `TKChip` applies the
+consumer `className` on the non-removable root too; `TKEllipsis` with a
+controlled `expanded={true}` renders unclamped from the first paint and in
+SSR markup. Skeletons are `aria-hidden` decorative placeholders; the
+product-card favorite toggle exposes `aria-pressed`. In
+`@tg-mini-app/telegram` 0.4.2 the `TKViewportForensics` overlay portals into
+the nearest `.tk` host and stays `absolute` there, so the debug panel itself
+survives the keyboard animation it exists to observe.
+
 ## 0.8.0 — 2026-07-24
 
 Reuse-audit waves 2–3: components stop fighting their consumers. Modal
